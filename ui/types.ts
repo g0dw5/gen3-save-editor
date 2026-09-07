@@ -1,0 +1,243 @@
+export type Location =
+  | { kind: "party"; slot: number }
+  | { kind: "box"; box_index: number; slot: number };
+export const locationKey = (loc: Location) =>
+  loc.kind === "party" ? `p:${loc.slot}` : `${loc.box_index}:${loc.slot}`;
+export const fromKey = (key: string): Location => {
+  const [box, slot] = key.split(":");
+  return box === "p"
+    ? { kind: "party", slot: +slot }
+    : { kind: "box", box_index: +box, slot: +slot };
+};
+export interface Species {
+  dex_number: number;
+  id: number;
+  name: string;
+  stats: number[];
+  types: number[];
+  catch_rate: number;
+  exp_yield: number;
+  ev_yield: number;
+  items: number[];
+  gender_ratio: number;
+  egg_cycles: number;
+  friendship: number;
+  growth: number;
+  egg_groups: number[];
+  abilities: number[];
+  offset: number;
+}
+export interface Move {
+  id: number;
+  name: string;
+  description: string;
+  effect: number;
+  power: number;
+  move_type: number;
+  accuracy: number;
+  pp: number;
+  chance: number;
+  target: number;
+  priority: number;
+  flags: number;
+  offset: number;
+}
+export interface Item {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  hold_effect: number;
+  hold_param: number;
+  pocket: number;
+  item_type: number;
+  tm_move: number | null;
+  offset: number;
+}
+export interface Ability {
+  id: number;
+  name: string;
+  description: string;
+}
+export interface Catalog {
+  profile: { id: string; label: string; md5: string; size: number };
+  species: Species[];
+  moves: Move[];
+  items: Item[];
+  abilities: Ability[];
+}
+export interface Pokemon {
+  pid: number;
+  ot_id: number;
+  nickname: string;
+  ot_name: string;
+  language: number;
+  markings: number;
+  species: number;
+  held_item: number;
+  experience: number;
+  pp_ups: number[];
+  friendship: number;
+  moves: number[];
+  pps: number[];
+  evs: number[];
+  condition: number[];
+  ivs: number[];
+  ability_slot: number;
+  ability_id: number;
+  egg: boolean;
+  pokerus: number;
+  met_location: number;
+  met_level: number;
+  origin_game: number;
+  ball: number;
+  ot_gender: number;
+  ribbons: number;
+  nature: number;
+  gender: string;
+  shiny: boolean;
+  level: number;
+  stats: number[];
+  current_hp: number | null;
+  status: number | null;
+  checksum_ok: boolean;
+}
+export interface StoredPokemon {
+  location: Location;
+  pokemon: Pokemon;
+}
+export interface Trainer {
+  name: string;
+  gender: number;
+  tid: number;
+  sid: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  money: number;
+  coins: number;
+  registered_item: number;
+}
+export interface BoxInfo {
+  index: number;
+  name: string;
+  wallpaper: number;
+  count: number;
+}
+export interface BagEntry {
+  pocket: string;
+  slot: number;
+  item: number;
+  quantity: number;
+}
+export interface Finding {
+  code: string;
+  field: string;
+  severity: string;
+  detail: string;
+}
+export interface Change {
+  fields: { path: string; before: unknown; after: unknown }[];
+  action: Record<string, unknown>;
+  bytes_changed: number;
+  findings: Finding[];
+}
+export interface Snapshot {
+  trainer: Trainer;
+  pokemon: StoredPokemon[];
+  boxes: BoxInfo[];
+  bag: BagEntry[];
+  dex: { number: number; seen: boolean; owned: boolean }[];
+  active_slot: number;
+  counter: number;
+  backup_valid: boolean;
+  dirty: boolean;
+  can_undo: boolean;
+  can_redo: boolean;
+  changes: Change[];
+}
+export interface LearnSource {
+  move_id: number;
+  source: string;
+  species: number;
+  level: number | null;
+  index: number | null;
+  offset: number;
+}
+export interface Encounter {
+  species: number;
+  map_id: string;
+  map_name: string;
+  region: number;
+  method: string;
+  min_level: number;
+  max_level: number;
+  weight: number | null;
+  encounter_rate: number | null;
+  slot: number | null;
+  offset: number;
+  conditional: boolean;
+}
+export interface SpeciesDetail {
+  species: Species;
+  evolutions: {
+    method: number;
+    parameter: number;
+    target: number;
+    offset: number;
+  }[];
+  learnset: LearnSource[];
+  encounters: Encounter[];
+}
+export interface GameMap {
+  id: string;
+  group: number;
+  number: number;
+  name: string;
+  region: number;
+  width: number;
+  height: number;
+  map_type: number;
+  header: number;
+  layout: number;
+  scripts: number[];
+}
+export interface Opponent {
+  diagnostics: string[];
+  id: number;
+  name: string;
+  class: number;
+  portrait: number;
+  female: boolean;
+  double_battle: boolean;
+  items: number[];
+  ai: number;
+  party: {
+    species: number;
+    level: number;
+    iv_quality: number;
+    held_item: number;
+    moves: number[];
+    moves_explicit: boolean;
+    offset: number;
+  }[];
+  offset: number;
+}
+export interface World {
+  maps: GameMap[];
+  encounters: Encounter[];
+  trainers: Opponent[];
+}
+export type RefTab =
+  "species" | "moves" | "items" | "abilities" | "maps" | "trainers";
+export interface RefWindow {
+  id: number;
+  tab: RefTab;
+  selected?: number | string;
+}
+export interface Template {
+  species: number;
+  level: number;
+  met_location?: number;
+  egg?: boolean;
+}

@@ -19,6 +19,7 @@ pub struct Rom {
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct Species {
+    pub dex_number: u16,
     pub id: u16,
     pub name: String,
     pub stats: [u8; 6],
@@ -120,6 +121,9 @@ pub struct PatchManifest {
 }
 
 impl Rom {
+    pub fn is_mail(&self, id: u16) -> bool {
+        (self.profile.mail_items[0]..=self.profile.mail_items[1]).contains(&id)
+    }
     pub fn open(data: Vec<u8>) -> Result<Self> {
         let profile = profile::identify(&data)?;
         let r = Self {
@@ -160,6 +164,14 @@ impl Rom {
         let o = self.profile.base_stats.offset + id as usize * self.profile.base_stats.stride;
         let b = bytes(&self.data, o, 28)?;
         Ok(Species {
+            dex_number: if id == 0 {
+                0
+            } else {
+                u16(
+                    &self.data,
+                    self.profile.national_dex + (id as usize - 1) * 2,
+                )?
+            },
             id,
             name: self.text(
                 self.profile.species.offset + id as usize * self.profile.species.stride,

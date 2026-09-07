@@ -1,0 +1,15 @@
+[package]
+name = "gen3-desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+gen3-core = { path = "../../crates/gen3-core" }
+serde.workspace = true
+serde_json.workspace = true

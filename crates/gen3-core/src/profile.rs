@@ -33,6 +33,8 @@ pub struct Profile {
     pub move_descriptions: usize,
     pub ability_names: SplitText,
     pub ability_descriptions: SplitText,
+    pub mail_items: [u16; 2],
+    pub national_dex: usize,
     pub species: Table,
     pub base_stats: Table,
     pub moves: Table,
@@ -101,6 +103,8 @@ pub const BW: Profile = Profile {
         split: 78,
         stride: 4,
     },
+    mail_items: [0x79, 0x84],
+    national_dex: 0x31dc82,
     species: Table {
         offset: 0x3185c8,
         count: 412,

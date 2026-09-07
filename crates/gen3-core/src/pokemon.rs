@@ -102,7 +102,7 @@ fn finding(code: &str, field: &str, detail: impl ToString) -> Finding {
 }
 
 pub fn checksum(b: &[u8]) -> u16 {
-    b.chunks_exact(2).fold(0u16, |a, c| {
+    b.as_chunks::<2>().0.iter().fold(0u16, |a, c| {
         a.wrapping_add(u16::from_le_bytes([c[0], c[1]]))
     })
 }
@@ -364,6 +364,12 @@ pub fn edit(
     let species = patch.species.unwrap_or(before.species);
     let s = rom.valid_species(species)?;
     if let Some(v) = patch.held_item {
+        if v != before.held_item && (rom.is_mail(v) || rom.is_mail(before.held_item)) {
+            return Err(err(
+                "mail_attachment",
+                "linked mail editing is not implemented",
+            ));
+        }
         rom.item(v)?;
         put16(&mut c, 2, v);
     }

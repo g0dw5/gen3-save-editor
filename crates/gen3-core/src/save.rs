@@ -133,9 +133,11 @@ pub struct DexFlag {
     pub owned: bool,
 }
 pub fn sector_checksum(b: &[u8]) -> u16 {
-    let sum = b.chunks_exact(4).fold(0u32, |a, c| {
-        a.wrapping_add(u32::from_le_bytes(c.try_into().unwrap()))
-    });
+    let sum = b
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .fold(0u32, |a, c| a.wrapping_add(u32::from_le_bytes(*c)));
     ((sum >> 16) + (sum & 65535)) as u16
 }
 fn slot(data: &[u8], base: usize, layout: SaveLayout) -> Result<([usize; 14], u32)> {
@@ -381,6 +383,9 @@ impl Save {
         }
         rom.valid_species(p.species)?;
         rom.item(p.held_item)?;
+        if rom.is_mail(p.held_item) {
+            return Err(err("mail_attachment", "import/insert"));
+        }
         for id in p.moves {
             rom.move_info(id)?;
         }
@@ -400,6 +405,12 @@ impl Save {
         }
     }
     pub fn remove(&mut self, loc: Location, rom: &Rom) -> Result<()> {
+        if self
+            .pokemon(loc, rom)?
+            .is_some_and(|p| rom.is_mail(p.held_item))
+        {
+            return Err(err("mail_attachment", "delete"));
+        }
         if self.pokemon(loc, rom)?.is_none() {
             return Err(err("empty_slot", format!("{loc:?}")));
         }
@@ -429,6 +440,11 @@ impl Save {
             return Err(err("pokemon_checksum", source.species));
         }
         let target = self.pokemon(to, rom)?;
+        if rom.is_mail(source.held_item)
+            || target.as_ref().is_some_and(|p| rom.is_mail(p.held_item))
+        {
+            return Err(err("mail_attachment", "transfer"));
+        }
         let raw = self.raw(from)?;
         if copy {
             return self.insert(to, &raw, rom);

@@ -252,7 +252,7 @@ impl Rom {
             for i in 0..n {
                 let p = ptr + i * stride;
                 let quality = u16(b, p)?;
-                let lv = u16(b, p + 2)?;
+                let lv = bytes(b, p + 2, 1)?[0] as u16;
                 let species = u16(b, p + 4)?;
                 if self.valid_species(species).is_err() {
                     diagnostics.push(format!("party[{i}].species={species}"));
@@ -434,7 +434,7 @@ impl Rom {
                         }
                     }
                 }
-                if matches!(op, 0x04 | 0x05 | 0x06 | 0x07) {
+                if matches!(op, 0x04..=0x07) {
                     let off = if op == 4 || op == 5 { 1 } else { 2 };
                     if let Ok(p) = pointer(b, pc + off) {
                         pending.push_back((p, vars.clone()));

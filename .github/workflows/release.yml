@@ -1,0 +1,38 @@
+name: Build release artifacts
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bundle:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      - run: cargo test -p gen3-core -p gen3-cli --locked
+      - run: npm run desktop:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gen3-save-editor-${{ runner.os }}
+          path: |
+            target/release/bundle/**/*.dmg
+            target/release/bundle/**/*.msi
+            target/release/bundle/**/*.exe
+            target/release/bundle/**/*.deb
+            target/release/bundle/**/*.AppImage
+            README.md
+            README.zh-CN.md
+            LICENSE
+            THIRD_PARTY_NOTICES.md
+          if-no-files-found: error

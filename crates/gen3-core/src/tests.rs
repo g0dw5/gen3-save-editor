@@ -580,3 +580,39 @@ fn local_rom_regression() {
         );
     }
 }
+
+#[test]
+fn trainer_level_does_not_consume_adjacent_byte() {
+    let mut r = rom();
+    let profile = r.profile;
+    let bytes = std::sync::Arc::make_mut(&mut r.data);
+    let header = profile.trainers.offset + 40;
+    bytes[header] = 3;
+    bytes[header + 32] = 1;
+    put32(bytes, header + 36, 0x08022000);
+    put16(bytes, 0x22000, 255);
+    bytes[0x22002] = 44;
+    bytes[0x22003] = 0x26;
+    put16(bytes, 0x22004, 1);
+    let trainers = r.trainers().unwrap();
+    assert_eq!(trainers[0].party[0].level, 44);
+    assert!(trainers[0].diagnostics.is_empty());
+}
+
+#[test]
+fn free_editing_cannot_create_dangling_mail_links() {
+    let mut s = session();
+    let before = s.save_ref().unwrap().data.clone();
+    let result = s.apply(
+        Action::Pokemon {
+            location: party(),
+            patch: PokemonPatch {
+                held_item: Some(0x79),
+                ..Default::default()
+            },
+        },
+        Policy::Free,
+    );
+    assert_eq!(result.unwrap_err().code, "mail_attachment");
+    assert_eq!(s.save_ref().unwrap().data, before);
+}
