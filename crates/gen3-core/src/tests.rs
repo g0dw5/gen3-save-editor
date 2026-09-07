@@ -616,3 +616,44 @@ fn free_editing_cannot_create_dangling_mail_links() {
     assert_eq!(result.unwrap_err().code, "mail_attachment");
     assert_eq!(s.save_ref().unwrap().data, before);
 }
+
+#[test]
+fn rom_patch_is_bounded_reproducible_and_keeps_the_baseline() {
+    use crate::rom::RomEdit;
+    let r = rom();
+    let baseline = hash(&r.data);
+    let edit = RomEdit {
+        table: "species".into(),
+        id: 1,
+        field: "attack".into(),
+        value: 120,
+    };
+    let (out, manifest) = r.patch(std::slice::from_ref(&edit)).unwrap();
+    let changed: Vec<_> = r
+        .data
+        .iter()
+        .zip(&out)
+        .enumerate()
+        .filter(|(_, (a, b))| a != b)
+        .map(|(i, _)| i)
+        .collect();
+    assert_eq!(changed, vec![r.profile.base_stats.offset + 28 + 1]);
+    assert_eq!(manifest.base_md5, baseline);
+    assert_eq!(manifest.output_md5, hash(&out));
+    assert_eq!(manifest.output_sha256, sha256(&out));
+    assert_eq!(hash(&r.data), baseline);
+    let (again, _) = r.patch(std::slice::from_ref(&edit)).unwrap();
+    assert_eq!(out, again);
+    assert!(r
+        .patch(&[RomEdit {
+            value: 256,
+            ..edit.clone()
+        }])
+        .is_err());
+    assert!(r
+        .patch(&[RomEdit {
+            field: "offset".into(),
+            ..edit
+        }])
+        .is_err());
+}

@@ -26,11 +26,11 @@ compatibility certification.
 
 Validation performed on macOS Apple Silicon, September 2026:
 
-- **19 Rust tests passed**, including the opt-in regression covering both exact
+- **20 Rust tests passed**, including the opt-in regression covering both exact
   ROMs. Includes all 24 Pokémon permutations, a known checksum vector, all growth
   curves, byte retention, mixed/corrupt banks, counter wrap, cross-sector storage,
   the last box slot, batch rollback, free-mode boundaries, PP Ups, fixed text
-  capacity, before/after values, backup/conflict export and mail attachment guards.
+  capacity, before/after values, backup/conflict export, bounded reproducible ROM patches and mail attachment guards.
 - Both ROMs: 411 species records, 472 moves, 707 maps, 2,653 encounters extracted
   from supported sources, 1,365 nonempty trainer headers. Every valid species'
   normal/shiny sprite and learnset is parsed. Six representative maps are rendered.
