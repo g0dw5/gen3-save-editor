@@ -4,7 +4,8 @@ Verified 2026-09-07 on the exact BW/DP profiles in `profile.rs`.
 
 ## 查找路径
 
-ROM 资料 → 对手训练家 → 一周目联盟，按以下顺序展示：
+ROM 资料 → 对手训练家：按身份、地点筛选。选择“彩幽市联盟”得到以下五条记录，
+再选择“四天王”或“联盟冠军”缩小范围；界面不再提供专门的一周目入口。
 
 | 顺序 | ID | 地图 | 战斗指令 |
 | --- | --- | --- | --- |
@@ -14,10 +15,34 @@ ROM 资料 → 对手训练家 → 一周目联盟，按以下顺序展示：
 | 4 源治 | 264 | 16-3 | 0x22870A |
 | 5 米可利 | 335 | 16-4 | 0x228A51 |
 
-可搜索“一周目 米可利”“一周目联盟”“摩天楼 米可利”，也可搜索地图、
-宝可梦或训练家编号。场景分组与排序是经过版本核对的适配元数据；姓名、
-队伍、招式、图片仍从用户 ROM 读取。994–998 单列为联盟强化队伍，尚不推断
-具体触发条件，尤其不自动认为玩家的当前存档一定会遇到这些强化队伍。
+可搜索“冠军 彩幽市”“馆主 绿岭市道馆”“摩天楼 米可利”，也可搜索地图、
+宝可梦或训练家编号。条目显示标签，详情标签可点击继续筛选，身份与地点
+支持组合，更多筛选提供单打/双打与预设/动态等级。切换界面语言保留筛选。
+未关联地图的记录标注“地点待解析”，不能据此认定为无引用数据。
+
+身份直接读取 ROM 的称号表：0x119A000，共 83 条、每条 13 字节，代码指针
+位于 0x183B4、0x6F0AC。旧表 0x30FCD4 已没有这些引用。31/74 均为“四天王”，
+38/75 均为“联盟冠军”，筛选按称号合并；不同训练家 ID 的队伍仍各自保留。
+超出已知表范围的称号保留原始 ID 并显示未知，不影响查看队伍。
+
+地图地区名来自 ROM，关联来自战斗脚本。“道馆／联盟”是按地图 ID 核对的
+少量用途配置，目前覆盖丰缘八座道馆与彩幽市五间联盟战斗房间。
+配置不含训练家编号，也不为没有脚本证据的强化队伍补写出现地点。
+994–998 等记录仍可通过姓名/身份检索，具体触发条件尚未解析。
+
+### 剧情与设施的后续模型
+
+标签是训练家检索的基础。剧情导航可作为叠加视图，节点应引用战斗记录、
+条件和前置事件，不把一次出现等同于这个人物的所有队伍。分支和复战需要
+条件图，单一顺序树无法表达全部情况。
+
+随机设施应使用“设施 → 模式 → 挑战阶段 → 候选训练家/配队池与生成规则”。
+绿宝石原版的 `SetNextFacilityOpponent` 按挑战次数随机选择，并避免本轮重复
+对手；这仅是适配研究的参照，尚未验证漆黑的魅影的完整对战塔实现。
+魅影摩天楼已解析的固定队伍与动态等级，也不能等同于对战塔的随机配队。
+目前应用不显示尚未实现的候选池或预测下一场随机对手。
+
+Source: [pokeemerald battle_tower.c](https://github.com/pret/pokeemerald/blob/master/src/battle_tower.c).
 
 先前的地图解析将 0x31（playfanfare）和 0x33（playbgm）误当作单字节指令。
 它们实际分别为 3 和 4 字节；修正后可从上述地图根脚本追踪到战斗指令。
@@ -67,7 +92,7 @@ verification before it can use these rules.
 
 ## Reproducible validation
 
-- 24 Rust tests, including opt-in exact-ROM regressions, generated name-sum/IV/
+- 25 Rust tests, including opt-in exact-ROM regressions, generated name-sum/IV/
   gender fixtures, and music instruction-boundary checks.
 - `scripts/verify_trainer_generation.py`: requires Python Unicorn, a compiled
   `gen3` CLI, and `GEN3_ROM_BW` / `GEN3_ROM_DP`. `GEN3_CLI` selects the executable.
@@ -83,8 +108,16 @@ verification before it can use these rules.
 
 ## English summary
 
-The trainer browser now supports ordered first-League lookup, same-name context,
-and context/map/species search. Trainer cards display generated gender, ability,
-nature, six IVs and creation-time EVs. Raw quality parameters are evidence only.
-Dynamic levels show the rule and optionally the loaded party's highest level.
+The trainer browser uses composable role, location, battle-format and level-rule
+facets, with clickable detail tags and bilingual controls. Roles come from the
+ROM's relocated 83-entry class-name table, not hardcoded trainer ID lists. Map
+purposes supplement script references; currently the verified metadata covers
+the eight Hoenn gyms and five Ever Grande League rooms. Unresolved locations
+remain searchable and do not imply unused records. Story progress is not inferred.
+
+A future story view should reference encounters and conditions. Random facilities
+need candidate pools, challenge stages and generation rules; the current app does
+not claim to resolve Dark Phantom's entire Battle Tower or predict its next team.
+Trainer cards retain generated gender, ability, nature, six IVs and creation-time
+EVs. Dynamic levels show the rule and optionally the loaded party's highest level.
 The supported ROMs' actual constructors independently validate the derived data.

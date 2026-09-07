@@ -26,7 +26,7 @@ compatibility certification.
 
 Validation performed on macOS Apple Silicon, September 2026:
 
-- **24 Rust tests passed**, including the opt-in regression covering both exact
+- **25 Rust tests passed**, including the opt-in regression covering both exact
   ROMs. Includes all 24 Pokémon permutations, a known checksum vector, all growth
   curves, byte retention, mixed/corrupt banks, counter wrap, cross-sector storage,
   the last box slot, batch rollback, free-mode boundaries, PP Ups, fixed text
@@ -44,9 +44,10 @@ Validation performed on macOS Apple Silicon, September 2026:
   See the [reference audit](research/dark-phantom-trainer-audit.md) for evidence
   and reachability limits. Dynamic levels are displayed as a rule, previewed from
   the loaded party when available; raw parameters remain in evidence details.
-- First-League and stronger-League context filters distinguish same-name teams.
-  Search includes context, map, species and IDs. The first League is ordered
-  261, 262, 263, 264, 335; all five now have direct map links.
+- Trainer tags and composable role/location/format/level filters distinguish
+  same-name teams. Roles read the relocated ROM class table; verified map-purpose
+  metadata identifies eight gyms and the League rooms without trainer ID lists.
+  Search includes tags, maps, species and IDs. Story conditions remain unresolved.
 - Gender, nature, ability, six IVs and six creation-time EVs are derived from the
   target engine. Isolated Unicorn execution of both ROMs' original constructors
   matches 20 trainer parties / 106 Pokémon, including first League, Miltank and
@@ -54,6 +55,7 @@ Validation performed on macOS Apple Silicon, September 2026:
   A regression specifically checks that the level's adjacent byte is not consumed.
 - Browser workflow passed: 426 storage slots, all 14 boxes, both UI languages,
   level edit, undo/redo, box-to-party drag, reference-to-box draft drag, creation,
+  role/location/battle/level filters, tag clicks, zero-result recovery,
   player money, download and small-window layout. Downloaded output is 128 KiB and
   independently passes CLI validation.
 - Rust formatting and Clippy with warnings denied; TypeScript and Vite build.

@@ -9,7 +9,14 @@ import {
   Types,
 } from "./components";
 import { TrainerParty } from "./TrainerParty";
-import { searchTrainers, trainerGroups } from "./trainerSearch";
+import {
+  emptyTrainerFilters,
+  indexTrainers,
+  searchTrainers,
+  trainerFacetOptions,
+  type TrainerFacet,
+  type TrainerFilters,
+} from "./trainerSearch";
 import { useI18n, statKeys } from "./i18n";
 import type {
   Ability,
@@ -51,7 +58,16 @@ export function ReferenceWindow({
   const [tab, setTab] = useState<RefTab>(info.tab);
   const [selected, setSelected] = useState<number | string>(info.selected ?? 1);
   const [search, setSearch] = useState("");
-  const [trainerGroup, setTrainerGroup] = useState("");
+  const [trainerFilters, setTrainerFilters] =
+    useState<TrainerFilters>(emptyTrainerFilters);
+  const trainerEntries = useMemo(
+    () => indexTrainers(world, catalog, t),
+    [world, catalog, t],
+  );
+  const trainerEntryById = useMemo(
+    () => new Map(trainerEntries.map((entry) => [entry.trainer.id, entry])),
+    [trainerEntries],
+  );
   const [detail, setDetail] = useState<SpeciesDetail | null>(null);
   const [mapImage, setMapImage] = useState("");
   const [romEdit, setRomEdit] = useState(false);
@@ -79,7 +95,9 @@ export function ReferenceWindow({
   const current = rows.find((row) => row.id === selected);
   const filtered =
     tab === "trainers"
-      ? searchTrainers(rows as Opponent[], world, catalog, search, trainerGroup)
+      ? searchTrainers(trainerEntries, search, trainerFilters).map(
+          (entry) => entry.trainer,
+        )
       : rows.filter((row) =>
           `${row.id} ${row.name}`
             .toLocaleLowerCase()
@@ -92,7 +110,7 @@ export function ReferenceWindow({
       !filtered.some((r) => r.id === selected)
     )
       setSelected(filtered[0].id);
-  }, [tab, search, trainerGroup, world, selected]);
+  }, [tab, search, trainerFilters, world, selected]);
   useEffect(() => {
     let active = true;
     setDetail(null);
@@ -140,6 +158,34 @@ export function ReferenceWindow({
     );
     e.dataTransfer.effectAllowed = "copy";
   };
+  const renderTrainerFilter = (facet: TrainerFacet) => (
+    <label key={facet}>
+      <span>{t(`trainerFacet_${facet}`)}</span>
+      <select
+        aria-label={t(`trainerFacet_${facet}`)}
+        value={trainerFilters[facet]}
+        onChange={(e) =>
+          setTrainerFilters((filters) => ({
+            ...filters,
+            [facet]: e.target.value,
+          }))
+        }
+      >
+        <option value="">{t("trainerFilterAll")}</option>
+        {trainerFacetOptions(trainerEntries, search, trainerFilters, facet).map(
+          (option) => (
+            <option
+              key={option.value}
+              value={option.value}
+              disabled={!option.count && trainerFilters[facet] !== option.value}
+            >
+              {option.label} · {option.count}
+            </option>
+          ),
+        )}
+      </select>
+    </label>
+  );
   return (
     <Floating title={t("references")} onClose={onClose} initial={info.id} wide>
       <div className="reference-tabs">
@@ -184,31 +230,34 @@ export function ReferenceWindow({
           </label>
           {tab === "trainers" && (
             <div className="trainer-filters">
-              <span className="eyebrow">{t("battleContext")}</span>
-              <button
-                type="button"
-                className={!trainerGroup ? "active" : ""}
-                onClick={() => setTrainerGroup("")}
-              >
-                {t("allTrainers")}
-              </button>
-              {world?.trainer_groups.map((group) => (
-                <button
-                  type="button"
-                  key={group.id}
-                  className={trainerGroup === group.id ? "active" : ""}
-                  onClick={() => {
-                    setTrainerGroup(group.id);
-                    setSelected(group.trainer_ids[0]);
-                    setSearch("");
-                  }}
-                >
-                  {t(group.id)} · {group.trainer_ids.length}
-                </button>
-              ))}
-              <span className="small muted">
-                {filtered.length} {t("trainerResults")}
-              </span>
+              {(["role", "location"] as TrainerFacet[]).map(
+                renderTrainerFilter,
+              )}
+              <details className="trainer-extra-filters">
+                <summary>
+                  {t("trainerMoreFilters")}
+                  {trainerFilters.battle || trainerFilters.level ? " •" : ""}
+                </summary>
+                {(["battle", "level"] as TrainerFacet[]).map(
+                  renderTrainerFilter,
+                )}
+              </details>
+              <div className="trainer-filter-status">
+                <span>
+                  {filtered.length} {t("trainerResults")}
+                </span>
+                {(search || Object.values(trainerFilters).some(Boolean)) && (
+                  <button
+                    className="link-button"
+                    onClick={() => {
+                      setTrainerFilters(emptyTrainerFilters);
+                      setSearch("");
+                    }}
+                  >
+                    {t("trainerResetFilters")}
+                  </button>
+                )}
+              </div>
             </div>
           )}
           <div className="reference-rows">
@@ -227,13 +276,22 @@ export function ReferenceWindow({
                   {row.name}
                   {tab === "trainers" && (
                     <small className="trainer-row-context">
-                      {trainerGroups(world, +row.id)
-                        .map((g) => t(g.id))
-                        .join(" · ") ||
-                        world?.trainer_locations.locations.find(
-                          (l) => l.trainer_id === +row.id,
-                        )?.map_name ||
-                        t("contextUnresolved")}
+                      <span className="trainer-row-tags">
+                        {trainerEntryById
+                          .get(+row.id)
+                          ?.tags.filter(
+                            (tag) =>
+                              tag.facet === "role" || tag.facet === "location",
+                          )
+                          .map((tag) => (
+                            <span
+                              className={`trainer-tag ${tag.facet}`}
+                              key={`${tag.facet}:${tag.value}`}
+                            >
+                              {tag.label}
+                            </span>
+                          ))}
+                      </span>
                       <br />
                       {(row as Opponent).party.some(
                         (p) => p.level_rule === "party_max",
@@ -521,7 +579,7 @@ export function ReferenceWindow({
                       className="link-button"
                       onClick={() => {
                         setTab("trainers");
-                        setTrainerGroup("");
+                        setTrainerFilters(emptyTrainerFilters);
                         setSelected(l.trainer_id);
                         setSearch("");
                       }}
@@ -595,23 +653,27 @@ export function ReferenceWindow({
           )}
           {tab === "trainers" && current && filtered.length > 0 && (
             <>
-              {trainerGroups(world, +selected).map((group) => (
-                <div className="trainer-context-banner" key={group.id}>
-                  <strong>{t(group.id)}</strong>
-                  <span>
-                    {t("battleOrder")}{" "}
-                    {group.trainer_ids.indexOf(+selected) + 1} /{" "}
-                    {group.trainer_ids.length}
-                  </span>
-                  <p className="small muted">
-                    {t(
-                      group.id === "league_first"
-                        ? "leagueFirstHelp"
-                        : "leagueStrongerHelp",
-                    )}
-                  </p>
-                </div>
-              ))}
+              <div
+                className="trainer-context-tags"
+                aria-label={t("trainerTags")}
+              >
+                {trainerEntryById.get(+selected)?.tags.map((tag) => (
+                  <button
+                    key={`${tag.facet}:${tag.value}`}
+                    className={`trainer-tag ${tag.facet}`}
+                    title={`${t("trainerFilterBy")} ${tag.label}`}
+                    onClick={() =>
+                      setTrainerFilters((filters) => ({
+                        ...filters,
+                        [tag.facet]: tag.value,
+                      }))
+                    }
+                  >
+                    {tag.label}
+                  </button>
+                ))}
+              </div>
+              <p className="small muted">{t("trainerTagsHelp")}</p>
               <h3>{t("trainerMaps")}</h3>
               <p className="small muted">{t("trainerMapsHelp")}</p>
               {world?.trainer_locations.locations

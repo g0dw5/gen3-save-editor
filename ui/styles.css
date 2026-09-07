@@ -1421,37 +1421,77 @@ summary {
   padding: 0 10px 12px;
   flex-shrink: 0;
 }
-.trainer-filters button {
-  text-align: left;
-  padding: 7px 9px;
+.trainer-filters label {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 0;
+}
+.trainer-filters select {
+  width: 100%;
+  min-width: 0;
+  padding: 6px;
   font-size: 11px;
 }
-.trainer-filters button.active {
-  background: var(--soft);
-  color: var(--accent);
-  border-color: var(--accent);
+.trainer-extra-filters summary {
+  padding: 5px 0;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--muted);
+}
+.trainer-extra-filters label {
+  margin: 5px 0;
+}
+.trainer-filter-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.trainer-filter-status button {
+  padding: 3px;
+  font-size: 11px;
 }
 .trainer-row-context {
   display: block;
   color: var(--muted);
   font-size: 10px;
   line-height: 1.6;
-  margin-top: 4px;
+  margin-top: 5px;
   white-space: normal;
 }
-.trainer-context-banner {
-  background: var(--soft);
-  border-radius: 10px;
-  padding: 12px;
-  margin-bottom: 18px;
+.trainer-row-tags,
+.trainer-context-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
-.trainer-context-banner > span {
-  float: right;
-  font-size: 11px;
+.trainer-row-context > br {
+  display: none;
+}
+.trainer-tag {
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
   color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+  background: var(--surface);
 }
-.trainer-context-banner p {
-  margin-bottom: 0;
+.trainer-tag.role {
+  color: var(--accent);
+  background: var(--soft);
+  border-color: transparent;
+}
+.trainer-context-tags .trainer-tag {
+  font-size: 12px;
+  padding: 4px 8px;
+}
+.trainer-row-tags {
+  margin-bottom: 4px;
 }
 .trainer-mon-card {
   border: 1px solid var(--line);

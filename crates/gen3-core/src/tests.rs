@@ -506,6 +506,27 @@ fn local_rom_regression() {
         assert!(encounters.len() > 1000);
         let trainers = r.trainers().unwrap();
         assert!(trainers.len() > 1300);
+        // Both hacks use the relocated class table, including expanded IDs.
+        assert_eq!(u32(&r.data, 0x183b4).unwrap(), 0x0919a000);
+        assert_eq!(u32(&r.data, 0x6f0ac).unwrap(), 0x0919a000);
+        for (id, class_name) in [
+            (261, "四天王"),
+            (271, "馆主"),
+            (335, "联盟冠军"),
+            (957, "四天王"),
+            (973, "联盟冠军"),
+            (1003, "水舰队首领"),
+        ] {
+            assert_eq!(
+                trainers
+                    .iter()
+                    .find(|t| t.id == id)
+                    .unwrap()
+                    .class_name
+                    .as_deref(),
+                Some(class_name)
+            );
+        }
         let locations = r.trainer_locations_for_maps(&maps).unwrap();
         assert_eq!(locations.locations.len(), 680);
         assert_eq!(
@@ -875,4 +896,31 @@ fn trainer_scripts_skip_music_arguments() {
     assert_eq!(report.trainer_ids, vec![42]);
     assert_eq!(report.trainer_battles[0].offset, 0x23007);
     assert!(report.stopped_at.is_empty());
+}
+
+#[test]
+fn trainer_class_names_follow_configured_table_and_preserve_unknown_ids() {
+    let mut r = rom();
+    // Relocation must work without changing trainer IDs or UI classifications.
+    r.profile.trainer_classes = profile::Table {
+        offset: 0x25000,
+        count: 2,
+        stride: 13,
+    };
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    let h = r.profile.trainers.offset + 40;
+    b[h + 1] = 1;
+    b[h + 32] = 1;
+    put32(b, h + 36, 0x08024000);
+    b[0x24002] = 20;
+    put16(b, 0x24004, 1);
+    b[0x2500d..0x2501a].copy_from_slice(&r.codec.encode("SCOUT", 13).unwrap());
+    let trainer = r.trainers().unwrap().remove(0);
+    assert_eq!(trainer.class, 1);
+    assert_eq!(trainer.class_name.as_deref(), Some("SCOUT"));
+    std::sync::Arc::make_mut(&mut r.data)[h + 1] = 255;
+    let unknown = r.trainers().unwrap().remove(0);
+    assert_eq!(unknown.class, 255);
+    assert_eq!(unknown.class_name, None);
+    assert_eq!(unknown.party.len(), 1);
 }

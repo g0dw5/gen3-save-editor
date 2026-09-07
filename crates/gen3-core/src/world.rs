@@ -62,6 +62,7 @@ pub struct Trainer {
     pub id: u16,
     pub name: String,
     pub class: u8,
+    pub class_name: Option<String>,
     pub portrait: u8,
     pub female: bool,
     pub double_battle: bool,
@@ -99,7 +100,7 @@ pub struct World {
     pub encounters: Vec<Encounter>,
     pub trainers: Vec<Trainer>,
     pub trainer_locations: TrainerLocationIndex,
-    pub trainer_groups: &'static [crate::profile::TrainerGroup],
+    pub map_groups: &'static [crate::profile::MapGroup],
 }
 #[derive(Serialize)]
 pub struct ScriptReport {
@@ -137,7 +138,7 @@ impl Rom {
             encounters: self.encounters()?,
             trainers: self.trainers()?,
             trainer_locations,
-            trainer_groups: self.profile.trainer_groups,
+            map_groups: self.profile.map_groups,
         })
     }
     /// References from known map script roots, not proof of current-save reachability.
@@ -460,6 +461,12 @@ impl Rom {
                 id: id as u16,
                 name: self.codec.decode(&row[4..16]),
                 class: row[1],
+                class_name: if (row[1] as usize) < self.profile.trainer_classes.count {
+                    let table = self.profile.trainer_classes;
+                    Some(self.text(table.offset + row[1] as usize * table.stride, table.stride)?)
+                } else {
+                    None
+                },
                 portrait: row[3],
                 female: row[2] & 128 != 0,
                 double_battle: row[24] != 0,

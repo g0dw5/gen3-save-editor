@@ -207,6 +207,7 @@ export interface Opponent {
   id: number;
   name: string;
   class: number;
+  class_name: string | null;
   portrait: number;
   female: boolean;
   double_battle: boolean;
@@ -233,7 +234,7 @@ export interface Opponent {
   offset: number;
 }
 export interface World {
-  trainer_groups: { id: string; trainer_ids: number[] }[];
+  map_groups: { kind: string; map_ids: string[] }[];
   trainer_locations: {
     locations: {
       trainer_id: number;

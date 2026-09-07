@@ -53,16 +53,16 @@ pub struct Profile {
     pub regions: usize,
     pub wild: usize,
     pub trainers: Table,
-    pub trainer_groups: &'static [TrainerGroup],
+    pub trainer_classes: Table,
+    pub map_groups: &'static [MapGroup],
     pub map_counts: &'static [usize],
     pub save: SaveLayout,
 }
-/// Curated encounter context, verified against this profile's battle scripts.
-/// Names and parties continue to come from the user-supplied ROM.
+/// Verified map purposes supplement ROM region names; never imply story order.
 #[derive(Clone, Copy, Debug, Serialize)]
-pub struct TrainerGroup {
-    pub id: &'static str,
-    pub trainer_ids: &'static [u16],
+pub struct MapGroup {
+    pub kind: &'static str,
+    pub map_ids: &'static [&'static str],
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct SaveLayout {
@@ -155,14 +155,20 @@ pub const BW: Profile = Profile {
         count: 1367,
         stride: 40,
     },
-    trainer_groups: &[
-        TrainerGroup {
-            id: "league_first",
-            trainer_ids: &[261, 262, 263, 264, 335],
+    // Relocated class-name table, referenced at ROM 0x183B4 and 0x6F0AC.
+    trainer_classes: Table {
+        offset: 0x119a000,
+        count: 83,
+        stride: 13,
+    },
+    map_groups: &[
+        MapGroup {
+            kind: "gym",
+            map_ids: &["11-3", "3-3", "10-0", "4-1", "8-1", "12-1", "14-0", "15-0"],
         },
-        TrainerGroup {
-            id: "league_stronger",
-            trainer_ids: &[994, 995, 996, 997, 998],
+        MapGroup {
+            kind: "league",
+            map_ids: &["16-0", "16-1", "16-2", "16-3", "16-4"],
         },
     ],
     map_counts: &[
