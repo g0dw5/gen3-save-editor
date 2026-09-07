@@ -600,6 +600,7 @@ export default function App() {
                     <button
                       key={key as string}
                       className={page === key ? "active" : ""}
+                      disabled={busy}
                       onClick={async () => {
                         if (await guard()) {
                           setPage(key as string);
@@ -810,7 +811,7 @@ export default function App() {
                       />
                     ) : row ? (
                       <PokemonEditor
-                        key={`${selected}:${revision}`}
+                        key={`${catalog.profile.md5}:${selected}`}
                         row={row}
                         catalog={catalog}
                         free={free}

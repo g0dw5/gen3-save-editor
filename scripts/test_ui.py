@@ -9,6 +9,7 @@ import os
 import urllib.request
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
+from ui_metadata_checks import check_metadata
 
 TOKEN = os.environ['GEN3_DEV_TOKEN']
 OUTPUT = Path(os.environ.get('GEN3_UI_OUTPUT', '/tmp/gen3-ui-tests'))
@@ -26,6 +27,8 @@ def command(name, payload=None):
 
 command('open_rom', {'path': os.environ['GEN3_ROM_BW']})
 command('open_save', {'path': os.environ['GEN3_TEST_SAVE']})
+# Reserved bits exercise UI read/modify/write without bundling a save fixture.
+command('action', {'action': {'type': 'pokemon', 'location': {'kind': 'party', 'slot': 0}, 'patch': {'ribbons': 0x78000000}}})
 with sync_playwright() as p:
     browser = p.chromium.launch(channel='chrome', headless=True)
     page = browser.new_page(viewport={'width': 1440, 'height': 940})
@@ -48,6 +51,7 @@ with sync_playwright() as p:
     expect(page.get_by_label('Level', exact=True)).to_have_value('50')
     page.get_by_role('button', name='Redo', exact=True).click()
     expect(page.get_by_label('Level', exact=True)).to_have_value('77')
+    check_metadata(page, command, OUTPUT)
     page.locator('[data-location="0:0"]').drag_to(page.locator('[data-location="p:1"]'))
     expect(page.locator('[data-location="p:1"]')).to_have_class(__import__('re').compile('occupied'))
     assert len([v for v in command('state')['save']['pokemon'] if v['location']['kind']=='party']) == 2
@@ -77,6 +81,8 @@ with sync_playwright() as p:
     expect(dialog.locator('.reference-rows > button')).to_have_count(1)
     expect(dialog.locator('.reference-detail h2')).to_contain_text('#335')
     expect(dialog.locator('.trainer-mon-card')).to_have_count(6)
+    expect(dialog.get_by_role('img', name='Battle portrait', exact=True)).to_be_visible()
+    expect(dialog.get_by_role('img', name='Map character', exact=True)).to_be_visible()
     assert dialog.locator('.trainer-stat-table tbody tr').first.locator('td').all_text_contents() == ['31'] * 6
     page.screenshot(path=str(OUTPUT / 'trainer-tags-league-en.png'))
     dialog.get_by_role('button', name='Reset', exact=True).click()
@@ -94,6 +100,8 @@ with sync_playwright() as p:
     page.get_by_role('button', name='简体中文', exact=True).click()
     expect(dialog.get_by_label('地点', exact=True)).to_have_value(f'place:{gym_region}:gym')
     expect(dialog.locator('.trainer-context-tags')).to_contain_text('绿岭市道馆')
+    expect(dialog.get_by_role('img', name='地图小人 1', exact=True)).to_be_visible()
+    expect(dialog.get_by_role('img', name='地图小人 2', exact=True)).to_be_visible()
     page.screenshot(path=str(OUTPUT / 'trainer-tags-gym-zh.png'))
     page.get_by_role('button', name='English', exact=True).click()
     dialog.get_by_role('button', name='Reset', exact=True).click()
@@ -143,6 +151,7 @@ with sync_playwright() as p:
     # Close reference to access the inspector without dismissing the draft.
     dialog.get_by_role('button', name='Close', exact=True).click()
     page.get_by_role('button', name='Create Pokémon', exact=True).click()
+    expect(page.locator('.draft-editor')).to_have_count(0)
     expect(page.locator('[data-location="2:0"]')).to_have_class(__import__('re').compile('occupied'))
     page.get_by_role('button', name='Player', exact=True).click()
     page.get_by_label('Money', exact=True).fill('54321')

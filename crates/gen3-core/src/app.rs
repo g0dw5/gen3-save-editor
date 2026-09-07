@@ -133,6 +133,16 @@ impl App {
                     json!({"url":format!("data:image/png;base64,{}",STANDARD.encode(self.session()?.rom.sprite(id,shiny)?))}),
                 )
             }
+            "trainer_sprite" | "object_sprite" => {
+                let id = serde_json::from_value(p["id"].clone())?;
+                let rom = &self.session()?.rom;
+                let png = if input.command == "trainer_sprite" {
+                    rom.trainer_sprite(id)?
+                } else {
+                    rom.object_sprite(id)?
+                };
+                Ok(json!({"url":format!("data:image/png;base64,{}", STANDARD.encode(png))}))
+            }
             "map_image" => {
                 let id = required(&p, "id")?;
                 Ok(

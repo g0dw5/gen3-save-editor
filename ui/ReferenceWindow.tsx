@@ -8,6 +8,7 @@ import {
   Sprite,
   Types,
 } from "./components";
+import { TrainerArt } from "./TrainerArt";
 import { TrainerParty } from "./TrainerParty";
 import {
   emptyTrainerFilters,
@@ -653,6 +654,11 @@ export function ReferenceWindow({
           )}
           {tab === "trainers" && current && filtered.length > 0 && (
             <>
+              <TrainerArt
+                trainer={current as Opponent}
+                world={world}
+                catalog={catalog}
+              />
               <div
                 className="trainer-context-tags"
                 aria-label={t("trainerTags")}

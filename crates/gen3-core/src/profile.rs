@@ -51,12 +51,24 @@ pub struct Profile {
     pub shiny_palettes: usize,
     pub maps: usize,
     pub regions: usize,
+    pub region_count: usize,
     pub wild: usize,
     pub trainers: Table,
     pub trainer_classes: Table,
+    pub trainer_sprites: Table,
+    pub trainer_palettes: usize,
+    pub object_graphics: &'static [Table],
+    pub object_palettes: Table,
+    pub script_actors: &'static [ScriptActor],
     pub map_groups: &'static [MapGroup],
     pub map_counts: &'static [usize],
     pub save: SaveLayout,
+}
+/// Reviewed scene actors for battles initiated outside an object's own script.
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct ScriptActor {
+    pub battle_offset: usize,
+    pub local_ids: &'static [u8],
 }
 /// Verified map purposes supplement ROM region names; never imply story order.
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -149,6 +161,7 @@ pub const BW: Profile = Profile {
     shiny_palettes: 0x304438,
     maps: 0xe8c020,
     regions: 0x5a1480,
+    region_count: 213,
     wild: 0xea2d34,
     trainers: Table {
         offset: 0x121d300,
@@ -161,6 +174,34 @@ pub const BW: Profile = Profile {
         count: 83,
         stride: 13,
     },
+    trainer_sprites: Table {
+        offset: 0x1198000,
+        count: 203,
+        stride: 8,
+    },
+    trainer_palettes: 0x1199000,
+    // The graphics hook at 0x11960E4 selects the bank using the high byte.
+    object_graphics: &[
+        Table {
+            offset: 0x505620,
+            count: 240,
+            stride: 4,
+        },
+        Table {
+            offset: 0x1197000,
+            count: 256,
+            stride: 4,
+        },
+    ],
+    object_palettes: Table {
+        offset: 0x50bbc8,
+        count: 35,
+        stride: 8,
+    },
+    script_actors: &[ScriptActor {
+        battle_offset: 0x228a51,
+        local_ids: &[1],
+    }],
     map_groups: &[
         MapGroup {
             kind: "gym",

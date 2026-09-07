@@ -65,6 +65,7 @@ export interface Catalog {
   moves: Move[];
   items: Item[];
   abilities: Ability[];
+  met_locations: { id: number; name: string }[];
 }
 export interface Pokemon {
   pid: number;
@@ -241,6 +242,11 @@ export interface World {
       map_id: string;
       map_name: string;
       battle_offsets: number[];
+      actors: {
+        local_id: number;
+        graphics_id: number;
+        script: number | null;
+      }[];
     }[];
     unresolved_maps: { map_id: string; stopped_at: number[] }[];
   };

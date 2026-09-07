@@ -100,16 +100,23 @@ export function SelectField({
   value,
   onChange,
   options,
+  disabled = false,
 }: {
   label: string;
   value: number | string;
   onChange: (value: string) => void;
   options: { value: number | string; label: string; disabled?: boolean }[];
+  disabled?: boolean;
 }) {
   return (
     <label className="field">
       <span>{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
+      <select
+        aria-label={label}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+      >
         {options.map((o) => (
           <option key={o.value} value={o.value} disabled={o.disabled}>
             {o.label}

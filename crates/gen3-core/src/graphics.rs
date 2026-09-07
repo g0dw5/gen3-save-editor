@@ -54,6 +54,33 @@ pub fn png(width: u32, height: u32, rgba: &[u8]) -> Result<Vec<u8>> {
     }
     Ok(out)
 }
+/// Decode GBA 4bpp tiles, preserving transparent palette index zero.
+pub fn tiled_sprite(tiles: &[u8], palette: &[u8], width: usize, height: usize) -> Result<Vec<u8>> {
+    if width == 0
+        || height == 0
+        || width > 128
+        || height > 128
+        || !width.is_multiple_of(8)
+        || !height.is_multiple_of(8)
+    {
+        return Err(err("sprite_dimensions", format!("{width}x{height}")));
+    }
+    bytes(tiles, 0, width * height / 2)?;
+    bytes(palette, 0, 32)?;
+    let mut rgba = vec![0; width * height * 4];
+    for y in 0..height {
+        for x in 0..width {
+            let tile = (y / 8) * (width / 8) + x / 8;
+            let value = tiles[tile * 32 + (y % 8) * 4 + (x % 8) / 2];
+            let index = if x % 2 == 0 { value & 15 } else { value >> 4 };
+            rgba[(y * width + x) * 4..(y * width + x + 1) * 4].copy_from_slice(&color(
+                u16(palette, index as usize * 2)?,
+                if index == 0 { 0 } else { 255 },
+            ));
+        }
+    }
+    png(width as u32, height as u32, &rgba)
+}
 impl Rom {
     pub fn sprite(&self, id: u16, shiny: bool) -> Result<Vec<u8>> {
         self.valid_species(id)?;
@@ -65,21 +92,49 @@ impl Rom {
             self.profile.palettes
         };
         let pal = lz77(b, pointer(b, table + id as usize * 8)?)?;
-        bytes(&sprite, 0, 2048)?;
-        bytes(&pal, 0, 32)?;
-        let mut rgba = vec![0; 64 * 64 * 4];
-        for y in 0..64 {
-            for x in 0..64 {
-                let tile = (y / 8) * 8 + x / 8;
-                let v = sprite[tile * 32 + (y % 8) * 4 + (x % 8) / 2];
-                let index = if x % 2 == 0 { v & 15 } else { v >> 4 };
-                rgba[(y * 64 + x) * 4..(y * 64 + x + 1) * 4].copy_from_slice(&color(
-                    u16(&pal, index as usize * 2)?,
-                    if index == 0 { 0 } else { 255 },
-                ));
-            }
+        tiled_sprite(&sprite, &pal, 64, 64)
+    }
+    pub fn trainer_sprite(&self, portrait: u16) -> Result<Vec<u8>> {
+        let table = self.profile.trainer_sprites;
+        if portrait as usize >= table.count {
+            return Err(err("trainer_portrait", portrait));
         }
-        png(64, 64, &rgba)
+        let b = &self.data;
+        let tiles = lz77(
+            b,
+            pointer(b, table.offset + portrait as usize * table.stride)?,
+        )?;
+        let palette = lz77(
+            b,
+            pointer(b, self.profile.trainer_palettes + portrait as usize * 8)?,
+        )?;
+        tiled_sprite(&tiles, &palette, 64, 64)
+    }
+    pub fn object_sprite(&self, graphics: u16) -> Result<Vec<u8>> {
+        let bank = (graphics >> 8) as usize;
+        let id = (graphics & 255) as usize;
+        let table = self
+            .profile
+            .object_graphics
+            .get(bank)
+            .ok_or_else(|| err("object_graphics", graphics))?;
+        if id >= table.count {
+            return Err(err("object_graphics_dynamic", graphics));
+        }
+        let b = &self.data;
+        let info = pointer(b, table.offset + id * table.stride)?;
+        let width = u16(b, info + 8)? as usize;
+        let height = u16(b, info + 10)? as usize;
+        let tag = u16(b, info + 2)?;
+        let images = pointer(b, info + 28)?;
+        let tiles = bytes(b, pointer(b, images)?, u16(b, images + 4)? as usize)?;
+        let palette_table = self.profile.object_palettes;
+        let palette_offset = (0..palette_table.count)
+            .map(|i| palette_table.offset + i * palette_table.stride)
+            .find(|o| u16(b, *o + 4).ok() == Some(tag))
+            .ok_or_else(|| err("object_palette", tag))?;
+        let palette = bytes(b, pointer(b, palette_offset)?, 32)?;
+        tiled_sprite(tiles, palette, width, height)
     }
     pub fn map_image(&self, id: &str) -> Result<Vec<u8>> {
         let maps = self.maps()?;

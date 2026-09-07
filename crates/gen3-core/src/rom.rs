@@ -88,12 +88,18 @@ pub struct LearnSource {
     pub offset: usize,
 }
 #[derive(Serialize)]
+pub struct NamedLocation {
+    pub id: u8,
+    pub name: String,
+}
+#[derive(Serialize)]
 pub struct Catalog {
     pub profile: Profile,
     pub species: Vec<Species>,
     pub moves: Vec<Move>,
     pub items: Vec<Item>,
     pub abilities: Vec<Ability>,
+    pub met_locations: Vec<NamedLocation>,
 }
 #[derive(Serialize)]
 pub struct SpeciesDetail {
@@ -269,6 +275,12 @@ impl Rom {
     pub fn catalog(&self) -> Result<Catalog> {
         Ok(Catalog {
             profile: self.profile,
+            met_locations: (0..self.profile.region_count)
+                .filter_map(|id| {
+                    let name = self.ptr_text(self.profile.regions + id * 8);
+                    (!name.trim().is_empty()).then_some(NamedLocation { id: id as u8, name })
+                })
+                .collect(),
             species: (1..self.profile.species.count as u16)
                 .map(|id| self.species(id))
                 .collect::<Result<_>>()?,

@@ -528,6 +528,46 @@ fn local_rom_regression() {
             );
         }
         let locations = r.trainer_locations_for_maps(&maps).unwrap();
+        assert_eq!(
+            catalog
+                .met_locations
+                .iter()
+                .find(|l| l.id == maps.iter().find(|m| m.id == "14-0").unwrap().region)
+                .unwrap()
+                .name,
+            "绿岭市"
+        );
+        assert!(catalog.met_locations.iter().all(|l| l.id < 213));
+        for (id, map, expected) in [
+            (271, "14-0", vec![131, 132]),
+            (335, "16-4", vec![133]),
+            (973, "36-42", vec![133]),
+        ] {
+            let location = locations
+                .locations
+                .iter()
+                .find(|l| l.trainer_id == id && l.map_id == map)
+                .unwrap();
+            let mut graphics: Vec<_> = location.actors.iter().map(|a| a.graphics_id).collect();
+            graphics.sort();
+            graphics.dedup();
+            assert_eq!(graphics, expected, "trainer {id}");
+        }
+        assert_eq!(u32(&r.data, 0x5df78).unwrap(), 0x09198000);
+        assert_eq!(u32(&r.data, 0x5df80).unwrap(), 0x09199000);
+        for id in 0..r.profile.trainer_sprites.count {
+            if id == 165 {
+                // Unreferenced resource with 63 tiles; do not invent the missing tile.
+                assert!(!trainers.iter().any(|t| t.portrait == 165));
+                assert!(r.trainer_sprite(id as u16).is_err());
+            } else {
+                r.trainer_sprite(id as u16).unwrap();
+            }
+        }
+        // Both original and extended overworld banks are read from the ROM.
+        for id in [33, 121, 131, 132, 133, 0x121, 0x179, 0x185] {
+            r.object_sprite(id).unwrap();
+        }
         assert_eq!(locations.locations.len(), 680);
         assert_eq!(
             locations
@@ -760,6 +800,7 @@ fn trainer_map_index_follows_branches_and_keeps_evidence() {
         header: 0,
         layout: 0,
         events: None,
+        objects: vec![],
         scripts: vec![0x23000, 0x23100],
     };
     let second = crate::world::Map {
@@ -822,6 +863,7 @@ fn trainer_scripts_cross_menus_music_and_native_calls() {
         header: 0,
         layout: 0,
         events: None,
+        objects: vec![],
         scripts: vec![0x23000],
     };
     let report = r.script_report(&map).unwrap();
@@ -890,6 +932,7 @@ fn trainer_scripts_skip_music_arguments() {
         header: 0,
         layout: 0,
         events: None,
+        objects: vec![],
         scripts: vec![0x23000],
     };
     let report = r.script_report(&map).unwrap();
@@ -923,4 +966,50 @@ fn trainer_class_names_follow_configured_table_and_preserve_unknown_ids() {
     assert_eq!(unknown.class, 255);
     assert_eq!(unknown.class_name, None);
     assert_eq!(unknown.party.len(), 1);
+}
+
+#[test]
+fn party_and_box_share_current_pp_and_bonus_storage() {
+    let r = rom();
+    let raw = pokemon::create(&r, 1, 123, "ASH", 20, 456).unwrap();
+    let patch = PokemonPatch {
+        moves: Some([1, 0, 0, 0]),
+        pp_ups: Some([3, 0, 0, 0]),
+        pps: Some([7, 0, 0, 0]),
+        ..Default::default()
+    };
+    let (boxed, _) = pokemon::edit(&raw, &patch, &r, Policy::Standard).unwrap();
+    let party = pokemon::to_party(&boxed, &r).unwrap();
+    assert_eq!(&party[..80], &boxed);
+    for bytes in [&boxed, &party] {
+        let p = pokemon::decode(bytes, &r).unwrap();
+        assert_eq!(p.pps, [7, 0, 0, 0]);
+        assert_eq!(p.pp_ups, [3, 0, 0, 0]);
+        assert!(p.checksum_ok);
+    }
+}
+
+#[test]
+fn tiled_sprite_validates_bounds_and_decodes_tile_order() {
+    let mut tiles = [0; 64];
+    tiles[0] = 0x21; // Low nibble is the left pixel.
+    tiles[32] = 3; // First pixel of the second tile.
+    let mut palette = [0; 32];
+    put16(&mut palette, 2, 0x001f);
+    put16(&mut palette, 4, 0x03e0);
+    put16(&mut palette, 6, 0x7c00);
+    let encoded = graphics::tiled_sprite(&tiles, &palette, 16, 8).unwrap();
+    let mut reader = png::Decoder::new(std::io::Cursor::new(encoded))
+        .read_info()
+        .unwrap();
+    let mut pixels = vec![0; 16 * 8 * 4];
+    reader.next_frame(&mut pixels).unwrap();
+    assert_eq!(&pixels[..8], &[255, 0, 0, 255, 0, 255, 0, 255]);
+    assert_eq!(&pixels[32..36], &[0, 0, 255, 255]);
+    assert_eq!(pixels[11], 0);
+    assert!(graphics::tiled_sprite(&tiles, &palette, 17, 8).is_err());
+    assert!(graphics::tiled_sprite(&tiles[..32], &palette, 16, 8).is_err());
+    let r = rom();
+    assert!(r.object_sprite(240).is_err()); // Variable graphics ID, not an image index.
+    assert!(r.trainer_sprite(203).is_err());
 }

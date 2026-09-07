@@ -17,6 +17,13 @@ pub struct Map {
     pub layout: usize,
     pub events: Option<usize>,
     pub scripts: Vec<usize>,
+    pub objects: Vec<MapObject>,
+}
+#[derive(Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MapObject {
+    pub local_id: u8,
+    pub graphics_id: u16,
+    pub script: Option<usize>,
 }
 #[derive(Clone, Serialize)]
 pub struct Encounter {
@@ -83,6 +90,7 @@ pub struct TrainerLocation {
     pub map_id: String,
     pub map_name: String,
     pub battle_offsets: Vec<usize>,
+    pub actors: Vec<MapObject>,
 }
 #[derive(Serialize)]
 pub struct UnresolvedMapScripts {
@@ -154,12 +162,51 @@ impl Rom {
                     .or_default()
                     .insert(battle.offset);
             }
+            let mut actors: BTreeMap<u16, BTreeSet<MapObject>> = BTreeMap::new();
+            // A shared object script can belong to several actors (e.g. twins).
+            // Do not assign every person in a room to each battle in that room.
+            if !by_trainer.is_empty() {
+                let mut object_reports = BTreeMap::new();
+                for object in &map.objects {
+                    if let Some(script) = object.script {
+                        if let std::collections::btree_map::Entry::Vacant(entry) =
+                            object_reports.entry(script)
+                        {
+                            let mut source = map.clone();
+                            source.scripts = vec![script];
+                            entry.insert(self.script_report(&source)?.trainer_ids);
+                        }
+                        for id in &object_reports[&script] {
+                            actors.entry(*id).or_default().insert(object.clone());
+                        }
+                    }
+                }
+            }
             for (trainer_id, offsets) in by_trainer {
+                for override_ in self
+                    .profile
+                    .script_actors
+                    .iter()
+                    .filter(|a| offsets.contains(&a.battle_offset))
+                {
+                    for actor in map
+                        .objects
+                        .iter()
+                        .filter(|o| override_.local_ids.contains(&o.local_id))
+                    {
+                        actors.entry(trainer_id).or_default().insert(actor.clone());
+                    }
+                }
                 locations.push(TrainerLocation {
                     trainer_id,
                     map_id: map.id.clone(),
                     map_name: map.name.clone(),
                     battle_offsets: offsets.into_iter().collect(),
+                    actors: actors
+                        .remove(&trainer_id)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .collect(),
                 });
             }
             if !report.stopped_at.is_empty() {
@@ -191,6 +238,7 @@ impl Rom {
                 }
                 let events = pointer(b, h + 4).ok();
                 let mut roots = BTreeSet::new();
+                let mut objects = Vec::new();
                 if let Some(ev) = events {
                     let counts = bytes(b, ev, 20)?;
                     for (count_off, ptr_off, stride, script_off) in
@@ -200,6 +248,13 @@ impl Rom {
                             let p = pointer(b, ev + ptr_off)?;
                             for i in 0..counts[count_off] as usize {
                                 let o = p + i * stride;
+                                if count_off == 0 {
+                                    objects.push(MapObject {
+                                        local_id: bytes(b, o, 1)?[0],
+                                        graphics_id: u16(b, o + 1)?,
+                                        script: pointer(b, o + script_off).ok(),
+                                    });
+                                }
                                 if count_off == 3 && bytes(b, o + 5, 1)?[0] > 4 {
                                     continue;
                                 }
@@ -254,6 +309,7 @@ impl Rom {
                     layout,
                     events,
                     scripts: roots.into_iter().collect(),
+                    objects,
                 });
             }
         }

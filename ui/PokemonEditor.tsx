@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   Download,
@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { api } from "./api";
+import { PokemonOrigin, PokemonAdvanced } from "./PokemonMetadata";
 import { useI18n, natures, statKeys } from "./i18n";
 import { NumberField, SelectField, Sprite, Toggle, Types } from "./components";
 import type {
@@ -48,9 +49,23 @@ export function PokemonEditor({
   const p = row.pokemon;
   const [tab, setTab] = useState("overview");
   const [patch, setPatch] = useState<Record<string, unknown>>({});
+  useLayoutEffect(() => {
+    setPatch({});
+  }, [p]);
   const [detail, setDetail] = useState<SpeciesDetail | null>(null);
   const [allMoves, setAllMoves] = useState(false);
   const merged = { ...p, ...patch } as Pokemon;
+  const effectiveNature =
+    patch.pid !== undefined ? merged.pid % 25 : merged.nature;
+  const natureUp = Math.floor(effectiveNature / 5) + 1;
+  const natureDown = (effectiveNature % 5) + 1;
+  const metadataProps = {
+    pokemon: merged,
+    catalog,
+    change: (key: string, value: unknown) => change(key, value),
+    free,
+    pidLocked: ["nature", "gender", "shiny"].some((key) => key in patch),
+  };
   const species = catalog.species.find((s) => s.id === merged.species)!;
   const change = (key: string, value: unknown) =>
     setPatch((old) => ({ ...old, [key]: value }));
@@ -246,6 +261,10 @@ export function PokemonEditor({
         )}
         {tab === "stats" && (
           <>
+            <p className="nature-summary">
+              {t("nature")} · {natures[locale][effectiveNature]}
+              {natureUp === natureDown ? ` · ${t("neutralNature")}` : ""}
+            </p>
             <table className="stat-table">
               <thead>
                 <tr>
@@ -258,7 +277,25 @@ export function PokemonEditor({
               <tbody>
                 {statKeys.map((key, i) => (
                   <tr key={key}>
-                    <th>{t(key)}</th>
+                    <th>
+                      {t(key)}
+                      {natureUp !== natureDown && i === natureUp && (
+                        <small
+                          className="nature-modifier increase"
+                          aria-label={`${t(key)} ${t("natureIncrease")}`}
+                        >
+                          ↑ 10%
+                        </small>
+                      )}
+                      {natureUp !== natureDown && i === natureDown && (
+                        <small
+                          className="nature-modifier decrease"
+                          aria-label={`${t(key)} ${t("natureDecrease")}`}
+                        >
+                          ↓ 10%
+                        </small>
+                      )}
+                    </th>
                     <td>
                       <input
                         type="number"
@@ -281,7 +318,7 @@ export function PokemonEditor({
                         onChange={(e) => arrayChange("evs", i, +e.target.value)}
                       />
                     </td>
-                    <td>{p.stats[i]}</td>
+                    <td className="calculated-stat">{p.stats[i]}</td>
                   </tr>
                 ))}
               </tbody>
@@ -295,7 +332,32 @@ export function PokemonEditor({
             {p.current_hp !== null && (
               <div className="field-grid">
                 {num("current_hp", 65535)}
-                {num("status", 255)}
+                <SelectField
+                  label={t("status")}
+                  value={merged.status ?? 0}
+                  onChange={(v) => change("status", +v)}
+                  options={[
+                    ...[0, 8, 16, 32, 64, 128].map((value) => ({
+                      value,
+                      label: t(`status_${value}`),
+                    })),
+                    ...Array.from({ length: 7 }, (_, i) => ({
+                      value: i + 1,
+                      label: `${t("status_sleep")} · ${i + 1}`,
+                    })),
+                    ...(![0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128].includes(
+                      merged.status ?? 0,
+                    )
+                      ? [
+                          {
+                            value: merged.status ?? 0,
+                            label: `${t("unknownValue")} #${merged.status}`,
+                            disabled: true,
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
               </div>
             )}
             <p className="muted small">
@@ -310,6 +372,7 @@ export function PokemonEditor({
               checked={allMoves || free}
               onChange={setAllMoves}
             />
+            <p className="small muted">{t("ppStorageHelp")}</p>
             {merged.moves.map((id, i) => (
               <div className="move-card" key={i}>
                 <SelectField
@@ -320,14 +383,24 @@ export function PokemonEditor({
                 />
                 <div className="field-grid">
                   <NumberField
-                    label={t("pp")}
+                    label={t("currentPp")}
                     value={merged.pps[i]}
                     onChange={(v) => arrayChange("pps", i, v)}
-                    max={255}
+                    max={
+                      free
+                        ? 255
+                        : Math.floor(
+                            ((catalog.moves[id]?.pp ?? 0) *
+                              (5 + merged.pp_ups[i])) /
+                              5,
+                          )
+                    }
+                    disabled={!id}
                   />
                   <NumberField
                     label={t("ppUps")}
                     value={merged.pp_ups[i]}
+                    disabled={!id}
                     onChange={(v) => {
                       const pp_ups = [...merged.pp_ups];
                       pp_ups[i] = v;
@@ -338,6 +411,15 @@ export function PokemonEditor({
                       setPatch((old) => ({ ...old, pp_ups, pps }));
                     }}
                     max={3}
+                  />
+                  <NumberField
+                    label={t("maximumPp")}
+                    value={Math.floor(
+                      ((catalog.moves[id]?.pp ?? 0) * (5 + merged.pp_ups[i])) /
+                        5,
+                    )}
+                    onChange={() => {}}
+                    disabled
                   />
                 </div>
                 {id > 0 && (
@@ -353,22 +435,7 @@ export function PokemonEditor({
         )}
         {tab === "origin" && (
           <>
-            <label className="field">
-              <span>{t("ot_name")}</span>
-              <input
-                value={merged.ot_name}
-                onChange={(e) => change("ot_name", e.target.value)}
-              />
-            </label>
-            <div className="field-grid">
-              {num("ot_id", 0xffffffff)}
-              {num("ot_gender", 1)}
-              {num("met_location")}
-              {num("met_level", 127)}
-              {num("origin_game", 15)}
-              {num("ball", 15)}
-              {num("language", 7, 1)}
-            </div>
+            <PokemonOrigin {...metadataProps} />
             <button
               type="button"
               className="link-button"
@@ -381,12 +448,7 @@ export function PokemonEditor({
         )}
         {tab === "advanced" && (
           <>
-            <div className="field-grid">
-              {num("pid", 0xffffffff)}
-              {num("markings", 15)}
-              {num("pokerus")}
-              {num("ribbons", 0xffffffff)}
-            </div>
+            <PokemonAdvanced {...metadataProps} />
             <h3>{t("condition")}</h3>
             <div className="field-grid">
               {["cool", "beauty", "cute", "smart", "tough", "sheen"].map(

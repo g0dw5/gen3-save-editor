@@ -26,7 +26,7 @@ compatibility certification.
 
 Validation performed on macOS Apple Silicon, September 2026:
 
-- **25 Rust tests passed**, including the opt-in regression covering both exact
+- **27 Rust tests passed**, including the opt-in regression covering both exact
   ROMs. Includes all 24 Pokémon permutations, a known checksum vector, all growth
   curves, byte retention, mixed/corrupt banks, counter wrap, cross-sector storage,
   the last box slot, batch rollback, free-mode boundaries, PP Ups, fixed text
@@ -44,6 +44,12 @@ Validation performed on macOS Apple Silicon, September 2026:
   See the [reference audit](research/dark-phantom-trainer-audit.md) for evidence
   and reachability limits. Dynamic levels are displayed as a rule, previewed from
   the loaded party when available; raw parameters remain in evidence details.
+- Semantic Pokémon controls show nature modifiers, current/max PP, origin names,
+  marking symbols, Pokérus state/strain/days and structured ribbon awards. Read-only
+  and reserved data are disabled; applying changes preserves the active tab.
+- Trainer battle portraits and verified map characters read from ROM at runtime,
+  including extended graphics banks and multi-actor trainers. See the bilingual
+  [field and image audit](research/editor-fields-and-trainer-art.md).
 - Trainer tags and composable role/location/format/level filters distinguish
   same-name teams. Roles read the relocated ROM class table; verified map-purpose
   metadata identifies eight gyms and the League rooms without trainer ID lists.

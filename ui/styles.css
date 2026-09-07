@@ -1595,3 +1595,114 @@ summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.nature-summary {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.nature-modifier {
+  display: block;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.nature-modifier.increase {
+  color: var(--danger);
+}
+.nature-modifier.decrease {
+  color: light-dark(#356d9b, #9bc9fa);
+}
+.calculated-stat {
+  color: var(--muted);
+  background: var(--slot);
+}
+.field input:disabled,
+.field select:disabled {
+  opacity: 0.65;
+  background: var(--slot);
+  cursor: not-allowed;
+}
+.marking-controls {
+  display: flex;
+  gap: 10px;
+}
+.marking-controls label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.marking-controls span {
+  font-size: 18px;
+}
+.ribbon-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 15px 0;
+}
+.ribbon-checklist .toggle {
+  font-size: 11px;
+}
+.metadata-details {
+  margin: 12px 0;
+}
+.metadata-details summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.trainer-art {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.trainer-art-frame {
+  margin: 0;
+  flex-shrink: 0;
+  text-align: center;
+}
+.trainer-art-frame > div {
+  height: 82px;
+  min-width: 72px;
+  display: grid;
+  place-items: center;
+  background: var(--slot);
+  border-radius: 9px;
+  padding: 8px;
+}
+.trainer-art-frame img {
+  image-rendering: pixelated;
+  object-fit: contain;
+  max-width: 96px;
+  max-height: 64px;
+}
+.trainer-art-frame.trainer_sprite img {
+  width: 64px;
+  height: 64px;
+}
+.trainer-art-frame.object_sprite img {
+  height: 64px;
+}
+.trainer-art-frame figcaption {
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 6px;
+}
+.trainer-map-art {
+  min-width: 0;
+  flex: 1;
+}
+.trainer-map-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.trainer-map-art details {
+  overflow-wrap: anywhere;
+}
