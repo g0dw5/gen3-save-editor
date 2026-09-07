@@ -216,6 +216,15 @@ export interface Opponent {
     species: number;
     level: number;
     iv_quality: number;
+    level_rule: "fixed" | "party_max";
+    generation: {
+      gender: string;
+      nature: number;
+      ability_id: number;
+      ivs: number[] | null;
+      evs: number[];
+      personality_parameter: number;
+    } | null;
     held_item: number;
     moves: number[];
     moves_explicit: boolean;
@@ -224,6 +233,7 @@ export interface Opponent {
   offset: number;
 }
 export interface World {
+  trainer_groups: { id: string; trainer_ids: number[] }[];
   trainer_locations: {
     locations: {
       trainer_id: number;

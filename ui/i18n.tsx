@@ -1,5 +1,33 @@
 import { createContext, useContext } from "react";
 export const en = {
+  battleContext: "Battle context",
+  allTrainers: "All trainers",
+  league_first: "First Pokémon League",
+  league_stronger: "Stronger League teams",
+  leagueFirstHelp:
+    "Initial League challenge, in battle order. Other teams with the same names are listed separately.",
+  leagueStrongerHelp:
+    "Stronger League team records. Their activation conditions have not been resolved.",
+  battleOrder: "Battle",
+  trainerResults: "results",
+  contextUnresolved: "Context unresolved",
+  trainerSearchHint: "Name, context, map, Pokémon…",
+  trainerGenerationHelp:
+    "Generated team values from this ROM. Later script overrides and temporary battle effects are not included.",
+  dynamicLevel: "Dynamic level",
+  partyMaxNoSave: "Matches your highest party level. Open a save to preview.",
+  partyMaxWithSave: "Preview based on the current party’s highest level.",
+  noHeldItem: "No held item",
+  explicitMoves: "Preset moves",
+  dynamicMoves: "Moves are generated at the dynamic level.",
+  stat: "Stat",
+  unresolved: "Unresolved",
+  randomIVs:
+    "IVs are generated randomly; exact values are unavailable before creation.",
+  rawParameters: "Raw parameters & evidence",
+  ivQualityHelp:
+    "IV quality is a generation parameter, not an IV. 255 produces 31 in each stat; 250 produces 30.",
+
   trainerMaps: "Referenced maps",
   trainerMapsHelp:
     "Linked from map battle scripts. Story conditions and rematches are not fully resolved.",
@@ -256,6 +284,30 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  battleContext: "对战场景",
+  allTrainers: "全部训练家",
+  league_first: "一周目联盟",
+  league_stronger: "联盟强化队伍",
+  leagueFirstHelp: "按首次联盟挑战顺序排列；同名训练家的其他队伍单独列出。",
+  leagueStrongerHelp: "联盟的强化队伍记录，具体触发条件尚未解析。",
+  battleOrder: "第几战",
+  trainerResults: "个结果",
+  contextUnresolved: "场景待解析",
+  trainerSearchHint: "姓名、场景、地图、宝可梦…",
+  trainerGenerationHelp:
+    "以下为该 ROM 的队伍生成值，不含后续脚本改写和战斗中的临时变化。",
+  dynamicLevel: "动态等级",
+  partyMaxNoSave: "跟随同行最高等级；打开存档后可预览。",
+  partyMaxWithSave: "按当前同行最高等级预览。",
+  noHeldItem: "无携带道具",
+  explicitMoves: "预设招式",
+  dynamicMoves: "招式随动态等级生成。",
+  stat: "能力",
+  unresolved: "待解析",
+  randomIVs: "个体值随机生成，创建前无法确定具体数值。",
+  rawParameters: "原始参数与解析依据",
+  ivQualityHelp: "强度参数不是个体值：255 对应六项各 31，250 对应六项各 30。",
+
   trainerMaps: "出现地图（脚本关联）",
   trainerMapsHelp: "根据地图战斗脚本关联；剧情条件与复战尚未完整解析。",
   trainerMapsUnknown:

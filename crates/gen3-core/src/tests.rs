@@ -507,7 +507,7 @@ fn local_rom_regression() {
         let trainers = r.trainers().unwrap();
         assert!(trainers.len() > 1300);
         let locations = r.trainer_locations_for_maps(&maps).unwrap();
-        assert_eq!(locations.locations.len(), 653);
+        assert_eq!(locations.locations.len(), 680);
         assert_eq!(
             locations
                 .locations
@@ -515,13 +515,18 @@ fn local_rom_regression() {
                 .map(|l| l.trainer_id)
                 .collect::<std::collections::BTreeSet<_>>()
                 .len(),
-            609
+            636
         );
         assert!(locations
             .locations
             .iter()
             .any(|l| l.trainer_id == 656 && l.map_id == "0-2"));
         for (id, map, offset) in [
+            (261, "16-0", 0x227f7b),
+            (262, "16-1", 0x2281e2),
+            (263, "16-2", 0x228480),
+            (264, "16-3", 0x22870a),
+            (335, "16-4", 0x228a51),
             (903, "24-106", 0xdfbf00),
             (904, "24-106", 0xdfbf10),
             (993, "36-46", 0xe0241c),
@@ -803,5 +808,71 @@ fn trainer_scripts_cross_menus_music_and_native_calls() {
     assert_eq!(report.trainer_battles.len(), 1);
     assert_eq!(report.trainer_battles[0].offset, 0x2301b);
     assert!(report.encounters.is_empty());
+    assert!(report.stopped_at.is_empty());
+}
+
+#[test]
+fn trainer_generation_uses_quality_and_cumulative_names() {
+    let mut r = rom();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    let h = r.profile.trainers.offset + 40;
+    b[h] = 1;
+    b[h + 4..h + 16].fill(0xff);
+    b[h + 4] = 10;
+    b[h + 32] = 2;
+    put32(b, h + 36, 0x08024000);
+    for (i, quality) in [255, 250].iter().enumerate() {
+        let p = 0x24000 + i * 16;
+        put16(b, p, *quality);
+        b[p + 2] = 26;
+        put16(b, p + 4, 1);
+    }
+    let s = r.profile.species.offset + r.profile.species.stride;
+    b[s..s + 11].fill(0xff);
+    b[s] = 20;
+    b[r.profile.base_stats.offset + 28 + 16] = 254; // Always female species.
+    let t = r.trainers().unwrap().remove(0);
+    let first = t.party[0].generation.as_ref().unwrap();
+    let second = t.party[1].generation.as_ref().unwrap();
+    assert_eq!(first.ivs, Some([31; 6]));
+    assert_eq!(second.ivs, Some([30; 6]));
+    assert_eq!(first.evs, [0; 6]);
+    assert_eq!(first.gender, "female"); // The trainer is male.
+    assert_eq!(first.nature, ((30 * 256 + 0x88) % 25) as u8);
+    assert_eq!(second.nature, ((60 * 256 + 0x88) % 25) as u8);
+    assert_eq!(first.ability_id, 1);
+    // The nonzero parameter preserves nature while forcing ability parity.
+    for parameter in 1..50u8 {
+        let pid = crate::world::trainer_personality(123, parameter, false, false);
+        assert_eq!(pid % 25, parameter as u32 % 25);
+        assert_eq!(pid & 1, u32::from(parameter >= 25));
+    }
+}
+
+#[test]
+fn trainer_scripts_skip_music_arguments() {
+    let mut r = rom();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    let script = [
+        0x31, 0x5c, 0, 0x33, 0xc2, 1, 0, 0x5c, 3, 42, 0, 0, 0, 0, 0, 0, 0, 2,
+    ];
+    b[0x23000..0x23000 + script.len()].copy_from_slice(&script);
+    let map = crate::world::Map {
+        id: "0-0".into(),
+        group: 0,
+        number: 0,
+        name: "Test".into(),
+        region: 0,
+        width: 1,
+        height: 1,
+        map_type: 0,
+        header: 0,
+        layout: 0,
+        events: None,
+        scripts: vec![0x23000],
+    };
+    let report = r.script_report(&map).unwrap();
+    assert_eq!(report.trainer_ids, vec![42]);
+    assert_eq!(report.trainer_battles[0].offset, 0x23007);
     assert!(report.stopped_at.is_empty());
 }

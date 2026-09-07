@@ -26,15 +26,15 @@ compatibility certification.
 
 Validation performed on macOS Apple Silicon, September 2026:
 
-- **22 Rust tests passed**, including the opt-in regression covering both exact
+- **24 Rust tests passed**, including the opt-in regression covering both exact
   ROMs. Includes all 24 Pokémon permutations, a known checksum vector, all growth
   curves, byte retention, mixed/corrupt banks, counter wrap, cross-sector storage,
   the last box slot, batch rollback, free-mode boundaries, PP Ups, fixed text
   capacity, before/after values, backup/conflict export, bounded reproducible ROM patches and mail attachment guards.
-- Both ROMs: 411 species records, 472 moves, 707 maps, 2,658 encounters extracted
+- Both ROMs: 411 species records, 472 moves, 707 maps, 2,659 encounters extracted
   from supported sources, 1,365 nonempty trainer headers. Every valid species'
   normal/shiny sprite and learnset is parsed. Six representative maps are rendered.
-- Both ROMs map 609 trainer IDs to 653 map references from battle scripts.
+- Both ROMs map 636 trainer IDs to 680 map references from battle scripts.
   References retain exact command offsets; shared roots and cycles are deduplicated.
   Trainer-to-map and map-to-trainer UI navigation passes the browser regression.
 - 96 trainer headers have raw level parameters outside 1–100. All have references:
@@ -42,7 +42,15 @@ Validation performed on macOS Apple Silicon, September 2026:
   converts out-of-range parameters to the highest player party slot level; 92
   headers use 101. Four raw-244 headers still have party-layout concerns.
   See the [reference audit](research/dark-phantom-trainer-audit.md) for evidence
-  and reachability limits. Raw values and diagnostics remain visible.
+  and reachability limits. Dynamic levels are displayed as a rule, previewed from
+  the loaded party when available; raw parameters remain in evidence details.
+- First-League and stronger-League context filters distinguish same-name teams.
+  Search includes context, map, species and IDs. The first League is ordered
+  261, 262, 263, 264, 335; all five now have direct map links.
+- Gender, nature, ability, six IVs and six creation-time EVs are derived from the
+  target engine. Isolated Unicorn execution of both ROMs' original constructors
+  matches 20 trainer parties / 106 Pokémon, including first League, Miltank and
+  dynamic/custom-personality opponents. This is not a full in-game battle replay.
   A regression specifically checks that the level's adjacent byte is not consumed.
 - Browser workflow passed: 426 storage slots, all 14 boxes, both UI languages,
   level edit, undo/redo, box-to-party drag, reference-to-box draft drag, creation,
@@ -65,8 +73,8 @@ Validation performed on macOS Apple Silicon, September 2026:
 - [ ] Run the configured Windows/Linux CI and installers; signing/notarization.
 - [ ] Complete script coverage, trades, roamers, special rules and current-save trainer
   reachability, checked against version-specific official documentation.
-- [ ] Display verified dynamic trainer level rules, index rematches, investigate
-  inconsistent party layouts and distinguish unreachable rows from parser gaps.
+- [ ] Index rematches, investigate inconsistent party layouts and later script
+  party overrides, and distinguish unreachable rows from parser gaps.
 - [ ] Linked mail content and attachment editing.
 
 Story flags, arbitrary teleportation, scripted quest state, ROM expansion,

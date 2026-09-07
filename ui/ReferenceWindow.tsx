@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Search, ArrowUpRight, FileCode2 } from "lucide-react";
 import { api, download, fromBase64, native, outputPath } from "./api";
 import {
@@ -8,6 +8,8 @@ import {
   Sprite,
   Types,
 } from "./components";
+import { TrainerParty } from "./TrainerParty";
+import { searchTrainers, trainerGroups } from "./trainerSearch";
 import { useI18n, statKeys } from "./i18n";
 import type {
   Ability,
@@ -22,12 +24,14 @@ import type {
   SpeciesDetail,
   Template,
   World,
+  Snapshot,
 } from "./types";
 
 interface Props {
   window: RefWindow;
   catalog: Catalog;
   world: World | null;
+  save: Snapshot | null;
   loadWorld: () => void;
   onClose: () => void;
   onTemplate: (template: Template) => void;
@@ -37,6 +41,7 @@ export function ReferenceWindow({
   window: info,
   catalog,
   world,
+  save,
   loadWorld,
   onClose,
   onTemplate,
@@ -46,9 +51,14 @@ export function ReferenceWindow({
   const [tab, setTab] = useState<RefTab>(info.tab);
   const [selected, setSelected] = useState<number | string>(info.selected ?? 1);
   const [search, setSearch] = useState("");
+  const [trainerGroup, setTrainerGroup] = useState("");
   const [detail, setDetail] = useState<SpeciesDetail | null>(null);
   const [mapImage, setMapImage] = useState("");
   const [romEdit, setRomEdit] = useState(false);
+  const detailPane = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    detailPane.current?.scrollTo({ top: 0 });
+  }, [tab, selected]);
   useEffect(() => {
     if (tab === "maps" || tab === "trainers") loadWorld();
   }, [tab, loadWorld]);
@@ -67,11 +77,22 @@ export function ReferenceWindow({
       setSelected(rows[0].id);
   }, [rows, selected]);
   const current = rows.find((row) => row.id === selected);
-  const filtered = rows.filter((row) =>
-    `${row.id} ${row.name}`
-      .toLocaleLowerCase()
-      .includes(search.toLocaleLowerCase()),
-  );
+  const filtered =
+    tab === "trainers"
+      ? searchTrainers(rows as Opponent[], world, catalog, search, trainerGroup)
+      : rows.filter((row) =>
+          `${row.id} ${row.name}`
+            .toLocaleLowerCase()
+            .includes(search.toLocaleLowerCase()),
+        );
+  useLayoutEffect(() => {
+    if (
+      tab === "trainers" &&
+      filtered.length &&
+      !filtered.some((r) => r.id === selected)
+    )
+      setSelected(filtered[0].id);
+  }, [tab, search, trainerGroup, world, selected]);
   useEffect(() => {
     let active = true;
     setDetail(null);
@@ -151,12 +172,45 @@ export function ReferenceWindow({
           <label className="search-field">
             <Search size={16} />
             <input
-              aria-label={t("search")}
-              placeholder={t("search")}
+              aria-label={t(
+                tab === "trainers" ? "trainerSearchHint" : "search",
+              )}
+              placeholder={t(
+                tab === "trainers" ? "trainerSearchHint" : "search",
+              )}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </label>
+          {tab === "trainers" && (
+            <div className="trainer-filters">
+              <span className="eyebrow">{t("battleContext")}</span>
+              <button
+                type="button"
+                className={!trainerGroup ? "active" : ""}
+                onClick={() => setTrainerGroup("")}
+              >
+                {t("allTrainers")}
+              </button>
+              {world?.trainer_groups.map((group) => (
+                <button
+                  type="button"
+                  key={group.id}
+                  className={trainerGroup === group.id ? "active" : ""}
+                  onClick={() => {
+                    setTrainerGroup(group.id);
+                    setSelected(group.trainer_ids[0]);
+                    setSearch("");
+                  }}
+                >
+                  {t(group.id)} · {group.trainer_ids.length}
+                </button>
+              ))}
+              <span className="small muted">
+                {filtered.length} {t("trainerResults")}
+              </span>
+            </div>
+          )}
           <div className="reference-rows">
             {filtered.map((row) => (
               <button
@@ -169,7 +223,26 @@ export function ReferenceWindow({
                 }}
               >
                 <span className="id">{row.id}</span>
-                <span>{row.name}</span>
+                <span>
+                  {row.name}
+                  {tab === "trainers" && (
+                    <small className="trainer-row-context">
+                      {trainerGroups(world, +row.id)
+                        .map((g) => t(g.id))
+                        .join(" · ") ||
+                        world?.trainer_locations.locations.find(
+                          (l) => l.trainer_id === +row.id,
+                        )?.map_name ||
+                        t("contextUnresolved")}
+                      <br />
+                      {(row as Opponent).party.some(
+                        (p) => p.level_rule === "party_max",
+                      )
+                        ? t("dynamicLevel")
+                        : `Lv. ${Math.min(...(row as Opponent).party.map((p) => p.level))}–${Math.max(...(row as Opponent).party.map((p) => p.level))}`}
+                    </small>
+                  )}
+                </span>
               </button>
             ))}
             {!filtered.length && (
@@ -183,7 +256,7 @@ export function ReferenceWindow({
             )}
           </div>
         </div>
-        <div className="reference-detail">
+        <div className="reference-detail" ref={detailPane}>
           <div className="reference-label">
             <span className="eyebrow">
               {t("readOnly")} · {catalog.profile.label}
@@ -199,7 +272,7 @@ export function ReferenceWindow({
               </button>
             )}
           </div>
-          {current && (
+          {current && (tab !== "trainers" || filtered.length > 0) && (
             <h2>
               {current.name} <small>#{current.id}</small>
             </h2>
@@ -448,6 +521,7 @@ export function ReferenceWindow({
                       className="link-button"
                       onClick={() => {
                         setTab("trainers");
+                        setTrainerGroup("");
                         setSelected(l.trainer_id);
                         setSearch("");
                       }}
@@ -519,8 +593,25 @@ export function ReferenceWindow({
                 ))}
             </>
           )}
-          {tab === "trainers" && current && (
+          {tab === "trainers" && current && filtered.length > 0 && (
             <>
+              {trainerGroups(world, +selected).map((group) => (
+                <div className="trainer-context-banner" key={group.id}>
+                  <strong>{t(group.id)}</strong>
+                  <span>
+                    {t("battleOrder")}{" "}
+                    {group.trainer_ids.indexOf(+selected) + 1} /{" "}
+                    {group.trainer_ids.length}
+                  </span>
+                  <p className="small muted">
+                    {t(
+                      group.id === "league_first"
+                        ? "leagueFirstHelp"
+                        : "leagueStrongerHelp",
+                    )}
+                  </p>
+                </div>
+              ))}
               <h3>{t("trainerMaps")}</h3>
               <p className="small muted">{t("trainerMapsHelp")}</p>
               {world?.trainer_locations.locations
@@ -566,35 +657,17 @@ export function ReferenceWindow({
                   .map((id) => catalog.items[id]?.name ?? id)
                   .join(" / ") || "—"}
               </div>
-              {(current as Opponent).party.map((p, i) => (
-                <div className="opponent-mon" key={i}>
-                  <Sprite catalog={catalog} species={p.species} />
-                  <div>
-                    <button
-                      className="link-button"
-                      onClick={() => goSpecies(p.species)}
-                    >
-                      {catalog.species.find((s) => s.id === p.species)?.name}
-                    </button>{" "}
-                    · Lv. {p.level}
-                    <div className="muted small">
-                      {p.held_item
-                        ? catalog.items[p.held_item]?.name
-                        : t("emptyMove")}
-                    </div>
-                    <div>
-                      {p.moves
-                        .filter(Boolean)
-                        .map((id) => catalog.moves[id]?.name ?? id)
-                        .join(" / ")}
-                    </div>
-                    <div className="muted small">
-                      {t(p.moves_explicit ? "moves" : "levelSource")} · IV{" "}
-                      {p.iv_quality}/255
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <TrainerParty
+                trainer={current as Opponent}
+                catalog={catalog}
+                save={save}
+                onSpecies={goSpecies}
+                onAbility={(id) => {
+                  setTab("abilities");
+                  setSelected(id);
+                  setSearch("");
+                }}
+              />
             </>
           )}
         </div>

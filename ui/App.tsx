@@ -917,6 +917,7 @@ export default function App() {
               window={info}
               catalog={catalog}
               world={world}
+              save={save}
               loadWorld={loadWorld}
               onClose={() =>
                 setWindows((old) => old.filter((w) => w.id !== info.id))

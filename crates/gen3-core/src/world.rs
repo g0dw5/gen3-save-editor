@@ -1,5 +1,5 @@
 //! Bounded table and script parsing. Missing evidence never means nonexistence.
-use crate::{binary::*, err, rom::Rom, Result};
+use crate::{binary::*, err, pokemon, rom::Rom, Result};
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
@@ -38,10 +38,23 @@ pub struct TrainerMon {
     pub species: u16,
     pub level: u16,
     pub iv_quality: u16,
+    pub level_rule: &'static str,
+    pub generation: Option<TrainerMonGeneration>,
     pub held_item: u16,
     pub moves: Vec<u16>,
     pub moves_explicit: bool,
     pub offset: usize,
+}
+/// Values produced by the supported ROM's ordinary NPC party constructor.
+/// This excludes later battle effects and script/native party overrides.
+#[derive(Clone, Serialize)]
+pub struct TrainerMonGeneration {
+    pub gender: &'static str,
+    pub nature: u8,
+    pub ability_id: u16,
+    pub ivs: Option<[u8; 6]>,
+    pub evs: [u8; 6],
+    pub personality_parameter: u8,
 }
 #[derive(Clone, Serialize)]
 pub struct Trainer {
@@ -86,6 +99,7 @@ pub struct World {
     pub encounters: Vec<Encounter>,
     pub trainers: Vec<Trainer>,
     pub trainer_locations: TrainerLocationIndex,
+    pub trainer_groups: &'static [crate::profile::TrainerGroup],
 }
 #[derive(Serialize)]
 pub struct ScriptReport {
@@ -94,6 +108,26 @@ pub struct ScriptReport {
     pub trainer_ids: Vec<u16>,
     pub stopped_at: Vec<usize>,
 }
+
+/// Dark Phantom's hook at ROM 0x33E552 preserves the stock name-sum input,
+/// but lets record byte +3 select a nature/parity combination.
+pub(crate) fn trainer_personality(sum: u32, parameter: u8, female: bool, double: bool) -> u32 {
+    if parameter == 0 {
+        return sum.wrapping_mul(256).wrapping_add(if double {
+            0x80
+        } else if female {
+            0x78
+        } else {
+            0x88
+        });
+    }
+    let mut pid = sum.wrapping_mul(400).wrapping_add(parameter as u32);
+    if (parameter < 25 && pid & 1 != 0) || (parameter >= 25 && pid & 1 == 0) {
+        pid = pid.wrapping_add(25);
+    }
+    pid
+}
+
 impl Rom {
     pub fn world(&self) -> Result<World> {
         let maps = self.maps()?;
@@ -103,6 +137,7 @@ impl Rom {
             encounters: self.encounters()?,
             trainers: self.trainers()?,
             trainer_locations,
+            trainer_groups: self.profile.trainer_groups,
         })
     }
     /// References from known map script roots, not proof of current-save reachability.
@@ -324,16 +359,60 @@ impl Rom {
             let stride = if flags & 1 != 0 { 16 } else { 8 };
             let mut party = Vec::new();
             let mut diagnostics = Vec::new();
+            let mut name_sum = 0u32;
             for i in 0..n {
                 let p = ptr + i * stride;
                 let quality = u16(b, p)?;
                 let lv = bytes(b, p + 2, 1)?[0] as u16;
                 let species = u16(b, p + 4)?;
+                // The name-byte sum accumulates across the whole party in the
+                // target engine. Decoded Unicode names cannot reproduce it.
+                name_sum = name_sum.wrapping_add(
+                    row[4..16]
+                        .iter()
+                        .take_while(|c| **c != 0xff)
+                        .map(|c| *c as u32)
+                        .sum::<u32>(),
+                );
+                let generation = self.species(species).ok().and_then(|s| {
+                    let names = self.profile.species;
+                    let raw = bytes(
+                        b,
+                        names.offset + species as usize * names.stride,
+                        names.stride,
+                    )
+                    .ok()?;
+                    name_sum = name_sum.wrapping_add(
+                        raw.iter()
+                            .take_while(|c| **c != 0xff)
+                            .map(|c| *c as u32)
+                            .sum::<u32>(),
+                    );
+                    let parameter = b[p + 3];
+                    let pid =
+                        trainer_personality(name_sum, parameter, row[2] & 128 != 0, row[24] == 1);
+                    let fixed_iv = ((quality as u32 * 31 / 255) & 255) as u8;
+                    let slot = if s.abilities[1] == 0 {
+                        0
+                    } else {
+                        (pid & 1) as usize
+                    };
+                    Some(TrainerMonGeneration {
+                        gender: pokemon::gender(s.gender_ratio, pid),
+                        nature: (pid % 25) as u8,
+                        ability_id: s.abilities[slot] as u16,
+                        ivs: (fixed_iv <= 31).then_some([fixed_iv; 6]),
+                        evs: [0; 6],
+                        personality_parameter: parameter,
+                    })
+                });
                 if self.valid_species(species).is_err() {
                     diagnostics.push(format!("party[{i}].species={species}"));
                 }
-                if lv == 0 || lv > 100 {
-                    diagnostics.push(format!("party[{i}].level={lv}"));
+                // 0/101 are supported dynamic-level parameters. Larger raw
+                // values also scale at runtime but warrant a layout review.
+                if lv > 101 {
+                    diagnostics.push(format!("party[{i}].raw_level={lv}"));
                 }
                 let item = if flags & 2 != 0 { u16(b, p + 6)? } else { 0 };
                 if self.item(item).is_err() {
@@ -364,6 +443,12 @@ impl Rom {
                     species,
                     level: lv,
                     iv_quality: quality,
+                    level_rule: if lv == 0 || lv > 100 {
+                        "party_max"
+                    } else {
+                        "fixed"
+                    },
+                    generation,
                     held_item: item,
                     moves,
                     moves_explicit: flags & 1 != 0,
@@ -424,17 +509,16 @@ impl Rom {
                             _ => 0,
                         }
                     }
-                    0x00 | 0x01 | 0x02 | 0x03 | 0x27 | 0x28 | 0x30 | 0x31 | 0x32 | 0x33 | 0x5a
-                    | 0x5b | 0x66 | 0x68 | 0x69 | 0x6a | 0x6b | 0x6c | 0x97 | 0xa0 | 0xb7
-                    | 0xc5 => 1,
+                    0x00 | 0x01 | 0x02 | 0x03 | 0x27 | 0x28 | 0x30 | 0x32 | 0x5a | 0x5b | 0x66
+                    | 0x68 | 0x69 | 0x6a | 0x6b | 0x6c | 0x97 | 0xa0 | 0xb7 | 0xc5 => 1,
                     0x04 | 0x05 | 0x16 | 0x17 | 0x18 | 0x19 | 0x1a | 0x21 | 0x23 | 0x26 | 0x43
                     | 0x44 | 0x45 | 0x67 | 0x6f | 0xa4 => 5,
                     0x06 | 0x07 | 0x0f | 0x4f | 0x51 | 0xb6 => 6,
                     0x08 | 0x09 | 0xdc => 2,
-                    0x25 | 0x29 | 0x2a | 0x2b | 0x2f | 0x35 | 0x36 | 0x47 | 0x53 | 0x55 | 0x64
-                    | 0x7a => 3,
+                    0x25 | 0x29 | 0x2a | 0x2b | 0x2f | 0x31 | 0x35 | 0x36 | 0x47 | 0x53 | 0x55
+                    | 0x64 | 0x7a => 3,
                     0x79 => 15,
-                    0x80 => 4,
+                    0x33 | 0x80 => 4,
                     _ => 0,
                 };
                 if len == 0 || bytes(b, pc, len).is_err() {

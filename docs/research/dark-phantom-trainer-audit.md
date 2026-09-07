@@ -34,8 +34,8 @@ All offsets below are file offsets unless prefixed as a GBA address.
 使引擎按 8 字节步长读取，但相邻数据看起来按带技能的 16 字节记录排列。
 682 也属于同组格式疑点，碰巧读出的等级在范围内，没有进入这 96 条名单。
 244 同样会经过动态等级转换，但这不能证明错位读取的其他字段正确，不能
-自动修改 flags 或删除记录。当前 API/UI 仍保留原始参数和诊断；动态等级展示
-及复战关系索引尚未实现，不能把原始值当作实战等级。
+自动修改 flags 或删除记录。当前 API 保留原始参数和诊断；UI 已显示动态等级规则并可按当前同行预览。
+复战关系索引尚未实现，不能把原始值当作实战等级。
 
 ## Reference evidence
 
@@ -125,3 +125,12 @@ Of these, 92 use raw level 101, which the ROM's runtime converts to the highest
 level among the six player party slots. Four raw-244 records still need a
 separate party-layout investigation. Preserve raw parameters, distinguish dynamic
 rules from malformed layouts, and never equate parser gaps with unused data.
+
+## Follow-up: first League and generated attributes
+
+The subsequent [trainer UI/generation audit](trainer-search-and-generation.md)
+corrected music command lengths (0x31 and 0x33), recovering the first League map
+links. Current totals are 636 distinct trainer IDs / 680 direct map associations,
+2,659 extracted encounters, and 536 maps with an unresolved path. The historical
+counts above describe the earlier four-opcode audit. The 96-header conclusion
+and three indirect rematch IDs are unchanged.

@@ -1413,3 +1413,145 @@ summary {
     transition: none !important;
   }
 }
+
+/* Trainer references keep encounter context visible beside the party. */
+.trainer-filters {
+  display: grid;
+  gap: 5px;
+  padding: 0 10px 12px;
+  flex-shrink: 0;
+}
+.trainer-filters button {
+  text-align: left;
+  padding: 7px 9px;
+  font-size: 11px;
+}
+.trainer-filters button.active {
+  background: var(--soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.trainer-row-context {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+  margin-top: 4px;
+  white-space: normal;
+}
+.trainer-context-banner {
+  background: var(--soft);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 18px;
+}
+.trainer-context-banner > span {
+  float: right;
+  font-size: 11px;
+  color: var(--muted);
+}
+.trainer-context-banner p {
+  margin-bottom: 0;
+}
+.trainer-mon-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 12px 0;
+}
+.trainer-mon-heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.trainer-mon-heading > div {
+  min-width: 0;
+}
+.trainer-mon-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.trainer-mon-title > strong {
+  font-size: 12px;
+  margin-left: auto;
+}
+.gender-badge {
+  background: var(--soft);
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-size: 10px;
+}
+.gender-badge.female {
+  color: #af3e69;
+}
+.gender-badge.male {
+  color: #326da6;
+}
+.trainer-mon-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+.trainer-mon-facts dt {
+  color: var(--muted);
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+.trainer-mon-facts dd {
+  margin: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.trainer-moves > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 8px 0 14px;
+}
+.trainer-moves > div > span {
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: var(--soft);
+  font-size: 11px;
+}
+.trainer-stat-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.trainer-stat-table th,
+.trainer-stat-table td {
+  text-align: center;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.trainer-stat-table th {
+  font-weight: 500;
+  color: var(--muted);
+}
+.trainer-stat-table th:first-child {
+  width: 50px;
+  text-align: left;
+}
+.trainer-evidence {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.trainer-evidence pre {
+  overflow-x: auto;
+}
+@media (max-width: 760px) {
+  .trainer-mon-card {
+    padding: 10px;
+  }
+  .trainer-mon-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

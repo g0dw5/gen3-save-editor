@@ -58,13 +58,45 @@ with sync_playwright() as p:
     # Trainer-to-map and map-to-trainer navigation use the real script index.
     link = command('world')['trainer_locations']['locations'][0]
     dialog.get_by_role('button', name='Trainers', exact=True).click()
-    dialog.get_by_role('textbox', name='Search names or IDs…').fill(str(link['trainer_id']))
+    dialog.get_by_role('textbox', name='Name, context, map, Pokémon…').fill(str(link['trainer_id']))
     dialog.locator('.reference-rows button').first.click()
     expect(dialog.get_by_role('heading', name='Referenced maps', exact=True)).to_be_visible()
     dialog.get_by_role('button', name=link['map_name'] + ' ↗', exact=True).click()
     expect(dialog.get_by_role('heading', name='Referenced trainers', exact=True)).to_be_visible()
     dialog.locator('.reference-detail .reference-line button').filter(has_text='#' + str(link['trainer_id']) + ' ↗').click()
     expect(dialog.get_by_role('heading', name='Referenced maps', exact=True)).to_be_visible()
+    # Battle-context search must distinguish the first League from same-name teams.
+    dialog.locator('.trainer-filters button').filter(has_text='First Pokémon League').click()
+    expect(dialog.locator('.reference-rows > button')).to_have_count(5)
+    assert dialog.locator('.reference-rows .id').all_text_contents() == ['261', '262', '263', '264', '335']
+    dialog.get_by_label('Name, context, map, Pokémon…', exact=True).fill('一周目 米可利')
+    expect(dialog.locator('.reference-rows > button')).to_have_count(1)
+    expect(dialog.locator('.reference-detail h2')).to_contain_text('#335')
+    expect(dialog.locator('.trainer-mon-card')).to_have_count(6)
+    assert dialog.locator('.trainer-stat-table tbody tr').first.locator('td').all_text_contents() == ['31'] * 6
+    dialog.locator('.trainer-filters button').filter(has_text='All trainers').click()
+    dialog.get_by_label('Name, context, map, Pokémon…', exact=True).fill('米可利')
+    expect(dialog.locator('.reference-rows > button')).to_have_count(4)
+    dialog.get_by_label('Name, context, map, Pokémon…', exact=True).fill('三春')
+    expect(dialog.locator('.reference-detail h2')).to_contain_text('#74')
+    miltank = dialog.locator('.trainer-mon-card').last
+    expect(miltank.locator('.gender-badge')).to_contain_text('Female')
+    expect(miltank).to_contain_text('厚脂肪')
+    expect(miltank).to_contain_text('Bashful')
+    assert miltank.locator('.trainer-stat-table tbody tr').nth(1).locator('td').all_text_contents() == ['0'] * 6
+    page.get_by_role('button', name='简体中文', exact=True).click()
+    expect(miltank.locator('.gender-badge')).to_contain_text('雌性')
+    expect(miltank).to_contain_text('害羞')
+    miltank.scroll_into_view_if_needed()
+    page.screenshot(path=str(OUTPUT / 'trainer-miltank-zh.png'))
+    page.get_by_role('button', name='English', exact=True).click()
+    dialog.get_by_label('Name, context, map, Pokémon…', exact=True).fill('摩天楼 米可利')
+    expect(dialog.locator('.reference-detail h2')).to_contain_text('#973')
+    expect(dialog.locator('.trainer-party')).to_contain_text('current party')
+    dialog.locator('.trainer-filters button').filter(has_text='First Pokémon League').click()
+    expect(dialog.locator('.reference-detail h2')).to_contain_text('#261')
+    expect(dialog.locator('.reference-detail h2')).to_be_visible()
+    page.screenshot(path=str(OUTPUT / 'trainer-league-en.png'))
     dialog.get_by_role('button', name='Species', exact=True).click()
     expect(dialog.locator('.dex-hero')).to_be_visible()
     # Move the nonmodal window to expose empty cells and prove actual template DnD.

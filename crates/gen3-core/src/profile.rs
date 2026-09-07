@@ -53,8 +53,16 @@ pub struct Profile {
     pub regions: usize,
     pub wild: usize,
     pub trainers: Table,
+    pub trainer_groups: &'static [TrainerGroup],
     pub map_counts: &'static [usize],
     pub save: SaveLayout,
+}
+/// Curated encounter context, verified against this profile's battle scripts.
+/// Names and parties continue to come from the user-supplied ROM.
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct TrainerGroup {
+    pub id: &'static str,
+    pub trainer_ids: &'static [u16],
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct SaveLayout {
@@ -147,6 +155,16 @@ pub const BW: Profile = Profile {
         count: 1367,
         stride: 40,
     },
+    trainer_groups: &[
+        TrainerGroup {
+            id: "league_first",
+            trainer_ids: &[261, 262, 263, 264, 335],
+        },
+        TrainerGroup {
+            id: "league_stronger",
+            trainer_ids: &[994, 995, 996, 997, 998],
+        },
+    ],
     map_counts: &[
         57, 5, 5, 6, 7, 8, 9, 7, 7, 14, 8, 17, 10, 23, 13, 15, 15, 2, 2, 2, 3, 1, 1, 1, 108, 61,
         89, 2, 1, 13, 1, 1, 3, 1, 40, 50, 60, 39,
