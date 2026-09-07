@@ -507,7 +507,7 @@ fn local_rom_regression() {
         let trainers = r.trainers().unwrap();
         assert!(trainers.len() > 1300);
         let locations = r.trainer_locations_for_maps(&maps).unwrap();
-        assert_eq!(locations.locations.len(), 620);
+        assert_eq!(locations.locations.len(), 653);
         assert_eq!(
             locations
                 .locations
@@ -515,12 +515,39 @@ fn local_rom_regression() {
                 .map(|l| l.trainer_id)
                 .collect::<std::collections::BTreeSet<_>>()
                 .len(),
-            587
+            609
         );
         assert!(locations
             .locations
             .iter()
             .any(|l| l.trainer_id == 656 && l.map_id == "0-2"));
+        for (id, map, offset) in [
+            (903, "24-106", 0xdfbf00),
+            (904, "24-106", 0xdfbf10),
+            (993, "36-46", 0xe0241c),
+            (999, "37-38", 0xe069e7),
+            (1000, "37-38", 0xe068f7),
+        ] {
+            assert!(locations.locations.iter().any(|l| l.trainer_id == id
+                && l.map_id == map
+                && l.battle_offsets.contains(&offset)));
+        }
+        let unusual: Vec<_> = trainers
+            .iter()
+            .filter(|t| t.party.iter().any(|p| p.level == 0 || p.level > 100))
+            .collect();
+        assert_eq!(unusual.len(), 96);
+        let missing: Vec<_> = unusual
+            .iter()
+            .filter(|t| !locations.locations.iter().any(|l| l.trainer_id == t.id))
+            .map(|t| t.id)
+            .collect();
+        assert_eq!(missing, [683, 684, 685]);
+        // These remaining IDs are indirect rematch references, not orphan rows.
+        for (i, id) in [681, 682, 683, 684, 685, 24, 1].iter().enumerate() {
+            assert_eq!(u16(&r.data, 0x550204 + i * 2).unwrap(), *id);
+        }
+        assert_eq!(u32(&r.data, 0xb1ebc).unwrap(), 0x085500a4);
         let mut s = Session::new(r.clone());
         s.load(save_bytes(&r), None).unwrap();
         for species in &catalog.species {
@@ -737,4 +764,44 @@ fn trainer_map_index_follows_branches_and_keeps_evidence() {
     assert_eq!(index.unresolved_maps.len(), 1);
     assert_eq!(index.unresolved_maps[0].map_id, "0-1");
     assert_eq!(index.unresolved_maps[0].stopped_at, vec![0x23200]);
+}
+
+#[test]
+fn trainer_scripts_cross_menus_music_and_native_calls() {
+    let mut r = rom();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    // Arguments deliberately contain battle-looking bytes. Only instruction
+    // boundaries count; the native address must not become a script root.
+    let script = [
+        0x16, 0x04, 0x80, 1, 0, // setvar species
+        0x16, 0x05, 0x80, 20, 0, // setvar level
+        0x6f, 0x5c, 0, 7, 0,    // multichoice
+        0xa0, // checkplayergender
+        0x36, 0x5c, 0, // fadenewbgm
+        0x23, 1, 0x34, 2, 8, // callnative 0x08023401
+        0x25, 0xe2, 1, // unknown native effects invalidate special-battle inputs
+        0x5c, 3, 42, 0, 0, 0, 0, 0, 0, 0, // trainerbattle
+        2,
+    ];
+    b[0x23000..0x23000 + script.len()].copy_from_slice(&script);
+    let map = crate::world::Map {
+        id: "0-0".into(),
+        group: 0,
+        number: 0,
+        name: "Test".into(),
+        region: 0,
+        width: 1,
+        height: 1,
+        map_type: 0,
+        header: 0,
+        layout: 0,
+        events: None,
+        scripts: vec![0x23000],
+    };
+    let report = r.script_report(&map).unwrap();
+    assert_eq!(report.trainer_ids, vec![42]);
+    assert_eq!(report.trainer_battles.len(), 1);
+    assert_eq!(report.trainer_battles[0].offset, 0x2301b);
+    assert!(report.encounters.is_empty());
+    assert!(report.stopped_at.is_empty());
 }
