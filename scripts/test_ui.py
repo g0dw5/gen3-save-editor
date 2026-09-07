@@ -55,6 +55,18 @@ with sync_playwright() as p:
     dialog = page.get_by_role('dialog')
     expect(dialog).to_be_visible()
     expect(dialog.locator('.dex-hero')).to_be_visible()
+    # Trainer-to-map and map-to-trainer navigation use the real script index.
+    link = command('world')['trainer_locations']['locations'][0]
+    dialog.get_by_role('button', name='Trainers', exact=True).click()
+    dialog.get_by_role('textbox', name='Search names or IDs…').fill(str(link['trainer_id']))
+    dialog.locator('.reference-rows button').first.click()
+    expect(dialog.get_by_role('heading', name='Referenced maps', exact=True)).to_be_visible()
+    dialog.get_by_role('button', name=link['map_name'] + ' ↗', exact=True).click()
+    expect(dialog.get_by_role('heading', name='Referenced trainers', exact=True)).to_be_visible()
+    dialog.locator('.reference-detail .reference-line button').filter(has_text='#' + str(link['trainer_id']) + ' ↗').click()
+    expect(dialog.get_by_role('heading', name='Referenced maps', exact=True)).to_be_visible()
+    dialog.get_by_role('button', name='Species', exact=True).click()
+    expect(dialog.locator('.dex-hero')).to_be_visible()
     # Move the nonmodal window to expose empty cells and prove actual template DnD.
     handle = dialog.locator('.floating-header')
     if handle.count():
@@ -84,5 +96,5 @@ with sync_playwright() as p:
     page.get_by_role('button', name='Pokémon', exact=True).click()
     page.screenshot(path=str(OUTPUT / 'workspace-small.png'))
     assert not errors, errors
-    print('UI passed: 426 slots, bilingual, edit, undo/redo, move, template draft, player, export, resize')
+    print('UI passed: 426 slots, bilingual, edit, undo/redo, move, template draft, trainer/map links, player, export, resize')
     browser.close()

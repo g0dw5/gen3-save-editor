@@ -46,9 +46,7 @@ fn run() -> Result<()> {
                     .map_err(|_| err("arguments", "species ID"))?,
             )?,
         )?),
-        "world" => print(
-            serde_json::json!({"maps":rom.maps()?,"encounters":rom.encounters()?,"trainers":rom.trainers()?}),
-        ),
+        "world" => print(serde_json::to_value(rom.world()?)?),
         "inspect" => {
             let mut session = Session::new(rom);
             session.load(fs::read(arg(2)?)?, Some(arg(2)?.into()))?;

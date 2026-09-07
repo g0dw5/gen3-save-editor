@@ -224,6 +224,15 @@ export interface Opponent {
   offset: number;
 }
 export interface World {
+  trainer_locations: {
+    locations: {
+      trainer_id: number;
+      map_id: string;
+      map_name: string;
+      battle_offsets: number[];
+    }[];
+    unresolved_maps: { map_id: string; stopped_at: number[] }[];
+  };
   maps: GameMap[];
   encounters: Encounter[];
   trainers: Opponent[];

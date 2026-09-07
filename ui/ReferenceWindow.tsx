@@ -438,6 +438,26 @@ export function ReferenceWindow({
           )}
           {tab === "maps" && current && (
             <>
+              <h3>{t("mapTrainers")}</h3>
+              <p className="small muted">{t("trainerMapsHelp")}</p>
+              {world?.trainer_locations.locations
+                .filter((l) => l.map_id === selected)
+                .map((l) => (
+                  <div className="reference-line" key={l.trainer_id}>
+                    <button
+                      className="link-button"
+                      onClick={() => {
+                        setTab("trainers");
+                        setSelected(l.trainer_id);
+                        setSearch("");
+                      }}
+                    >
+                      {world.trainers.find((t) => t.id === l.trainer_id)
+                        ?.name ?? `#${l.trainer_id}`}{" "}
+                      · #{l.trainer_id} ↗
+                    </button>
+                  </div>
+                ))}
               <div className="muted">
                 {(current as GameMap).width} × {(current as GameMap).height}
               </div>
@@ -501,6 +521,37 @@ export function ReferenceWindow({
           )}
           {tab === "trainers" && current && (
             <>
+              <h3>{t("trainerMaps")}</h3>
+              <p className="small muted">{t("trainerMapsHelp")}</p>
+              {world?.trainer_locations.locations
+                .filter((l) => l.trainer_id === +selected)
+                .map((l) => (
+                  <div className="reference-line" key={l.map_id}>
+                    <button
+                      className="link-button"
+                      onClick={() => {
+                        setTab("maps");
+                        setSelected(l.map_id);
+                        setSearch("");
+                      }}
+                    >
+                      {l.map_name} ↗
+                    </button>
+                    <details>
+                      <summary>{t("evidence")}</summary>
+                      <code>
+                        {l.battle_offsets
+                          .map((o) => `0x${o.toString(16).toUpperCase()}`)
+                          .join(", ")}
+                      </code>
+                    </details>
+                  </div>
+                ))}
+              {world &&
+                !world.trainer_locations.locations.some(
+                  (l) => l.trainer_id === +selected,
+                ) && <p className="muted">{t("trainerMapsUnknown")}</p>}
+              {!world && <p className="muted">{t("loading")}</p>}
               {!!(current as Opponent).diagnostics.length && (
                 <div className="warning-text">
                   {t("trainerDiagnostics")}

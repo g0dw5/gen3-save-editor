@@ -30,7 +30,8 @@ fingerprints and do not become supported stock releases automatically.
 - Drag between slots to move or swap. Alt-drag copies. Buttons provide a pointer
   alternative; modifier-click selects multiple Pokémon for batch edits.
 - Browse species, learning sources, items, abilities, maps and trainers in movable
-  nonmodal windows. Drag an encounter to an empty slot to create an editable draft.
+  nonmodal windows. Trainers and maps link to each other through parsed battle
+  scripts, with evidence offsets and unresolved-condition labels. Drag an encounter to an empty slot to create an editable draft.
 - Edit player identity, money, coins, bags, box names and Pokédex flags. Inspect
   before/after changes, undo/redo, then export. Existing output is backed up.
 - Free editing permits game-rule exceptions. Binary bounds, checksums and supported

@@ -1,5 +1,11 @@
 import { createContext, useContext } from "react";
 export const en = {
+  trainerMaps: "Referenced maps",
+  trainerMapsHelp:
+    "Linked from map battle scripts. Story conditions and rematches are not fully resolved.",
+  trainerMapsUnknown:
+    "No map reference found in the parsed scripts. This does not mean the trainer never appears.",
+  mapTrainers: "Referenced trainers",
   mail_attachment:
     "This action requires linked mail editing, which is not yet supported.",
   trainerDiagnostics:
@@ -250,6 +256,11 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  trainerMaps: "出现地图（脚本关联）",
+  trainerMapsHelp: "根据地图战斗脚本关联；剧情条件与复战尚未完整解析。",
+  trainerMapsUnknown:
+    "当前已解析脚本中未找到地图关联，不代表该训练家不会出现。",
+  mapTrainers: "关联训练家",
   mail_attachment: "此操作需要同步编辑关联邮件，当前尚未支持。",
   trainerDiagnostics:
     "ROM 原始记录含有异常值，按原始布局展示，不推测替代布局。",

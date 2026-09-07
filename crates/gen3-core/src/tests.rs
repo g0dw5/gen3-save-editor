@@ -506,6 +506,21 @@ fn local_rom_regression() {
         assert!(encounters.len() > 1000);
         let trainers = r.trainers().unwrap();
         assert!(trainers.len() > 1300);
+        let locations = r.trainer_locations_for_maps(&maps).unwrap();
+        assert_eq!(locations.locations.len(), 620);
+        assert_eq!(
+            locations
+                .locations
+                .iter()
+                .map(|l| l.trainer_id)
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            587
+        );
+        assert!(locations
+            .locations
+            .iter()
+            .any(|l| l.trainer_id == 656 && l.map_id == "0-2"));
         let mut s = Session::new(r.clone());
         s.load(save_bytes(&r), None).unwrap();
         for species in &catalog.species {
@@ -656,4 +671,70 @@ fn rom_patch_is_bounded_reproducible_and_keeps_the_baseline() {
             ..edit
         }])
         .is_err());
+}
+
+#[test]
+fn trainer_map_index_follows_branches_and_keeps_evidence() {
+    let mut r = rom();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    // Conditional branch: trainer 7 on fallthrough, trainer 8 on the branch.
+    b[0x23000] = 6;
+    b[0x23001] = 1;
+    put32(b, 0x23002, 0x08023100);
+    for (offset, id) in [(0x23006, 7), (0x23100, 8)] {
+        b[offset] = 0x5c;
+        b[offset + 1] = 0;
+        put16(b, offset + 2, id);
+        b[offset + 14] = 2;
+    }
+    // A shared root and cycle must not duplicate a battle reference.
+    b[0x2310e] = 5;
+    put32(b, 0x2310f, 0x08023000);
+    // Unknown opcode: battle-looking bytes after it must not be scanned.
+    b[0x23200] = 0xff;
+    b[0x23201] = 0x5c;
+    b[0x23202] = 0;
+    put16(b, 0x23203, 9);
+    let first = crate::world::Map {
+        id: "0-0".into(),
+        group: 0,
+        number: 0,
+        name: "First".into(),
+        region: 0,
+        width: 1,
+        height: 1,
+        map_type: 0,
+        header: 0,
+        layout: 0,
+        events: None,
+        scripts: vec![0x23000, 0x23100],
+    };
+    let second = crate::world::Map {
+        id: "0-1".into(),
+        number: 1,
+        name: "Second".into(),
+        scripts: vec![0x23200],
+        ..first.clone()
+    };
+    let third = crate::world::Map {
+        id: "0-2".into(),
+        number: 2,
+        name: "Third".into(),
+        ..first.clone()
+    };
+    let index = r
+        .trainer_locations_for_maps(&[first, second, third])
+        .unwrap();
+    assert_eq!(index.locations.len(), 4);
+    assert_eq!(index.locations[0].trainer_id, 7);
+    assert_eq!(index.locations[0].battle_offsets, vec![0x23006]);
+    assert_eq!(index.locations[1].battle_offsets, vec![0x23100]);
+    assert_eq!(
+        index.locations.iter().filter(|l| l.trainer_id == 7).count(),
+        2
+    );
+    assert!(index.locations.iter().all(|l| l.trainer_id != 9));
+    assert_eq!(index.unresolved_maps.len(), 1);
+    assert_eq!(index.unresolved_maps[0].map_id, "0-1");
+    assert_eq!(index.unresolved_maps[0].stopped_at, vec![0x23200]);
 }

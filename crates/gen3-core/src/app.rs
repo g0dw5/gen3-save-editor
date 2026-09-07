@@ -114,7 +114,7 @@ impl App {
             }
             "world" => {
                 let r = &self.session()?.rom;
-                Ok(json!({"maps":r.maps()?,"encounters":r.encounters()?,"trainers":r.trainers()?}))
+                Ok(serde_json::to_value(r.world()?)?)
             }
             "map_report" => {
                 let id = required(&p, "id")?;

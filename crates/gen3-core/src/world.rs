@@ -57,13 +57,88 @@ pub struct Trainer {
     pub party: Vec<TrainerMon>,
     pub offset: usize,
 }
+#[derive(Clone, Serialize)]
+pub struct TrainerBattle {
+    pub trainer_id: u16,
+    pub offset: usize,
+    pub battle_type: u8,
+}
+#[derive(Serialize)]
+pub struct TrainerLocation {
+    pub trainer_id: u16,
+    pub map_id: String,
+    pub map_name: String,
+    pub battle_offsets: Vec<usize>,
+}
+#[derive(Serialize)]
+pub struct UnresolvedMapScripts {
+    pub map_id: String,
+    pub stopped_at: Vec<usize>,
+}
+#[derive(Serialize)]
+pub struct TrainerLocationIndex {
+    pub locations: Vec<TrainerLocation>,
+    pub unresolved_maps: Vec<UnresolvedMapScripts>,
+}
+#[derive(Serialize)]
+pub struct World {
+    pub maps: Vec<Map>,
+    pub encounters: Vec<Encounter>,
+    pub trainers: Vec<Trainer>,
+    pub trainer_locations: TrainerLocationIndex,
+}
 #[derive(Serialize)]
 pub struct ScriptReport {
+    pub trainer_battles: Vec<TrainerBattle>,
     pub encounters: Vec<Encounter>,
     pub trainer_ids: Vec<u16>,
     pub stopped_at: Vec<usize>,
 }
 impl Rom {
+    pub fn world(&self) -> Result<World> {
+        let maps = self.maps()?;
+        let trainer_locations = self.trainer_locations_for_maps(&maps)?;
+        Ok(World {
+            maps,
+            encounters: self.encounters()?,
+            trainers: self.trainers()?,
+            trainer_locations,
+        })
+    }
+    /// References from known map script roots, not proof of current-save reachability.
+    pub fn trainer_locations_for_maps(&self, maps: &[Map]) -> Result<TrainerLocationIndex> {
+        let mut locations = Vec::new();
+        let mut unresolved_maps = Vec::new();
+        for map in maps {
+            let report = self.script_report(map)?;
+            let mut by_trainer: BTreeMap<u16, BTreeSet<usize>> = BTreeMap::new();
+            for battle in report.trainer_battles {
+                by_trainer
+                    .entry(battle.trainer_id)
+                    .or_default()
+                    .insert(battle.offset);
+            }
+            for (trainer_id, offsets) in by_trainer {
+                locations.push(TrainerLocation {
+                    trainer_id,
+                    map_id: map.id.clone(),
+                    map_name: map.name.clone(),
+                    battle_offsets: offsets.into_iter().collect(),
+                });
+            }
+            if !report.stopped_at.is_empty() {
+                unresolved_maps.push(UnresolvedMapScripts {
+                    map_id: map.id.clone(),
+                    stopped_at: report.stopped_at,
+                });
+            }
+        }
+        Ok(TrainerLocationIndex {
+            locations,
+            unresolved_maps,
+        })
+    }
+
     pub fn maps(&self) -> Result<Vec<Map>> {
         let b = &self.data;
         let mut maps = Vec::new();
@@ -315,6 +390,7 @@ impl Rom {
         let b = &self.data;
         let mut found = BTreeMap::new();
         let mut trainers = BTreeSet::new();
+        let mut trainer_battles = BTreeMap::new();
         let mut stopped = BTreeSet::new();
         let mut visited = BTreeSet::new();
         // Every branch carries its own known constants. No arbitrary byte scan.
@@ -324,7 +400,7 @@ impl Rom {
             .map(|p| (*p, BTreeMap::<u16, u16>::new()))
             .collect();
         while let Some((mut pc, mut vars)) = pending.pop_front() {
-            for _ in 0..2048 {
+            for step in 0..2048 {
                 if visited.len() > 8192 {
                     stopped.insert(pc);
                     break;
@@ -334,6 +410,7 @@ impl Rom {
                     break;
                 }
                 let Some(op) = b.get(pc).copied() else {
+                    stopped.insert(pc);
                     break;
                 };
                 let len = match op {
@@ -426,7 +503,13 @@ impl Rom {
                     }
                 }
                 if op == 0x5c {
-                    trainers.insert(u16(b, pc + 2)?);
+                    let trainer_id = u16(b, pc + 2)?;
+                    trainers.insert(trainer_id);
+                    trainer_battles.entry(pc).or_insert(TrainerBattle {
+                        trainer_id,
+                        offset: pc,
+                        battle_type: b[pc + 1],
+                    });
                     let typ = b[pc + 1];
                     if matches!(typ, 1 | 2 | 6 | 8) {
                         if let Ok(p) = pointer(b, pc + len - 4) {
@@ -450,9 +533,13 @@ impl Rom {
                     vars.clear();
                 }
                 pc += len;
+                if step == 2047 {
+                    stopped.insert(pc);
+                }
             }
         }
         Ok(ScriptReport {
+            trainer_battles: trainer_battles.into_values().collect(),
             encounters: found.into_values().collect(),
             trainer_ids: trainers.into_iter().collect(),
             stopped_at: stopped.into_iter().collect(),

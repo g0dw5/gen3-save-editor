@@ -26,7 +26,7 @@ compatibility certification.
 
 Validation performed on macOS Apple Silicon, September 2026:
 
-- **20 Rust tests passed**, including the opt-in regression covering both exact
+- **21 Rust tests passed**, including the opt-in regression covering both exact
   ROMs. Includes all 24 Pokémon permutations, a known checksum vector, all growth
   curves, byte retention, mixed/corrupt banks, counter wrap, cross-sector storage,
   the last box slot, batch rollback, free-mode boundaries, PP Ups, fixed text
@@ -34,6 +34,9 @@ Validation performed on macOS Apple Silicon, September 2026:
 - Both ROMs: 411 species records, 472 moves, 707 maps, 2,653 encounters extracted
   from supported sources, 1,365 nonempty trainer headers. Every valid species'
   normal/shiny sprite and learnset is parsed. Six representative maps are rendered.
+- Both ROMs map 587 trainer IDs to 620 map references from battle scripts.
+  References retain exact command offsets; shared roots and cycles are deduplicated.
+  Trainer-to-map and map-to-trainer UI navigation passes the browser regression.
 - 96 trainer headers have out-of-range raw level parameters. Most use 101, which
   may be a runtime level rule; its semantics are not asserted here. A few old
   records have inconsistent flags. Raw values and diagnostics remain visible.
@@ -57,8 +60,8 @@ Validation performed on macOS Apple Silicon, September 2026:
 - [ ] Complete native dialog/edit/export/close-confirmation workflow on each platform.
 - [ ] In-game inspection of edited values, save again, re-read, on both BW and DP.
 - [ ] Run the configured Windows/Linux CI and installers; signing/notarization.
-- [ ] Complete script coverage, trades, roamers, special rules and reachable trainer
-  mapping, checked against version-specific official documentation.
+- [ ] Complete script coverage, trades, roamers, special rules and current-save trainer
+  reachability, checked against version-specific official documentation.
 - [ ] Decode runtime trainer level parameters and distinguish unused malformed rows.
 - [ ] Linked mail content and attachment editing.
 
