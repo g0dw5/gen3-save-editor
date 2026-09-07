@@ -1,0 +1,22 @@
+[package]
+name = "gen3-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "gen3"
+path = "src/main.rs"
+
+[dependencies]
+gen3-core = { path = "../gen3-core" }
+serde_json.workspace = true
+tiny_http = { version = "0.12", optional = true }
+
+[features]
+dev-server = ["dep:tiny_http"]
+
+[[bin]]
+name = "gen3-dev"
+path = "src/dev.rs"
+required-features = ["dev-server"]
