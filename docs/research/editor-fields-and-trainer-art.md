@@ -80,3 +80,14 @@ Primary references:
 [global.fieldmap.h](https://github.com/pret/pokeemerald/blob/master/include/global.fieldmap.h),
 [global constants](https://github.com/pret/pokeemerald/blob/master/include/constants/global.h),
 [decompress.c](https://github.com/pret/pokeemerald/blob/master/src/decompress.c).
+
+## Compact PP controls / 紧凑 PP 控件
+
+Each move shows editable current PP, disabled calculated maximum PP, and segmented
+`+0 / +1 / +2 / +3` PP Up buttons in one row. Selecting a different bonus restores
+that move's PP; clicking the selected bonus leaves current PP untouched. Empty
+move slots disable these controls. Storage details are collapsed by default.
+
+每个招式将当前 PP、只读最大 PP 和 `+0 / +1 / +2 / +3` 提升按钮排在同一行。
+切换提升次数会回满 PP，重复点击当前次数不会改变当前 PP。空招式禁用这些控件，
+存储说明默认折叠；同行与盒子使用相同界面。

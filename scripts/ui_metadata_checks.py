@@ -26,7 +26,7 @@ def check_metadata(page, command, output):
 
     tabs.get_by_role('button', name='Moves', exact=True).click()
     move = editor.locator('.move-card').first
-    move.get_by_label('PP Ups', exact=True).fill('3')
+    move.get_by_role('group', name='PP Ups', exact=True).get_by_role('button', name='+3', exact=True).click()
     base = command('state')['catalog']['moves'][pokemon()['moves'][0]]['pp']
     maximum = base * 8 // 5
     expect(move.get_by_label('Maximum PP', exact=True)).to_have_value(str(maximum))

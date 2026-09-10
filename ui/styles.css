@@ -624,11 +624,55 @@ summary {
   color: var(--muted);
 }
 .move-card {
-  padding: 14px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--line);
 }
 .move-card .field {
   margin-bottom: 7px;
+}
+.move-pp-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(112px, 1.6fr);
+  gap: 8px;
+}
+.move-pp-row .field > span {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.move-pp-row input {
+  padding: 6px;
+  height: 34px;
+}
+.pp-up-control {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--soft);
+  height: 34px;
+}
+.pp-up-control button {
+  min-width: 0;
+  padding: 0;
+  font-size: 12px;
+  border-color: transparent;
+  border-radius: 4px;
+  background: transparent;
+}
+.pp-up-control button[aria-pressed="true"] {
+  color: white;
+  background: var(--accent);
+}
+.pp-help {
+  margin-top: 10px;
+}
+.pp-help summary {
+  cursor: pointer;
+}
+.pp-help p {
+  margin: 6px 0 0;
 }
 .source-note {
   font-size: 11px;

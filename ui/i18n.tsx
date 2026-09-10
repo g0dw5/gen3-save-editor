@@ -4,6 +4,7 @@ export const en = {
   neutralNature: "No stat changes",
   natureIncrease: "increased by 10%",
   natureDecrease: "reduced by 10%",
+  ppHelpTitle: "How PP works",
   currentPp: "Current PP",
   maximumPp: "Maximum PP",
   ppStorageHelp:
@@ -380,6 +381,7 @@ export const zh: Record<Key, string> = {
   neutralNature: "能力无加减",
   natureIncrease: "提升 10%",
   natureDecrease: "降低 10%",
+  ppHelpTitle: "PP 说明",
   currentPp: "当前 PP",
   maximumPp: "最大 PP",
   ppStorageHelp:

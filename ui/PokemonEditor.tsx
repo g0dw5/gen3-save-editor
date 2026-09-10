@@ -372,7 +372,10 @@ export function PokemonEditor({
               checked={allMoves || free}
               onChange={setAllMoves}
             />
-            <p className="small muted">{t("ppStorageHelp")}</p>
+            <details className="pp-help small muted">
+              <summary>{t("ppHelpTitle")}</summary>
+              <p>{t("ppStorageHelp")}</p>
+            </details>
             {merged.moves.map((id, i) => (
               <div className="move-card" key={i}>
                 <SelectField
@@ -381,7 +384,7 @@ export function PokemonEditor({
                   onChange={(v) => moveChange(i, +v)}
                   options={moveOptions(id)}
                 />
-                <div className="field-grid">
+                <div className="move-pp-row">
                   <NumberField
                     label={t("currentPp")}
                     value={merged.pps[i]}
@@ -398,21 +401,6 @@ export function PokemonEditor({
                     disabled={!id}
                   />
                   <NumberField
-                    label={t("ppUps")}
-                    value={merged.pp_ups[i]}
-                    disabled={!id}
-                    onChange={(v) => {
-                      const pp_ups = [...merged.pp_ups];
-                      pp_ups[i] = v;
-                      const pps = [...merged.pps];
-                      pps[i] = Math.floor(
-                        ((catalog.moves[id]?.pp ?? 0) * (5 + v)) / 5,
-                      );
-                      setPatch((old) => ({ ...old, pp_ups, pps }));
-                    }}
-                    max={3}
-                  />
-                  <NumberField
                     label={t("maximumPp")}
                     value={Math.floor(
                       ((catalog.moves[id]?.pp ?? 0) * (5 + merged.pp_ups[i])) /
@@ -421,6 +409,35 @@ export function PokemonEditor({
                     onChange={() => {}}
                     disabled
                   />
+                  <div className="field">
+                    <span>{t("ppUps")}</span>
+                    <div
+                      className="pp-up-control"
+                      role="group"
+                      aria-label={t("ppUps")}
+                    >
+                      {[0, 1, 2, 3].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-pressed={merged.pp_ups[i] === value}
+                          disabled={!id}
+                          onClick={() => {
+                            if (merged.pp_ups[i] === value) return;
+                            const pp_ups = [...merged.pp_ups];
+                            pp_ups[i] = value;
+                            const pps = [...merged.pps];
+                            pps[i] = Math.floor(
+                              ((catalog.moves[id]?.pp ?? 0) * (5 + value)) / 5,
+                            );
+                            setPatch((old) => ({ ...old, pp_ups, pps }));
+                          }}
+                        >
+                          +{value}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 {id > 0 && (
                   <div
