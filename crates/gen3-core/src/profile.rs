@@ -38,6 +38,7 @@ pub struct Profile {
     pub species: Table,
     pub base_stats: Table,
     pub moves: Table,
+    pub move_category_offset: usize,
     pub items: Table,
     pub evolutions: Table,
     pub learnsets: usize,
@@ -140,6 +141,7 @@ pub const BW: Profile = Profile {
         count: 472,
         stride: 12,
     },
+    move_category_offset: 10,
     items: Table {
         offset: 0x5839a0,
         count: 377,

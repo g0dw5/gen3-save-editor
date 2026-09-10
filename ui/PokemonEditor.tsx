@@ -9,7 +9,13 @@ import {
 } from "lucide-react";
 import { api } from "./api";
 import { PokemonOrigin, PokemonAdvanced } from "./PokemonMetadata";
-import { useI18n, natures, statKeys } from "./i18n";
+import {
+  useI18n,
+  natures,
+  statKeys,
+  typeNames,
+  moveCategoryNames,
+} from "./i18n";
 import { NumberField, SelectField, Sprite, Toggle, Types } from "./components";
 import type {
   Catalog,
@@ -105,7 +111,7 @@ export function PokemonEditor({
       )
       .map((m) => ({
         value: m.id,
-        label: `${m.id ? m.name : t("emptyMove")}${m.id ? ` · #${m.id}` : ""}${m.id && !known.has(m.id) ? ` — ${future.has(m.id) ? t("futureMove") : t("unknownSource")}` : ""}`,
+        label: `${m.id ? `【${moveCategoryNames[locale][m.category] ?? "?"}】【${typeNames[locale][m.move_type] ?? "?"}】【${m.power || "—"}】${m.name}` : t("emptyMove")}${m.id ? ` · #${m.id}` : ""}${m.id && !known.has(m.id) ? ` — ${future.has(m.id) ? t("futureMove") : t("unknownSource")}` : ""}`,
       }));
   const itemOptions = catalog.items.map((i) => ({
     value: i.id,

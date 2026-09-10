@@ -34,6 +34,7 @@ export interface Move {
   effect: number;
   power: number;
   move_type: number;
+  category: number;
   accuracy: number;
   pp: number;
   chance: number;

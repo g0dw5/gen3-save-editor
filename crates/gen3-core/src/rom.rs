@@ -44,6 +44,8 @@ pub struct Move {
     pub effect: u8,
     pub power: u8,
     pub move_type: u8,
+    /// Raw split category: 0 physical, 1 special, 2 status, 3 Curse in these profiles.
+    pub category: u8,
     pub accuracy: u8,
     pub pp: u8,
     pub chance: u8,
@@ -223,6 +225,7 @@ impl Rom {
             effect: b[0],
             power: b[1],
             move_type: b[2],
+            category: bytes(&self.data, o + self.profile.move_category_offset, 1)?[0],
             accuracy: b[3],
             pp: b[4],
             chance: b[5],

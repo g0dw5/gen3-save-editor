@@ -91,3 +91,16 @@ move slots disable these controls. Storage details are collapsed by default.
 每个招式将当前 PP、只读最大 PP 和 `+0 / +1 / +2 / +3` 提升按钮排在同一行。
 切换提升次数会回满 PP，重复点击当前次数不会改变当前 PP。空招式禁用这些控件，
 存储说明默认折叠；同行与盒子使用相同界面。
+
+## Move option prefixes / 招式选项前缀
+
+Options show `【category】【type】【power】name`. Category comes from byte +10
+of each 12-byte move record at `0x1900000`, configured by the ROM profile,
+not from elemental type. Both exact ROMs encode 0 physical, 1 special, 2 status;
+Curse (#174) uses 3 and is displayed as status. Fire Punch (#7) is physical,
+Flamethrower (#53) and Shadow Ball (#247) are special. Zero power displays `—`;
+positive power is the raw ROM base-power value, not calculated battle damage.
+
+下拉选项显示 `【物／特／变】【属性】【威力】招式名`，分类读取 ROM 的逐招式字段。
+诅咒的专用值 3 显示为变化招式；威力 0 显示为「—」，其他值显示 ROM 基础威力。
+英文界面使用英文分类与属性名；空招式不加前缀。

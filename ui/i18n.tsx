@@ -852,3 +852,8 @@ export const typeNames = {
     "恶",
   ],
 };
+
+export const moveCategoryNames = {
+  en: ["Phys.", "Spec.", "Status", "Status"],
+  zh: ["物", "特", "变", "变"],
+};

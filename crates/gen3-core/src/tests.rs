@@ -500,6 +500,11 @@ fn local_rom_regression() {
         let r = Rom::open(std::fs::read(path).unwrap()).unwrap();
         let catalog = r.catalog().unwrap();
         assert_eq!(catalog.moves.len(), 472);
+        // The split is per move, not the original Gen III type-based split.
+        for (id, category) in [(7, 0), (53, 1), (14, 2), (247, 1), (174, 3)] {
+            assert_eq!(catalog.moves[id].category, category);
+        }
+        assert!(catalog.moves.iter().all(|m| m.category <= 3));
         let maps = r.maps().unwrap();
         assert_eq!(maps.len(), 707);
         let encounters = r.encounters().unwrap();
