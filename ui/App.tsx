@@ -43,7 +43,6 @@ import { ReferenceWindow } from "./ReferenceWindow";
 import {
   fromKey,
   locationKey,
-  type BagEntry,
   type Catalog,
   type Location,
   type RefTab,
@@ -609,7 +608,7 @@ export default function App() {
                       }}
                     >
                       <C size={15} />
-                      {t(key as string)}
+                      {t(key === "bag" ? "inventory" : (key as string))}
                       {key === "changes" && !!save?.changes.length && (
                         <span className="count">{save.changes.length}</span>
                       )}
@@ -878,7 +877,7 @@ export default function App() {
               </div>
             ) : page === "bag" ? (
               <BagEditor
-                key={revision}
+                key={catalog.profile.md5}
                 catalog={catalog}
                 save={save}
                 free={free}
@@ -1041,9 +1040,16 @@ function BagEditor({
 }) {
   const { t } = useI18n();
   const [pocket, setPocket] = useState("items");
-  const [selected, setSelected] = useState<BagEntry | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const entries = save.bag.filter((e) => e.pocket === pocket);
+  const selected = entries.find((e) => e.slot === selectedSlot);
   const [item, setItem] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  useEffect(() => {
+    setItem(selected?.item ?? 0);
+    setQuantity(selected?.quantity || 1);
+  }, [selected]);
   const dirty =
     !!selected &&
     (item !== selected.item || quantity !== (selected.quantity || 1));
@@ -1053,7 +1059,7 @@ function BagEditor({
   return (
     <main className="data-page">
       <div className="page-heading">
-        <h1>{t("bag")}</h1>
+        <h1>{t("inventory")}</h1>
         <Toggle label={t("free")} checked={free} onChange={setFree} />
       </div>
       <div className="pocket-tabs">
@@ -1061,17 +1067,25 @@ function BagEditor({
           <button
             key={k}
             className={k === pocket ? "active" : ""}
+            aria-pressed={k === pocket}
+            disabled={saving}
             onClick={async () => {
               if (await guardBag()) {
                 setPocket(k);
-                setSelected(null);
+                setSelectedSlot(0);
+                const first = save.bag.find(
+                  (e) => e.pocket === k && e.slot === 0,
+                );
+                setItem(first?.item ?? 0);
+                setQuantity(first?.quantity || 1);
               }
             }}
           >
-            {t(k)}
+            {t(k === "items" ? "bagItems" : k)}
           </button>
         ))}
       </div>
+      <p className="small muted">{t("inventoryHelp")}</p>
       <div className="bag-layout">
         <table className="data-table">
           <thead>
@@ -1083,37 +1097,36 @@ function BagEditor({
             </tr>
           </thead>
           <tbody>
-            {save.bag
-              .filter((e) => e.pocket === pocket)
-              .map((e) => (
-                <tr
-                  className={selected?.slot === e.slot ? "selected" : ""}
-                  key={e.slot}
-                >
-                  <td>{e.slot + 1}</td>
-                  <td>
-                    {e.item ? (
-                      `${catalog.items[e.item]?.name ?? e.item}${catalog.items[e.item]?.tm_move ? ` · ${catalog.moves[catalog.items[e.item].tm_move!]?.name}` : ""}`
-                    ) : (
-                      <span className="muted">{t("empty")}</span>
-                    )}
-                  </td>
-                  <td>{e.quantity || "—"}</td>
-                  <td>
-                    <button
-                      onClick={async () => {
-                        if (await guardBag()) {
-                          setSelected(e);
-                          setItem(e.item);
-                          setQuantity(e.quantity || 1);
-                        }
-                      }}
-                    >
-                      {t("details")}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+            {entries.map((e) => (
+              <tr
+                className={selected?.slot === e.slot ? "selected" : ""}
+                key={e.slot}
+              >
+                <td>{e.slot + 1}</td>
+                <td>
+                  {e.item ? (
+                    `${catalog.items[e.item]?.name ?? e.item}${catalog.items[e.item]?.tm_move ? ` · ${catalog.moves[catalog.items[e.item].tm_move!]?.name}` : ""}`
+                  ) : (
+                    <span className="muted">{t("empty")}</span>
+                  )}
+                </td>
+                <td>{e.quantity || "—"}</td>
+                <td>
+                  <button
+                    disabled={saving}
+                    onClick={async () => {
+                      if (await guardBag()) {
+                        setSelectedSlot(e.slot);
+                        setItem(e.item);
+                        setQuantity(e.quantity || 1);
+                      }
+                    }}
+                  >
+                    {t("details")}
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
         <aside>
@@ -1121,34 +1134,70 @@ function BagEditor({
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
-                await act(
-                  { type: "bag", pocket, slot: selected.slot, item, quantity },
-                  true,
-                );
+                if (saving) return;
+                setSaving(true);
+                try {
+                  await act(
+                    {
+                      type: "bag",
+                      pocket,
+                      slot: selected.slot,
+                      item,
+                      quantity,
+                    },
+                    true,
+                  );
+                } finally {
+                  setSaving(false);
+                }
               }}
             >
-              <h2>
-                {t(pocket)} · {selected.slot + 1}
-              </h2>
-              <SelectField
-                label={t("items")}
-                value={item}
-                onChange={(v) => setItem(+v)}
-                options={catalog.items.map((i) => ({
-                  value: i.id,
-                  label: i.id ? `${i.name} #${i.id}` : t("emptyMove"),
-                }))}
-              />
-              <NumberField
-                label={t("quantity")}
-                value={quantity}
-                onChange={setQuantity}
-                max={65535}
-                min={1}
-              />
-              <button className="primary" type="submit">
-                {t("apply")}
-              </button>
+              <fieldset className="inventory-fields" disabled={saving}>
+                <h2>
+                  {t(pocket === "items" ? "bagItems" : pocket)} ·{" "}
+                  {selected.slot + 1}
+                </h2>
+                <SelectField
+                  label={t("items")}
+                  value={item}
+                  onChange={(v) => setItem(+v)}
+                  options={catalog.items.map((i) => ({
+                    value: i.id,
+                    label: i.id ? `${i.name} #${i.id}` : t("emptyMove"),
+                  }))}
+                />
+                <NumberField
+                  label={t("quantity")}
+                  value={quantity}
+                  onChange={setQuantity}
+                  max={
+                    free
+                      ? 65535
+                      : pocket === "key_items"
+                        ? 1
+                        : ["pc", "tmhm", "berries"].includes(pocket)
+                          ? 999
+                          : 99
+                  }
+                  min={1}
+                  disabled={!item}
+                />
+                <div className="inventory-actions">
+                  <button className="primary" type="submit" disabled={!dirty}>
+                    {t("apply")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!item}
+                    onClick={() => {
+                      setItem(0);
+                      setQuantity(1);
+                    }}
+                  >
+                    {t("clearSlot")}
+                  </button>
+                </div>
+              </fieldset>
             </form>
           )}
         </aside>

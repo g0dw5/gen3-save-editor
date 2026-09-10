@@ -1750,3 +1750,25 @@ summary {
 .trainer-map-art details {
   overflow-wrap: anywhere;
 }
+
+.inventory-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.inventory-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pocket-tabs button[aria-pressed="true"] {
+  color: white;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+@media (max-width: 900px) {
+  .bag-layout aside {
+    order: -1;
+  }
+}

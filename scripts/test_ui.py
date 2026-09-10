@@ -10,6 +10,7 @@ import urllib.request
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 from ui_metadata_checks import check_metadata
+from ui_inventory_checks import check_inventory
 
 TOKEN = os.environ['GEN3_DEV_TOKEN']
 OUTPUT = Path(os.environ.get('GEN3_UI_OUTPUT', '/tmp/gen3-ui-tests'))
@@ -52,6 +53,7 @@ with sync_playwright() as p:
     page.get_by_role('button', name='Redo', exact=True).click()
     expect(page.get_by_label('Level', exact=True)).to_have_value('77')
     check_metadata(page, command, OUTPUT)
+    check_inventory(page, command, OUTPUT)
     page.locator('[data-location="0:0"]').drag_to(page.locator('[data-location="p:1"]'))
     expect(page.locator('[data-location="p:1"]')).to_have_class(__import__('re').compile('occupied'))
     assert len([v for v in command('state')['save']['pokemon'] if v['location']['kind']=='party']) == 2

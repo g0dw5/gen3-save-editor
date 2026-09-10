@@ -104,3 +104,21 @@ positive power is the raw ROM base-power value, not calculated battle damage.
 下拉选项显示 `【物／特／变】【属性】【威力】招式名`，分类读取 ROM 的逐招式字段。
 诅咒的专用值 3 显示为变化招式；威力 0 显示为「—」，其他值显示 ROM 基础威力。
 英文界面使用英文分类与属性名；空招式不加前缀。
+
+## PC inventory / 电脑道具
+
+Open **Items → PC items**, select a slot, choose an item and quantity, then apply
+and export. Empty slots accept new items; Clear slot removes the item on Apply.
+The selected pocket and slot persist after edits and undo/redo, and the form follows
+the refreshed save. On narrow windows the form appears before the slot list.
+Standard PC quantities are 1–999; free editing allows 1–65535.
+
+入口为 **道具 → 电脑道具**。空槽可添加道具，清空槽位后应用即可移除；修改后
+保留当前口袋和槽位，撤销/重做会同步表单。标准数量为 1–999，自由编辑为 1–65535。
+应用修改后仍需导出存档。电脑道具共有 50 槽，位于存档逻辑 section 1 的 +0x498，
+每槽 4 字节；数量不异或加密。回归覆盖末槽边界、相邻背包数据保留、校验和、重读、
+撤销/重做，以及中英文界面增删改和小窗口操作。
+
+Items is a top-level workspace next to Pokémon; its tabs distinguish general items,
+key items, balls, TMs/HMs, berries and PC items.
+道具与宝可梦平级，内部区分普通道具、重要道具、精灵球、招式机、树果和电脑道具。

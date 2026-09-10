@@ -1018,3 +1018,51 @@ fn tiled_sprite_validates_bounds_and_decodes_tile_order() {
     assert!(r.object_sprite(240).is_err()); // Variable graphics ID, not an image index.
     assert!(r.trainer_sprite(203).is_err());
 }
+
+#[test]
+fn pc_items_are_unencrypted_bounded_and_undoable() {
+    let mut s = session();
+    let original = s.save_ref().unwrap().data.clone();
+    let base = s.save_ref().unwrap().sections[1];
+    let action = |slot, item, quantity| Action::Bag {
+        pocket: "pc".into(),
+        slot,
+        item,
+        quantity,
+    };
+    s.apply(action(49, 1, 999), Policy::Standard).unwrap();
+    let data = &s.save_ref().unwrap().data;
+    assert_eq!(u16(data, base + 0x498 + 49 * 4).unwrap(), 1);
+    assert_eq!(u16(data, base + 0x498 + 49 * 4 + 2).unwrap(), 999);
+    for (i, (&before, &after)) in original.iter().zip(data).enumerate() {
+        if before != after {
+            assert!(
+                (base + 0x498 + 49 * 4..base + 0x560).contains(&i)
+                    || (base + 0xff6..base + 0xff8).contains(&i)
+            );
+        }
+    }
+    let reloaded = Save::open(data.clone(), s.rom.profile.save).unwrap();
+    assert_eq!(
+        reloaded
+            .bag()
+            .unwrap()
+            .iter()
+            .find(|e| e.pocket == "pc" && e.slot == 49)
+            .unwrap()
+            .quantity,
+        999
+    );
+    s.undo().unwrap();
+    assert_eq!(s.save_ref().unwrap().data, original);
+    s.redo().unwrap();
+    let edited = s.save_ref().unwrap().data.clone();
+    assert!(s.apply(action(50, 1, 1), Policy::Standard).is_err());
+    assert!(s.apply(action(49, 1, 1000), Policy::Standard).is_err());
+    assert_eq!(s.save_ref().unwrap().data, edited);
+    s.apply(action(49, 0, 1), Policy::Standard).unwrap();
+    assert_eq!(
+        u32(&s.save_ref().unwrap().data, base + 0x498 + 49 * 4).unwrap(),
+        0
+    );
+}
