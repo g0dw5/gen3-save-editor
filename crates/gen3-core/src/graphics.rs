@@ -207,6 +207,11 @@ impl Rom {
         let blocks = pointer(b, m.layout + 12)?;
         let primary = Tileset::read(b, pointer(b, m.layout + 16)?)?;
         let secondary = Tileset::read(b, pointer(b, m.layout + 20)?)?;
+        let palette = map_palette(
+            &primary.palette,
+            &secondary.palette,
+            self.profile.map_palette_banks,
+        )?;
         let mut rgba = vec![0; w * h * 4];
         for by in 0..m.height as usize {
             for bx in 0..m.width as usize {
@@ -232,7 +237,7 @@ impl Rom {
                                 let x = bx * 16 + (part % 2) * 8 + px;
                                 let y = by * 16 + (part / 2) * 8 + py;
                                 rgba[(y * w + x) * 4..(y * w + x + 1) * 4].copy_from_slice(&color(
-                                    u16(&set.palette, bank * 32 + index as usize * 2)?,
+                                    u16(&palette, bank * 32 + index as usize * 2)?,
                                     255,
                                 ));
                             }
@@ -243,6 +248,22 @@ impl Rom {
         }
         png(w as u32, h as u32, &rgba)
     }
+}
+/// Map entries address one shared palette, independently of their tile graphics.
+fn map_palette(primary: &[u8], secondary: &[u8], banks: [usize; 2]) -> Result<[u8; 512]> {
+    let [primary_banks, secondary_banks] = banks;
+    if primary_banks > 16 || secondary_banks > 16 - primary_banks {
+        return Err(err("map_palette_banks", format!("{banks:?}")));
+    }
+    let split = primary_banks * 32;
+    let end = split + secondary_banks * 32;
+    let mut palette = [0; 512];
+    palette[..split].copy_from_slice(bytes(primary, 0, split)?);
+    // Secondary palette pointers still address a full palette, including unused
+    // primary banks. Match the engine's source and destination offsets.
+    palette[split..end].copy_from_slice(bytes(secondary, split, end - split)?);
+    palette[..2].fill(0); // The engine forces the backdrop color to black.
+    Ok(palette)
 }
 struct Tileset {
     tiles: Vec<u8>,
@@ -270,6 +291,21 @@ impl Tileset {
 #[cfg(test)]
 mod appearance_tests {
     use super::*;
+
+    #[test]
+    fn map_palette_uses_bank_ownership_and_skips_unused_source_banks() {
+        let primary = [0x11; 512];
+        let secondary = [0x22; 512];
+        let palette = map_palette(&primary, &secondary, [6, 7]).unwrap();
+        assert_eq!(&palette[..2], &[0, 0]);
+        assert!(palette[2..192].iter().all(|&v| v == 0x11));
+        assert!(palette[192..416].iter().all(|&v| v == 0x22));
+        assert!(palette[416..].iter().all(|&v| v == 0));
+        assert!(map_palette(&primary, &secondary, [17, 0]).is_err());
+        assert!(map_palette(&primary, &secondary, [6, 11]).is_err());
+        assert!(map_palette(&primary[..191], &secondary, [6, 7]).is_err());
+        assert!(map_palette(&primary, &secondary[..415], [6, 7]).is_err());
+    }
 
     #[test]
     fn spot_masks_preserve_transparency_outlines_and_overlap() {

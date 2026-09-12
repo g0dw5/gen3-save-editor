@@ -52,6 +52,8 @@ pub struct Profile {
     pub shiny_palettes: usize,
     pub sprite_rules: SpriteRules,
     pub maps: usize,
+    /// Number of palette banks loaded from the primary and secondary tilesets.
+    pub map_palette_banks: [usize; 2],
     pub regions: usize,
     pub region_count: usize,
     pub wild: usize,
@@ -179,6 +181,7 @@ pub const BW: Profile = Profile {
         second_frame_species: 410,
     },
     maps: 0xe8c020,
+    map_palette_banks: [6, 7],
     regions: 0x5a1480,
     region_count: 213,
     wild: 0xea2d34,

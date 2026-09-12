@@ -63,6 +63,9 @@ npm run desktop:build
 `python3 scripts/test_reference_navigation.py`。需要 Playwright 和 Chrome，
 使用合成接口数据，无需 ROM、存档或开发桥接服务。
 
+静态地图的调色板规则及原生 ROM 验证方法见
+[地图调色板](docs/research/map-palettes.md)。
+
 ## 三层结构
 
 - [方法层](skills/gen3-rom-research/SKILL.md)：可独立供 agent 使用，不依赖修改器。

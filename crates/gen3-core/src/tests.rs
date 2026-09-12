@@ -630,7 +630,9 @@ fn local_rom_regression() {
             r.sprite(species.id, false).unwrap();
             r.sprite(species.id, true).unwrap();
         }
-        for id in ["0-0", "0-16", "24-0", "34-0", "35-46", "37-38"] {
+        for id in [
+            "0-0", "0-16", "24-0", "26-1", "34-0", "35-24", "35-46", "37-38",
+        ] {
             r.map_image(id).unwrap();
         }
         for (i, species) in catalog

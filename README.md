@@ -90,6 +90,9 @@ For the synthetic reference-navigation regression, start `npm run dev` and run
 `python3 scripts/test_reference_navigation.py`. This test requires Playwright and
 Chrome but no ROM, save, or development bridge; API responses are generated fixtures.
 
+Static map palette rules and the native-ROM verification harness are documented
+in [map palettes](docs/research/map-palettes.md).
+
 ## CLI and architecture
 
 ```sh
