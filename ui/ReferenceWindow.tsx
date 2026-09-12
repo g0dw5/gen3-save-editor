@@ -45,6 +45,14 @@ interface Props {
   onTemplate: (template: Template) => void;
   onError: (error: unknown) => void;
 }
+
+// Gen III item identities; display names come from the loaded ROM.
+const fishingRodItems: Record<string, number> = {
+  old_rod: 262,
+  good_rod: 263,
+  super_rod: 264,
+};
+
 export function ReferenceWindow({
   window: info,
   catalog,
@@ -56,6 +64,9 @@ export function ReferenceWindow({
   onError,
 }: Props) {
   const { t } = useI18n();
+  const encounterMethod = (method: string) =>
+    catalog.items.find((item) => item.id === fishingRodItems[method])?.name ||
+    t(method);
   const [tab, setTab] = useState<RefTab>(info.tab);
   const [selected, setSelected] = useState<number | string>(info.selected ?? 1);
   const [search, setSearch] = useState("");
@@ -481,7 +492,7 @@ export function ReferenceWindow({
                       </span>
                     </div>
                     <div className="muted small">
-                      {t(e.method)}
+                      {encounterMethod(e.method)}
                       {e.weight !== null
                         ? ` · ${t("weight")} ${e.weight}%`
                         : ""}
@@ -632,7 +643,7 @@ export function ReferenceWindow({
                       </span>
                     </div>
                     <span className="muted small">
-                      {t(e.method)}
+                      {encounterMethod(e.method)}
                       {e.weight !== null ? ` · ${e.weight}%` : ""}
                     </span>
                     <button
