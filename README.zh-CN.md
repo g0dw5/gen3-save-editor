@@ -58,6 +58,10 @@ npm run desktop:build
 已核对的代码路径、昼夜条件结论和验证边界见
 [相遇表与时间条件](docs/research/encounter-time-selection.md)。
 
+资料页切换的浏览器回归可先启动 `npm run dev`，再运行
+`python3 scripts/test_reference_navigation.py`。需要 Playwright 和 Chrome，
+使用合成接口数据，无需 ROM、存档或开发桥接服务。
+
 ## 三层结构
 
 - [方法层](skills/gen3-rom-research/SKILL.md)：可独立供 agent 使用，不依赖修改器。

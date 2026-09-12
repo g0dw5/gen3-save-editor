@@ -105,6 +105,11 @@ export function ReferenceWindow({
       setSelected(rows[0].id);
   }, [rows, selected]);
   const current = rows.find((row) => row.id === selected);
+  // A tab change can briefly retain a map ID before selection is reset.
+  const speciesId =
+    tab === "species"
+      ? catalog.species.find((species) => species.id === selected)?.id
+      : undefined;
   const filtered =
     tab === "trainers"
       ? searchTrainers(trainerEntries, search, trainerFilters).map(
@@ -126,16 +131,18 @@ export function ReferenceWindow({
   useEffect(() => {
     let active = true;
     setDetail(null);
-    if (tab === "species")
-      api<SpeciesDetail>("species", { id: +selected })
+    if (speciesId !== undefined)
+      api<SpeciesDetail>("species", { id: speciesId })
         .then((d) => {
           if (active) setDetail(d);
         })
-        .catch(onError);
+        .catch((error) => {
+          if (active) onError(error);
+        });
     return () => {
       active = false;
     };
-  }, [tab, selected, onError]);
+  }, [speciesId, onError]);
   useEffect(() => {
     let active = true;
     setMapImage("");
@@ -356,7 +363,7 @@ export function ReferenceWindow({
             />
           )}
           {tab === "species" &&
-            (detail ? (
+            (detail && detail.species.id === speciesId ? (
               <>
                 <div
                   className="dex-hero"

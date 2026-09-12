@@ -84,6 +84,10 @@ fixture by adding `GEN3_TEST_SAVE=/tmp/test.sav` to the real-ROM test, then run
 `scripts/test_ui.py` with `GEN3_ROM_BW`, `GEN3_TEST_SAVE`, `GEN3_DEV_TOKEN` and
 Playwright/Chrome installed. This bridge is opt-in and absent from release builds.
 
+For the synthetic reference-navigation regression, start `npm run dev` and run
+`python3 scripts/test_reference_navigation.py`. This test requires Playwright and
+Chrome but no ROM, save, or development bridge; API responses are generated fixtures.
+
 ## CLI and architecture
 
 ```sh
