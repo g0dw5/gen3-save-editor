@@ -53,6 +53,11 @@ npm run desktop:build
 公开测试使用合成二进制数据；本地 ROM 回归不会上传 ROM。发布包不包含 ROM、
 存档、完整精灵图片集或开发 HTTP 服务。
 
+相遇选表的原生代码验证可使用相同的 ROM 环境变量运行
+`python3 scripts/verify_encounter_selection.py`（需要 Python Unicorn）。
+已核对的代码路径、昼夜条件结论和验证边界见
+[相遇表与时间条件](docs/research/encounter-time-selection.md)。
+
 ## 三层结构
 
 - [方法层](skills/gen3-rom-research/SKILL.md)：可独立供 agent 使用，不依赖修改器。

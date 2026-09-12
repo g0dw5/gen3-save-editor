@@ -55,6 +55,15 @@ Wild records usually select four encounter tables. Keep slot weights separate
 from map encounter-rate bytes and gameplay probability. Rod tables have separate
 subgroups. Preserve map IDs and the exact record offset.
 
+For time-of-day questions, trace the active header selector and its callers,
+not just the table layout. Check runtime pointer replacement, relocated hooks,
+duplicate map headers, save-variable branches, and post-selection filters.
+Different levels or repeated species slots alone do not imply day/night tables.
+Separate ordinary slots from outbreaks, roamers, fishing special cases and
+scripted events. If CPU-level execution is available, enumerate bounded slot
+rolls and trace memory reads for clock dependencies; record which external
+functions are stubbed and which event paths remain outside the test.
+
 Walk scripts from map objects, coordinate events, background events and map
 script tables. Use an opcode length table verified against the target engine.
 Follow calls and branches with per-path constant state. Clear values when a

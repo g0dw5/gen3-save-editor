@@ -72,6 +72,11 @@ GEN3_ROM_BW='/path/BW.gba' GEN3_ROM_DP='/path/DP.gba' \
   cargo test -p gen3-core local_rom_regression -- --ignored --nocapture
 ```
 
+For native encounter-selection verification (Python Unicorn required), run
+`scripts/verify_encounter_selection.py` with the same ROM environment variables.
+See [encounter selection and time conditions](docs/research/encounter-time-selection.md)
+for the audited code paths and validation limits.
+
 For browser tests, run `cargo run -p gen3-cli --features dev-server --bin gen3-dev`
 and `npm run dev` with the same random `GEN3_DEV_TOKEN` (32+ characters). The
 bridge binds only `127.0.0.1:8766` and requires that token. Generate a disposable
