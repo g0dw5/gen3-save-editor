@@ -129,8 +129,12 @@ impl App {
             "sprite" => {
                 let id = serde_json::from_value(p["id"].clone())?;
                 let shiny = p["shiny"].as_bool().unwrap_or(false);
+                let pid: u32 = match p.get("pid") {
+                    None => 0,
+                    Some(value) => serde_json::from_value(value.clone())?,
+                };
                 Ok(
-                    json!({"url":format!("data:image/png;base64,{}",STANDARD.encode(self.session()?.rom.sprite(id,shiny)?))}),
+                    json!({"url":format!("data:image/png;base64,{}",STANDARD.encode(self.session()?.rom.pokemon_sprite(id,shiny,pid)?))}),
                 )
             }
             "trainer_sprite" | "object_sprite" => {

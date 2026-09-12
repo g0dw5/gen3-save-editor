@@ -50,6 +50,7 @@ pub struct Profile {
     pub sprites: usize,
     pub palettes: usize,
     pub shiny_palettes: usize,
+    pub sprite_rules: SpriteRules,
     pub maps: usize,
     pub regions: usize,
     pub region_count: usize,
@@ -64,6 +65,15 @@ pub struct Profile {
     pub map_groups: &'static [MapGroup],
     pub map_counts: &'static [usize],
     pub save: SaveLayout,
+}
+/// Engine-specific appearance rules; graphics and spot masks remain in the ROM.
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct SpriteRules {
+    pub unown_species: u16,
+    pub unown_b_sprite: u16,
+    pub spinda_species: u16,
+    pub spinda_spots: usize,
+    pub second_frame_species: u16,
 }
 /// Reviewed scene actors for battles initiated outside an object's own script.
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -161,6 +171,13 @@ pub const BW: Profile = Profile {
     sprites: 0x30a18c,
     palettes: 0x303678,
     shiny_palettes: 0x304438,
+    sprite_rules: SpriteRules {
+        unown_species: 201,
+        unown_b_sprite: 413,
+        spinda_species: 308,
+        spinda_spots: 0x31e2f0,
+        second_frame_species: 410,
+    },
     maps: 0xe8c020,
     regions: 0x5a1480,
     region_count: 213,

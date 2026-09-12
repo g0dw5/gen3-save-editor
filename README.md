@@ -23,6 +23,8 @@ fingerprints and do not become supported stock releases automatically.
 
 ## Workspace
 
+- Individual sprites use PID-derived Unown letters and Spinda spots, with normal
+  and shiny palettes read from the ROM. See [appearance verification](docs/research/pokemon-appearance.md).
 - Keep the party and all 14 boxes visible; switch compact/comfortable density or
   hide the inspector. Search dims nonmatches without moving storage coordinates.
 - Edit identity, nature/shiny/gender, level/experience, IVs/EVs, moves/PP, abilities,

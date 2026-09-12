@@ -1066,3 +1066,16 @@ fn pc_items_are_unencrypted_bounded_and_undoable() {
         0
     );
 }
+
+#[test]
+fn unown_appearance_uses_all_four_pid_bytes() {
+    let mut counts = [0; 28];
+    for bits in 0u32..256 {
+        let pid = (bits & 3) | ((bits & 12) << 6) | ((bits & 48) << 12) | ((bits & 192) << 18);
+        let letter = graphics::unown_letter(pid);
+        assert_eq!(letter, (bits % 28) as u16);
+        assert_eq!(letter, graphics::unown_letter(pid | 0xfcfcfcfc));
+        counts[letter as usize] += 1;
+    }
+    assert!(counts.iter().all(|count| *count >= 9));
+}

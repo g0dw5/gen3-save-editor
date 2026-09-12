@@ -166,6 +166,7 @@ export function PokemonEditor({
           catalog={catalog}
           species={merged.species}
           shiny={merged.shiny}
+          pid={merged.pid}
           large
         />
         <div>

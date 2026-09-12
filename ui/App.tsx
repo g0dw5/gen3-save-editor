@@ -408,7 +408,12 @@ export default function App() {
         }}
       >
         {species && catalog ? (
-          <Sprite catalog={catalog} species={species} shiny={mon?.shiny} />
+          <Sprite
+            catalog={catalog}
+            species={species}
+            shiny={mon?.shiny}
+            pid={mon?.pid}
+          />
         ) : (
           <span className="slot-empty" />
         )}

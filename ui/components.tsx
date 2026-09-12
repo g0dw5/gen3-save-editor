@@ -9,11 +9,13 @@ export function Sprite({
   catalog,
   species,
   shiny = false,
+  pid = 0,
   large = false,
 }: {
   catalog: Catalog;
   species: number;
   shiny?: boolean;
+  pid?: number;
   large?: boolean;
 }) {
   const [url, setUrl] = useState("");
@@ -21,11 +23,11 @@ export function Sprite({
     let active = true;
     setUrl("");
     if (!species) return;
-    const key = `${catalog.profile.md5}:${species}:${shiny}`;
+    const key = `${catalog.profile.md5}:${species}:${shiny}:${pid}`;
     if (!sprites.has(key))
       sprites.set(
         key,
-        api<{ url: string }>("sprite", { id: species, shiny })
+        api<{ url: string }>("sprite", { id: species, shiny, pid })
           .then((r) => r.url)
           .catch(() => ""),
       );
@@ -35,7 +37,7 @@ export function Sprite({
     return () => {
       active = false;
     };
-  }, [catalog.profile.md5, species, shiny]);
+  }, [catalog.profile.md5, species, shiny, pid]);
   return url ? (
     <img
       className={`sprite ${large ? "large" : ""}`}

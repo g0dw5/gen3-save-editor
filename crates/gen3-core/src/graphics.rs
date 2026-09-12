@@ -81,11 +81,67 @@ pub fn tiled_sprite(tiles: &[u8], palette: &[u8], width: usize, height: usize) -
     }
     png(width as u32, height as u32, &rgba)
 }
+/// The two low bits of each PID byte select one of 28 Unown letters.
+pub fn unown_letter(pid: u32) -> u16 {
+    (((pid & 0x03000000) >> 18 | (pid & 0x00030000) >> 12 | (pid & 0x00000300) >> 6 | (pid & 3))
+        % 28) as u16
+}
+
+/// Recolor only the body shades covered by the four ROM-supplied spot masks.
+fn spinda_spots(tiles: &mut [u8], masks: &[u8], mut pid: u32) -> Result<()> {
+    bytes(tiles, 0, 2048)?;
+    bytes(masks, 0, 4 * 36)?;
+    for spot in masks.as_chunks::<36>().0.iter().take(4) {
+        let x = spot[0] as i32 + (pid & 15) as i32 - 8;
+        let y = spot[1] as i32 + ((pid >> 4) & 15) as i32 - 8;
+        pid >>= 8;
+        for row in 0..16 {
+            let mask = u16(spot, 2 + row * 2)?;
+            for column in 0..16 {
+                let (px, py) = (x + column, y + row as i32);
+                if mask & (1 << column) == 0 || !(0..64).contains(&px) || !(0..64).contains(&py) {
+                    continue;
+                }
+                let (px, py) = (px as usize, py as usize);
+                let offset = (py / 8 * 8 + px / 8) * 32 + py % 8 * 4 + px % 8 / 2;
+                let shift = (px % 2) * 4;
+                let index = (tiles[offset] >> shift) & 15;
+                if (1..=3).contains(&index) {
+                    tiles[offset] += 4 << shift;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 impl Rom {
     pub fn sprite(&self, id: u16, shiny: bool) -> Result<Vec<u8>> {
+        self.pokemon_sprite(id, shiny, 0)
+    }
+    /// Static front picture. PID drives persistent individual appearances;
+    /// temporary battle transformations are not inferred from a boxed Pokémon.
+    pub fn pokemon_sprite(&self, id: u16, shiny: bool, pid: u32) -> Result<Vec<u8>> {
         self.valid_species(id)?;
         let b = &self.data;
-        let sprite = lz77(b, pointer(b, self.profile.sprites + id as usize * 8)?)?;
+        let rules = self.profile.sprite_rules;
+        let letter = unown_letter(pid);
+        let picture_id = if id == rules.unown_species && letter != 0 {
+            rules.unown_b_sprite + letter - 1
+        } else {
+            id
+        };
+        // Extra Unown picture indices are graphics records, not species IDs.
+        let mut sprite = lz77(
+            b,
+            pointer(b, self.profile.sprites + picture_id as usize * 8)?,
+        )?;
+        if id == rules.second_frame_species {
+            sprite = bytes(&sprite, 2048, 2048)?.to_vec();
+        }
+        if id == rules.spinda_species {
+            spinda_spots(&mut sprite, bytes(b, rules.spinda_spots, 4 * 36)?, pid)?;
+        }
         let table = if shiny {
             self.profile.shiny_palettes
         } else {
@@ -208,5 +264,32 @@ impl Tileset {
             palette,
             metatiles: pointer(b, o + 12)?,
         })
+    }
+}
+
+#[cfg(test)]
+mod appearance_tests {
+    use super::*;
+
+    #[test]
+    fn spot_masks_preserve_transparency_outlines_and_overlap() {
+        let mut tiles = vec![0; 2048];
+        for x in 0..16 {
+            tiles[x / 8 * 32 + x % 8 / 2] |= (x as u8) << (x % 2 * 4);
+        }
+        let mut masks = vec![0; 144];
+        for i in 0..4 {
+            masks[i * 36..i * 36 + 4].copy_from_slice(&[8, 8, 255, 255]);
+        }
+        spinda_spots(&mut tiles, &masks, 0).unwrap();
+        let expected = [0, 5, 6, 7, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+        for (x, expected) in expected.into_iter().enumerate() {
+            assert_eq!(
+                (tiles[x / 8 * 32 + x % 8 / 2] >> (x % 2 * 4)) & 15,
+                expected
+            );
+        }
+        assert!(spinda_spots(&mut tiles[..2047], &masks, 0).is_err());
+        assert!(spinda_spots(&mut tiles, &masks[..143], 0).is_err());
     }
 }
