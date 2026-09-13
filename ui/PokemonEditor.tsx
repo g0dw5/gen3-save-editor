@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { api } from "./api";
+import { namedOption, itemOption } from "./names";
 import { PokemonOrigin, PokemonAdvanced } from "./PokemonMetadata";
 import {
   useI18n,
@@ -122,15 +123,12 @@ export function PokemonEditor({
           m.id === 0 || m.id === current || free || allMoves || known.has(m.id),
       )
       .map((m) => ({
-        value: m.id,
-        label: `${m.id ? `【${moveCategoryNames[locale][m.category] ?? "?"}】【${typeNames[locale][m.move_type] ?? "?"}】【${m.power || "—"}】${m.name}` : t("emptyMove")}${m.id ? ` · #${m.id}` : ""}${m.id && !known.has(m.id) ? ` — ${future.has(m.id) ? t("futureMove") : t("unknownSource")}` : ""}`,
+        ...namedOption(catalog, "moves", m, locale),
+        label: `${m.id ? `【${moveCategoryNames[locale][m.category] ?? "?"}】【${typeNames[locale][m.move_type] ?? "?"}】【${m.power || "—"}】${namedOption(catalog, "moves", m, locale).label}` : t("emptyMove")}${m.id && !known.has(m.id) ? ` — ${future.has(m.id) ? t("futureMove") : t("unknownSource")}` : ""}`,
       }));
-  const itemOptions = catalog.items.map((i) => ({
-    value: i.id,
-    label: i.id
-      ? `${i.name}${i.tm_move ? ` · ${catalog.moves[i.tm_move]?.name ?? ""}` : ""} #${i.id}`
-      : t("emptyMove"),
-  }));
+  const itemOptions = catalog.items.map((i) =>
+    i.id ? itemOption(catalog, i, locale) : { value: 0, label: t("emptyMove") },
+  );
   const num = (key: keyof Pokemon, max = 255, min = 0) => (
     <NumberField
       key={key}
@@ -215,12 +213,13 @@ export function PokemonEditor({
           {tab === "overview" && (
             <>
               <SelectField
+                searchable
                 label={t("species")}
                 value={merged.species}
                 onChange={(v) => change("species", +v)}
                 options={catalog.species
                   .filter((s) => s.stats[0] > 0)
-                  .map((s) => ({ value: s.id, label: `${s.name} #${s.id}` }))}
+                  .map((s) => namedOption(catalog, "species", s, locale))}
               />
               <label className="field">
                 <span>{t("nickname")}</span>
@@ -233,6 +232,7 @@ export function PokemonEditor({
                 {num("level", 100, 1)}
                 {num("experience", 0xffffffff)}
                 <SelectField
+                  searchable
                   label={t("nature")}
                   value={merged.nature}
                   onChange={(v) => change("nature", +v)}
@@ -242,6 +242,7 @@ export function PokemonEditor({
                   }))}
                 />
                 <SelectField
+                  searchable
                   label={t("gender")}
                   value={merged.gender}
                   onChange={(v) => change("gender", v)}
@@ -252,6 +253,7 @@ export function PokemonEditor({
                 />
               </div>
               <SelectField
+                searchable
                 label={t("ability")}
                 value={merged.ability_slot}
                 onChange={(v) => change("ability_slot", +v)}
@@ -262,6 +264,7 @@ export function PokemonEditor({
                 }))}
               />
               <SelectField
+                searchable
                 label={t("held_item")}
                 value={merged.held_item}
                 onChange={(v) => change("held_item", +v)}
@@ -360,6 +363,7 @@ export function PokemonEditor({
                 <div className="field-grid">
                   {num("current_hp", 65535)}
                   <SelectField
+                    searchable
                     label={t("status")}
                     value={merged.status ?? 0}
                     onChange={(v) => change("status", +v)}
@@ -406,6 +410,7 @@ export function PokemonEditor({
               {merged.moves.map((id, i) => (
                 <div className="move-card" key={i}>
                   <SelectField
+                    searchable
                     label={`${t("move")} ${i + 1}`}
                     value={id}
                     onChange={(v) => moveChange(i, +v)}
@@ -481,7 +486,12 @@ export function PokemonEditor({
           )}
           {tab === "origin" && (
             <>
-              <PokemonOrigin {...metadataProps} />
+              <PokemonOrigin
+                {...metadataProps}
+                origins={
+                  detail?.species.id === merged.species ? detail.origins : null
+                }
+              />
               <button
                 type="button"
                 className="link-button"

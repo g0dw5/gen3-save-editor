@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { X, GripHorizontal } from "lucide-react";
 import { api } from "./api";
+import { SearchSelect, type SelectProps } from "./SearchSelect";
 import { useI18n, typeNames } from "./i18n";
 import type { Catalog } from "./types";
 
@@ -103,13 +104,10 @@ export function SelectField({
   onChange,
   options,
   disabled = false,
-}: {
-  label: string;
-  value: number | string;
-  onChange: (value: string) => void;
-  options: { value: number | string; label: string; disabled?: boolean }[];
-  disabled?: boolean;
-}) {
+  searchable = false,
+}: SelectProps) {
+  if (searchable)
+    return <SearchSelect {...{ label, value, onChange, options, disabled }} />;
   return (
     <label className="field">
       <span>{label}</span>

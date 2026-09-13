@@ -1,5 +1,16 @@
 import { createContext, useContext } from "react";
 export const en = {
+  searchChoices: "Search ROM name, official name or ID…",
+  noChoiceResults: "No matching options",
+  originKind: "Encounter source",
+  originCaught: "Caught / received",
+  originHatched: "Hatched from an egg",
+  originCurrent: "Current value · unverified",
+  originLoading: "Loading encounter evidence…",
+  originHelp:
+    "Capture locations include this species and its pre-evolutions, not sibling branches. Conditions and gifts may be incomplete; current values are preserved.",
+  hatchHelp:
+    "Eggs can hatch away from wild encounter areas. These are hatch locations; met level is stored as 0. Breeding compatibility still depends on the parents.",
   unknownValue: "Unknown value",
   neutralNature: "No stat changes",
   natureIncrease: "increased by 10%",
@@ -382,6 +393,17 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  searchChoices: "搜索 ROM 名、官方译名或编号…",
+  noChoiceResults: "没有匹配的选项",
+  originKind: "相遇来源",
+  originCaught: "捕获／获赠",
+  originHatched: "孵蛋获得",
+  originCurrent: "当前值 · 未确认来源",
+  originLoading: "正在读取相遇依据…",
+  originHelp:
+    "捕获地点包含本形态及进化前形态，不包含其他进化分支。剧情条件与赠送来源可能不完整；已有值会保留。",
+  hatchHelp:
+    "孵化地点不受野生分布限制；孵化后的相遇等级记为 0。实际能否培育仍需满足亲代条件。",
   unknownValue: "未知值",
   neutralNature: "能力无加减",
   natureIncrease: "提升 10%",

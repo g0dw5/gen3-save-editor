@@ -1800,3 +1800,33 @@ summary {
     order: -1;
   }
 }
+
+.select-popup {
+  position: fixed;
+  z-index: 10000;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px #0002;
+  padding: 4px;
+}
+.select-popup [role="option"] {
+  padding: 9px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 5px;
+  overflow-wrap: anywhere;
+}
+.select-popup [role="option"].highlighted,
+.select-popup [role="option"][aria-selected="true"] {
+  background: var(--soft);
+}
+.select-popup [aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
+}
+.select-popup p {
+  padding: 8px;
+}

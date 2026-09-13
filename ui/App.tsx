@@ -38,6 +38,7 @@ import {
   Toggle,
 } from "./components";
 import { I18n, en, zh, type Key, type Locale, useI18n } from "./i18n";
+import { namedOption, itemOption } from "./names";
 import { PokemonEditor, type PokemonEditorTab } from "./PokemonEditor";
 import { ReferenceWindow } from "./ReferenceWindow";
 import {
@@ -975,7 +976,7 @@ function Draft({
   onCancel: () => void;
   onCreate: (template: Template) => Promise<void>;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [value, setValue] = useState(template);
   return (
     <form
@@ -990,12 +991,13 @@ function Draft({
       <h2>{catalog.species.find((s) => s.id === value.species)?.name}</h2>
       <p className="muted">{t("draftHelp")}</p>
       <SelectField
+        searchable
         label={t("species")}
         value={value.species}
         onChange={(v) => setValue((old) => ({ ...old, species: +v }))}
         options={catalog.species
           .filter((s) => s.stats[0])
-          .map((s) => ({ value: s.id, label: `${s.name} #${s.id}` }))}
+          .map((s) => namedOption(catalog, "species", s, locale))}
       />
       <NumberField
         label={t("level")}
@@ -1046,7 +1048,7 @@ function BagEditor({
   act: Act;
   onDirty: (v: boolean) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [pocket, setPocket] = useState("items");
   const [selectedSlot, setSelectedSlot] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -1166,13 +1168,15 @@ function BagEditor({
                   {selected.slot + 1}
                 </h2>
                 <SelectField
+                  searchable
                   label={t("items")}
                   value={item}
                   onChange={(v) => setItem(+v)}
-                  options={catalog.items.map((i) => ({
-                    value: i.id,
-                    label: i.id ? `${i.name} #${i.id}` : t("emptyMove"),
-                  }))}
+                  options={catalog.items.map((i) =>
+                    i.id
+                      ? itemOption(catalog, i, locale)
+                      : { value: 0, label: t("emptyMove") },
+                  )}
                 />
                 <NumberField
                   label={t("quantity")}

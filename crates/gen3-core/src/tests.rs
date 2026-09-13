@@ -509,6 +509,15 @@ fn local_rom_regression() {
         assert_eq!(maps.len(), 707);
         let encounters = r.encounters().unwrap();
         assert!(encounters.len() > 1000);
+        let vaporeon = r.origin_options(134).unwrap();
+        assert_eq!(vaporeon.ancestors, [133, 134]);
+        assert!(vaporeon.can_hatch);
+        assert!(vaporeon
+            .encounters
+            .iter()
+            .all(|e| [133, 134].contains(&e.species)));
+        assert!(!r.origin_options(150).unwrap().can_hatch);
+        assert!(!r.origin_options(132).unwrap().can_hatch);
         let trainers = r.trainers().unwrap();
         assert!(trainers.len() > 1300);
         // Both hacks use the relocated class table, including expanded IDs.
@@ -1080,4 +1089,61 @@ fn unown_appearance_uses_all_four_pid_bytes() {
         counts[letter as usize] += 1;
     }
     assert!(counts.iter().all(|count| *count >= 9));
+}
+
+#[test]
+fn origins_follow_ancestors_without_sibling_encounters_and_allow_babies() {
+    let mut r = rom();
+    r.profile.map_counts = &[1];
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    put32(b, r.profile.maps, 0x08021000);
+    put32(b, 0x21000, 0x08021100);
+    put32(b, 0x21100, 0x08021200);
+    put32(b, 0x21200, 2);
+    put32(b, 0x21204, 2);
+    b[0x21114] = 1;
+    let evo = r.profile.evolutions.offset + r.profile.evolutions.stride;
+    // Species 1 branches into 2 and 3; only species 3 can breed.
+    for (i, target) in [2, 3].into_iter().enumerate() {
+        put16(b, evo + i * 8, 4);
+        put16(b, evo + i * 8 + 4, target);
+    }
+    for (id, group) in [(1, 15), (2, 15), (3, 5)] {
+        let o = r.profile.base_stats.offset + id * 28;
+        b[o + 20..o + 22].fill(group);
+    }
+    let wild = r.profile.wild;
+    put32(b, wild + 4, 0x08021300);
+    b[wild + 20..wild + 22].fill(255);
+    put32(b, 0x21300, 20);
+    put32(b, 0x21304, 0x08021400);
+    for i in 0..12 {
+        b[0x21400 + i * 4..0x21402 + i * 4].fill(5);
+        put16(b, 0x21402 + i * 4, (i % 3 + 1) as u16);
+    }
+    let origins = r.origin_options(2).unwrap();
+    assert_eq!(origins.ancestors, [1, 2]);
+    assert_eq!(origins.encounters.len(), 8);
+    assert!(origins.encounters.iter().all(|e| e.species != 3));
+    assert!(origins.can_hatch);
+    assert_eq!(origins.hatch_regions, [1]);
+    assert!(r.origin_options(1).unwrap().can_hatch);
+    // Undiscovered and Ditto groups cannot themselves produce this lineage.
+    for group in [15, 13] {
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[r.profile.base_stats.offset + 3 * 28 + 20..r.profile.base_stats.offset + 3 * 28 + 22]
+            .fill(group);
+        let origins = r.origin_options(2).unwrap();
+        assert!(!origins.can_hatch);
+        assert!(origins.hatch_regions.is_empty());
+    }
+    // A malformed cycle terminates rather than expanding indefinitely.
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    let evo = r.profile.evolutions.offset + 2 * r.profile.evolutions.stride;
+    put16(b, evo, 4);
+    put16(b, evo + 4, 1);
+    assert_eq!(
+        r.ancestors(2).unwrap().into_iter().collect::<Vec<_>>(),
+        [1, 2]
+    );
 }

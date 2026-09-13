@@ -1,6 +1,7 @@
+import { itemOption } from "./names";
 import { NumberField, SelectField, Toggle } from "./components";
 import { useI18n } from "./i18n";
-import type { Catalog, Pokemon } from "./types";
+import type { Catalog, Pokemon, OriginOptions } from "./types";
 
 export const contestCategories = ["cool", "beauty", "cute", "smart", "tough"];
 export const ribbonNames = [
@@ -28,8 +29,15 @@ interface Props {
   pidLocked: boolean;
 }
 
-export function PokemonOrigin({ pokemon: p, catalog, change }: Props) {
-  const { t } = useI18n();
+export function PokemonOrigin({
+  pokemon: p,
+  catalog,
+  change,
+  free,
+  origins,
+}: Props & { origins: OriginOptions | null }) {
+  const { t, locale } = useI18n();
+  const kind = p.met_level === 0 ? "hatched" : "caught";
   const options = (
     values: { value: number; label: string }[],
     current: number,
@@ -52,16 +60,34 @@ export function PokemonOrigin({ pokemon: p, catalog, change }: Props) {
     value: id,
     label: t(`pokemonLanguage_${id}`),
   }));
-  const locations = [
-    ...catalog.met_locations.map((l) => ({
-      value: l.id,
-      label: `${l.name} · #${l.id}`,
-    })),
-    ...[253, 254, 255].map((id) => ({
-      value: id,
-      label: t(`metSpecial_${id}`),
-    })),
+  const eligible = new Set(
+    kind === "hatched"
+      ? (origins?.hatch_regions ?? [])
+      : (origins?.encounters.map((e) => e.region) ?? []),
+  );
+  const locations: { value: number; label: string; disabled?: boolean }[] = [
+    ...catalog.met_locations
+      .filter((l) => free || eligible.has(l.id))
+      .map((l) => ({ value: l.id, label: `${l.name} · #${l.id}` })),
+    ...(free
+      ? [253, 254, 255].map((id) => ({
+          value: id,
+          label: t(`metSpecial_${id}`),
+        }))
+      : []),
   ];
+  if (!locations.some((l) => l.value === p.met_location)) {
+    const name =
+      catalog.met_locations.find((l) => l.id === p.met_location)?.name ??
+      (p.met_location >= 253
+        ? t(`metSpecial_${p.met_location}`)
+        : t("unknownValue"));
+    locations.push({
+      value: p.met_location,
+      label: `${name} · #${p.met_location} — ${t("originCurrent")}`,
+      disabled: true,
+    } as { value: number; label: string; disabled?: boolean });
+  }
   return (
     <>
       <label className="field">
@@ -98,16 +124,47 @@ export function PokemonOrigin({ pokemon: p, catalog, change }: Props) {
         <NumberField
           label={t("met_level")}
           value={p.met_level}
+          min={kind === "hatched" ? 0 : 1}
           max={127}
+          disabled={kind === "hatched" && !free}
           onChange={(v) => change("met_level", v)}
         />
       </div>
       <SelectField
+        label={t("originKind")}
+        value={kind}
+        options={[
+          { value: "caught", label: t("originCaught") },
+          {
+            value: "hatched",
+            label: t("originHatched"),
+            disabled: !free && !origins?.can_hatch,
+          },
+        ]}
+        onChange={(v) => {
+          change(
+            "met_level",
+            v === "hatched" ? 0 : Math.max(1, p.met_level || p.level),
+          );
+        }}
+      />
+      <SelectField
+        searchable
+        disabled={!free && !origins}
         label={t("met_location")}
         value={p.met_location}
         onChange={(v) => change("met_location", +v)}
-        options={options(locations, p.met_location)}
+        options={locations}
       />
+      <p className="small muted">
+        {t(
+          !free && !origins
+            ? "originLoading"
+            : kind === "hatched"
+              ? "hatchHelp"
+              : "originHelp",
+        )}
+      </p>
       <SelectField
         label={t("origin_game")}
         value={p.origin_game}
@@ -115,13 +172,14 @@ export function PokemonOrigin({ pokemon: p, catalog, change }: Props) {
         options={options(games, p.origin_game)}
       />
       <SelectField
+        searchable
         label={t("ball")}
         value={p.ball}
         onChange={(v) => change("ball", +v)}
         options={options(
           catalog.items
             .filter((i) => i.id >= 1 && i.id <= 12)
-            .map((i) => ({ value: i.id, label: i.name })),
+            .map((i) => itemOption(catalog, i, locale)),
           p.ball,
         )}
       />

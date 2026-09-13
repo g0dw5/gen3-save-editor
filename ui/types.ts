@@ -180,7 +180,14 @@ export interface Encounter {
   offset: number;
   conditional: boolean;
 }
+export interface OriginOptions {
+  ancestors: number[];
+  encounters: Encounter[];
+  can_hatch: boolean;
+  hatch_regions: number[];
+}
 export interface SpeciesDetail {
+  origins: OriginOptions;
   species: Species;
   evolutions: {
     method: number;

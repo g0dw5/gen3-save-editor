@@ -29,6 +29,9 @@ fingerprints and do not become supported stock releases automatically.
   hide the inspector. Search dims nonmatches without moving storage coordinates.
 - Edit identity, nature/shiny/gender, level/experience, IVs/EVs, moves/PP, abilities,
   held items, origin, eggs, Pokérus, ribbons and contest values.
+- Search editing fields by ROM names/IDs or mapped official Chinese/English names.
+  Standard origin choices include the species and its pre-evolutions, with a
+  separate hatch source. See [search and origin rules](docs/research/search-and-origins.md).
 - Drag between slots to move or swap. Alt-drag copies. Buttons provide a pointer
   alternative; modifier-click selects multiple Pokémon for batch edits.
 - Browse species, learning sources, items, abilities, maps and trainers in movable
@@ -97,7 +100,8 @@ The editor preserves its active tab across Pokémon selections and keeps its
 header and action footer outside the scrolling fields. Run
 `python3 scripts/test_editor_navigation.py` against Vite to verify tab retention,
 draft isolation and scrolling at desktop, minimum-window and mobile sizes.
-The test uses synthetic data and requires Playwright and Chrome.
+The test uses synthetic data and requires Playwright and Chrome. Run
+`python3 scripts/test_search_origins.py` for searchable fields and origin choices.
 
 ## CLI and architecture
 

@@ -109,6 +109,14 @@ pub struct SpeciesDetail {
     pub evolutions: Vec<Evolution>,
     pub learnset: Vec<LearnSource>,
     pub encounters: Vec<crate::world::Encounter>,
+    pub origins: OriginOptions,
+}
+#[derive(Serialize)]
+pub struct OriginOptions {
+    pub ancestors: Vec<u16>,
+    pub encounters: Vec<crate::world::Encounter>,
+    pub can_hatch: bool,
+    pub hatch_regions: Vec<u8>,
 }
 #[derive(Clone, Deserialize, Serialize)]
 pub struct RomEdit {
@@ -341,7 +349,7 @@ impl Rom {
         }
         Err(err("learnset_terminator", id))
     }
-    pub fn learnset(&self, id: u16) -> Result<Vec<LearnSource>> {
+    pub fn ancestors(&self, id: u16) -> Result<BTreeSet<u16>> {
         self.valid_species(id)?;
         let mut ancestors = BTreeSet::from([id]);
         loop {
@@ -359,6 +367,10 @@ impl Rom {
                 break;
             }
         }
+        Ok(ancestors)
+    }
+    pub fn learnset(&self, id: u16) -> Result<Vec<LearnSource>> {
+        let ancestors = self.ancestors(id)?;
         let mut out = Vec::new();
         for s in &ancestors {
             if let Ok(rows) = self.level_moves(*s) {
@@ -438,6 +450,51 @@ impl Rom {
                 .into_iter()
                 .filter(|e| e.species == id)
                 .collect(),
+            origins: self.origin_options(id)?,
+        })
+    }
+    /// Candidate origins, not a proof of story reachability or full legality.
+    pub fn origin_options(&self, id: u16) -> Result<OriginOptions> {
+        let ancestors = self.ancestors(id)?;
+        // Babies may belong to the Undiscovered group while their evolved
+        // parents can breed. Expand only for breeding eligibility, never for
+        // wild encounter locations (which must exclude sibling branches).
+        let mut family = ancestors.clone();
+        loop {
+            let previous = family.len();
+            for s in family.clone() {
+                for e in self.evolutions(s)? {
+                    self.valid_species(e.target)?;
+                    family.insert(e.target);
+                }
+            }
+            if previous == family.len() {
+                break;
+            }
+        }
+        let can_hatch = family.into_iter().any(|s| {
+            self.species(s)
+                .is_ok_and(|s| s.egg_groups.iter().all(|g| *g != 0 && *g != 13 && *g != 15))
+        });
+        Ok(OriginOptions {
+            encounters: self
+                .encounters()?
+                .into_iter()
+                .filter(|e| ancestors.contains(&e.species))
+                .collect(),
+            ancestors: ancestors.into_iter().collect(),
+            can_hatch,
+            hatch_regions: if can_hatch {
+                self.maps()?
+                    .into_iter()
+                    .map(|m| m.region)
+                    .filter(|r| *r < 253)
+                    .collect::<BTreeSet<_>>()
+                    .into_iter()
+                    .collect()
+            } else {
+                Vec::new()
+            },
         })
     }
     /// Only fixed-width scalar fields are writable. No arbitrary offset escape hatch.
