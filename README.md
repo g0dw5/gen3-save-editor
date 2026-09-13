@@ -93,6 +93,12 @@ Chrome but no ROM, save, or development bridge; API responses are generated fixt
 Static map palette rules and the native-ROM verification harness are documented
 in [map palettes](docs/research/map-palettes.md).
 
+The editor preserves its active tab across Pokémon selections and keeps its
+header and action footer outside the scrolling fields. Run
+`python3 scripts/test_editor_navigation.py` against Vite to verify tab retention,
+draft isolation and scrolling at desktop, minimum-window and mobile sizes.
+The test uses synthetic data and requires Playwright and Chrome.
+
 ## CLI and architecture
 
 ```sh

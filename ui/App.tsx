@@ -38,7 +38,7 @@ import {
   Toggle,
 } from "./components";
 import { I18n, en, zh, type Key, type Locale, useI18n } from "./i18n";
-import { PokemonEditor } from "./PokemonEditor";
+import { PokemonEditor, type PokemonEditorTab } from "./PokemonEditor";
 import { ReferenceWindow } from "./ReferenceWindow";
 import {
   fromKey,
@@ -68,6 +68,7 @@ export default function App() {
   const [save, setSave] = useState<Snapshot | null>(null);
   const [world, setWorld] = useState<World | null>(null);
   const [selected, setSelected] = useState("p:0");
+  const [editorTab, setEditorTab] = useState<PokemonEditorTab>("overview");
   const [multi, setMulti] = useState<string[]>([]);
   const [revision, setRevision] = useState(0);
   const [page, setPage] = useState("pokemon");
@@ -817,6 +818,8 @@ export default function App() {
                       <PokemonEditor
                         key={`${catalog.profile.md5}:${selected}`}
                         row={row}
+                        tab={editorTab}
+                        onTabChange={setEditorTab}
                         catalog={catalog}
                         free={free}
                         setFree={setFree}

@@ -66,6 +66,11 @@ npm run desktop:build
 静态地图的调色板规则及原生 ROM 验证方法见
 [地图调色板](docs/research/map-palettes.md)。
 
+宝可梦编辑栏在切换个体时保留当前标签，顶部标签和底部操作区固定，仅中间
+内容滚动。启动 Vite 后运行 `python3 scripts/test_editor_navigation.py` 可验证
+标签保留、草稿隔离及桌面／最小窗口／手机尺寸下的滚动行为；使用合成数据，
+需要 Playwright 和 Chrome。
+
 ## 三层结构
 
 - [方法层](skills/gen3-rom-research/SKILL.md)：可独立供 agent 使用，不依赖修改器。

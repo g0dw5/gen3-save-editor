@@ -25,7 +25,18 @@ import type {
   StoredPokemon,
 } from "./types";
 
+const editorTabs = [
+  "overview",
+  "stats",
+  "moves",
+  "origin",
+  "advanced",
+] as const;
+export type PokemonEditorTab = (typeof editorTabs)[number];
+
 interface Props {
+  tab: PokemonEditorTab;
+  onTabChange: (tab: PokemonEditorTab) => void;
   row: StoredPokemon;
   catalog: Catalog;
   free: boolean;
@@ -39,6 +50,8 @@ interface Props {
   batchLocations: Location[];
 }
 export function PokemonEditor({
+  tab,
+  onTabChange,
   row,
   catalog,
   free,
@@ -53,7 +66,6 @@ export function PokemonEditor({
 }: Props) {
   const { t, locale } = useI18n();
   const p = row.pokemon;
-  const [tab, setTab] = useState("overview");
   const [patch, setPatch] = useState<Record<string, unknown>>({});
   useLayoutEffect(() => {
     setPatch({});
@@ -161,376 +173,389 @@ export function PokemonEditor({
         void submit();
       }}
     >
-      <div className="editor-hero">
-        <Sprite
-          catalog={catalog}
-          species={merged.species}
-          shiny={merged.shiny}
-          pid={merged.pid}
-          large
-        />
-        <div>
-          <div className="eyebrow">
-            {batchLocations.length > 1
-              ? `${t("batch")} · ${batchLocations.length}`
-              : row.location.kind === "party"
-                ? `${t("party")} ${row.location.slot + 1}`
-                : `${t("box")} ${row.location.box_index + 1} · ${row.location.slot + 1}`}
+      <div className="editor-header">
+        <div className="editor-hero">
+          <Sprite
+            catalog={catalog}
+            species={merged.species}
+            shiny={merged.shiny}
+            pid={merged.pid}
+            large
+          />
+          <div>
+            <div className="eyebrow">
+              {batchLocations.length > 1
+                ? `${t("batch")} · ${batchLocations.length}`
+                : row.location.kind === "party"
+                  ? `${t("party")} ${row.location.slot + 1}`
+                  : `${t("box")} ${row.location.box_index + 1} · ${row.location.slot + 1}`}
+            </div>
+            <h2>
+              {species?.name} {merged.shiny && <Sparkles size={17} />}
+            </h2>
+            <Types values={species?.types ?? []} />
           </div>
-          <h2>
-            {species?.name} {merged.shiny && <Sparkles size={17} />}
-          </h2>
-          <Types values={species?.types ?? []} />
         </div>
-      </div>
-      <div className="editor-tabs">
-        {["overview", "stats", "moves", "origin", "advanced"].map((key) => (
-          <button
-            type="button"
-            key={key}
-            className={tab === key ? "active" : ""}
-            onClick={() => setTab(key)}
-          >
-            {t(key)}
-          </button>
-        ))}
-      </div>
-      <div className="editor-fields">
-        {tab === "overview" && (
-          <>
-            <SelectField
-              label={t("species")}
-              value={merged.species}
-              onChange={(v) => change("species", +v)}
-              options={catalog.species
-                .filter((s) => s.stats[0] > 0)
-                .map((s) => ({ value: s.id, label: `${s.name} #${s.id}` }))}
-            />
-            <label className="field">
-              <span>{t("nickname")}</span>
-              <input
-                value={merged.nickname}
-                onChange={(e) => change("nickname", e.target.value)}
-              />
-            </label>
-            <div className="field-grid">
-              {num("level", 100, 1)}
-              {num("experience", 0xffffffff)}
-              <SelectField
-                label={t("nature")}
-                value={merged.nature}
-                onChange={(v) => change("nature", +v)}
-                options={natures[locale].map((label, value) => ({
-                  value,
-                  label,
-                }))}
-              />
-              <SelectField
-                label={t("gender")}
-                value={merged.gender}
-                onChange={(v) => change("gender", v)}
-                options={["male", "female", "genderless"].map((v) => ({
-                  value: v,
-                  label: t(v),
-                }))}
-              />
-            </div>
-            <SelectField
-              label={t("ability")}
-              value={merged.ability_slot}
-              onChange={(v) => change("ability_slot", +v)}
-              options={(species?.abilities ?? [0, 0]).map((id, value) => ({
-                value,
-                label: `${value + 1} · ${id ? catalog.abilities[id]?.name : t("emptyMove")}`,
-                disabled: value === 1 && !id && !free,
-              }))}
-            />
-            <SelectField
-              label={t("held_item")}
-              value={merged.held_item}
-              onChange={(v) => change("held_item", +v)}
-              options={itemOptions}
-            />
-            <div className="toggle-row">
-              <Toggle
-                label={t("shiny")}
-                checked={merged.shiny}
-                onChange={(v) => change("shiny", v)}
-              />
-              <Toggle
-                label={t("egg")}
-                checked={merged.egg}
-                onChange={(v) => change("egg", v)}
-              />
-            </div>
-            {num("friendship")}
-          </>
-        )}
-        {tab === "stats" && (
-          <>
-            <p className="nature-summary">
-              {t("nature")} · {natures[locale][effectiveNature]}
-              {natureUp === natureDown ? ` · ${t("neutralNature")}` : ""}
-            </p>
-            <table className="stat-table">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>{t("ivs")}</th>
-                  <th>{t("evs")}</th>
-                  <th>{t("calculated")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {statKeys.map((key, i) => (
-                  <tr key={key}>
-                    <th>
-                      {t(key)}
-                      {natureUp !== natureDown && i === natureUp && (
-                        <small
-                          className="nature-modifier increase"
-                          aria-label={`${t(key)} ${t("natureIncrease")}`}
-                        >
-                          ↑ 10%
-                        </small>
-                      )}
-                      {natureUp !== natureDown && i === natureDown && (
-                        <small
-                          className="nature-modifier decrease"
-                          aria-label={`${t(key)} ${t("natureDecrease")}`}
-                        >
-                          ↓ 10%
-                        </small>
-                      )}
-                    </th>
-                    <td>
-                      <input
-                        type="number"
-                        aria-label={`${t(key)} ${t("ivs")}`}
-                        min="0"
-                        max="31"
-                        required
-                        value={merged.ivs[i]}
-                        onChange={(e) => arrayChange("ivs", i, +e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        aria-label={`${t(key)} ${t("evs")}`}
-                        min="0"
-                        max="255"
-                        required
-                        value={merged.evs[i]}
-                        onChange={(e) => arrayChange("evs", i, +e.target.value)}
-                      />
-                    </td>
-                    <td className="calculated-stat">{p.stats[i]}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div
-              className={`ev-total ${merged.evs.reduce((a, b) => a + b, 0) > 510 ? "warning-text" : ""}`}
-            >
-              {t("evs")} · {t("total")} {merged.evs.reduce((a, b) => a + b, 0)}{" "}
-              / 510
-            </div>
-            {p.current_hp !== null && (
-              <div className="field-grid">
-                {num("current_hp", 65535)}
-                <SelectField
-                  label={t("status")}
-                  value={merged.status ?? 0}
-                  onChange={(v) => change("status", +v)}
-                  options={[
-                    ...[0, 8, 16, 32, 64, 128].map((value) => ({
-                      value,
-                      label: t(`status_${value}`),
-                    })),
-                    ...Array.from({ length: 7 }, (_, i) => ({
-                      value: i + 1,
-                      label: `${t("status_sleep")} · ${i + 1}`,
-                    })),
-                    ...(![0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128].includes(
-                      merged.status ?? 0,
-                    )
-                      ? [
-                          {
-                            value: merged.status ?? 0,
-                            label: `${t("unknownValue")} #${merged.status}`,
-                            disabled: true,
-                          },
-                        ]
-                      : []),
-                  ]}
-                />
-              </div>
-            )}
-            <p className="muted small">
-              {t("calculated")} → {t("apply")}
-            </p>
-          </>
-        )}
-        {tab === "moves" && (
-          <>
-            <Toggle
-              label={t("allMoves")}
-              checked={allMoves || free}
-              onChange={setAllMoves}
-            />
-            <details className="pp-help small muted">
-              <summary>{t("ppHelpTitle")}</summary>
-              <p>{t("ppStorageHelp")}</p>
-            </details>
-            {merged.moves.map((id, i) => (
-              <div className="move-card" key={i}>
-                <SelectField
-                  label={`${t("move")} ${i + 1}`}
-                  value={id}
-                  onChange={(v) => moveChange(i, +v)}
-                  options={moveOptions(id)}
-                />
-                <div className="move-pp-row">
-                  <NumberField
-                    label={t("currentPp")}
-                    value={merged.pps[i]}
-                    onChange={(v) => arrayChange("pps", i, v)}
-                    max={
-                      free
-                        ? 255
-                        : Math.floor(
-                            ((catalog.moves[id]?.pp ?? 0) *
-                              (5 + merged.pp_ups[i])) /
-                              5,
-                          )
-                    }
-                    disabled={!id}
-                  />
-                  <NumberField
-                    label={t("maximumPp")}
-                    value={Math.floor(
-                      ((catalog.moves[id]?.pp ?? 0) * (5 + merged.pp_ups[i])) /
-                        5,
-                    )}
-                    onChange={() => {}}
-                    disabled
-                  />
-                  <div className="field">
-                    <span>{t("ppUps")}</span>
-                    <div
-                      className="pp-up-control"
-                      role="group"
-                      aria-label={t("ppUps")}
-                    >
-                      {[0, 1, 2, 3].map((value) => (
-                        <button
-                          key={value}
-                          type="button"
-                          aria-pressed={merged.pp_ups[i] === value}
-                          disabled={!id}
-                          onClick={() => {
-                            if (merged.pp_ups[i] === value) return;
-                            const pp_ups = [...merged.pp_ups];
-                            pp_ups[i] = value;
-                            const pps = [...merged.pps];
-                            pps[i] = Math.floor(
-                              ((catalog.moves[id]?.pp ?? 0) * (5 + value)) / 5,
-                            );
-                            setPatch((old) => ({ ...old, pp_ups, pps }));
-                          }}
-                        >
-                          +{value}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {id > 0 && (
-                  <div
-                    className={`source-note ${known.has(id) ? "" : "warning-text"}`}
-                  >
-                    {known.has(id) ? t("knownSource") : t("unknownSource")}
-                  </div>
-                )}
-              </div>
-            ))}
-          </>
-        )}
-        {tab === "origin" && (
-          <>
-            <PokemonOrigin {...metadataProps} />
+        <div className="editor-tabs">
+          {editorTabs.map((key) => (
             <button
               type="button"
-              className="link-button"
-              onClick={() => onReference(merged.species)}
+              key={key}
+              className={tab === key ? "active" : ""}
+              onClick={() => onTabChange(key)}
+              aria-pressed={tab === key}
             >
-              <BookOpen size={15} />
-              {t("encounter")}
+              {t(key)}
             </button>
-          </>
-        )}
-        {tab === "advanced" && (
-          <>
-            <PokemonAdvanced {...metadataProps} />
-            <h3>{t("condition")}</h3>
-            <div className="field-grid">
-              {["cool", "beauty", "cute", "smart", "tough", "sheen"].map(
-                (key, i) => (
-                  <NumberField
-                    key={key}
-                    label={t(key)}
-                    value={merged.condition[i]}
-                    onChange={(v) => arrayChange("condition", i, v)}
+          ))}
+        </div>
+      </div>
+      <div className="editor-body">
+        <div className="editor-fields">
+          {tab === "overview" && (
+            <>
+              <SelectField
+                label={t("species")}
+                value={merged.species}
+                onChange={(v) => change("species", +v)}
+                options={catalog.species
+                  .filter((s) => s.stats[0] > 0)
+                  .map((s) => ({ value: s.id, label: `${s.name} #${s.id}` }))}
+              />
+              <label className="field">
+                <span>{t("nickname")}</span>
+                <input
+                  value={merged.nickname}
+                  onChange={(e) => change("nickname", e.target.value)}
+                />
+              </label>
+              <div className="field-grid">
+                {num("level", 100, 1)}
+                {num("experience", 0xffffffff)}
+                <SelectField
+                  label={t("nature")}
+                  value={merged.nature}
+                  onChange={(v) => change("nature", +v)}
+                  options={natures[locale].map((label, value) => ({
+                    value,
+                    label,
+                  }))}
+                />
+                <SelectField
+                  label={t("gender")}
+                  value={merged.gender}
+                  onChange={(v) => change("gender", v)}
+                  options={["male", "female", "genderless"].map((v) => ({
+                    value: v,
+                    label: t(v),
+                  }))}
+                />
+              </div>
+              <SelectField
+                label={t("ability")}
+                value={merged.ability_slot}
+                onChange={(v) => change("ability_slot", +v)}
+                options={(species?.abilities ?? [0, 0]).map((id, value) => ({
+                  value,
+                  label: `${value + 1} · ${id ? catalog.abilities[id]?.name : t("emptyMove")}`,
+                  disabled: value === 1 && !id && !free,
+                }))}
+              />
+              <SelectField
+                label={t("held_item")}
+                value={merged.held_item}
+                onChange={(v) => change("held_item", +v)}
+                options={itemOptions}
+              />
+              <div className="toggle-row">
+                <Toggle
+                  label={t("shiny")}
+                  checked={merged.shiny}
+                  onChange={(v) => change("shiny", v)}
+                />
+                <Toggle
+                  label={t("egg")}
+                  checked={merged.egg}
+                  onChange={(v) => change("egg", v)}
+                />
+              </div>
+              {num("friendship")}
+            </>
+          )}
+          {tab === "stats" && (
+            <>
+              <p className="nature-summary">
+                {t("nature")} · {natures[locale][effectiveNature]}
+                {natureUp === natureDown ? ` · ${t("neutralNature")}` : ""}
+              </p>
+              <table className="stat-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>{t("ivs")}</th>
+                    <th>{t("evs")}</th>
+                    <th>{t("calculated")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {statKeys.map((key, i) => (
+                    <tr key={key}>
+                      <th>
+                        {t(key)}
+                        {natureUp !== natureDown && i === natureUp && (
+                          <small
+                            className="nature-modifier increase"
+                            aria-label={`${t(key)} ${t("natureIncrease")}`}
+                          >
+                            ↑ 10%
+                          </small>
+                        )}
+                        {natureUp !== natureDown && i === natureDown && (
+                          <small
+                            className="nature-modifier decrease"
+                            aria-label={`${t(key)} ${t("natureDecrease")}`}
+                          >
+                            ↓ 10%
+                          </small>
+                        )}
+                      </th>
+                      <td>
+                        <input
+                          type="number"
+                          aria-label={`${t(key)} ${t("ivs")}`}
+                          min="0"
+                          max="31"
+                          required
+                          value={merged.ivs[i]}
+                          onChange={(e) =>
+                            arrayChange("ivs", i, +e.target.value)
+                          }
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          aria-label={`${t(key)} ${t("evs")}`}
+                          min="0"
+                          max="255"
+                          required
+                          value={merged.evs[i]}
+                          onChange={(e) =>
+                            arrayChange("evs", i, +e.target.value)
+                          }
+                        />
+                      </td>
+                      <td className="calculated-stat">{p.stats[i]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div
+                className={`ev-total ${merged.evs.reduce((a, b) => a + b, 0) > 510 ? "warning-text" : ""}`}
+              >
+                {t("evs")} · {t("total")}{" "}
+                {merged.evs.reduce((a, b) => a + b, 0)} / 510
+              </div>
+              {p.current_hp !== null && (
+                <div className="field-grid">
+                  {num("current_hp", 65535)}
+                  <SelectField
+                    label={t("status")}
+                    value={merged.status ?? 0}
+                    onChange={(v) => change("status", +v)}
+                    options={[
+                      ...[0, 8, 16, 32, 64, 128].map((value) => ({
+                        value,
+                        label: t(`status_${value}`),
+                      })),
+                      ...Array.from({ length: 7 }, (_, i) => ({
+                        value: i + 1,
+                        label: `${t("status_sleep")} · ${i + 1}`,
+                      })),
+                      ...(![
+                        0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128,
+                      ].includes(merged.status ?? 0)
+                        ? [
+                            {
+                              value: merged.status ?? 0,
+                              label: `${t("unknownValue")} #${merged.status}`,
+                              disabled: true,
+                            },
+                          ]
+                        : []),
+                    ]}
                   />
-                ),
+                </div>
               )}
-            </div>
-          </>
-        )}
+              <p className="muted small">
+                {t("calculated")} → {t("apply")}
+              </p>
+            </>
+          )}
+          {tab === "moves" && (
+            <>
+              <Toggle
+                label={t("allMoves")}
+                checked={allMoves || free}
+                onChange={setAllMoves}
+              />
+              <details className="pp-help small muted">
+                <summary>{t("ppHelpTitle")}</summary>
+                <p>{t("ppStorageHelp")}</p>
+              </details>
+              {merged.moves.map((id, i) => (
+                <div className="move-card" key={i}>
+                  <SelectField
+                    label={`${t("move")} ${i + 1}`}
+                    value={id}
+                    onChange={(v) => moveChange(i, +v)}
+                    options={moveOptions(id)}
+                  />
+                  <div className="move-pp-row">
+                    <NumberField
+                      label={t("currentPp")}
+                      value={merged.pps[i]}
+                      onChange={(v) => arrayChange("pps", i, v)}
+                      max={
+                        free
+                          ? 255
+                          : Math.floor(
+                              ((catalog.moves[id]?.pp ?? 0) *
+                                (5 + merged.pp_ups[i])) /
+                                5,
+                            )
+                      }
+                      disabled={!id}
+                    />
+                    <NumberField
+                      label={t("maximumPp")}
+                      value={Math.floor(
+                        ((catalog.moves[id]?.pp ?? 0) *
+                          (5 + merged.pp_ups[i])) /
+                          5,
+                      )}
+                      onChange={() => {}}
+                      disabled
+                    />
+                    <div className="field">
+                      <span>{t("ppUps")}</span>
+                      <div
+                        className="pp-up-control"
+                        role="group"
+                        aria-label={t("ppUps")}
+                      >
+                        {[0, 1, 2, 3].map((value) => (
+                          <button
+                            key={value}
+                            type="button"
+                            aria-pressed={merged.pp_ups[i] === value}
+                            disabled={!id}
+                            onClick={() => {
+                              if (merged.pp_ups[i] === value) return;
+                              const pp_ups = [...merged.pp_ups];
+                              pp_ups[i] = value;
+                              const pps = [...merged.pps];
+                              pps[i] = Math.floor(
+                                ((catalog.moves[id]?.pp ?? 0) * (5 + value)) /
+                                  5,
+                              );
+                              setPatch((old) => ({ ...old, pp_ups, pps }));
+                            }}
+                          >
+                            +{value}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {id > 0 && (
+                    <div
+                      className={`source-note ${known.has(id) ? "" : "warning-text"}`}
+                    >
+                      {known.has(id) ? t("knownSource") : t("unknownSource")}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
+          {tab === "origin" && (
+            <>
+              <PokemonOrigin {...metadataProps} />
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => onReference(merged.species)}
+              >
+                <BookOpen size={15} />
+                {t("encounter")}
+              </button>
+            </>
+          )}
+          {tab === "advanced" && (
+            <>
+              <PokemonAdvanced {...metadataProps} />
+              <h3>{t("condition")}</h3>
+              <div className="field-grid">
+                {["cool", "beauty", "cute", "smart", "tough", "sheen"].map(
+                  (key, i) => (
+                    <NumberField
+                      key={key}
+                      label={t(key)}
+                      value={merged.condition[i]}
+                      onChange={(v) => arrayChange("condition", i, v)}
+                    />
+                  ),
+                )}
+              </div>
+            </>
+          )}
+        </div>
+        <div className="policy">
+          <Toggle label={t("free")} checked={free} onChange={setFree} />
+          <p>{t(free ? "freeHelp" : "standardHelp")}</p>
+        </div>
       </div>
-      <div className="policy">
-        <Toggle label={t("free")} checked={free} onChange={setFree} />
-        <p>{t(free ? "freeHelp" : "standardHelp")}</p>
-      </div>
-      <div className="editor-submit">
-        <button
-          className="primary"
-          type="submit"
-          disabled={!Object.keys(patch).length}
-        >
-          {t("apply")}
-          {batchLocations.length > 1 ? ` · ${batchLocations.length}` : ""}
-        </button>
-        {!!Object.keys(patch).length && (
+      <div className="editor-footer">
+        <div className="editor-submit">
           <button
-            type="button"
-            onClick={() => {
-              setPatch({});
-              onDirty(false);
-            }}
+            className="primary"
+            type="submit"
+            disabled={!Object.keys(patch).length}
           >
-            {t("cancel")}
+            {t("apply")}
+            {batchLocations.length > 1 ? ` · ${batchLocations.length}` : ""}
           </button>
-        )}
-      </div>
-      <div className="object-actions">
-        <button type="button" onClick={() => onTransfer(false)}>
-          <MoveRight size={14} />
-          {t("moveTo")}
-        </button>
-        <button type="button" onClick={() => onTransfer(true)}>
-          <Copy size={14} />
-          {t("clone")}
-        </button>
-        <button type="button" onClick={onExport}>
-          <Download size={14} />
-          {t("exportPokemon")}
-        </button>
-        <button type="button" className="danger" onClick={onDelete}>
-          <Trash2 size={14} />
-          {t("delete")}
-        </button>
+          {!!Object.keys(patch).length && (
+            <button
+              type="button"
+              onClick={() => {
+                setPatch({});
+                onDirty(false);
+              }}
+            >
+              {t("cancel")}
+            </button>
+          )}
+        </div>
+        <div className="object-actions">
+          <button type="button" onClick={() => onTransfer(false)}>
+            <MoveRight size={14} />
+            {t("moveTo")}
+          </button>
+          <button type="button" onClick={() => onTransfer(true)}>
+            <Copy size={14} />
+            {t("clone")}
+          </button>
+          <button type="button" onClick={onExport}>
+            <Download size={14} />
+            {t("exportPokemon")}
+          </button>
+          <button type="button" className="danger" onClick={onDelete}>
+            <Trash2 size={14} />
+            {t("delete")}
+          </button>
+        </div>
       </div>
     </form>
   );

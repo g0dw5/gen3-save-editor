@@ -501,7 +501,34 @@ summary {
   border-left: 1px solid var(--line);
 }
 .pokemon-editor {
-  padding: 18px 22px 22px;
+  --editor-padding: 22px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.editor-header {
+  flex-shrink: 0;
+  padding: 18px var(--editor-padding) 0;
+}
+.editor-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px var(--editor-padding);
+}
+.editor-footer {
+  flex-shrink: 0;
+  padding: 12px var(--editor-padding) 16px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.editor-footer .object-actions {
+  margin-top: 10px;
+  padding-top: 0;
+  border-top: 0;
 }
 .editor-hero {
   display: flex;
@@ -521,7 +548,7 @@ summary {
   justify-content: space-between;
   border-bottom: 1px solid var(--line);
   gap: 2px;
-  margin-bottom: 18px;
+  margin-bottom: 0;
 }
 .editor-tabs button {
   border: 0;
@@ -1293,7 +1320,7 @@ summary {
     grid-template-columns: minmax(0, 1fr) 310px;
   }
   .pokemon-editor {
-    padding: 16px;
+    --editor-padding: 16px;
   }
   .storage-board {
     grid-template-columns: 90px minmax(0, 1fr);
@@ -1354,7 +1381,7 @@ summary {
     width: 100%;
   }
   .pokemon-editor {
-    padding: 13px;
+    --editor-padding: 13px;
   }
   .editor-hero .sprite.large {
     width: 62px;
@@ -1400,9 +1427,10 @@ summary {
     overflow: visible;
   }
   .pokemon-editor {
+    --editor-padding: 22px;
+    height: 85dvh;
     max-width: 420px;
     margin: auto;
-    padding: 22px;
   }
   .storage-heading {
     flex-direction: row;
