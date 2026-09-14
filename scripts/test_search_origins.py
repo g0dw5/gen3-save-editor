@@ -44,7 +44,7 @@ def main():
         page.goto(os.environ.get('GEN3_UI_URL','http://127.0.0.1:5173'))
         apply=page.locator('.editor-submit button[type=submit]')
         held=page.get_by_role('combobox',name='Held item',exact=True)
-        held.fill('剧毒宝珠')
+        held.fill('剧毒珠')
         expect(page.locator('.select-popup').get_by_role('option')).to_have_count(1)
         expect(page.locator('.select-popup').get_by_role('option')).to_contain_text('剧毒珠')
         held.press('ArrowDown');held.press('Enter');apply.click()
@@ -52,21 +52,24 @@ def main():
         held.fill('not an item');held.press('Enter');expect(apply).to_be_disabled()
         held.press('Escape')
         assert '#178' in held.input_value()
-        held.fill('吃剩的东西');held.press('Tab');expect(apply).to_be_disabled()
+        held.fill('剩饭');held.press('Tab');expect(apply).to_be_disabled()
         tabs=page.locator('.editor-tabs')
         tabs.get_by_role('button',name='Moves',exact=True).click()
         move=page.get_by_role('combobox',name='Move 1',exact=True)
-        move.fill('甜甜香气');expect(page.locator('.select-popup').get_by_role('option')).to_have_count(1)
+        move.fill('香甜花蜜');expect(page.locator('.select-popup').get_by_role('option')).to_have_count(1)
         expect(page.locator('.select-popup').get_by_role('option')).to_contain_text('【Status】【Normal】')
         move.evaluate("e=>e.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,isComposing:true}))")
         expect(apply).to_be_disabled()
         move.press('Enter');apply.click();expect(apply).to_be_disabled()
         assert actions[-1]['patch']['moves']==[230,0,0,0]
-        move.fill('意念头锤');expect(page.locator('.select-popup').get_by_role('option')).to_contain_text('#29')
+        move.fill('思念头槌');expect(page.locator('.select-popup').get_by_role('option')).to_contain_text('#29')
         move.press('Escape')
-        move.fill('點到為止');expect(page.locator('.select-popup').get_by_role('option')).to_contain_text('#206')
+        move.fill('刀背打');expect(page.locator('.select-popup').get_by_role('option')).to_contain_text('#206')
         move.press('Escape')
-        move.fill('False Swipe');expect(page.locator('.select-popup').get_by_role('option')).to_have_count(1);move.press('Escape')
+        move.fill('206');expect(page.locator('.select-popup').get_by_role('option')).to_have_count(1);move.press('Escape')
+        for alias in ['点到为止', '甜甜香气', 'False Swipe', '點到為止']:
+            move.fill(alias);expect(page.locator('.select-popup').get_by_role('option')).to_have_count(0)
+            move.press('Enter');expect(apply).to_be_disabled();move.press('Escape')
         tabs.get_by_role('button',name='Origin',exact=True).click()
         location=page.get_by_role('combobox',name='Met location',exact=True)
         location.click()
@@ -88,26 +91,32 @@ def main():
         expect(mode.locator('option[value=hatched]')).to_have_attribute('disabled', '')
         page.get_by_role('checkbox',name='Free editing',exact=True).check()
         location.click();expect(page.locator('.select-popup').get_by_role('option')).to_have_count(8);location.press('Escape')
-        # PC inventory uses the same searchable aliases, including TM move names.
+        # PC inventory searches ROM item names and associated ROM TM move names.
         page.locator('.workspace-toolbar nav').get_by_role('button',name='Items',exact=True).click()
         page.get_by_role('button',name='PC items',exact=True).click()
         item=page.get_by_role('combobox',name='Items',exact=True)
-        item.fill('点到为止');expect(page.locator('.select-popup').get_by_role('option')).to_have_count(1)
+        item.fill('刀背打');expect(page.locator('.select-popup').get_by_role('option')).to_have_count(1)
         expect(page.locator('.select-popup').get_by_role('option')).to_contain_text('技能机器01')
         item.press('Escape')
-        # Profile isolation and custom entries have no guessed official identity.
-        result=page.evaluate('''async () => {
-          const {namedOption}=await import('/ui/names.ts');
-          return [namedOption({profile:{md5:'unknown'}},'moves',{id:29,name:'Custom'},'zh'),
-                  namedOption({profile:{md5:'0d9b129f7dd76895f79bb47ad7dec2fe'}},'moves',{id:409,name:'Custom'},'zh')];
-        }''')
-        assert all(not r['search'] for r in result),result
+        # Removed aliases must stay absent in both UI languages.
+        for alias in ['剧毒宝珠', 'Toxic Orb', '点到为止']:
+            item.fill(alias);expect(page.locator('.select-popup').get_by_role('option')).to_have_count(0)
+            item.press('Escape')
+        item.fill('剧毒珠')
+        expect(page.locator('.select-popup').get_by_role('option')).to_have_text('剧毒珠 #178')
+        item.press('Escape')
+        page.get_by_role('button',name='简体中文',exact=True).click()
+        item=page.get_by_role('combobox',name='道具',exact=True)
+        item.fill('剧毒珠')
+        expect(page.locator('.select-popup').get_by_role('option')).to_have_text('剧毒珠 #178')
+        item.press('Escape')
+        expect(page).to_have_title('Dark Fantasy Hacker')
         assert not errors,errors
         screenshot=os.environ.get('GEN3_SEARCH_PREVIEW')
         if screenshot:
-            item.fill('剧毒宝珠');page.screenshot(path=screenshot)
+            item.fill('剧毒珠');page.screenshot(path=screenshot)
         browser.close()
-    print('Passed: official/ROM/English/traditional names, remapped IDs, keyboard/IME/dismissal, PC TM search, ancestor/current/hatch/free origins and cancel.')
+    print('Passed: ROM-only names, removed-alias rejection, IDs and bilingual labels, keyboard/IME/dismissal, PC TM search, ancestor/current/hatch/free origins and cancel.')
 
 
 if __name__=='__main__':main()

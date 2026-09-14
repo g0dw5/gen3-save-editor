@@ -36,7 +36,7 @@ export function PokemonOrigin({
   free,
   origins,
 }: Props & { origins: OriginOptions | null }) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const kind = p.met_level === 0 ? "hatched" : "caught";
   const options = (
     values: { value: number; label: string }[],
@@ -179,7 +179,7 @@ export function PokemonOrigin({
         options={options(
           catalog.items
             .filter((i) => i.id >= 1 && i.id <= 12)
-            .map((i) => itemOption(catalog, i, locale)),
+            .map((i) => itemOption(catalog, i)),
           p.ball,
         )}
       />

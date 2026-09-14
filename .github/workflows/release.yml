@@ -35,6 +35,5 @@ jobs:
             README.zh-CN.md
             LICENSE
             THIRD_PARTY_NOTICES.md
-            licenses/PokeAPI.txt
             docs/windows-build.md
           if-no-files-found: error

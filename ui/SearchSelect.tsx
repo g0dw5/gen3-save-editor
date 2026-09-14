@@ -6,7 +6,6 @@ export interface SelectOption {
   value: number | string;
   label: string;
   disabled?: boolean;
-  search?: string[];
 }
 export interface SelectProps {
   label: string;
@@ -43,9 +42,7 @@ export function SearchSelect({
   const words = normalize(query).split(/\s+/).filter(Boolean);
   const filtered = options.filter((o) =>
     words.every((word) =>
-      normalize([o.label, o.value, ...(o.search ?? [])].join(" ")).includes(
-        word,
-      ),
+      normalize([o.label, o.value].join(" ")).includes(word),
     ),
   );
   const begin = () => {

@@ -1,52 +1,22 @@
-# Search aliases and candidate origins / 搜索译名与相遇来源
+# ROM name search and candidate origins / ROM 名称搜索与相遇来源
 
 ## Search / 输入搜索
 
 Editable species, held items, moves, balls and bag/PC item selectors accept typed
-queries. Search matches the ROM name, ROM ID and mapped Simplified Chinese,
-Traditional Chinese or English names. Move options retain the ROM's category,
-type and power; TM item options also match their associated move. Enter or a
-pointer selection commits an existing ROM ID. Typing, Escape or leaving the field
-does not commit a value; IME composition does not trigger selection.
+queries. Labels and search use names and IDs from the loaded ROM. Move options
+retain the ROM's category, type and power; TM items also match their associated
+ROM move name. Enter or a pointer selection commits an existing ROM ID. Typing,
+Escape or leaving the field does not commit; IME composition does not select.
 
-宝可梦、携带道具、招式、精灵球及背包／电脑道具支持输入搜索，匹配 ROM 名称、
-编号及已映射的简中、繁中、英文名称。技能机器也能按对应招式查找。选择框同时显示
-ROM 原名与当前界面的译名，写入的始终是 ROM 编号；招式分类、属性和威力以 ROM
-为准。输入后通过点击或回车选择，退出搜索不会修改字段。
+Version 0.1.5 removes the official-name alias data and lookup. Switching the UI
+language does not translate ROM names. No name mapping or text-data download is
+required for search.
 
-### Data provenance and adapter boundary
+宝可梦、携带道具、招式、精灵球及背包／电脑道具支持输入搜索，只使用当前 ROM
+的名称和编号。技能机器也能按对应的 ROM 招式名查找。招式分类、属性和威力仍然
+显示。输入后点击或回车选择，退出搜索不会修改字段。
 
-`ui/data/dark-phantom-aliases.json` maps ROM IDs to canonical identities and short
-localized names: 456 moves, 337 items and 411 species. It is enabled only for the
-BW/DP fingerprints listed in the README. Unknown profiles and unmapped custom
-entries retain their ROM names without inferred aliases. It ships no ROM text
-messages, descriptions, sprites, maps or binary data.
-
-The identity map was reviewed against the supported ROM catalog (names, move
-parameters/descriptions, item use and species national-index data), using
-`pret/pokeemerald`'s item/move constants as the original-generation reference.
-It is **not** a blanket correspondence with original-game IDs. For example:
-
-| ROM ID | ROM name | Canonical identity |
-| --- | --- | --- |
-| Move 29 | 思念头槌 | 意念头锤 / Zen Headbutt (428) |
-| Move 463 | 头槌 | 头锤 / Headbutt (29) |
-| Move 206 | 刀背打 | 点到为止 / False Swipe (206) |
-| Move 230 | 香甜花蜜 | 甜甜香气 / Sweet Scent (230) |
-| Item 178 | 剧毒珠 | 剧毒宝珠 / Toxic Orb (PokeAPI item ID) |
-
-Names come from the community-maintained PokeAPI CSVs at commit
-`88f332f7a68a77162c64a48c230b19420e1ed3be`: `move_names.csv`, `item_names.csv`,
-and `pokemon_species_names.csv`. The full notice is in
-[licenses/PokeAPI.txt](../../licenses/PokeAPI.txt), also included in desktop bundles.
-`scripts/update_official_names.py --check` downloads pinned, SHA-256-verified
-sources and checks the text. Omit `--check` to refresh names while preserving the
-reviewed canonical IDs. New profiles require their own reviewed identity mapping;
-never assume shared indexes merely because they are Gen III hacks.
-
-这里的官方译名来自社区维护的译名数据，并非官方在线服务。尚未映射的自创招式、
-特殊道具继续显示 ROM 原名。新版本必须重新核对编号对应关系，不能直接套用原版
-偏移或编号。
+0.1.5 已移除官方译名映射及数据；切换界面语言不会翻译 ROM 名称。
 
 ## Origins / 来源筛选
 
@@ -84,8 +54,7 @@ rewrites provenance. These UI suggestions do not add a new CLI legality gate.
 - Synthetic Rust tests: branching evolutions, cycle termination, baby breeding,
   Ditto/Undiscovered exclusion and ancestor-only encounter slots.
 - BW/DP local regression: Eevee/Vaporeon ancestry, Mewtwo and Ditto exclusions.
-- `python3 scripts/test_search_origins.py` against Vite: Chinese/Traditional/English
-  aliases, replacement IDs, TM/PC search, keyboard and IME, cancellation, branch
+- `python3 scripts/test_search_origins.py` against Vite: ROM-only names, rejection of removed aliases, IDs, TM/PC search, keyboard and IME, cancellation, branch
   filtering, current-value preservation, hatch selection and free editing.
 - Existing editor navigation tests retain coverage for tabs, independent drafts
   and fixed controls across desktop/minimum/mobile layouts.

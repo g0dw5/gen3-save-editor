@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 export const en = {
-  searchChoices: "Search ROM name, official name or ID…",
+  searchChoices: "Search ROM name or ID…",
   noChoiceResults: "No matching options",
   originKind: "Encounter source",
   originCaught: "Caught / received",
@@ -157,7 +157,7 @@ export const en = {
   dex: "Pokédex",
   before: "Before",
   after: "After",
-  app: "Gen III Save Editor",
+  app: "Dark Fantasy Hacker",
   openRom: "Open ROM",
   openSave: "Open save",
   exportSave: "Export save",
@@ -393,7 +393,7 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
-  searchChoices: "搜索 ROM 名、官方译名或编号…",
+  searchChoices: "搜索 ROM 名称或编号…",
   noChoiceResults: "没有匹配的选项",
   originKind: "相遇来源",
   originCaught: "捕获／获赠",
@@ -543,7 +543,7 @@ export const zh: Record<Key, string> = {
   dex: "图鉴",
   before: "修改前",
   after: "修改后",
-  app: "三代存档修改器",
+  app: "Dark Fantasy Hacker",
   openRom: "打开 ROM",
   openSave: "打开存档",
   exportSave: "导出存档",

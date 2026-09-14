@@ -1,4 +1,4 @@
-# Gen III Save Editor
+# Dark Fantasy Hacker
 
 [简体中文](README.zh-CN.md)
 
@@ -29,7 +29,7 @@ fingerprints and do not become supported stock releases automatically.
   hide the inspector. Search dims nonmatches without moving storage coordinates.
 - Edit identity, nature/shiny/gender, level/experience, IVs/EVs, moves/PP, abilities,
   held items, origin, eggs, Pokérus, ribbons and contest values.
-- Search editing fields by ROM names/IDs or mapped official Chinese/English names.
+- Search editing fields by names/IDs from the loaded ROM.
   Standard origin choices include the species and its pre-evolutions, with a
   separate hatch source. See [search and origin rules](docs/research/search-and-origins.md).
 - Drag between slots to move or swap. Alt-drag copies. Buttons provide a pointer

@@ -8,7 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { api } from "./api";
-import { namedOption, itemOption } from "./names";
+import { romOption, itemOption } from "./names";
 import { PokemonOrigin, PokemonAdvanced } from "./PokemonMetadata";
 import {
   useI18n,
@@ -123,11 +123,11 @@ export function PokemonEditor({
           m.id === 0 || m.id === current || free || allMoves || known.has(m.id),
       )
       .map((m) => ({
-        ...namedOption(catalog, "moves", m, locale),
-        label: `${m.id ? `【${moveCategoryNames[locale][m.category] ?? "?"}】【${typeNames[locale][m.move_type] ?? "?"}】【${m.power || "—"}】${namedOption(catalog, "moves", m, locale).label}` : t("emptyMove")}${m.id && !known.has(m.id) ? ` — ${future.has(m.id) ? t("futureMove") : t("unknownSource")}` : ""}`,
+        ...romOption(m),
+        label: `${m.id ? `【${moveCategoryNames[locale][m.category] ?? "?"}】【${typeNames[locale][m.move_type] ?? "?"}】【${m.power || "—"}】${romOption(m).label}` : t("emptyMove")}${m.id && !known.has(m.id) ? ` — ${future.has(m.id) ? t("futureMove") : t("unknownSource")}` : ""}`,
       }));
   const itemOptions = catalog.items.map((i) =>
-    i.id ? itemOption(catalog, i, locale) : { value: 0, label: t("emptyMove") },
+    i.id ? itemOption(catalog, i) : { value: 0, label: t("emptyMove") },
   );
   const num = (key: keyof Pokemon, max = 255, min = 0) => (
     <NumberField
@@ -219,7 +219,7 @@ export function PokemonEditor({
                 onChange={(v) => change("species", +v)}
                 options={catalog.species
                   .filter((s) => s.stats[0] > 0)
-                  .map((s) => namedOption(catalog, "species", s, locale))}
+                  .map((s) => romOption(s))}
               />
               <label className="field">
                 <span>{t("nickname")}</span>

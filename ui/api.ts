@@ -82,6 +82,6 @@ export function fromBase64(data: string): Uint8Array<ArrayBuffer> {
 
 export async function confirmAction(message: string): Promise<boolean> {
   return native
-    ? confirm(message, { title: "Gen III Save Editor", kind: "warning" })
+    ? confirm(message, { title: "Dark Fantasy Hacker", kind: "warning" })
     : window.confirm(message);
 }

@@ -38,7 +38,7 @@ import {
   Toggle,
 } from "./components";
 import { I18n, en, zh, type Key, type Locale, useI18n } from "./i18n";
-import { namedOption, itemOption } from "./names";
+import { romOption, itemOption } from "./names";
 import { PokemonEditor, type PokemonEditorTab } from "./PokemonEditor";
 import { ReferenceWindow } from "./ReferenceWindow";
 import {
@@ -486,8 +486,8 @@ export default function App() {
               <Box size={22} />
             </span>
             <div>
-              <strong>GEN III</strong>
-              <span>SAVE EDITOR</span>
+              <strong>Dark Fantasy</strong>
+              <span>Hacker</span>
             </div>
           </div>
           <div className="file-context">
@@ -976,7 +976,7 @@ function Draft({
   onCancel: () => void;
   onCreate: (template: Template) => Promise<void>;
 }) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const [value, setValue] = useState(template);
   return (
     <form
@@ -997,7 +997,7 @@ function Draft({
         onChange={(v) => setValue((old) => ({ ...old, species: +v }))}
         options={catalog.species
           .filter((s) => s.stats[0])
-          .map((s) => namedOption(catalog, "species", s, locale))}
+          .map((s) => romOption(s))}
       />
       <NumberField
         label={t("level")}
@@ -1048,7 +1048,7 @@ function BagEditor({
   act: Act;
   onDirty: (v: boolean) => void;
 }) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const [pocket, setPocket] = useState("items");
   const [selectedSlot, setSelectedSlot] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -1174,7 +1174,7 @@ function BagEditor({
                   onChange={(v) => setItem(+v)}
                   options={catalog.items.map((i) =>
                     i.id
-                      ? itemOption(catalog, i, locale)
+                      ? itemOption(catalog, i)
                       : { value: 0, label: t("emptyMove") },
                   )}
                 />
