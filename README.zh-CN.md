@@ -83,3 +83,9 @@ npm run desktop:build
 - 应用层：桌面与 CLI 使用同一个 Rust 核心；界面仅维护草稿、展示和用户意图。
 
 代码采用 MIT 许可；格式研究来源见 [第三方说明](THIRD_PARTY_NOTICES.md)。
+
+## Windows 安装包
+
+Windows x64 包面向 Windows 10/11，提供中英文安装向导，默认安装到当前用户。
+缺少 WebView2 时由安装程序联网安装。交叉编译不等于 Windows 实机验证，具体命令、
+依赖和验证范围见 [Windows 构建说明](docs/windows-build.md)。

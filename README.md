@@ -57,7 +57,9 @@ npm ci
 npm run desktop
 ```
 
-Build an installer with `npm run desktop:build`. Windows and Linux builds are
+Build an installer with `npm run desktop:build`. Windows x64 targets Windows 10/11;
+the bilingual per-user EXE installer installs WebView2 online when missing. See
+[Windows builds and validation limits](docs/windows-build.md). Windows and Linux builds are
 configured in CI; local verification status is recorded separately. No ROM,
 extracted sprite collection, save, updater or development HTTP server is shipped.
 
