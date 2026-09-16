@@ -373,7 +373,10 @@ export const en = {
   save_no_valid_slot: "No complete save slot passed validation.",
   save_conflict:
     "The source save changed outside the editor. Reload it before exporting.",
-  pokemon_checksum: "A Pokémon checksum is invalid.",
+  pokemon_checksum:
+    "A Pokémon record is damaged. Restore it from a known-good backup; do not just replace its checksum.",
+  pokemon_bad_egg:
+    "A Pokémon is marked as a Bad Egg. Restore it from a known-good backup before editing.",
   last_party: "Keep at least one Pokémon in the party.",
   occupied_slot: "The destination is occupied.",
   empty_slot: "The selected slot is empty.",
@@ -754,7 +757,9 @@ export const zh: Record<Key, string> = {
   save_size: "请选择 128 KiB 电池存档，不支持模拟器即时存档。",
   save_no_valid_slot: "没有找到完整且校验正确的存档槽。",
   save_conflict: "源存档已被外部程序修改，请重新载入后再导出。",
-  pokemon_checksum: "宝可梦校验和错误。",
+  pokemon_checksum:
+    "宝可梦数据损坏，请从已知正确的备份恢复，不要仅重算校验和。",
+  pokemon_bad_egg: "宝可梦已被标记为坏蛋，请从已知正确的备份恢复后再修改。",
   last_party: "同行中至少保留一只宝可梦。",
   occupied_slot: "目标位置已被占用。",
   empty_slot: "当前选择的位置为空。",

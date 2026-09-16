@@ -123,6 +123,23 @@ pub fn unpack(raw: &[u8]) -> Result<[u8; 48]> {
     }
     Ok(canonical)
 }
+/// Check integrity before interpreting decrypted fields or treating a slot as empty.
+/// `unpack` remains available for read-only forensic inspection of damaged records.
+pub fn checked_unpack(raw: &[u8]) -> Result<[u8; 48]> {
+    let canonical = unpack(raw)?;
+    let stored = u16(raw, 28)?;
+    let calculated = checksum(&canonical);
+    if stored != calculated {
+        return Err(err(
+            "pokemon_checksum",
+            format!("stored {stored:#06x}, calculated {calculated:#06x}"),
+        ));
+    }
+    if raw[19] & 1 != 0 {
+        return Err(err("pokemon_bad_egg", "record is marked as a Bad Egg"));
+    }
+    Ok(canonical)
+}
 pub fn pack(raw: &mut [u8], canonical: &[u8; 48]) {
     let pid = u32(raw, 0).unwrap();
     let key = pid ^ u32(raw, 4).unwrap();
@@ -355,12 +372,9 @@ pub fn edit(
     rom: &Rom,
     policy: Policy,
 ) -> Result<(Vec<u8>, Vec<Finding>)> {
+    let mut c = checked_unpack(raw)?;
     let before = decode(raw, rom)?;
-    if !before.checksum_ok {
-        return Err(err("pokemon_checksum", before.species));
-    }
     let mut out = raw.to_vec();
-    let mut c = unpack(raw)?;
     let species = patch.species.unwrap_or(before.species);
     let s = rom.valid_species(species)?;
     if let Some(v) = patch.held_item {
@@ -576,6 +590,7 @@ pub fn create(
     Ok(raw)
 }
 pub fn to_party(raw: &[u8], rom: &Rom) -> Result<Vec<u8>> {
+    checked_unpack(raw)?;
     let mut out = raw[..80].to_vec();
     out.resize(100, 0);
     out[85] = 255;

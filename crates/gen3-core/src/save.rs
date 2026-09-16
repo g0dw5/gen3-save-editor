@@ -28,6 +28,9 @@ pub enum Location {
     Party { slot: usize },
     Box { box_index: usize, slot: usize },
 }
+fn checked_record(raw: &[u8], location: Location) -> Result<[u8; 48]> {
+    pokemon::checked_unpack(raw).map_err(|e| err(e.code, format!("{location:?}: {}", e.detail)))
+}
 #[derive(Serialize)]
 pub struct StoredPokemon {
     pub location: Location,
@@ -262,7 +265,7 @@ impl Save {
         if raw.iter().all(|b| *b == 0) {
             return Ok(None);
         }
-        let c = pokemon::unpack(&raw)?;
+        let c = checked_record(&raw, loc)?;
         if u16(&c, 0)? == 0 && raw[19] & 2 == 0 {
             return Ok(None);
         }
@@ -330,15 +333,16 @@ impl Save {
                 if raw.iter().all(|b| *b == 0) {
                     continue;
                 }
-                let c = pokemon::unpack(raw)?;
+                let location = Location::Box {
+                    box_index: b,
+                    slot: i,
+                };
+                let c = checked_record(raw, location)?;
                 if u16(&c, 0)? == 0 && raw[19] & 2 == 0 {
                     continue;
                 }
                 out.push(StoredPokemon {
-                    location: Location::Box {
-                        box_index: b,
-                        slot: i,
-                    },
+                    location,
                     pokemon: pokemon::decode(raw, rom)?,
                 });
             }
@@ -377,10 +381,8 @@ impl Save {
         if self.pokemon(loc, rom)?.is_some() {
             return Err(err("occupied_slot", format!("{loc:?}")));
         }
+        checked_record(raw, loc)?;
         let p = pokemon::decode(raw, rom)?;
-        if !p.checksum_ok {
-            return Err(err("pokemon_checksum", p.species));
-        }
         rom.valid_species(p.species)?;
         rom.item(p.held_item)?;
         if rom.is_mail(p.held_item) {

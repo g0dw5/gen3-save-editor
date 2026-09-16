@@ -360,6 +360,136 @@ fn full_box_validation_detects_bad_checksum() {
     put16(&mut s.data, sec + 0xff6, sum);
     assert_eq!(s.validate(&r).unwrap_err().code, "pokemon_checksum");
 }
+
+#[test]
+fn explicit_pid_edits_reencrypt_across_all_substructure_orders() {
+    let r = rom();
+    let original_pid = 0x9abc1357;
+    let raw = pokemon::create(&r, 1, 0x12345678, "ASH", 50, original_pid).unwrap();
+    let canonical = pokemon::unpack(&raw).unwrap();
+    // Cover a truncated high half, the u32 limit, and every destination order.
+    let targets = [original_pid & 0xffff, u32::MAX]
+        .into_iter()
+        .chain((0..24).map(|order| (0x87650000 / 24) * 24 + order));
+    for pid in targets {
+        let (edited, _) = pokemon::edit(
+            &raw,
+            &PokemonPatch {
+                pid: Some(pid),
+                ..Default::default()
+            },
+            &r,
+            Policy::Free,
+        )
+        .unwrap();
+        assert_eq!(u32(&edited, 0).unwrap(), pid);
+        assert_eq!(pokemon::checked_unpack(&edited).unwrap(), canonical);
+        assert_eq!(&edited[4..32], &raw[4..32]);
+        assert_ne!(&edited[32..80], &raw[32..80]);
+    }
+}
+
+// Damage a populated record while retaining a valid outer sector checksum,
+// as happens when a game saves a record that was damaged in memory.
+fn overwrite_box_record(s: &mut Save, index: usize, raw: &[u8]) {
+    let offset = 4 + index * 80;
+    let id = 5 + offset / 3968;
+    let pos = offset % 3968;
+    assert!(pos + raw.len() <= s.layout.sizes[id]);
+    let sector = s.sections[id];
+    s.data[sector + pos..sector + pos + raw.len()].copy_from_slice(raw);
+    let sum = sector_checksum(&s.data[sector..sector + s.layout.sizes[id]]);
+    put16(&mut s.data, sector + 0xff6, sum);
+}
+
+#[test]
+fn truncated_pid_is_rejected_on_load_and_export_without_writing() {
+    let r = rom();
+    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+    let raw = pokemon::create(&r, 1, 0x12345678, "ASH", 50, 0x9abc1357).unwrap();
+    save.insert(loc(69), &raw, &r).unwrap();
+    let good = save.data.clone();
+    let mut damaged = raw.clone();
+    damaged[2..4].fill(0);
+    overwrite_box_record(&mut save, 69, &damaged);
+    let error = save.validate(&r).unwrap_err();
+    assert_eq!(error.code, "pokemon_checksum");
+    assert!(error.detail.contains("box_index: 2, slot: 9"));
+    assert!(pokemon::edit(&damaged, &PokemonPatch::default(), &r, Policy::Free).is_err());
+
+    let mut session = Session::new(r);
+    session.load(good.clone(), None).unwrap();
+    assert_eq!(
+        session.load(save.data.clone(), None).unwrap_err().code,
+        "pokemon_checksum"
+    );
+    assert_eq!(session.save_ref().unwrap().data, good);
+    // An invalid in-memory record must also be blocked at the final write gate.
+    session.save = Some(save);
+    let dir = tempfile::tempdir().unwrap();
+    let output = dir.path().join("existing.sav");
+    std::fs::write(&output, &good).unwrap();
+    assert_eq!(
+        session.export(&output).unwrap_err().code,
+        "pokemon_checksum"
+    );
+    assert_eq!(std::fs::read(&output).unwrap(), good);
+    assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn damaged_empty_looking_record_cannot_be_skipped_or_overwritten() {
+    let r = rom();
+    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+    let mut raw = vec![0; 80];
+    put32(&mut raw, 0, 0x9abc1357);
+    put32(&mut raw, 4, 0x12345678);
+    pokemon::pack(&mut raw, &[0; 48]);
+    // Species zero and hasSpecies unset used to bypass checksum validation.
+    raw[28] ^= 1;
+    overwrite_box_record(&mut save, 69, &raw);
+    let before = save.data.clone();
+    assert_eq!(
+        save.pokemon(loc(69), &r).unwrap_err().code,
+        "pokemon_checksum"
+    );
+    assert_eq!(save.validate(&r).unwrap_err().code, "pokemon_checksum");
+    let replacement = pokemon::create(&r, 1, 42, "ASH", 50, 7).unwrap();
+    assert_eq!(
+        save.insert(loc(69), &replacement, &r).unwrap_err().code,
+        "pokemon_checksum"
+    );
+    assert_eq!(save.data, before);
+}
+
+#[test]
+fn bad_egg_header_is_rejected_even_with_valid_checksum() {
+    let r = rom();
+    let mut raw = pokemon::create(&r, 1, 42, "ASH", 50, 7).unwrap();
+    raw[19] |= 1;
+    assert!(pokemon::decode(&raw, &r).unwrap().checksum_ok);
+    assert_eq!(
+        pokemon::checked_unpack(&raw).unwrap_err().code,
+        "pokemon_bad_egg"
+    );
+    assert_eq!(
+        pokemon::edit(&raw, &PokemonPatch::default(), &r, Policy::Free)
+            .unwrap_err()
+            .code,
+        "pokemon_bad_egg"
+    );
+    assert_eq!(
+        pokemon::to_party(&raw, &r).unwrap_err().code,
+        "pokemon_bad_egg"
+    );
+    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+    assert_eq!(
+        save.insert(loc(0), &raw, &r).unwrap_err().code,
+        "pokemon_bad_egg"
+    );
+    overwrite_box_record(&mut save, 69, &raw);
+    assert_eq!(save.validate(&r).unwrap_err().code, "pokemon_bad_egg");
+}
 #[test]
 fn money_changes_only_owned_bytes() {
     let mut s = session();
