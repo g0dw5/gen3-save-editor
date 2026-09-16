@@ -105,6 +105,7 @@ pub struct TrainerLocationIndex {
 #[derive(Serialize)]
 pub struct World {
     pub maps: Vec<Map>,
+    pub map_events: Vec<crate::map_events::MapEventReport>,
     pub encounters: Vec<Encounter>,
     pub trainers: Vec<Trainer>,
     pub trainer_locations: TrainerLocationIndex,
@@ -142,6 +143,10 @@ impl Rom {
         let maps = self.maps()?;
         let trainer_locations = self.trainer_locations_for_maps(&maps)?;
         Ok(World {
+            map_events: maps
+                .iter()
+                .map(|m| self.map_events(m))
+                .collect::<Result<_>>()?,
             maps,
             encounters: self.encounters()?,
             trainers: self.trainers()?,

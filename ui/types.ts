@@ -198,6 +198,40 @@ export interface SpeciesDetail {
   learnset: LearnSource[];
   encounters: Encounter[];
 }
+export interface ItemReward {
+  item: number;
+  quantity: number | null;
+  offset: number;
+  via: string;
+  conditions: {
+    kind: string;
+    id: number;
+    value: number;
+    comparison: number;
+    taken: boolean;
+  }[];
+}
+export interface MapMarker {
+  id: string;
+  kind: "pickup" | "hidden" | "gift" | "npc" | "event";
+  x: number;
+  y: number;
+  elevation: number;
+  local_id: number | null;
+  graphics_id: number | null;
+  movement_type: number | null;
+  flag: number | null;
+  offset: number;
+  script: number | null;
+  rewards: ItemReward[];
+  stopped_at: number[];
+}
+export interface MapEventReport {
+  map_id: string;
+  markers: MapMarker[];
+  unplaced_rewards: ItemReward[];
+  stopped_at: number[];
+}
 export interface GameMap {
   id: string;
   group: number;
@@ -243,6 +277,7 @@ export interface Opponent {
   offset: number;
 }
 export interface World {
+  map_events: MapEventReport[];
   map_groups: { kind: string; map_ids: string[] }[];
   trainer_locations: {
     locations: {

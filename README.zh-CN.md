@@ -89,3 +89,7 @@ npm run desktop:build
 Windows x64 包面向 Windows 10/11，提供中英文安装向导，默认安装到当前用户。
 缺少 WebView2 时由安装程序联网安装。交叉编译不等于 Windows 实机验证，具体命令、
 依赖和验证范围见 [Windows 构建说明](docs/windows-build.md)。
+
+地图资料支持地面精灵球、隐藏道具、对话／事件奖励和 NPC 独立图层，以及格位、
+道具搜索、格线和缩放。显示所有 ROM 事件，不按存档领取状态过滤；
+[解析范围与限制](docs/research/map-events.md)说明了静态位置和未知脚本的处理。

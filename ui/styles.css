@@ -1830,3 +1830,147 @@ summary {
 .select-popup p {
   padding: 8px;
 }
+
+.map-explorer {
+  margin: 16px 0;
+}
+.map-layer-controls,
+.map-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+.map-layer {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.map-layer small {
+  color: var(--muted);
+}
+.map-layer input,
+.map-tools input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  accent-color: currentColor;
+}
+.layer-pickup {
+  color: #dd665b;
+}
+.layer-hidden {
+  color: #c8972f;
+}
+.layer-gift {
+  color: #9274da;
+}
+.layer-npc {
+  color: #479bb4;
+}
+.map-tools {
+  font-size: 12px;
+}
+.map-tools > label {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.map-search {
+  flex: 1;
+  min-width: 180px;
+}
+.map-search input {
+  width: 100%;
+}
+.map-tools select {
+  width: auto;
+}
+.map-viewport {
+  max-height: 600px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--background);
+}
+.map-canvas {
+  position: relative;
+  min-width: 100%;
+}
+.map-canvas > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.map-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, #ffffff45 1px, transparent 1px),
+    linear-gradient(to bottom, #ffffff45 1px, transparent 1px);
+}
+.map-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  min-width: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #151c2eee;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  box-shadow: 0 1px 5px #0009;
+  cursor: pointer;
+  z-index: 1;
+}
+.map-marker:hover,
+.map-marker:focus-visible,
+.map-marker.selected {
+  z-index: 3;
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+.map-marker small {
+  position: absolute;
+  right: -5px;
+  top: -7px;
+  font-size: 9px;
+  background: #151c2e;
+  border-radius: 5px;
+  padding: 1px 3px;
+}
+.map-marker-details {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+.map-marker-details > div + div {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.map-marker-details strong {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.map-marker-details p {
+  margin: 6px 0;
+}
+.map-marker-details details {
+  font-size: 11px;
+  margin-top: 10px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}

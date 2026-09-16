@@ -637,6 +637,22 @@ fn local_rom_regression() {
         assert!(catalog.moves.iter().all(|m| m.category <= 3));
         let maps = r.maps().unwrap();
         assert_eq!(maps.len(), 707);
+        let reports: Vec<_> = maps.iter().map(|m| r.map_events(m).unwrap()).collect();
+        let markers: Vec<_> = reports.iter().flat_map(|r| &r.markers).collect();
+        assert_eq!(markers.iter().filter(|m| m.kind == "hidden").count(), 112);
+        assert_eq!(markers.iter().filter(|m| m.kind == "pickup").count(), 122);
+        let city = reports.iter().find(|r| r.map_id == "0-0").unwrap();
+        let hidden = city.markers.iter().find(|m| m.kind == "hidden").unwrap();
+        assert_eq!((hidden.x, hidden.y, hidden.flag), (11, 29, Some(0x253)));
+        let gifts = reports.iter().find(|r| r.map_id == "6-0").unwrap();
+        let gift = gifts
+            .markers
+            .iter()
+            .find(|m| m.local_id == Some(2))
+            .unwrap();
+        assert_eq!(gift.kind, "gift");
+        assert!(gift.rewards.iter().any(|r| r.item == 333)); // TM45
+
         let encounters = r.encounters().unwrap();
         assert!(encounters.len() > 1000);
         let vaporeon = r.origin_options(134).unwrap();
@@ -1276,4 +1292,112 @@ fn origins_follow_ancestors_without_sibling_encounters_and_allow_babies() {
         r.ancestors(2).unwrap().into_iter().collect::<Vec<_>>(),
         [1, 2]
     );
+}
+
+#[test]
+fn item_event_layers_keep_coordinates_and_hidden_flags() {
+    let mut r = rom();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    let ev = 0x25000;
+    let objects = 0x25100;
+    let bg = 0x25200;
+    let script = 0x25300;
+    b[ev] = 1;
+    b[ev + 3] = 1;
+    put32(b, ev + 4, 0x08000000 + objects as u32);
+    put32(b, ev + 16, 0x08000000 + bg as u32);
+    b[objects] = 8;
+    b[objects + 1] = 59;
+    put16(b, objects + 4, 11);
+    put16(b, objects + 6, 7);
+    b[objects + 8] = 3;
+    put16(b, objects + 20, 0x400);
+    put32(b, objects + 16, 0x08000000 + script as u32);
+    b[script..script + 13].copy_from_slice(&[0x1a, 0, 0x80, 1, 0, 0x1a, 1, 0x80, 2, 0, 9, 1, 2]);
+    put16(b, bg, 5);
+    put16(b, bg + 2, 9);
+    b[bg + 5] = 7;
+    put16(b, bg + 8, 1);
+    put16(b, bg + 10, 10);
+    let map = crate::world::Map {
+        id: "0-0".into(),
+        group: 0,
+        number: 0,
+        name: "Test".into(),
+        region: 0,
+        width: 20,
+        height: 20,
+        map_type: 0,
+        header: 0,
+        layout: 0,
+        events: Some(ev),
+        scripts: vec![script],
+        objects: vec![],
+    };
+    let events = r.map_events(&map).unwrap();
+    assert_eq!(events.markers.len(), 2);
+    assert!(events.unplaced_rewards.is_empty());
+    let ball = &events.markers[0];
+    assert_eq!(
+        (ball.kind, ball.x, ball.y, ball.flag),
+        ("pickup", 11, 7, Some(0x400))
+    );
+    assert_eq!(ball.rewards[0].quantity, Some(2));
+    let hidden = &events.markers[1];
+    assert_eq!(
+        (hidden.kind, hidden.x, hidden.y, hidden.flag),
+        ("hidden", 5, 9, Some(0x1fe))
+    );
+    // Bad pointers must fail safely, never reinterpret an item's ID as a script.
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    put32(b, ev + 16, 0xfffffff0);
+    assert!(r.map_events(&map).is_err());
+}
+
+#[test]
+fn reward_scripts_follow_calls_and_preserve_branch_evidence() {
+    let mut r = rom();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    let p = 0x25000;
+    // Call sets item/amount. Then a receipt flag selects either exit or gift.
+    b[p] = 4;
+    put32(b, p + 1, 0x08025100);
+    b[p + 5] = 0x2b;
+    put16(b, p + 6, 0x117);
+    b[p + 8] = 6;
+    b[p + 9] = 1;
+    put32(b, p + 10, 0x08025200);
+    b[p + 14] = 9;
+    b[p + 15] = 0;
+    b[p + 16] = 2;
+    b[0x25200] = 2;
+    b[0x25100..0x2510b].copy_from_slice(&[0x16, 0, 0x80, 1, 0, 0x16, 1, 0x80, 3, 0, 3]);
+    let (rewards, stops) = r.item_script(p).unwrap();
+    assert!(stops.is_empty());
+    assert_eq!(rewards.len(), 1);
+    assert_eq!(rewards[0].quantity, Some(3));
+    assert_eq!(rewards[0].via, "gift");
+    assert_eq!(rewards[0].conditions[0].id, 0x117);
+    assert!(!rewards[0].conditions[0].taken);
+    // Decoration IDs belong to a different catalog and must not become items.
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    b[p + 15] = 7;
+    assert!(r.item_script(p).unwrap().0.is_empty());
+}
+
+#[test]
+fn reward_parser_stops_unknown_commands_and_invalidates_native_values() {
+    let mut r = rom();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    let p = 0x25000;
+    b[p..p + 16].copy_from_slice(&[
+        0x16, 0, 0x80, 1, 0, 0x16, 1, 0x80, 1, 0, 0x25, 0, 0, 9, 0, 2,
+    ]);
+    let (rewards, stops) = r.item_script(p).unwrap();
+    assert!(rewards.is_empty());
+    assert!(stops.contains(&(p + 10)));
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    b[p] = 0xff;
+    b[p + 1..p + 6].copy_from_slice(&[0x44, 1, 0, 1, 0]);
+    assert_eq!(r.item_script(p).unwrap(), (vec![], vec![p]));
 }

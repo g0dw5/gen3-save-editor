@@ -2,6 +2,7 @@
 pub mod app;
 pub mod binary;
 pub mod graphics;
+pub mod map_events;
 pub mod pokemon;
 pub mod profile;
 pub mod rom;

@@ -8,6 +8,7 @@ import {
   Sprite,
   Types,
 } from "./components";
+import { MapExplorer } from "./MapExplorer";
 import { TrainerArt } from "./TrainerArt";
 import { TrainerParty } from "./TrainerParty";
 import {
@@ -588,6 +589,19 @@ export function ReferenceWindow({
           )}
           {tab === "maps" && current && (
             <>
+              <div className="muted">
+                {(current as GameMap).width} × {(current as GameMap).height}
+              </div>
+              {mapImage ? (
+                <MapExplorer
+                  map={current as GameMap}
+                  image={mapImage}
+                  report={world?.map_events.find((m) => m.map_id === selected)}
+                  catalog={catalog}
+                />
+              ) : (
+                <p className="muted">{t("loading")}</p>
+              )}
               <h3>{t("mapTrainers")}</h3>
               <p className="small muted">{t("trainerMapsHelp")}</p>
               {world?.trainer_locations.locations
@@ -609,18 +623,6 @@ export function ReferenceWindow({
                     </button>
                   </div>
                 ))}
-              <div className="muted">
-                {(current as GameMap).width} × {(current as GameMap).height}
-              </div>
-              {mapImage ? (
-                <img
-                  className="map-preview"
-                  src={mapImage}
-                  alt={`${t("mapPreview")} · ${current.name}`}
-                />
-              ) : (
-                <p className="muted">{t("loading")}</p>
-              )}
               <h3>{t("encounter")}</h3>
               {world?.encounters
                 .filter((e) => e.map_id === selected)

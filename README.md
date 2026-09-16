@@ -120,3 +120,7 @@ See [architecture and adapter boundaries](docs/ARCHITECTURE.md) and the independ
 
 MIT license applies to this project's code. Refer to
 [third-party notices](THIRD_PARTY_NOTICES.md) for format research sources.
+
+Map references include independently switchable item-ball, hidden-item, dialogue-reward
+and NPC layers, with tile coordinates, search, grid and zoom. See
+[map event evidence and limitations](docs/research/map-events.md).

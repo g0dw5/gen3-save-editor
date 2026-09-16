@@ -1,5 +1,32 @@
 import { createContext, useContext } from "react";
 export const en = {
+  mapInvisibleObject:
+    "This object starts invisible; a script may move or reveal it.",
+  mapLayers: "Map layers",
+  mapPickups: "Item balls",
+  mapHidden: "Hidden items",
+  mapGifts: "Dialogue rewards",
+  mapNpcs: "NPCs / objects",
+  mapItemSearch: "Search item, NPC ID or coordinates…",
+  mapGrid: "Grid",
+  mapZoom: "Zoom",
+  mapFit: "Fit",
+  mapAllEventsHelp:
+    "All ROM events are shown, including collected or story-gated events. Coordinates start at (0, 0); NPCs use their initial positions.",
+  mapElevation: "Elevation",
+  mapNoReward: "No item reward identified in this object's parsed script.",
+  mapConditionalReward:
+    "Alternative rewards and prerequisite branches may be included; these are not necessarily available together or right now.",
+  mapPartialScript: "Some native or dynamic behavior remains unresolved.",
+  mapEventEvidence: "ROM evidence",
+  mapEventOffset: "Event",
+  mapSelectMarker: "Select a marker to view its items and tile coordinates.",
+  mapUnplacedRewards: "Rewards without a verified tile position",
+  mapUnplacedHelp:
+    "Referenced by map scripts; no NPC or event tile is assumed.",
+  mapCoverageHelp:
+    "Script coverage is partial. Shops, native rewards, random rewards and moving NPCs are not fully simulated.",
+
   searchChoices: "Search ROM name or ID…",
   noChoiceResults: "No matching options",
   originKind: "Encounter source",
@@ -396,6 +423,32 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  mapInvisibleObject:
+    "此对象初始不可见，可能由脚本移动或显示，不能直接当作可对话 NPC。",
+  mapLayers: "地图图层",
+  mapPickups: "地面精灵球",
+  mapHidden: "隐藏道具",
+  mapGifts: "对话／事件奖励",
+  mapNpcs: "NPC／地图对象",
+  mapItemSearch: "搜索道具、NPC 编号或坐标…",
+  mapGrid: "格线",
+  mapZoom: "缩放",
+  mapFit: "适应宽度",
+  mapAllEventsHelp:
+    "显示 ROM 中的全部事件，不按存档领取状态筛选，包含已领取和剧情未开放的事件。坐标从 (0, 0) 开始；NPC 标注初始位置。",
+  mapElevation: "高度层",
+  mapNoReward: "已解析的此对象脚本中未识别到道具奖励。",
+  mapConditionalReward:
+    "可能包含不同选项或前置条件下的奖励，不代表当前可全部领取。",
+  mapPartialScript: "部分原生程序调用或动态行为尚未解析。",
+  mapEventEvidence: "ROM 事件证据",
+  mapEventOffset: "事件",
+  mapSelectMarker: "点击标记，查看道具与精确格位。",
+  mapUnplacedRewards: "未确定格位的事件奖励",
+  mapUnplacedHelp: "来自地图脚本，尚不能可靠定位到 NPC 或具体格位。",
+  mapCoverageHelp:
+    "脚本覆盖尚不完整；商店、原生程序奖励、随机奖励与 NPC 移动未完整模拟。",
+
   searchChoices: "搜索 ROM 名称或编号…",
   noChoiceResults: "没有匹配的选项",
   originKind: "相遇来源",
