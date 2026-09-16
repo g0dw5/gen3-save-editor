@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { api } from "./api";
+import { useMemo } from "react";
+import { useRomCharacterImage } from "./romCharacterImage";
 import { useI18n } from "./i18n";
 import type { Catalog, Opponent, World } from "./types";
 
-const images = new Map<string, Promise<string>>();
 function RomCharacter({
   md5,
   id,
@@ -16,33 +15,15 @@ function RomCharacter({
   label: string;
 }) {
   const { t } = useI18n();
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    setUrl(null);
-    const key = `${md5}:${kind}:${id}`;
-    if (!images.has(key))
-      images.set(
-        key,
-        api<{ url: string }>(kind, { id })
-          .then((value) => value.url)
-          .catch(() => ""),
-      );
-    images.get(key)!.then((value) => {
-      if (active) setUrl(value);
-    });
-    return () => {
-      active = false;
-    };
-  }, [md5, id, kind]);
+  const image = useRomCharacterImage(md5, kind, id);
   return (
     <figure className={`trainer-art-frame ${kind}`}>
       <div>
-        {url ? (
-          <img src={url} alt={label} draggable={false} />
+        {image ? (
+          <img src={image.url} alt={label} draggable={false} />
         ) : (
           <span className="small muted">
-            {t(url === null ? "loading" : "artUnavailable")}
+            {t(image === undefined ? "loading" : "artUnavailable")}
           </span>
         )}
       </div>

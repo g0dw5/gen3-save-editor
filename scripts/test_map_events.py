@@ -4,6 +4,7 @@ Run Vite, then invoke with Python + Playwright/Chrome installed.
 """
 import json
 import os
+import re
 from playwright.sync_api import sync_playwright, expect
 from test_reference_navigation import CATALOG, WORLD
 
@@ -14,7 +15,7 @@ def reward(item):
 
 def marker(identifier, kind, x, y, rewards):
     return {"id": identifier, "kind": kind, "x": x, "y": y, "elevation": 3,
-            "local_id": 1, "graphics_id": 1, "movement_type": 0,
+            "local_id": 1, "graphics_id": 999 if identifier == "unknown" else 1, "movement_type": 0,
             "flag": 100, "offset": 256, "script": 512,
             "rewards": rewards, "stopped_at": []}
 
@@ -26,6 +27,7 @@ world = {**WORLD, "maps": [{"id": "26-13", "name": "Test map", "width": 8, "heig
              marker("hidden", "hidden", 3, 4, [reward(2)]),
              marker("gift", "gift", 3, 4, [reward(1)]),
              marker("npc", "npc", 5, 1, []),
+             marker("unknown", "npc", 6, 1, []),
          ], "unplaced_rewards": [reward(2)], "stopped_at": []}]}
 
 
@@ -38,6 +40,11 @@ def respond(route):
         data = world
     elif command == "map_image":
         data = {"url": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='96'><rect width='128' height='96' fill='%23273632'/></svg>"}
+    elif command == "object_sprite":
+        if request["payload"]["id"] == 999:
+            route.fulfill(content_type="application/json", body=json.dumps({"ok": False, "error": {"code": "object_graphics_dynamic", "detail": "999"}}))
+            return
+        data = {"url": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='32'><rect width='16' height='32' fill='%23e9a76e'/></svg>"}
     elif command == "species":
         data = {"species": CATALOG["species"][0], "evolutions": [], "learnset": [], "encounters": []}
     elif command == "sprite":
@@ -60,6 +67,15 @@ if __name__ == "__main__":
         page.get_by_role("dialog").get_by_role("button", name="Maps", exact=True).click()
         explorer = page.locator(".map-explorer")
         expect(explorer).to_be_visible()
+        expect(explorer.locator(".map-marker")).to_have_count(4)
+        expect(explorer.locator(".map-actor > img")).to_have_count(2)
+        npc = explorer.locator(".map-actor.layer-npc")
+        assert abs(float(npc.evaluate("e => parseFloat(e.style.top)")) - 100 * 2 / 6) < 1e-3
+        assert npc.evaluate("e => e.style.width") == "12.5%"  # One map tile wide.
+        assert abs(float(npc.evaluate("e => parseFloat(e.style.height)")) - 100 * 2 / 6) < 1e-3
+        # Dynamic graphics fail gracefully without replacing another actor's image.
+        expect(explorer.locator(".map-marker.layer-npc:not(.map-actor)")).to_have_attribute("title", re.compile("Image not resolved"))
+        explorer.get_by_role("checkbox", name="NPCs / objects").uncheck()
         expect(explorer.locator(".map-marker")).to_have_count(2)  # Same-tile rewards share one pin.
         ball = explorer.locator(".map-marker.layer-pickup")
         assert ball.evaluate("e => e.style.left") == "18.75%"
@@ -71,7 +87,7 @@ if __name__ == "__main__":
         explorer.get_by_role("checkbox", name="Dialogue rewards").uncheck()
         expect(explorer.locator(".map-marker")).to_have_count(1)
         explorer.get_by_role("checkbox", name="NPCs / objects").check()
-        expect(explorer.locator(".map-marker")).to_have_count(2)
+        expect(explorer.locator(".map-marker")).to_have_count(3)
         explorer.get_by_role("checkbox", name="Hidden items").check()
         search = explorer.get_by_role("textbox")
         search.fill("Moon")
@@ -80,8 +96,14 @@ if __name__ == "__main__":
         expect(explorer.locator(".map-marker-details")).to_contain_text("Moon Stone × 1")
         explorer.get_by_label("Grid", exact=True).check()
         expect(explorer.locator(".map-grid")).to_be_visible()
+        search.fill("")
+        npc = explorer.locator(".map-actor.layer-npc")
+        before = npc.bounding_box()
         explorer.get_by_label("Zoom", exact=True).select_option("2")
         assert explorer.locator(".map-canvas").evaluate("e => e.style.width") == "200%"
+        after = npc.bounding_box()
+        assert abs(after["width"] - 2 * before["width"]) < 1
+        assert abs(after["height"] - 2 * before["height"]) < 1
         assert not errors, errors
         browser.close()
-        print("Map layers, overlapping pins, coordinates, item search, grid and zoom passed.")
+        print("Map layers, NPC sprites, fallback, tile alignment, search and zoom passed.")

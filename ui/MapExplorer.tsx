@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Gift, MapPin, Search, Sparkles, Users, CircleDot } from "lucide-react";
 import { useI18n } from "./i18n";
+import { useRomCharacterImage } from "./romCharacterImage";
 import type { Catalog, GameMap, MapEventReport, MapMarker } from "./types";
 
 const layers = ["pickup", "hidden", "gift", "npc"] as const;
@@ -21,7 +22,7 @@ export function MapExplorer({
     pickup: true,
     hidden: true,
     gift: true,
-    npc: false,
+    npc: true,
   });
   const [grid, setGrid] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -153,8 +154,6 @@ export function MapExplorer({
             const first =
               group.find((m) => m.kind !== "npc" && m.kind !== "event") ??
               group[0];
-            const kind = first.kind === "event" ? "npc" : first.kind;
-            const Icon = icons[kind];
             const title =
               group
                 .map(
@@ -163,22 +162,21 @@ export function MapExplorer({
                 )
                 .join("\n") + `\n(${first.x}, ${first.y})`;
             return (
-              <button
+              <MapEventPin
                 key={key}
-                type="button"
-                className={`map-marker layer-${kind}${key === selected ? " selected" : ""}`}
-                style={{
-                  left: `${((first.x + 0.5) / map.width) * 100}%`,
-                  top: `${((first.y + 0.5) / map.height) * 100}%`,
-                }}
-                aria-label={title}
+                map={map}
+                marker={first}
+                actor={group.find(
+                  (m) =>
+                    (m.kind === "npc" || m.kind === "gift") &&
+                    m.graphics_id !== null,
+                )}
+                md5={catalog.profile.md5}
                 title={title}
-                aria-pressed={key === selected}
+                count={group.length}
+                selected={key === selected}
                 onClick={() => setSelected(key)}
-              >
-                <Icon size={14} />
-                {group.length > 1 && <small>{group.length}</small>}
-              </button>
+              />
             );
           })}
         </div>
@@ -256,5 +254,72 @@ export function MapExplorer({
           <p className="small muted">{t("mapCoverageHelp")}</p>
         )}
     </section>
+  );
+}
+
+function MapEventPin({
+  map,
+  marker,
+  actor,
+  md5,
+  title,
+  count,
+  selected,
+  onClick,
+}: {
+  map: GameMap;
+  marker: MapMarker;
+  actor?: MapMarker;
+  md5: string;
+  title: string;
+  count: number;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const image = useRomCharacterImage(
+    md5,
+    "object_sprite",
+    actor?.graphics_id ?? null,
+  );
+  const kind = marker.kind === "event" ? "npc" : marker.kind;
+  const Icon = icons[kind];
+  const { t } = useI18n();
+  const description =
+    actor && image === null ? `${title} · ${t("artUnavailable")}` : title;
+  return (
+    <button
+      type="button"
+      className={`map-marker layer-${kind}${image ? " map-actor" : ""}${actor?.movement_type === 76 ? " map-actor-invisible" : ""}${selected ? " selected" : ""}`}
+      style={{
+        left: `${((marker.x + 0.5) / map.width) * 100}%`,
+        top: `${((marker.y + (image ? 1 : 0.5)) / map.height) * 100}%`,
+        // Map tiles are 16 pixels. Keep the ROM sprite's size and anchor its feet
+        // to the bottom of its event tile, including when zooming the map.
+        ...(image
+          ? {
+              width: `${(image.width / (map.width * 16)) * 100}%`,
+              height: `${(image.height / (map.height * 16)) * 100}%`,
+            }
+          : {}),
+      }}
+      aria-label={description}
+      title={description}
+      aria-pressed={selected}
+      onClick={onClick}
+    >
+      {image ? (
+        <>
+          <img src={image.url} alt="" draggable={false} />
+          {kind !== "npc" && (
+            <span className="map-actor-badge">
+              <Icon size={11} />
+            </span>
+          )}
+        </>
+      ) : (
+        <Icon size={14} />
+      )}
+      {count > 1 && <small>{count}</small>}
+    </button>
   );
 }

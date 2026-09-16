@@ -11,6 +11,16 @@ zoom and English/Chinese labels.
 对话／事件奖励、NPC／地图对象可独立显示和隐藏。坐标从左上角 `(0,0)` 开始，
 标记落在格子中心；同格事件合并但不丢失各自的奖励信息。
 
+NPC/object markers render the first overworld frame extracted from the loaded
+ROM. Sprite dimensions scale with the 16-pixel map tiles; feet align with the
+bottom of the event tile. Gift NPCs retain a reward badge. The NPC layer starts
+visible. Dynamic/unresolved graphics fall back to a labeled icon; invisible
+objects are translucent. Trainer references share the same ROM-keyed image cache.
+
+NPC／地图对象使用当前 ROM 的地图小人图像，按原始尺寸随地图缩放，脚底对齐事件格位。
+赠送道具的 NPC 保留奖励角标，NPC 图层默认开启；未知动态图像回退为图标，初始不可见
+对象以半透明显示。这仍然是静态初始位置，不模拟剧情移动或人物动画。
+
 ## Data and evidence
 
 - Object templates: 24 bytes; signed x/y at +4/+6, elevation +8, movement +9,
