@@ -39,6 +39,7 @@ pub struct Profile {
     pub base_stats: Table,
     pub moves: Table,
     pub move_category_offset: usize,
+    pub hidden_power: Option<HiddenPowerRules>,
     pub items: Table,
     pub evolutions: Table,
     pub learnsets: usize,
@@ -68,6 +69,17 @@ pub struct Profile {
     pub map_groups: &'static [MapGroup],
     pub map_counts: &'static [usize],
     pub save: SaveLayout,
+}
+/// Verified battle-engine behavior, not the move table's placeholder type/power.
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct HiddenPowerRules {
+    pub move_id: u16,
+    pub formula: HiddenPowerFormula,
+}
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HiddenPowerFormula {
+    Gen3To5,
 }
 /// Emerald's save-seeded fishing rule, separate from ordinary encounter tables.
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -165,6 +177,10 @@ pub const BW: Profile = Profile {
         stride: 12,
     },
     move_category_offset: 10,
+    hidden_power: Some(HiddenPowerRules {
+        move_id: 237,
+        formula: HiddenPowerFormula::Gen3To5,
+    }),
     items: Table {
         offset: 0x5839a0,
         count: 377,

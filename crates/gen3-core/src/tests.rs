@@ -1359,6 +1359,16 @@ fn unown_appearance_uses_all_four_pid_bytes() {
 }
 
 #[test]
+fn hidden_power_profiles_expose_the_verified_ui_rule() {
+    for profile in [profile::BW, profile::DP] {
+        assert_eq!(
+            serde_json::to_value(profile.hidden_power).unwrap(),
+            serde_json::json!({"move_id": 237, "formula": "gen3_to5"})
+        );
+    }
+}
+
+#[test]
 fn origins_follow_ancestors_without_sibling_encounters_and_allow_babies() {
     let mut r = rom();
     r.profile.map_counts = &[1];

@@ -67,6 +67,7 @@ export interface Catalog {
     md5: string;
     size: number;
     feebas?: { map_id: string } | null;
+    hidden_power?: { move_id: number; formula: "gen3_to5" } | null;
   };
   species: Species[];
   moves: Move[];

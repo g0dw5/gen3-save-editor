@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { api } from "./api";
 import { romOption, itemOption } from "./names";
+import { hiddenPower } from "./hiddenPower";
+import { HiddenPowerSummary } from "./HiddenPowerSummary";
 import { PokemonOrigin, PokemonAdvanced } from "./PokemonMetadata";
 import {
   useI18n,
@@ -74,6 +76,8 @@ export function PokemonEditor({
   const [detail, setDetail] = useState<SpeciesDetail | null>(null);
   const [allMoves, setAllMoves] = useState(false);
   const merged = { ...p, ...patch } as Pokemon;
+  const hpRules = catalog.profile.hidden_power;
+  const hp = hiddenPower(hpRules, merged.ivs);
   const effectiveNature =
     patch.pid !== undefined ? merged.pid % 25 : merged.nature;
   const natureUp = Math.floor(effectiveNature / 5) + 1;
@@ -122,10 +126,19 @@ export function PokemonEditor({
         (m) =>
           m.id === 0 || m.id === current || free || allMoves || known.has(m.id),
       )
-      .map((m) => ({
-        ...romOption(m),
-        label: `${m.id ? `【${moveCategoryNames[locale][m.category] ?? "?"}】【${typeNames[locale][m.move_type] ?? "?"}】【${m.power || "—"}】${romOption(m).label}` : t("emptyMove")}${m.id && !known.has(m.id) ? ` — ${future.has(m.id) ? t("futureMove") : t("unknownSource")}` : ""}`,
-      }));
+      .map((m) => {
+        const isHiddenPower = m.id === hpRules?.move_id;
+        const moveType = isHiddenPower
+          ? hp
+            ? typeNames[locale][hp.type]
+            : t("unresolved")
+          : (typeNames[locale][m.move_type] ?? "?");
+        const power = isHiddenPower ? (hp?.power ?? "?") : m.power || "—";
+        return {
+          ...romOption(m),
+          label: `${m.id ? `【${moveCategoryNames[locale][m.category] ?? "?"}】【${moveType}】【${power}】${romOption(m).label}` : t("emptyMove")}${m.id && !known.has(m.id) ? ` — ${future.has(m.id) ? t("futureMove") : t("unknownSource")}` : ""}`,
+        };
+      });
   const itemOptions = catalog.items.map((i) =>
     i.id ? itemOption(catalog, i) : { value: 0, label: t("emptyMove") },
   );
@@ -353,6 +366,7 @@ export function PokemonEditor({
                   ))}
                 </tbody>
               </table>
+              <HiddenPowerSummary catalog={catalog} ivs={merged.ivs} />
               <div
                 className={`ev-total ${merged.evs.reduce((a, b) => a + b, 0) > 510 ? "warning-text" : ""}`}
               >
@@ -407,6 +421,9 @@ export function PokemonEditor({
                 <summary>{t("ppHelpTitle")}</summary>
                 <p>{t("ppStorageHelp")}</p>
               </details>
+              {hpRules && merged.moves.includes(hpRules.move_id) && (
+                <HiddenPowerSummary catalog={catalog} ivs={merged.ivs} />
+              )}
               {merged.moves.map((id, i) => (
                 <div className="move-card" key={i}>
                   <SelectField

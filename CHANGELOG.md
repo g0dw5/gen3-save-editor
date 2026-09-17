@@ -10,6 +10,15 @@ bilingual file.
 
 ## Unreleased / 尚未发布
 
+- Show IV-derived Hidden Power type and power in the Pokémon stats/moves tabs
+  and move picker, updating immediately while editing. Trainer moves show the
+  result when IVs are known; generic ROM references explain the variable values.
+- 能力页、招式页和招式选择框显示觉醒力量的实际属性与威力，随个体值编辑即时更新；
+  训练家个体值确定时显示结果，ROM 通用资料说明其可变数值。
+- Verify the calculator against 16,384 executions of the BW/DP native routine;
+  add browser coverage for live edits, selection changes and unknown IVs.
+- 与 BW／DP 的原生战斗函数逐一核对 16,384 组输入，新增编辑联动、切换个体及
+  未知个体值的浏览器回归测试。
 - Reserve the frontend mutation lock before awaiting the unsaved-edit check.
   Duplicate drop events in one event-loop turn can no longer submit two transfers.
 - 在等待未保存编辑检查前锁定修改操作，防止同一轮事件中的重复放下提交两次移动／交换。

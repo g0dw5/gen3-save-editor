@@ -55,6 +55,12 @@ export const en = {
   natureIncrease: "increased by 10%",
   natureDecrease: "reduced by 10%",
   ppHelpTitle: "How PP works",
+  hiddenPower: "Hidden Power",
+  hiddenPowerHelp:
+    "Calculated from the current IVs; updates as you edit. This does not mean the Pokémon knows the move.",
+  hiddenPowerUnknown: "Type / power unknown (IVs unavailable or invalid)",
+  hiddenPowerReferenceHelp:
+    "Type and power depend on the Pokémon’s IVs. Check an individual’s Stats or Moves tab for its actual values.",
   currentPp: "Current PP",
   maximumPp: "Maximum PP",
   ppStorageHelp:
@@ -489,6 +495,12 @@ export const zh: Record<Key, string> = {
   natureIncrease: "提升 10%",
   natureDecrease: "降低 10%",
   ppHelpTitle: "PP 说明",
+  hiddenPower: "觉醒力量",
+  hiddenPowerHelp:
+    "按当前个体值计算，编辑时即时更新；此处显示不代表已经学会该招式。",
+  hiddenPowerUnknown: "属性／威力未知（个体值未确定或无效）",
+  hiddenPowerReferenceHelp:
+    "属性和威力取决于使用者的个体值，可在具体宝可梦的能力或招式页查看实际结果。",
   currentPp: "当前 PP",
   maximumPp: "最大 PP",
   ppStorageHelp:

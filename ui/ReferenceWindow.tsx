@@ -602,11 +602,20 @@ export function ReferenceWindow({
                 ).map((k) => (
                   <div key={k}>
                     <span>{t(k)}</span>
-                    <strong>{(current as Move)[k]}</strong>
+                    <strong>
+                      {k === "power" &&
+                      current.id === catalog.profile.hidden_power?.move_id
+                        ? "30–70"
+                        : (current as Move)[k]}
+                    </strong>
                   </div>
                 ))}
               </div>
-              <Types values={[(current as Move).move_type]} />
+              {current.id === catalog.profile.hidden_power?.move_id ? (
+                <p className="small muted">{t("hiddenPowerReferenceHelp")}</p>
+              ) : (
+                <Types values={[(current as Move).move_type]} />
+              )}
             </>
           )}
           {tab === "items" && current && (

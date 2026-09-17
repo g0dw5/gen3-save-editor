@@ -1,5 +1,6 @@
 import { Sprite, Types } from "./components";
-import { natures, statKeys, useI18n } from "./i18n";
+import { natures, statKeys, typeNames, useI18n } from "./i18n";
+import { hiddenPower } from "./hiddenPower";
 import type { Catalog, Opponent, Snapshot } from "./types";
 
 export function TrainerParty({
@@ -26,6 +27,8 @@ export function TrainerParty({
       {trainer.party.map((p, i) => {
         const species = catalog.species.find((s) => s.id === p.species);
         const g = p.generation;
+        const hpRules = catalog.profile.hidden_power;
+        const hp = hiddenPower(hpRules, g?.ivs);
         const dynamic = p.level_rule === "party_max";
         const level = dynamic ? highestLevel : p.level;
         const gender = g?.gender;
@@ -100,11 +103,20 @@ export function TrainerParty({
               <div>
                 {dynamic && !p.moves_explicit
                   ? t("dynamicMoves")
-                  : p.moves
-                      .filter(Boolean)
-                      .map((id) => (
-                        <span key={id}>{catalog.moves[id]?.name ?? id}</span>
-                      ))}
+                  : p.moves.filter(Boolean).map((id) => (
+                      <span key={id}>
+                        {catalog.moves[id]?.name ?? id}
+                        {id === hpRules?.move_id && (
+                          <>
+                            {" "}
+                            ·{" "}
+                            {hp
+                              ? `${typeNames[locale][hp.type]} · ${t("power")} ${hp.power}`
+                              : t("hiddenPowerUnknown")}
+                          </>
+                        )}
+                      </span>
+                    ))}
               </div>
             </div>
             <table className="trainer-stat-table">
