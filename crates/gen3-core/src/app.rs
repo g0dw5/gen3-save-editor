@@ -116,6 +116,10 @@ impl App {
                 let r = &self.session()?.rom;
                 Ok(serde_json::to_value(r.world()?)?)
             }
+            "fishing_spots" => {
+                let s = self.session()?;
+                Ok(serde_json::to_value(s.rom.fishing_spots(s.save.as_ref())?)?)
+            }
             "map_report" => {
                 let id = required(&p, "id")?;
                 let r = &self.session()?.rom;

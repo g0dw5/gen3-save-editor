@@ -21,7 +21,7 @@ fn run() -> Result<()> {
         println!("{}", serde_json::to_string_pretty(&v).unwrap());
     };
     if command == "help" {
-        println!("gen3 profiles\ngen3 identify ROM\ngen3 catalog ROM\ngen3 species ROM ID\ngen3 world ROM\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]\ngen3 patch-rom ROM EDITS.json OUTPUT.gba");
+        println!("gen3 profiles\ngen3 identify ROM\ngen3 catalog ROM\ngen3 species ROM ID\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]\ngen3 patch-rom ROM EDITS.json OUTPUT.gba");
         return Ok(());
     }
     if command == "profiles" {
@@ -47,6 +47,17 @@ fn run() -> Result<()> {
             )?,
         )?),
         "world" => print(serde_json::to_value(rom.world()?)?),
+        "fishing-spots" => {
+            let save = a
+                .get(2)
+                .map(|path| {
+                    let save = Save::open(fs::read(path)?, rom.profile.save)?;
+                    save.validate(&rom)?;
+                    Ok::<_, gen3_core::Error>(save)
+                })
+                .transpose()?;
+            print(serde_json::to_value(rom.fishing_spots(save.as_ref())?)?);
+        }
         "inspect" => {
             let mut session = Session::new(rom);
             session.load(fs::read(arg(2)?)?, Some(arg(2)?.into()))?;

@@ -31,6 +31,7 @@ jobs:
             target/release/bundle/**/*.exe
             target/release/bundle/**/*.deb
             target/release/bundle/**/*.AppImage
+            CHANGELOG.md
             README.md
             README.zh-CN.md
             LICENSE

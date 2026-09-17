@@ -34,6 +34,7 @@ import type {
   Template,
   World,
   Snapshot,
+  FishingReport,
 } from "./types";
 
 interface Props {
@@ -83,6 +84,31 @@ export function ReferenceWindow({
   );
   const [detail, setDetail] = useState<SpeciesDetail | null>(null);
   const [mapImage, setMapImage] = useState("");
+  const [fishingState, setFishingState] = useState<{
+    save: Snapshot | null;
+    md5: string;
+    report: FishingReport | null;
+  } | null>(null);
+  const fishing =
+    fishingState?.save === save && fishingState?.md5 === catalog.profile.md5
+      ? fishingState.report
+      : null;
+  useEffect(() => {
+    let active = true;
+    setFishingState(null);
+    if (catalog.profile.feebas)
+      api<FishingReport | null>("fishing_spots")
+        .then((report) => {
+          if (active)
+            setFishingState({ save, md5: catalog.profile.md5, report });
+        })
+        .catch((error) => {
+          if (active) onError(error);
+        });
+    return () => {
+      active = false;
+    };
+  }, [save, catalog.profile.md5, catalog.profile.feebas, onError]);
   const [romEdit, setRomEdit] = useState(false);
   const detailPane = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -408,6 +434,27 @@ export function ReferenceWindow({
                       .join(" / ")}
                   </span>
                 </div>
+                {fishing?.species === speciesId && (
+                  <div className="fishing-info">
+                    <strong>{t("fishingSpots")}</strong>
+                    <p className="small muted">
+                      {t(
+                        fishing.seed === null
+                          ? "fishingNeedsSave"
+                          : "fishingSource",
+                      )}
+                    </p>
+                    <button
+                      onClick={() => {
+                        setTab("maps");
+                        setSelected(fishing.map_id);
+                        setSearch("");
+                      }}
+                    >
+                      {t("fishingOpenMap")} · {fishing.map_id}
+                    </button>
+                  </div>
+                )}
                 <h3>{t("evolution")}</h3>
                 {detail.evolutions.map((e) => (
                   <div className="reference-line" key={e.offset}>
@@ -598,6 +645,7 @@ export function ReferenceWindow({
                   image={mapImage}
                   report={world?.map_events.find((m) => m.map_id === selected)}
                   catalog={catalog}
+                  fishing={fishing?.map_id === selected ? fishing : null}
                 />
               ) : (
                 <p className="muted">{t("loading")}</p>

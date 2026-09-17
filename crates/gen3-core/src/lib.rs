@@ -1,6 +1,7 @@
 //! ROM-backed Gen III editing. No UI, process-global ROM or bundled game assets.
 pub mod app;
 pub mod binary;
+pub mod fishing;
 pub mod graphics;
 pub mod map_events;
 pub mod pokemon;

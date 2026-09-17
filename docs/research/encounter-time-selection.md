@@ -121,3 +121,34 @@ save-variable exception for Altering Cave. Native land, water/rock and rod
 selectors have no clock inputs. No time-of-day UI field was added. Duplicate
 species rows describe separate weighted level slots, not separate time periods.
 Script conditions and daily outbreak lifecycle remain distinct research scopes.
+
+## Save-seeded Feebas tiles (0.1.8)
+
+The separate fishing check at `0xB4984` uses the 16-bit seed at SaveBlock1
+`+0x2E6A`, not an ordinary wild header or a direct clock input. Its LCG uses
+`0x41C64E6D * state + 0x3039`; six draws are reduced modulo 447, zero becomes
+447, and values 1–3 are retried. Duplicates are retained.
+
+The three section rows at `0x553A7C` are `(0,45,0)`, `(46,91,131)` and
+`(92,139,298)`. Number each section independently, left to right, top to bottom,
+starting from its stored base. The hack has extra water tiles: globally numbering
+all water cells shifts later coordinates and is incorrect. Tile attributes use
+the actual primary/secondary tilesets; behavior flags at `0x486EFC`, bit 1, mark
+surfable tiles and behavior `0x13` excludes waterfalls. Collision/elevation bits
+are not substituted for this native behavior test.
+
+Section numbering can overlap in this hack, so six selected IDs can identify
+more than six physical tiles. All matching coordinates must be displayed; do not
+truncate the result to six or retry repeated IDs. Native checks with seeds
+`0x1234` and `0xFFFF` each confirm seven matching water tiles on both profiles.
+
+The encounter record at `0x553A78` supplies species and levels. On these exact
+ROMs it is species 328, levels 20–25. A selected tile has a 50% chance per
+successful fishing encounter, with any rod. The UI requires a loaded save for
+coordinates and refreshes them when the save changes. A static export cannot
+track changes to the game's trend seed; reopen the latest battery save.
+
+`crates/gen3-core/src/fishing.rs` implements this engine rule behind profile
+configuration; `scripts/verify_fishing_spots.py` compares both supported ROMs
+against their original Thumb code. No ROMs, user seeds, coordinates or save bytes
+are published as fixtures.

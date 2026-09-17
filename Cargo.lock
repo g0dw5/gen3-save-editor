@@ -1039,7 +1039,7 @@ dependencies = [
 
 [[package]]
 name = "gen3-cli"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "gen3-core",
  "serde_json",
@@ -1048,7 +1048,7 @@ dependencies = [
 
 [[package]]
 name = "gen3-core"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "base64 0.22.1",
  "md-5",
@@ -1062,7 +1062,7 @@ dependencies = [
 
 [[package]]
 name = "gen3-desktop"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "gen3-core",
  "serde",

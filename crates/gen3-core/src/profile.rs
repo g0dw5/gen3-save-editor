@@ -57,6 +57,7 @@ pub struct Profile {
     pub regions: usize,
     pub region_count: usize,
     pub wild: usize,
+    pub feebas: Option<FeebasRules>,
     pub trainers: Table,
     pub trainer_classes: Table,
     pub trainer_sprites: Table,
@@ -67,6 +68,16 @@ pub struct Profile {
     pub map_groups: &'static [MapGroup],
     pub map_counts: &'static [usize],
     pub save: SaveLayout,
+}
+/// Emerald's save-seeded fishing rule, separate from ordinary encounter tables.
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct FeebasRules {
+    pub map_id: &'static str,
+    pub seed_offset: usize,
+    pub wild_record: usize,
+    pub water_sections: usize,
+    pub behavior_flags: usize,
+    pub spot_count: u16,
 }
 /// Engine-specific appearance rules; graphics and spot masks remain in the ROM.
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -185,6 +196,14 @@ pub const BW: Profile = Profile {
     regions: 0x5a1480,
     region_count: 213,
     wild: 0xea2d34,
+    feebas: Some(FeebasRules {
+        map_id: "0-34",
+        seed_offset: 0x2e6a,
+        wild_record: 0x553a78,
+        water_sections: 0x553a7c,
+        behavior_flags: 0x486efc,
+        spot_count: 447,
+    }),
     trainers: Table {
         offset: 0x121d300,
         count: 1367,

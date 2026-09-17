@@ -2001,3 +2001,27 @@ summary {
 .map-marker.map-actor-invisible {
   opacity: 0.5;
 }
+
+.layer-fishing {
+  color: #e28cd9;
+}
+.map-marker.layer-fishing {
+  z-index: 2;
+}
+.fishing-info {
+  padding: 12px 14px;
+  margin: 12px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.fishing-info strong,
+.fishing-locations {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fishing-locations button[aria-pressed="true"] {
+  border-color: #e28cd9;
+  color: #e28cd9;
+}

@@ -124,3 +124,5 @@ MIT license applies to this project's code. Refer to
 Map references include independently switchable item-ball, hidden-item, dialogue-reward
 and NPC layers, with tile coordinates, search, grid and zoom. See
 [map event evidence and limitations](docs/research/map-events.md).
+
+Release history: [Changelog](CHANGELOG.md), starting with the first public release 0.1.5. Route 119 fishing spots are calculated from the loaded save; use the map layer or the species reference shortcut.

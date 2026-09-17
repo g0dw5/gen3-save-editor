@@ -61,7 +61,13 @@ export interface Ability {
   description: string;
 }
 export interface Catalog {
-  profile: { id: string; label: string; md5: string; size: number };
+  profile: {
+    id: string;
+    label: string;
+    md5: string;
+    size: number;
+    feebas?: { map_id: string } | null;
+  };
   species: Species[];
   moves: Move[];
   items: Item[];
@@ -309,4 +315,14 @@ export interface Template {
   level: number;
   met_location?: number;
   egg?: boolean;
+}
+
+export interface FishingReport {
+  map_id: string;
+  species: number;
+  min_level: number;
+  max_level: number;
+  percent: number;
+  seed: number | null;
+  spots: { x: number; y: number; spot_id: number }[];
 }

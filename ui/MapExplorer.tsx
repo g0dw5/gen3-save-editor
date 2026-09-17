@@ -1,8 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
-import { Gift, MapPin, Search, Sparkles, Users, CircleDot } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Gift,
+  MapPin,
+  Search,
+  Sparkles,
+  Users,
+  CircleDot,
+  Fish,
+} from "lucide-react";
 import { useI18n } from "./i18n";
 import { useRomCharacterImage } from "./romCharacterImage";
-import type { Catalog, GameMap, MapEventReport, MapMarker } from "./types";
+import type {
+  Catalog,
+  GameMap,
+  MapEventReport,
+  MapMarker,
+  FishingReport,
+} from "./types";
 
 const layers = ["pickup", "hidden", "gift", "npc"] as const;
 const icons = { pickup: CircleDot, hidden: Sparkles, gift: Gift, npc: Users };
@@ -11,11 +25,13 @@ export function MapExplorer({
   image,
   report,
   catalog,
+  fishing,
 }: {
   map: GameMap;
   image: string;
   report?: MapEventReport;
   catalog: Catalog;
+  fishing?: FishingReport | null;
 }) {
   const { t } = useI18n();
   const [enabled, setEnabled] = useState({
@@ -24,9 +40,34 @@ export function MapExplorer({
     gift: true,
     npc: true,
   });
+  const [query, setQuery] = useState("");
+  const [showFishing, setShowFishing] = useState(true);
+  const [fishSelected, setFishSelected] = useState<string | null>(null);
+  const fishPins = useRef(new Map<string, HTMLButtonElement>());
+  useEffect(() => setFishSelected(null), [map.id, fishing]);
+  const fishName =
+    catalog.species.find((s) => s.id === fishing?.species)?.name ?? "";
+  const fishVisible = showFishing
+    ? (fishing?.spots ?? []).filter((s) =>
+        `${fishName} ${s.x},${s.y}`.toLowerCase().includes(query.toLowerCase()),
+      )
+    : [];
+  const locateFish = (x: number, y: number) => {
+    const key = `${x},${y}`;
+    setShowFishing(true);
+    setQuery("");
+    setFishSelected(key);
+    setSelected(null);
+    requestAnimationFrame(() =>
+      fishPins.current.get(key)?.scrollIntoView({
+        block: "center",
+        inline: "center",
+        behavior: "smooth",
+      }),
+    );
+  };
   const [grid, setGrid] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   useEffect(() => setSelected(null), [map.id]);
   const label = (kind: string) =>
@@ -98,7 +139,51 @@ export function MapExplorer({
             </label>
           );
         })}
+        {fishing && (
+          <label className="map-layer layer-fishing">
+            <input
+              type="checkbox"
+              checked={showFishing}
+              disabled={fishing.seed === null}
+              onChange={(e) => setShowFishing(e.target.checked)}
+            />
+            <Fish size={15} />
+            <span>{t("fishingSpots")}</span>
+            <small>{fishing.spots.length}</small>
+          </label>
+        )}
       </div>
+      {fishing && (
+        <div className="fishing-info">
+          <strong>
+            <Fish size={16} /> {fishName} · {t("fishingSpots")}
+          </strong>
+          {fishing.seed === null ? (
+            <p className="small muted">{t("fishingNeedsSave")}</p>
+          ) : (
+            <>
+              <p className="small">
+                {t("fishingChance")} {fishing.percent}% · Lv.{fishing.min_level}
+                –{fishing.max_level}
+              </p>
+              <div className="fishing-locations">
+                {fishing.spots.map((spot) => (
+                  <button
+                    key={`${spot.x},${spot.y}`}
+                    aria-label={`${t("fishingLocate")} (${spot.x}, ${spot.y})`}
+                    aria-pressed={fishSelected === `${spot.x},${spot.y}`}
+                    onClick={() => locateFish(spot.x, spot.y)}
+                  >
+                    ({spot.x}, {spot.y})
+                  </button>
+                ))}
+              </div>
+              <p className="small muted">{t("fishingHelp")}</p>
+              <p className="small muted">{t("fishingSource")}</p>
+            </>
+          )}
+        </div>
+      )}
       <div className="map-tools">
         <label className="map-search">
           <Search size={15} />
@@ -150,6 +235,31 @@ export function MapExplorer({
               }}
             />
           )}
+          {fishVisible.map((spot) => {
+            const key = `${spot.x},${spot.y}`;
+            return (
+              <button
+                key={`fish-${key}`}
+                ref={(node) => {
+                  if (node) fishPins.current.set(key, node);
+                  else fishPins.current.delete(key);
+                }}
+                className={`map-marker layer-fishing ${fishSelected === key ? "selected" : ""}`}
+                style={{
+                  left: `${(100 * (spot.x + 0.5)) / map.width}%`,
+                  top: `${(100 * (spot.y + 0.5)) / map.height}%`,
+                }}
+                title={`${fishName} · (${spot.x}, ${spot.y}) · ${fishing!.percent}%`}
+                aria-label={`${fishName} (${spot.x}, ${spot.y})`}
+                onClick={() => {
+                  setFishSelected(key);
+                  setSelected(null);
+                }}
+              >
+                <Fish size={14} />
+              </button>
+            );
+          })}
           {[...groups].map(([key, group]) => {
             const first =
               group.find((m) => m.kind !== "npc" && m.kind !== "event") ??
@@ -175,7 +285,10 @@ export function MapExplorer({
                 title={title}
                 count={group.length}
                 selected={key === selected}
-                onClick={() => setSelected(key)}
+                onClick={() => {
+                  setSelected(key);
+                  setFishSelected(null);
+                }}
               />
             );
           })}

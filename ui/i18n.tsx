@@ -1,5 +1,17 @@
 import { createContext, useContext } from "react";
 export const en = {
+  fishingSpots: "Save-specific fishing spots",
+  fishingNeedsSave:
+    "Open a battery save to calculate its fishing spots. A ROM alone cannot determine them.",
+  fishingSource:
+    "These spots belong to the currently loaded save. If they change in-game, reopen your latest battery save.",
+  fishingHelp:
+    "Stand next to a marked water tile and cast toward it with any rod. The chance applies to successful fishing encounters, not bites or steps.",
+  fishingOpenMap: "View fishing map",
+  fishingLocate: "Locate water tile",
+  fishingChance: "Chance per fishing encounter",
+  fishing_rule: "The ROM's special fishing rule could not be resolved.",
+
   mapInvisibleObject:
     "This object starts invisible; a script may move or reveal it.",
   mapLayers: "Map layers",
@@ -423,6 +435,18 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  fishingSpots: "当前存档钓点",
+  fishingNeedsSave:
+    "请先打开游戏存档，再计算属于该存档的钓点；仅加载 ROM 无法确定位置。",
+  fishingSource:
+    "钓点以当前加载的存档为准；若游戏内钓点发生变化，请重新导入最新存档。",
+  fishingHelp:
+    "站在标记水格旁，朝该格使用任意钓竿。概率指成功进入钓鱼战斗后遇到该宝可梦的比例，不是咬钩率或每步遇敌率。",
+  fishingOpenMap: "查看钓点地图",
+  fishingLocate: "定位水格",
+  fishingChance: "每次钓鱼遭遇概率",
+  fishing_rule: "无法解析此 ROM 的特殊钓点规则。",
+
   mapInvisibleObject:
     "此对象初始不可见，可能由脚本移动或显示，不能直接当作可对话 NPC。",
   mapLayers: "地图图层",
