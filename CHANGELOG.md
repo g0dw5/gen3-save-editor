@@ -8,7 +8,7 @@ bilingual file.
 首次公开发布版本为 **0.1.5**，不追记此前的开发版本。0.1.6、0.1.7 按工程提交补记，
 不代表这些构建的对外发布日期。每次发布包均附带本中英文日志。
 
-## 0.1.8 — Unreleased / 尚未发布
+## 0.1.8 — 2026-09-17
 
 ### Added / 新增
 
@@ -17,9 +17,12 @@ bilingual file.
   encounter chance and level range. The species reference links to this map.
 - 根据当前存档及 ROM 实际地图行为计算笨笨鱼钓点；119 号道路增加独立钓点图层、
   坐标定位、出现概率和等级范围，宝可梦资料页可直接跳转。
-- Explain that a save is required and that updated in-game trend seeds require
-  reopening the latest save; changing saves discards stale coordinates.
-- 未加载存档时提示导入；切换存档重新计算，游戏种子改变后提示重新导入最新存档。
+- Explain that daily updates, Dewford trend changes and record mixing may change
+  fishing spots. Save in-game and reopen the latest exported battery save to
+  refresh them; emulator progress is not synced automatically. Changing saves
+  discards stale coordinates.
+- 提示跨天结算、武斗镇流行语变化和混合记录可能改变钓点；需在游戏内保存后重新
+  导入最新存档，修改器不会自动同步模拟器进度。切换存档时清除旧坐标并重新计算。
 - Add the read-only `gen3 fishing-spots ROM [SAVE]` command and English/Chinese UI.
 - 新增只读命令 `gen3 fishing-spots ROM [SAVE]` 及中英文界面文案。
 

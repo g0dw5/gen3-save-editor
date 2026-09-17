@@ -4,7 +4,7 @@ export const en = {
   fishingNeedsSave:
     "Open a battery save to calculate its fishing spots. A ROM alone cannot determine them.",
   fishingSource:
-    "These spots belong to the currently loaded save. If they change in-game, reopen your latest battery save.",
+    "These spots belong to the loaded save. Daily updates, changes to Dewford's trendy phrase, or record mixing may change them. Save in-game, export the latest battery save, then reopen it here to refresh the spots; emulator progress is not synced automatically.",
   fishingHelp:
     "Stand next to a marked water tile and cast toward it with any rod. The chance applies to successful fishing encounters, not bites or steps.",
   fishingOpenMap: "View fishing map",
@@ -439,7 +439,7 @@ export const zh: Record<Key, string> = {
   fishingNeedsSave:
     "请先打开游戏存档，再计算属于该存档的钓点；仅加载 ROM 无法确定位置。",
   fishingSource:
-    "钓点以当前加载的存档为准；若游戏内钓点发生变化，请重新导入最新存档。",
+    "钓点以当前加载的存档为准。跨天结算、武斗镇流行语变化或混合记录，都可能改变钓点。请先在游戏内保存，再导出最新游戏存档并重新打开，刷新钓点；修改器不会自动同步模拟器进度。",
   fishingHelp:
     "站在标记水格旁，朝该格使用任意钓竿。概率指成功进入钓鱼战斗后遇到该宝可梦的比例，不是咬钩率或每步遇敌率。",
   fishingOpenMap: "查看钓点地图",
