@@ -151,11 +151,14 @@ export default function App() {
       action: Record<string, unknown>,
       preserveForm = false,
     ): Promise<Snapshot | null> => {
-      if (inFlight.current || (!preserveForm && !(await guard()))) return null;
+      if (inFlight.current) return null;
+      // Reserve the mutation before yielding: two drops can arrive before React
+      // renders disabled slots, and both must not pass an awaited draft guard.
       inFlight.current = true;
-      setBusy(true);
-      setError(null);
       try {
+        if (!preserveForm && !(await guard())) return null;
+        setBusy(true);
+        setError(null);
         const r = await api<{ save: Snapshot }>("action", {
           action,
           policy: free ? "free" : "standard",

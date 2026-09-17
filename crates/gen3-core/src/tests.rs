@@ -346,6 +346,127 @@ fn transfer_invariants_and_import_profile() {
         )
         .is_err());
 }
+
+// An independent physical-byte oracle: don't use Save's logical block writer.
+fn expected_box_write(save: &Save, output: &mut [u8], index: usize, raw: &[u8]) {
+    for (i, byte) in raw.iter().enumerate() {
+        let logical = 4 + index * 80 + i;
+        output[save.sections[5 + logical / 3968] + logical % 3968] = *byte;
+    }
+    for section in 5..=13 {
+        let start = save.sections[section];
+        let checksum = sector_checksum(&output[start..start + save.layout.sizes[section]]);
+        put16(output, start + 0xff6, checksum);
+    }
+}
+
+#[test]
+fn transfers_preserve_every_record_byte_across_all_box_slots() {
+    let rom = rom();
+    let fixture = save_bytes(&rom);
+    let mut source = pokemon::create(&rom, 1, 0xdeadbeef, "ASH", 46, 0xbadc5647).unwrap();
+    // Header padding is outside the Pokemon checksum and must still survive.
+    source[30..32].copy_from_slice(&[0xa7, 0x2b]);
+    let other = pokemon::create(&rom, 2, 0x87654321, "ASH", 37, 0xfeed1234).unwrap();
+    for target in 0..420 {
+        // Exercise both active banks and all fourteen physical sector rotations.
+        let mut rotated = fixture.clone();
+        for bank in 0..2 {
+            for physical in 0..14 {
+                let start = bank * 14 * 4096;
+                let dest = start + ((physical + target % 14) % 14) * 4096;
+                let original = start + physical * 4096;
+                rotated[dest..dest + 4096].copy_from_slice(&fixture[original..original + 4096]);
+                put32(
+                    &mut rotated,
+                    dest + 0xffc,
+                    if bank == target % 2 { 12 } else { 11 },
+                );
+            }
+        }
+        let mut baseline = Save::open(rotated, rom.profile.save).unwrap();
+        baseline.insert(loc(69), &source, &rom).unwrap();
+        for (occupied, copy) in [(false, false), (true, false), (false, true)] {
+            let mut save = baseline.clone();
+            if occupied && target != 69 {
+                save.insert(loc(target), &other, &rom).unwrap();
+            }
+            let before = save.data.clone();
+            let mut expected = before.clone();
+            if target != 69 {
+                if !copy {
+                    expected_box_write(
+                        &save,
+                        &mut expected,
+                        69,
+                        if occupied { &other } else { &[0; 80] },
+                    );
+                }
+                expected_box_write(&save, &mut expected, target, &source);
+            }
+            save.transfer(loc(69), loc(target), copy, &rom).unwrap();
+            assert_eq!(
+                save.data, expected,
+                "target={target} occupied={occupied} copy={copy}"
+            );
+            let reopened = Save::open(save.data.clone(), rom.profile.save).unwrap();
+            reopened.validate(&rom).unwrap();
+            assert_eq!(reopened.raw(loc(target)).unwrap(), source);
+            if !copy && target != 69 {
+                save.transfer(loc(target), loc(69), false, &rom).unwrap();
+                assert_eq!(save.data, before, "round trip to {target}");
+            }
+        }
+    }
+}
+
+#[test]
+fn transfer_transactions_keep_pid_and_ciphertext_through_party_and_history() {
+    let mut session = session();
+    let raw = pokemon::create(&session.rom, 2, 0xdeadbeef, "ASH", 46, 0xbadc5647).unwrap();
+    session
+        .apply(
+            Action::Import {
+                location: loc(69),
+                rom_md5: session.rom.profile.md5.into(),
+                bytes: raw.clone(),
+            },
+            Policy::Standard,
+        )
+        .unwrap();
+    for (from, to, copy) in [
+        (loc(69), loc(49), false), // Record crosses a flash-sector payload boundary.
+        (loc(49), party(), false), // Occupied party slot: swap with box conversion.
+        (party(), loc(419), true),
+        (loc(419), Location::Party { slot: 5 }, false), // Empty slot appends to party.
+        (Location::Party { slot: 1 }, loc(198), true),
+    ] {
+        let before = session.save_ref().unwrap().data.clone();
+        session
+            .apply(Action::Transfer { from, to, copy }, Policy::Standard)
+            .unwrap();
+        let after = session.save_ref().unwrap().data.clone();
+        let actual_to = if to == (Location::Party { slot: 5 }) {
+            Location::Party { slot: 1 }
+        } else {
+            to
+        };
+        assert_eq!(
+            &session.save_ref().unwrap().raw(actual_to).unwrap()[..80],
+            &raw
+        );
+        session.undo().unwrap();
+        assert_eq!(session.save_ref().unwrap().data, before);
+        session.redo().unwrap();
+        assert_eq!(session.save_ref().unwrap().data, after);
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let output = dir.path().join("transfer.sav");
+    session.export(&output).unwrap();
+    let exported = Save::open(std::fs::read(output).unwrap(), session.rom.profile.save).unwrap();
+    assert_eq!(exported.raw(loc(198)).unwrap(), raw);
+    exported.validate(&session.rom).unwrap();
+}
 #[test]
 fn full_box_validation_detects_bad_checksum() {
     let r = rom();

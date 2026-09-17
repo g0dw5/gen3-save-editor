@@ -8,6 +8,16 @@ bilingual file.
 首次公开发布版本为 **0.1.5**，不追记此前的开发版本。0.1.6、0.1.7 按工程提交补记，
 不代表这些构建的对外发布日期。每次发布包均附带本中英文日志。
 
+## Unreleased / 尚未发布
+
+- Reserve the frontend mutation lock before awaiting the unsaved-edit check.
+  Duplicate drop events in one event-loop turn can no longer submit two transfers.
+- 在等待未保存编辑检查前锁定修改操作，防止同一轮事件中的重复放下提交两次移动／交换。
+- Add byte-for-byte storage transfer coverage for all 420 box slots, sector
+  rotations, party conversions, undo/redo and export, plus a drag/drop race test.
+- 新增全部 420 个盒子槽位、扇区轮转、同行转换、撤销重做和导出的逐字节验证，
+  以及拖拽重复事件回归测试。该竞态尚不能认定为历史 PID 损坏的原因。
+
 ## 0.1.8 — 2026-09-17
 
 ### Added / 新增

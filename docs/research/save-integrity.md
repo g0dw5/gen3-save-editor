@@ -43,6 +43,41 @@ the `u32` limit, corrupted records masquerading as empty slots, Bad Egg flags,
 failed-load preservation, and refusal to write an invalid export over a valid
 destination. Fixtures are synthetic; no user Pokémon or ROM bytes are committed.
 
+## Storage drag/drop audit
+
+The storage drag payload contains only a source location, the ROM fingerprint,
+and the copy modifier. It does not serialize a Pokemon or a PID. The command is
+`Action::Transfer`; occupied destinations swap records, and empty destinations
+receive the source record before its original slot is cleared. Box moves copy
+all 80 bytes; party conversion preserves those bytes and adds the party tail.
+Desktop commands acquire a backend mutex and mutate a cloned save, which must
+pass validation before becoming the current state.
+
+A frontend race was reproduced in commit `fb9d6d4` (0.1.5) and the pre-fix current
+UI: `inFlight.current` was tested before `await guard()` but assigned afterwards.
+Two synthetic drop events in the same JavaScript turn could both pass the test.
+With two occupied slots, the actual backend performed two swaps and restored the
+original placement. The fix reserves the lock before the first await and releases
+it in `finally`. This prevents duplicate submissions; it is not proof that the
+race caused a historical Pokemon corruption.
+
+Verification covers three transfer modes for each of the 420 box destinations,
+both active save banks and fourteen physical sector rotations, using an
+independent physical-byte oracle. It compares the whole save, including the
+inactive bank and unowned padding, rather than only the displayed PID or checksum.
+Additional tests exercise party conversions, undo/redo and disk export.
+`scripts/test_drag_transactions.py` checks duplicate drop events in the real UI
+with held synthetic API responses, subsequent drags and the unsaved-field guard.
+
+Private replay against a known-good backup performed 840 transfers with both the
+0.1.5 core and the current core; each final file matched the input exactly.
+Chrome/Playwright tests also exercised both UIs against their respective real
+Rust backends: moving to an empty box, swapping occupied slots, Alt-copying,
+undoing, duplicate drops and downloading the result. Independent binary checks
+found no record-header or ciphertext changes from the transfers. These tests do
+not reproduce the original phone/emulator session or every WebKit event sequence;
+the historical high-half PID truncation remains unexplained.
+
 ## 中文说明
 
 外层保存区校验正确，不代表里面每只宝可梦都正确。游戏可能把已经损坏的内存记录
@@ -58,3 +93,9 @@ destination. Fixtures are synthetic; no user Pokémon or ROM bytes are committed
 PID 是加密密钥及数据排列依据。不能只改 PID 的头部字节，也不能通过重算校验和
 掩盖损坏。恢复应依据已知正确的记录，只修改已证实的损坏范围，保留原文件备份并
 重新验证，避免为了恢复一只宝可梦而回滚其他游戏进度。
+
+拖拽复核发现并修复了前端重复提交竞态：等待异步确认前未占用锁，可能让同一轮事件
+中的两次放下都提交。实际旧版后端复现的是交换两次后回到原位；未复现 PID 高两字节
+清零。0.1.5 和当前核心对正常备份各重放 840 次移动／交换，最终完整文件均与输入
+逐字节一致；浏览器操作和导出回读也保持原始记录不变。不能把这次发现的竞态直接
+认定为历史坏蛋根因，也不能据有限复现声称排除了所有拖拽或模拟器问题。
