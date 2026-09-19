@@ -13,6 +13,10 @@ export const en = {
     "These names share a base name in this ROM. This navigation aid does not establish evolution, transformation or availability.",
   nameLinkOnly: "Name association · method unverified",
   currentPokemon: "Current",
+  referenceConfiguredDirect: "Game mapping · confirmed identity",
+  referenceConfiguredComparison: "Game mapping · comparison only",
+  referenceConfiguredNone:
+    "The game mapping marks this entry as having no official counterpart.",
   officialReference: "Official reference",
   currentRom: "Current ROM",
   statDifference: "Difference",
@@ -571,6 +575,9 @@ export const zh: Record<Key, string> = {
   noOfficialReference: "未确认对应的官方条目",
   referenceSource: "神奇宝贝百科",
   generation: "第 {n} 世代",
+  referenceConfiguredDirect: "游戏映射表 · 已确认对应",
+  referenceConfiguredComparison: "游戏映射表 · 仅作数值参照",
+  referenceConfiguredNone: "游戏映射表已标注：无官方对应条目。",
   referenceMatched: "按名称／已验证形态关系匹配",
   referenceChosen: "手动选择的对照条目",
   referenceUnmatched:

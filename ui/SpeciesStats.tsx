@@ -1,3 +1,4 @@
+import { configuredReference } from "./configuredReferences";
 import { SelectField } from "./components";
 import {
   officialStats,
@@ -29,7 +30,15 @@ export function SpeciesStats({
     }
   });
   const identity = `${catalog.profile.md5}:${detail.species.id}`;
-  const suggestion = suggestedReference(detail, catalog);
+  const configured = configuredReference(
+    catalog.profile.md5,
+    detail.species.id,
+  );
+  const suggestion = configured
+    ? officialStats.find(
+        (row) => row.key === configured.target && configured.status !== "none",
+      )
+    : suggestedReference(detail, catalog);
   const chosen = choices[identity];
   const reference =
     chosen === undefined
@@ -127,11 +136,21 @@ export function SpeciesStats({
             </a>{" "}
             ·{" "}
             {chosen === undefined
-              ? t("referenceMatched")
+              ? t(
+                  configured?.status === "direct"
+                    ? "referenceConfiguredDirect"
+                    : configured?.status === "comparison"
+                      ? "referenceConfiguredComparison"
+                      : "referenceMatched",
+                )
               : t("referenceChosen")}
           </>
         ) : (
-          t("referenceUnmatched")
+          t(
+            configured?.status === "none" && chosen === undefined
+              ? "referenceConfiguredNone"
+              : "referenceUnmatched",
+          )
         )}
       </p>
       <p className="small muted">{t("referenceHelp")}</p>

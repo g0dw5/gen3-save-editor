@@ -66,3 +66,18 @@ future adapter, including reference displays, calculations and save editing.
 读取游戏使用的经验表，而不是套用通用公式。必要的偏移、格式和已验证规则属于
 适配配置；运行时缓存必须随 ROM 数据变化失效。官方种族值等明确要求的外部参照
 应单独标明来源，不能覆盖实际 ROM 数据。不同版本必须交叉验证，避免相互影响。
+
+## Reviewed official-species mappings
+
+User exception recorded on 2026-09-19: game-scoped mappings to official Pokémon
+and forms may live in standalone configuration files instead of being inferred
+from ROM data. Prepare semantic/fuzzy candidates for human review. The reviewer
+is a separate developer tool that produces configuration for the editor, not an
+editor screen. Keep unapproved suggestions, notes and review tooling out of the
+release bundle. Distinguish confirmed identity, comparison-only references and
+explicitly absent counterparts; isolate mappings by exact ROM fingerprint.
+This exception does not authorize bundling ROM names, stats, sprites or catalogs.
+
+用户明确允许：宝可梦与官方条目的关联采用游戏级独立配置，先由助手预填候选，再由
+用户审核。审核页独立于修改器，用于生产修改器加载的配置；超梦 X/Y 等形态应分别
+关联。待审核建议不能冒充已确认结果，也不能据此扩大内置 ROM 内容的范围。

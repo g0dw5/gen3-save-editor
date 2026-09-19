@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="zh-CN">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>宝可梦映射 · 审核工作台</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #19382f;
+      --muted: #62776e;
+      --line: #dbe5df;
+      --green: #136b51;
+      --bg: #f3f6f2;
+      --amber: #966319;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font:
+        14px/1.6 -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+    button {
+      cursor: pointer;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 8px 13px;
+      background: #fff;
+      color: var(--ink);
+    }
+    button:hover {
+      border-color: var(--green);
+      background: #f0f8f3;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+    button.primary {
+      background: var(--green);
+      color: white;
+      border-color: var(--green);
+    }
+    button.active {
+      background: #e1f1e8;
+      border-color: #8fbaa5;
+    }
+    header {
+      padding: 24px 32px 16px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    .top,
+    .toolbar,
+    .heading,
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .top {
+      justify-content: space-between;
+    }
+    h1 {
+      font-size: 25px;
+      margin: 0;
+      letter-spacing: -0.7px;
+    }
+    .eyebrow {
+      letter-spacing: 2px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--green);
+    }
+    .sub {
+      margin: 7px 0 15px;
+      color: var(--muted);
+    }
+    .games {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .toolbar {
+      padding: 15px 32px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    input,
+    select,
+    textarea {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 11px;
+      background: white;
+      color: var(--ink);
+    }
+    input[type="search"] {
+      min-width: 245px;
+    }
+    label {
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      height: calc(100vh - 244px);
+      min-height: 480px;
+      padding: 20px 32px;
+      gap: 20px;
+    }
+    .list {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+    .row {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: 0;
+      border-radius: 0;
+      padding: 13px 16px;
+      border-bottom: 1px solid #eef2ef;
+    }
+    .row.selected {
+      background: #e8f3ec;
+      box-shadow: inset 3px 0 var(--green);
+    }
+    .row small {
+      color: var(--muted);
+      display: block;
+    }
+    .row .id {
+      color: #81958a;
+      font-size: 12px;
+      margin-right: 7px;
+    }
+    .detail {
+      overflow: auto;
+      min-width: 0;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+      padding: 24px;
+      margin-bottom: 14px;
+    }
+    .heading {
+      justify-content: space-between;
+    }
+    .heading h2 {
+      font-size: 25px;
+      margin: 0;
+    }
+    .badge {
+      border-radius: 25px;
+      padding: 3px 10px;
+      background: #eef4ef;
+      color: var(--green);
+      font-size: 12px;
+    }
+    .badge.warn {
+      background: #fff1d9;
+      color: var(--amber);
+    }
+    .muted {
+      color: var(--muted);
+    }
+    .reason {
+      padding: 12px 15px;
+      background: #f6f8f3;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+    .candidate {
+      width: 100%;
+      text-align: left;
+      margin: 4px 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .candidate small {
+      color: var(--muted);
+    }
+    .search-options {
+      max-height: 230px;
+      overflow: auto;
+      margin-top: 7px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+    h3 {
+      margin: 0 0 12px;
+      font-size: 15px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+    th,
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #edf1ee;
+      text-align: right;
+    }
+    th:first-child,
+    td:first-child {
+      text-align: left;
+    }
+    thead {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    tfoot {
+      font-weight: 700;
+    }
+    .positive {
+      color: var(--green);
+    }
+    .negative {
+      color: #a34738;
+    }
+    textarea {
+      display: block;
+      width: 100%;
+      margin: 7px 0 14px;
+      min-height: 70px;
+      resize: vertical;
+    }
+    .actions {
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 -4px 25px #19382f09;
+    }
+    .notice {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    #message {
+      min-height: 22px;
+      color: var(--green);
+      font-size: 12px;
+    }
+    #message.error {
+      color: #ad342e;
+    }
+    .empty {
+      padding: 35px;
+      color: var(--muted);
+    }
+    progress {
+      width: 180px;
+      height: 7px;
+      accent-color: var(--green);
+    }
+    .summary {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    #fatal {
+      padding: 30px;
+      color: #ad342e;
+    }
+    .full {
+      width: 100%;
+    }
+    .pill {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #f0f3ee;
+    }
+    .legend {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+    @media (max-width: 1000px) {
+      main {
+        grid-template-columns: 250px minmax(0, 1fr);
+        padding: 14px;
+        gap: 12px;
+      }
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .toolbar,
+      header {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+      .panel {
+        padding: 18px;
+      }
+    }
+    @media (max-width: 650px) {
+      main {
+        display: block;
+        height: auto;
+      }
+      .list {
+        max-height: 240px;
+        margin-bottom: 15px;
+      }
+      .toolbar input[type="search"] {
+        min-width: 0;
+        width: 100%;
+      }
+      .top {
+        align-items: flex-start;
+      }
+      .summary {
+        flex-wrap: wrap;
+      }
+      .actions {
+        position: static;
+      }
+    }
+  </style>
+  <header>
+    <div class="top">
+      <div>
+        <div class="eyebrow">GEN III · REFERENCE MAPPING</div>
+        <h1>宝可梦映射审核</h1>
+      </div>
+      <div class="summary">
+        <span id="progressText"></span
+        ><progress id="progress" value="0" max="1"></progress>
+      </div>
+    </div>
+    <p class="sub">
+      候选已预填，由你决定是否关联。每次确认保存审核进度；点击「生成修改器配置」输出已确认的映射。此页面独立于修改器。
+    </p>
+    <div class="games" id="games"></div>
+  </header>
+  <div class="toolbar">
+    <input
+      id="search"
+      type="search"
+      placeholder="搜索 ROM 名称、编号或官方候选"
+      aria-label="搜索宝可梦"
+    /><select id="filter" aria-label="审核状态">
+      <option value="pending">待审核</option>
+      <option value="all">全部</option>
+      <option value="direct">直接映射</option>
+      <option value="comparison">仅作参照</option>
+      <option value="none">无官方对应</option></select
+    ><label><input id="missOnly" type="checkbox" checked />仅看原来未匹配</label
+    ><label><input id="highOnly" type="checkbox" />仅高把握候选</label
+    ><span id="count" class="muted"></span
+    ><button id="publish">生成修改器配置</button
+    ><button id="export">导出审核进度</button
+    ><button id="import">导入审核进度</button
+    ><input type="file" id="file" accept="application/json,.json" hidden />
+  </div>
+  <div
+    id="globalMessage"
+    role="status"
+    style="padding: 0 32px"
+    aria-live="polite"
+  ></div>
+  <div id="fatal" hidden></div>
+  <main>
+    <aside class="list" id="list" aria-label="宝可梦条目"></aside>
+    <section class="detail" id="detail"></section>
+  </main>
+  <script>
+    const token = "__TOKEN__";
+    let data,
+      gameIndex = 0,
+      selected = null,
+      busy = false,
+      lastUndo = null;
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) =>
+      String(s ?? "").replace(
+        /[&<>"']/g,
+        (c) =>
+          ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          })[c],
+      );
+    const norm = (s) =>
+      String(s)
+        .normalize("NFKC")
+        .toLowerCase()
+        .replace(/[\s·・]/g, "")
+        .replace(/夠/g, "够")
+        .replace(/讚/g, "赞")
+        .replace(/願/g, "愿")
+        .replace(/雞/g, "鸡")
+        .replace(/樂/g, "乐");
+    let official = [],
+      byKey = new Map();
+    const drafts = new Map();
+    const draftKey = () => game().config.rom_md5 + ":" + selected;
+    const labels = {
+      pending: "待审核",
+      direct: "直接映射",
+      comparison: "仅作参照",
+      none: "无官方对应",
+    };
+    const reasons = {
+      "semantic-base-form":
+        "根据原种与地区形态的语义预填普通模式；地区形态可能具有相同六围，不能只凭数值判断。",
+      "exact-name": "完整名称一致。仍请留意同名的改版自定义条目。",
+      "semantic-name":
+        "根据旧译名、中文语义及宝可梦知识预填；没有把相似字符串直接当作身份。",
+      "semantic-form": "名称包含形态含义，已优先推荐对应的官方形态。",
+      "named-base-form":
+        "名字一致，但官方将基础形态也列为具名形态；已按六围接近程度排列候选。",
+      "rom-battle-relation":
+        "ROM 存在战斗变身关系。已按 Mega／原始回归筛选；最新新增的官方形态不一定是改版采用的同一设计。",
+      "rom-mega-stone-xy":
+        "已核对 ROM 中的变身道具：X 石／Y 石分别指向该分支，不依赖内部编号顺序。",
+      "rom-form-family":
+        "ROM 确认属于同一形态家族。候选按六围接近程度排列，仅作辅助证据，不能据此保证形态身份。",
+      "regional-form-proposal":
+        "已预填地区形态候选，请确认阿罗拉／伽勒尔等地区身份。",
+      "custom-battle-form":
+        "改版的特殊战斗形态，未找到明确同一官方形态。建议仅用原种作数值参照。",
+      "custom-name-relative":
+        "名称带有改版后缀，已优先推荐原种作比较对象，不默认认定为官方形态。",
+      "model-custom-relative":
+        "根据名称语义和宝可梦知识推荐相关原种。仅作参照，身份仍需你判断。",
+      unresolved: "暂时无法可靠推断对应对象。可搜索选择，或标记无官方对应。",
+    };
+    function game() {
+      return data.games[gameIndex];
+    }
+    function entries() {
+      return game().config.entries;
+    }
+    function entry() {
+      return entries()[selected];
+    }
+    function title(o) {
+      return o
+        ? (o.form || o.name) +
+            (o.form && !o.form.includes(o.name) ? " · " + o.name : "")
+        : "未选择官方条目";
+    }
+    function visible() {
+      let q = norm($("search").value),
+        f = $("filter").value;
+      return game().catalog.species.filter((s) => {
+        let e = entries()[s.id];
+        return (
+          e &&
+          (f === "all" || e.status === f) &&
+          (!$("missOnly").checked || !e.previously_matched) &&
+          (!$("highOnly").checked || e.confidence === "high") &&
+          (!q ||
+            norm(
+              `#${s.id} ${s.name} ${[e.target, ...e.candidates].map((k) => title(byKey.get(k))).join(" ")}`,
+            ).includes(q))
+        );
+      });
+    }
+    function message(text, error = false) {
+      $("globalMessage").textContent = text;
+      $("globalMessage").style.color = error ? "#ad342e" : "var(--green)";
+      if ($("message")) {
+        $("message").textContent = text;
+        $("message").className = error ? "error" : "";
+      }
+    }
+    function render() {
+      const g = game(),
+        all = Object.values(entries()),
+        done = all.filter((e) => e.status !== "pending").length;
+      $("progressText").textContent = `已审核 ${done} / ${all.length}`;
+      $("progress").value = done;
+      $("progress").max = all.length;
+      $("games").innerHTML = data.games
+        .map(
+          (x, i) =>
+            `<button data-game="${i}" class="${i === gameIndex ? "active" : ""}">${esc(x.catalog.profile.label)}</button>`,
+        )
+        .join("");
+      document.querySelectorAll("[data-game]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            if (busy) return;
+            gameIndex = Number(b.dataset.game);
+            selected = null;
+            lastUndo = null;
+            render();
+          }),
+      );
+      let rows = visible();
+      $("count").textContent = `${rows.length} 条`;
+      if (!rows.some((s) => String(s.id) === selected))
+        selected = rows[0] ? String(rows[0].id) : null;
+      $("list").innerHTML = rows.length
+        ? rows
+            .map((s) => {
+              let e = entries()[s.id];
+              return `<button class="row ${String(s.id) === selected ? "selected" : ""}" data-species="${s.id}"><span class="id">#${s.id}</span><strong>${esc(s.name)}</strong><small>→ ${esc(title(byKey.get(e.target)))}</small><span class="pill">${labels[e.status]}</span> <span class="pill">${{ high: "高把握", medium: "需核对形态", low: "需判断" }[e.confidence]}</span></button>`;
+            })
+            .join("")
+        : '<div class="empty">当前筛选没有条目。</div>';
+      document.querySelectorAll("[data-species]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            if (busy) return;
+            selected = b.dataset.species;
+            renderDetail();
+            document
+              .querySelectorAll("[data-species]")
+              .forEach((x) =>
+                x.classList.toggle("selected", x.dataset.species === selected),
+              );
+          }),
+      );
+      renderDetail();
+    }
+    function renderDetail() {
+      if (!selected) {
+        $("detail").innerHTML =
+          '<div class="panel empty">这组条目已审核完毕，或没有符合筛选的条目。取消筛选可查看全部记录。</div>';
+        return;
+      }
+      const s = game().catalog.species.find((s) => s.id === +selected),
+        e = entry(),
+        o = byKey.get(e.target);
+      const order = [0, 1, 2, 4, 5, 3],
+        names = ["HP", "攻击", "防御", "速度", "特攻", "特防"];
+      const sum = (a) => a.reduce((x, y) => x + y, 0);
+      const delta = (a, b) =>
+        b == null ? "—" : `${a - b > 0 ? "+" : ""}${a - b}`;
+      $("detail").innerHTML =
+        `<div class="panel"><div class="heading"><div><div class="eyebrow">ROM #${s.id}</div><h2>${esc(s.name)}</h2></div><span class="badge ${e.status === "pending" ? "warn" : ""}">${labels[e.status]}</span></div><div class="reason">${esc(reasons[e.reason] || e.reason)}<br><span class="notice">建议：${e.suggested_mode === "comparison" ? "仅作数值参照" : e.suggested_mode === "none" ? "人工判断" : "直接映射候选"}。候选均未经你确认。</span></div><div class="grid"><div><h3>推荐的官方对应</h3><div id="candidates"></div><input id="officialSearch" class="full" type="search" placeholder="换一个：输入官译名、图鉴号或形态" aria-label="搜索官方参照"><div id="officialOptions" class="search-options"></div><p class="legend">X／Y、地区形态可单独选择。数值相近只用于排序；改版数值本就可能不同。</p></div><div><h3>${esc(title(o))}</h3><table><thead><tr><th>能力</th><th>官方</th><th>ROM</th><th>差值</th></tr></thead><tbody>${order.map((i) => `<tr><th>${names[i]}</th><td>${o?.stats[i] ?? "—"}</td><td>${s.stats[i]}</td><td class="${o && s.stats[i] > o.stats[i] ? "positive" : o && s.stats[i] < o.stats[i] ? "negative" : ""}">${delta(s.stats[i], o?.stats[i])}</td></tr>`).join("")}</tbody><tfoot><tr><th>合计</th><td>${o ? sum(o.stats) : "—"}</td><td>${sum(s.stats)}</td><td>${delta(sum(s.stats), o ? sum(o.stats) : null)}</td></tr></tfoot></table><p class="notice">官方数据：神奇宝贝百科，${o ? "第 " + o.generation + " 世代" : "以最新已收录世代为准"}。ROM 六围实时从所提供文件读取。</p></div></div></div><div class="panel"><label for="note">审核备注</label><textarea id="note" maxlength="2000" placeholder="例如：自创形态，只与普通形态比较">${esc(drafts.get(draftKey()) ?? e.note)}</textarea><button id="saveNote">保存备注</button><div class="notice">直接映射＝认定是同一宝可梦／形态；仅作参照＝只比较数值；无官方对应＝明确留空。修改候选会回到待审核。</div></div><div class="actions"><button class="primary" data-decision="direct" ${!o ? "disabled" : ""}>确认直接映射</button><button data-decision="comparison" ${!o ? "disabled" : ""}>仅作数值参照</button><button data-decision="none">无官方对应</button><button id="later">稍后再审</button><button id="reopen">恢复待审核</button><button id="undo" ${!lastUndo ? "disabled" : ""}>撤销上次</button><div id="message" class="full" role="status"></div></div>`;
+      const option = (o) =>
+        `<button class="candidate ${o.key === e.target ? "active" : ""}" data-ref="${esc(o.key)}"><span>${esc(title(o))}</span><small>#${o.dex}</small></button>`;
+      $("candidates").innerHTML = e.candidates.length
+        ? e.candidates
+            .map((k) => byKey.get(k))
+            .filter(Boolean)
+            .map(option)
+            .join("")
+        : '<p class="muted">没有可靠候选，可在下方搜索。</p>';
+      function bind() {
+        document
+          .querySelectorAll("[data-ref]")
+          .forEach(
+            (b) => (b.onclick = () => saveOne("pending", b.dataset.ref, false)),
+          );
+      }
+      bind();
+      $("officialSearch").oninput = () => {
+        const q = norm($("officialSearch").value),
+          matches = q
+            ? official.filter((o) =>
+                norm(`${o.dex} ${o.name} ${o.form}`).includes(q),
+              )
+            : [];
+        $("officialOptions").innerHTML =
+          matches.slice(0, 80).map(option).join("") +
+          (matches.length > 80
+            ? '<p class="notice">结果较多，请继续输入。</p>'
+            : "");
+        bind();
+      };
+      document
+        .querySelectorAll("[data-decision]")
+        .forEach(
+          (b) =>
+            (b.onclick = () =>
+              saveOne(
+                b.dataset.decision,
+                b.dataset.decision === "none" ? null : entry().target,
+                true,
+              )),
+        );
+      $("later").onclick = () => {
+        const rows = visible(),
+          i = rows.findIndex((s) => String(s.id) === selected);
+        selected = String(rows[(i + 1) % rows.length].id);
+        render();
+      };
+      $("reopen").onclick = () => saveOne("pending", e.target, false);
+      $("undo").onclick = undo;
+      $("note").oninput = () => drafts.set(draftKey(), $("note").value);
+      $("saveNote").onclick = () =>
+        saveOne(entry().status, entry().target, false);
+      message(
+        `配置版本 ${game().config.revision} · 已保存的决定可在下次打开时继续`,
+      );
+    }
+    async function update(changes) {
+      if (busy) return false;
+      busy = true;
+      document
+        .querySelectorAll("button,select,input,textarea")
+        .forEach((b) => (b.disabled = true));
+      message("正在保存…");
+      try {
+        const response = await fetch("/decision", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Review-Token": token,
+            },
+            body: JSON.stringify({
+              md5: game().config.rom_md5,
+              revision: game().config.revision,
+              changes,
+            }),
+          }),
+          result = await response.json();
+        if (!response.ok) throw Error(result.error);
+        game().config = result;
+        return true;
+      } catch (error) {
+        message(
+          "保存失败：" + error.message + "。当前操作未确认，请刷新核对后重试。",
+          true,
+        );
+        return false;
+      } finally {
+        busy = false;
+        document
+          .querySelectorAll("button,select,input,textarea")
+          .forEach((b) => (b.disabled = false));
+      }
+    }
+    async function saveOne(status, target, advance) {
+      if (busy || !selected) return;
+      const id = selected,
+        old = {
+          status: entry().status,
+          target: entry().target,
+          note: entry().note,
+        },
+        rows = visible(),
+        i = rows.findIndex((s) => String(s.id) === id),
+        next = rows[(i + 1) % rows.length];
+      if (await update({ [id]: { status, target, note: $("note").value } })) {
+        drafts.delete(game().config.rom_md5 + ":" + id);
+        lastUndo = { id, old };
+        if (advance && next) selected = String(next.id);
+        render();
+        message("审核进度已保存。完成后点击「生成修改器配置」。");
+      }
+    }
+    async function undo() {
+      if (!lastUndo || busy) return;
+      const previous = lastUndo;
+      if (await update({ [previous.id]: previous.old })) {
+        lastUndo = null;
+        selected = previous.id;
+        render();
+        message("已撤销上次操作。");
+      }
+    }
+    $("publish").onclick = async () => {
+      if (busy) return;
+      busy = true;
+      try {
+        const r = await fetch("/publish", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Review-Token": token,
+            },
+            body: JSON.stringify({
+              md5: game().config.rom_md5,
+              revision: game().config.revision,
+            }),
+          }),
+          compiled = await r.json();
+        if (!r.ok) throw Error(compiled.error);
+        const blob = new Blob([JSON.stringify(compiled, null, 2) + "\n"], {
+            type: "application/json",
+          }),
+          url = URL.createObjectURL(blob),
+          a = document.createElement("a");
+        a.href = url;
+        a.download = `species-mapping-${game().config.profile_id}.json`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        message(
+          `已生成 ${Object.keys(compiled.entries).length} 条正式映射，保存至 ui/data/species-mappings；下次构建修改器时加载。`,
+        );
+      } catch (e) {
+        message("生成失败：" + e.message, true);
+      } finally {
+        busy = false;
+      }
+    };
+    $("export").onclick = () => {
+      const blob = new Blob([JSON.stringify(game().config, null, 2) + "\n"], {
+          type: "application/json",
+        }),
+        url = URL.createObjectURL(blob),
+        a = document.createElement("a");
+      a.href = url;
+      a.download = `species-mapping-${game().config.profile_id}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+    $("import").onclick = () => $("file").click();
+    $("file").onchange = async () => {
+      try {
+        const file = $("file").files[0];
+        if (!file) return;
+        const imported = JSON.parse(await file.text());
+        if (imported.schema !== 1 || imported.rom_md5 !== game().config.rom_md5)
+          throw Error("配置版本或 ROM 指纹不匹配");
+        const changes = {};
+        for (const [id, e] of Object.entries(imported.entries)) {
+          if (!entries()[id]) throw Error("存在未知条目");
+          changes[id] = {
+            status: e.status,
+            target: e.target,
+            note: e.note || "",
+          };
+        }
+        if (
+          !confirm(
+            `导入将替换本游戏 ${Object.keys(changes).length} 条审核决定，原文件会自动备份。继续？`,
+          )
+        )
+          return;
+        if (await update(changes)) {
+          lastUndo = null;
+          render();
+          message("导入成功，原配置已备份。");
+        }
+      } catch (e) {
+        alert("导入失败：" + e.message);
+      } finally {
+        $("file").value = "";
+      }
+    };
+    for (const id of ["search", "filter", "missOnly", "highOnly"])
+      $(id).oninput = () => {
+        if (!busy) render();
+      };
+    window.addEventListener("beforeunload", (e) => {
+      if (drafts.size || busy) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    });
+    fetch("/state", { headers: { "X-Review-Token": token } })
+      .then(async (r) => {
+        if (!r.ok) throw Error("无法加载审核数据");
+        data = await r.json();
+        official = data.official.rows.map((r) => ({
+          key: `${r[0]}:${r[2]}`,
+          dex: r[0],
+          name: r[1],
+          form: r[2],
+          generation: r[3],
+          stats: r.slice(4),
+        }));
+        byKey = new Map(official.map((o) => [o.key, o]));
+        if (!data.games.length) throw Error("没有匹配当前 ROM 的配置");
+        render();
+      })
+      .catch((e) => {
+        $("fatal").hidden = false;
+        $("fatal").textContent = e.message;
+      });
+  </script>
+</html>

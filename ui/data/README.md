@@ -29,3 +29,11 @@ Matching never assumes a hack's reused National Dex slot is an official identity
 HP、攻击、防御、速度、特攻、特防。仅包含名称、形态名和数值，不含图片或文章。
 神百资料注明为 CC BY-NC-SA 3.0，本文件按该许可单独署名，不属于项目 MIT 代码许可。
 改动为提取、转为 JSON、调整六围顺序及补充缺项。修改器右列始终使用当前 ROM 数值。
+
+## Reviewed game mappings
+
+`species-mappings/*.json` are generated identity/comparison decisions, isolated
+by ROM MD5. They are the user's explicitly authorized configuration exception,
+not extracted ROM catalogs. They contain only internal IDs, official reference
+keys and decision status. The independent reviewer, its proposals and notes
+live outside this directory. See [the review workflow](../../docs/species-mapping-review.md).
