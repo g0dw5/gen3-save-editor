@@ -43,8 +43,12 @@ def main():
                 page.get_by_role('button',name='game-b',exact=True).click()
                 expect(page.locator('#progressText')).to_have_text('已审核 0 / 2')
                 page.get_by_role('button',name='game-a',exact=True).click()
-                page.get_by_role('button',name='无官方对应',exact=True).click()
+                expect(page.locator('.action-scope')).to_contain_text('ROM #991')
+                page.locator('[data-decision=none]').click()
                 expect(page.locator('#count')).to_have_text('0 条')
+                persisted=json.loads((root/'game-a.json').read_text())['entries']
+                assert persisted['990']['status']=='direct' and persisted['991']['status']=='none'
+                expect(page.locator('#globalMessage')).to_contain_text('ROM #991：无官方对应')
                 page.locator('#filter').select_option('all')
                 page.locator('[data-species="991"]').click()
                 expect(page.locator('.heading .badge')).to_have_text('无官方对应')

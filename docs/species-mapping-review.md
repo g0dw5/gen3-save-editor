@@ -140,3 +140,15 @@ a separate group. This browsing does not mark an entry reviewed.
 不一致时会提示核对。形态家族、战斗变身和仅同名条目分开呈现。图片直接从当前
 ROM 读取，不写入映射配置，也不加入修改器发布包。点击关联形态只切换审核条目，
 不会自动确认映射或丢弃已经保存的审核进度。
+
+
+Review scope is always one exact ROM fingerprint plus one internal species ID.
+The current record is identified in the heading, decision controls and save
+receipt; relationship cards show their own independent statuses. Marking a
+same-name custom entry as having no official counterpart cannot reject its
+base species or sibling forms. Relationship navigation is a separate panel,
+not a parent-level mapping control.
+
+审核层级固定为「ROM 指纹＋内部编号」。例如西火 #920、#921 的无官方对应决定
+不影响 #386、#1128、#1129、#1130。当前条目、关联导航和各自审核状态分别呈现，
+不存在按整个名字或家族批量套用决定的操作。
