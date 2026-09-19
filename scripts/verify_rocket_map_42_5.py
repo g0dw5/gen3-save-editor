@@ -87,6 +87,22 @@ def main():
     actual=Image.open(args.rendered).convert('RGBA')
     assert actual.size == im.size and actual.tobytes() == im.tobytes()
     print('Native layout, 140 grid IDs, 1680 tile entries, palette loading and all 35840 static pixels match the editor.')
+    # WarpEvent stores destination map number before destination map group.
+    assert struct.unpack_from('<hhBBBB', r, 0xB861C0) == (21, 16, 0, 0, 4, 42)
+    assert struct.unpack_from('<hhBBBB', r, 0xBBBAD0) == (1, 6, 4, 0, 5, 42)
+    source_header = 0x9F0788  # 42-4, the incoming room.
+    layout = struct.unpack_from('<I', r, source_header)[0] - 0x08000000
+    width = struct.unpack_from('<I', r, layout)[0]
+    blocks = struct.unpack_from('<I', r, layout + 12)[0] - 0x08000000
+    entry_cell = struct.unpack_from('<H', r, blocks + (6 * width + 1) * 2)[0]
+    n.write(headerptr, r[source_header:source_header + 28])
+    n.word(0x03005280, 1)
+    n.word(0x03005284, 1)
+    n.half(0x02010000, entry_cell)
+    behavior = n.call(0xBDD40, 0, 0)
+    assert behavior == 0 and n.call(0xD307C, behavior) == 0
+    assert n.call(0xD307C, 0x69) == 1  # Positive control from the outdoor door.
+    print('Incoming warp records exist, but the static 42-4 entrance cell fails the native warp-behavior predicate.')
 
 
 if __name__ == "__main__":
