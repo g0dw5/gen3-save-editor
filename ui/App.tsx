@@ -508,8 +508,8 @@ export default function App() {
               <Box size={22} />
             </span>
             <div>
-              <strong>Dark Fantasy</strong>
-              <span>Hacker</span>
+              <strong>{t("brandName")}</strong>
+              <span>{t("brandRole")}</span>
             </div>
           </div>
           <div className="file-context">

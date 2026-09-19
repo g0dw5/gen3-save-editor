@@ -111,6 +111,8 @@ def main():
         expect(page.locator('.select-popup').get_by_role('option')).to_have_text('剧毒珠 #178')
         item.press('Escape')
         expect(page).to_have_title('三代改版修改器')
+        expect(page.locator('.brand')).to_contain_text('三代改版')
+        expect(page.locator('.brand')).to_contain_text('修改器')
         assert not errors,errors
         screenshot=os.environ.get('GEN3_SEARCH_PREVIEW')
         if screenshot:
