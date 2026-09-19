@@ -157,6 +157,10 @@ impl Session {
         })
     }
     pub fn apply(&mut self, action: Action, policy: Policy) -> Result<Change> {
+        self.rom
+            .profile
+            .capabilities
+            .require(self.rom.profile.capabilities.save_edit, "save_edit")?;
         let before = self.save_ref()?.data.clone();
         let mut save = self.save_ref()?.clone();
         let mut findings = Vec::new();
@@ -297,6 +301,10 @@ impl Session {
         })
     }
     pub fn export(&mut self, path: &Path) -> Result<Option<PathBuf>> {
+        self.rom
+            .profile
+            .capabilities
+            .require(self.rom.profile.capabilities.save_edit, "save_edit")?;
         let save = self.save_ref()?;
         save.validate(&self.rom)?;
         if let Some(src) = &self.source {

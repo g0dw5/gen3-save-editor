@@ -25,7 +25,7 @@ pub struct Species {
     pub stats: [u8; 6],
     pub types: [u8; 2],
     pub catch_rate: u8,
-    pub exp_yield: u8,
+    pub exp_yield: u16,
     pub ev_yield: u16,
     pub items: [u16; 2],
     pub gender_ratio: u8,
@@ -33,7 +33,7 @@ pub struct Species {
     pub friendship: u8,
     pub growth: u8,
     pub egg_groups: [u8; 2],
-    pub abilities: [u8; 2],
+    pub abilities: Vec<u16>,
     pub offset: usize,
 }
 #[derive(Clone, Debug, Serialize)]
@@ -41,17 +41,17 @@ pub struct Move {
     pub id: u16,
     pub name: String,
     pub description: String,
-    pub effect: u8,
-    pub power: u8,
+    pub effect: u16,
+    pub power: u16,
     pub move_type: u8,
     /// Raw split category: 0 physical, 1 special, 2 status, 3 Curse in these profiles.
     pub category: u8,
     pub accuracy: u8,
     pub pp: u8,
     pub chance: u8,
-    pub target: u8,
+    pub target: u16,
     pub priority: i8,
-    pub flags: u8,
+    pub flags: u32,
     pub offset: usize,
 }
 #[derive(Clone, Debug, Serialize)]
@@ -105,6 +105,8 @@ pub struct Catalog {
 }
 #[derive(Serialize)]
 pub struct SpeciesDetail {
+    pub battle_forms: Vec<crate::forms::BattleForm>,
+    pub encounters_verified: bool,
     pub species: Species,
     pub evolutions: Vec<Evolution>,
     pub learnset: Vec<LearnSource>,
@@ -138,7 +140,7 @@ pub struct PatchManifest {
 
 impl Rom {
     pub fn is_mail(&self, id: u16) -> bool {
-        (self.profile.mail_items[0]..=self.profile.mail_items[1]).contains(&id)
+        id != 0 && (self.profile.mail_items[0]..=self.profile.mail_items[1]).contains(&id)
     }
     pub fn open(data: Vec<u8>) -> Result<Self> {
         let profile = profile::identify(&data)?;
@@ -178,7 +180,9 @@ impl Rom {
             return Err(err("species_id", id));
         }
         let o = self.profile.base_stats.offset + id as usize * self.profile.base_stats.stride;
-        let b = bytes(&self.data, o, 28)?;
+        let expanded = self.profile.formats.species == crate::adapter::SpeciesFormat::Expanded36;
+        let b = bytes(&self.data, o, if expanded { 36 } else { 28 })?;
+        let tail = if expanded { 2 } else { 0 };
         Ok(Species {
             dex_number: if id == 0 {
                 0
@@ -196,15 +200,19 @@ impl Rom {
             stats: b[..6].try_into().unwrap(),
             types: [b[6], b[7]],
             catch_rate: b[8],
-            exp_yield: b[9],
-            ev_yield: u16(b, 10)?,
-            items: [u16(b, 12)?, u16(b, 14)?],
-            gender_ratio: b[16],
-            egg_cycles: b[17],
-            friendship: b[18],
-            growth: b[19],
-            egg_groups: [b[20], b[21]],
-            abilities: [b[22], b[23]],
+            exp_yield: if expanded { u16(b, 10)? } else { b[9] as u16 },
+            ev_yield: u16(b, 10 + tail)?,
+            items: [u16(b, 12 + tail)?, u16(b, 14 + tail)?],
+            gender_ratio: b[16 + tail],
+            egg_cycles: b[17 + tail],
+            friendship: b[18 + tail],
+            growth: b[19 + tail],
+            egg_groups: [b[20 + tail], b[21 + tail]],
+            abilities: if expanded {
+                vec![u16(b, 24)?, u16(b, 26)?, u16(b, 28)?]
+            } else {
+                vec![b[22] as u16, b[23] as u16]
+            },
             offset: o,
         })
     }
@@ -220,26 +228,27 @@ impl Rom {
             return Err(err("move_id", id));
         }
         let o = self.profile.moves.offset + id as usize * self.profile.moves.stride;
-        let b = bytes(&self.data, o, 12)?;
+        let expanded = self.profile.formats.moves == crate::adapter::MoveFormat::Expanded20;
+        let b = bytes(&self.data, o, if expanded { 20 } else { 12 })?;
         let no = self.profile.move_names.at(id as usize);
         Ok(Move {
             id,
             name: self.text(no, 13)?,
-            description: if id > 0 {
+            description: if id > 0 && self.profile.move_descriptions != 0 {
                 self.ptr_text(self.profile.move_descriptions + (id as usize - 1) * 4)
             } else {
                 String::new()
             },
-            effect: b[0],
-            power: b[1],
-            move_type: b[2],
+            effect: if expanded { u16(b, 0)? } else { b[0] as u16 },
+            power: if expanded { u16(b, 2)? } else { b[1] as u16 },
+            move_type: if expanded { b[4] } else { b[2] },
             category: bytes(&self.data, o + self.profile.move_category_offset, 1)?[0],
-            accuracy: b[3],
-            pp: b[4],
-            chance: b[5],
-            target: b[6],
-            priority: b[7] as i8,
-            flags: b[8],
+            accuracy: if expanded { b[5] } else { b[3] },
+            pp: if expanded { b[6] } else { b[4] },
+            chance: if expanded { b[7] } else { b[5] },
+            target: if expanded { u16(b, 8)? } else { b[6] as u16 },
+            priority: if expanded { b[10] as i8 } else { b[7] as i8 },
+            flags: if expanded { u32(b, 12)? } else { b[8] as u32 },
             offset: o,
         })
     }
@@ -258,7 +267,9 @@ impl Rom {
             hold_param: b[19],
             pocket: b[26],
             item_type: b[27],
-            tm_move: if (0x121..0x121 + 58).contains(&id) {
+            tm_move: if self.profile.capabilities.complete_learnsets
+                && (0x121..0x121 + 58).contains(&id)
+            {
                 Some(u16(
                     &self.data,
                     self.profile.tm_moves + (id as usize - 0x121) * 2,
@@ -270,7 +281,7 @@ impl Rom {
         })
     }
     pub fn ability(&self, id: u16) -> Result<Ability> {
-        if id >= 151 {
+        if id >= self.profile.ability_count {
             return Err(err("ability_id", id));
         }
         let (n, d) = (
@@ -279,7 +290,7 @@ impl Rom {
         );
         Ok(Ability {
             id,
-            name: self.text(n, 13)?,
+            name: self.text(n, self.profile.ability_names.stride)?,
             description: self.ptr_text(d),
         })
     }
@@ -301,18 +312,20 @@ impl Rom {
             items: (0..self.profile.items.count as u16)
                 .map(|id| self.item(id))
                 .collect::<Result<_>>()?,
-            abilities: (0..151).map(|id| self.ability(id)).collect::<Result<_>>()?,
+            abilities: (0..self.profile.ability_count)
+                .map(|id| self.ability(id))
+                .collect::<Result<_>>()?,
         })
     }
     pub fn evolutions(&self, id: u16) -> Result<Vec<Evolution>> {
         self.species(id)?;
         let mut result = Vec::new();
-        for i in 0..5 {
+        for i in 0..self.profile.evolutions.stride / 8 {
             let o = self.profile.evolutions.offset
                 + id as usize * self.profile.evolutions.stride
                 + i * 8;
             let method = u16(&self.data, o)?;
-            if method != 0 {
+            if method != 0 && !crate::forms::is_battle_method(self.profile.battle_forms, method) {
                 result.push(Evolution {
                     method,
                     parameter: u16(&self.data, o + 2)?,
@@ -326,23 +339,35 @@ impl Rom {
     pub fn level_moves(&self, id: u16) -> Result<Vec<LearnSource>> {
         self.species(id)?;
         let mut out = Vec::new();
-        let p = pointer(&self.data, self.profile.learnsets + (id as usize + 1) * 4)?;
+        let expanded =
+            self.profile.formats.learnsets == crate::adapter::LearnsetFormat::MoveLevel16;
+        let p = pointer(
+            &self.data,
+            self.profile.learnsets + (id as usize + usize::from(!expanded)) * 4,
+        )?;
         for i in 0..128 {
-            let o = p + i * 2;
+            let o = p + i * if expanded { 4 } else { 2 };
             let v = u16(&self.data, o)?;
             if v == 0xffff {
                 return Ok(out);
             }
-            let mv = v & 511;
-            let lv = (v >> 9) as u8;
-            if mv == 0 || mv as usize >= self.profile.moves.count || lv > 100 {
+            let mv = if expanded { v } else { v & 511 };
+            let lv = if expanded {
+                u16(&self.data, o + 2)?
+            } else {
+                v >> 9
+            };
+            if mv == 0
+                || mv as usize >= self.profile.moves.count
+                || lv > if expanded { 255 } else { 100 }
+            {
                 return Err(err("learnset", format!("species {id}, {o:#x}")));
             }
             out.push(LearnSource {
                 move_id: mv,
                 source: "level".into(),
                 species: id,
-                level: Some(lv),
+                level: Some(lv as u8),
                 index: None,
                 offset: o,
             });
@@ -376,6 +401,9 @@ impl Rom {
             if let Ok(rows) = self.level_moves(*s) {
                 out.extend(rows);
             }
+        }
+        if !self.profile.capabilities.complete_learnsets {
+            return Ok(out);
         }
         let mut current = 0;
         for i in 0..4096 {
@@ -442,19 +470,32 @@ impl Rom {
     }
     pub fn detail(&self, id: u16) -> Result<SpeciesDetail> {
         Ok(SpeciesDetail {
+            battle_forms: self.battle_forms(id)?,
+            encounters_verified: self.profile.capabilities.world,
             species: self.valid_species(id)?,
             evolutions: self.evolutions(id)?,
             learnset: self.learnset(id)?,
-            encounters: self
-                .encounters()?
-                .into_iter()
-                .filter(|e| e.species == id)
-                .collect(),
+            encounters: if self.profile.capabilities.world {
+                self.encounters()?
+            } else {
+                Vec::new()
+            }
+            .into_iter()
+            .filter(|e| e.species == id)
+            .collect(),
             origins: self.origin_options(id)?,
         })
     }
     /// Candidate origins, not a proof of story reachability or full legality.
     pub fn origin_options(&self, id: u16) -> Result<OriginOptions> {
+        if !self.profile.capabilities.world {
+            return Ok(OriginOptions {
+                ancestors: self.ancestors(id)?.into_iter().collect(),
+                encounters: Vec::new(),
+                can_hatch: false,
+                hatch_regions: Vec::new(),
+            });
+        }
         let ancestors = self.ancestors(id)?;
         // Babies may belong to the Undiscovered group while their evolved
         // parents can breed. Expand only for breeding eligibility, never for
@@ -499,6 +540,9 @@ impl Rom {
     }
     /// Only fixed-width scalar fields are writable. No arbitrary offset escape hatch.
     pub fn patch(&self, edits: &[RomEdit]) -> Result<(Vec<u8>, PatchManifest)> {
+        self.profile
+            .capabilities
+            .require(self.profile.capabilities.rom_edit, "rom_edit")?;
         let mut data = (*self.data).clone();
         for edit in edits {
             let (base, field, width, max) = match edit.table.as_str() {

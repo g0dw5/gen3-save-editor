@@ -28,8 +28,9 @@ pub enum Location {
     Party { slot: usize },
     Box { box_index: usize, slot: usize },
 }
-fn checked_record(raw: &[u8], location: Location) -> Result<[u8; 48]> {
-    pokemon::checked_unpack(raw).map_err(|e| err(e.code, format!("{location:?}: {}", e.detail)))
+fn checked_record(raw: &[u8], location: Location, rom: &Rom) -> Result<[u8; 48]> {
+    pokemon::checked_unpack_with(raw, rom.profile.save.pokemon_codec)
+        .map_err(|e| err(e.code, format!("{location:?}: {}", e.detail)))
 }
 #[derive(Serialize)]
 pub struct StoredPokemon {
@@ -63,7 +64,7 @@ pub struct TrainerPatch {
     pub coins: Option<u16>,
     pub registered_item: Option<u16>,
 }
-#[derive(Clone, Copy, Serialize)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub struct Pocket {
     pub id: &'static str,
     pub offset: usize,
@@ -111,6 +112,50 @@ pub const POCKETS: [Pocket; 6] = [
         id: "berries",
         offset: 0x790,
         count: 46,
+        encrypted: true,
+        category: 5,
+    },
+];
+pub const ROCKET_POCKETS: [Pocket; 6] = [
+    Pocket {
+        id: "pc",
+        offset: 0x498,
+        count: 10,
+        encrypted: false,
+        category: 0,
+    },
+    Pocket {
+        id: "items",
+        offset: 0x4c0,
+        count: 255,
+        encrypted: true,
+        category: 1,
+    },
+    Pocket {
+        id: "key_items",
+        offset: 0x8bc,
+        count: 64,
+        encrypted: true,
+        category: 4,
+    },
+    Pocket {
+        id: "balls",
+        offset: 0x9bc,
+        count: 16,
+        encrypted: true,
+        category: 2,
+    },
+    Pocket {
+        id: "tmhm",
+        offset: 0x9fc,
+        count: 254,
+        encrypted: true,
+        category: 3,
+    },
+    Pocket {
+        id: "berries",
+        offset: 0xdf4,
+        count: 68,
         encrypted: true,
         category: 5,
     },
@@ -265,8 +310,17 @@ impl Save {
         if raw.iter().all(|b| *b == 0) {
             return Ok(None);
         }
-        let c = checked_record(&raw, loc)?;
-        if u16(&c, 0)? == 0 && raw[19] & 2 == 0 {
+        let c = checked_record(&raw, loc, rom)?;
+        if u16(&c, 0)? == 0
+            && rom
+                .profile
+                .save
+                .pokemon_codec
+                .fields()
+                .has_species
+                .read(&raw)?
+                == 0
+        {
             return Ok(None);
         }
         let p = pokemon::decode(&raw, rom)?;
@@ -337,8 +391,17 @@ impl Save {
                     box_index: b,
                     slot: i,
                 };
-                let c = checked_record(raw, location)?;
-                if u16(&c, 0)? == 0 && raw[19] & 2 == 0 {
+                let c = checked_record(raw, location, rom)?;
+                if u16(&c, 0)? == 0
+                    && rom
+                        .profile
+                        .save
+                        .pokemon_codec
+                        .fields()
+                        .has_species
+                        .read(raw)?
+                        == 0
+                {
                     continue;
                 }
                 out.push(StoredPokemon {
@@ -370,6 +433,9 @@ impl Save {
         rom: &Rom,
         policy: Policy,
     ) -> Result<Vec<pokemon::Finding>> {
+        rom.profile
+            .capabilities
+            .require(rom.profile.capabilities.save_edit, "save_edit")?;
         if self.pokemon(loc, rom)?.is_none() {
             return Err(err("empty_slot", format!("{loc:?}")));
         }
@@ -378,10 +444,13 @@ impl Save {
         Ok(findings)
     }
     pub fn insert(&mut self, loc: Location, raw: &[u8], rom: &Rom) -> Result<()> {
+        rom.profile
+            .capabilities
+            .require(rom.profile.capabilities.save_edit, "save_edit")?;
         if self.pokemon(loc, rom)?.is_some() {
             return Err(err("occupied_slot", format!("{loc:?}")));
         }
-        checked_record(raw, loc)?;
+        checked_record(raw, loc, rom)?;
         let p = pokemon::decode(raw, rom)?;
         rom.valid_species(p.species)?;
         rom.item(p.held_item)?;
@@ -407,6 +476,9 @@ impl Save {
         }
     }
     pub fn remove(&mut self, loc: Location, rom: &Rom) -> Result<()> {
+        rom.profile
+            .capabilities
+            .require(rom.profile.capabilities.save_edit, "save_edit")?;
         if self
             .pokemon(loc, rom)?
             .is_some_and(|p| rom.is_mail(p.held_item))
@@ -432,6 +504,9 @@ impl Save {
         }
     }
     pub fn transfer(&mut self, from: Location, to: Location, copy: bool, rom: &Rom) -> Result<()> {
+        rom.profile
+            .capabilities
+            .require(rom.profile.capabilities.save_edit, "save_edit")?;
         if from == to {
             return Ok(());
         }
@@ -510,6 +585,9 @@ impl Save {
         })
     }
     pub fn edit_trainer(&mut self, p: &TrainerPatch, rom: &Rom) -> Result<()> {
+        rom.profile
+            .capabilities
+            .require(rom.profile.capabilities.save_edit, "save_edit")?;
         let a = self.sections[0];
         let b = self.sections[1];
         let key = u32(&self.data, a + self.layout.key)?;
@@ -565,7 +643,7 @@ impl Save {
         let b = self.sections[1];
         let key = u32(&self.data, self.sections[0] + self.layout.key)? as u16;
         let mut out = Vec::new();
-        for p in POCKETS {
+        for p in self.layout.pockets {
             for i in 0..p.count {
                 let o = b + p.offset + i * 4;
                 let id = u16(&self.data, o)?;
@@ -592,7 +670,12 @@ impl Save {
         rom: &Rom,
         policy: Policy,
     ) -> Result<()> {
-        let p = POCKETS
+        rom.profile
+            .capabilities
+            .require(rom.profile.capabilities.save_edit, "save_edit")?;
+        let p = self
+            .layout
+            .pockets
             .iter()
             .find(|p| p.id == pocket)
             .ok_or_else(|| err("pocket", pocket))?;
@@ -638,11 +721,14 @@ impl Save {
         let names = 4 + self.layout.boxes * self.layout.slots * 80;
         let mut out = Vec::new();
         for i in 0..self.layout.boxes {
-            let count = (0..30)
+            let count = (0..self.layout.slots)
                 .filter(|j| {
                     u16(
-                        &pokemon::unpack(&b[4 + (i * 30 + j) * 80..4 + (i * 30 + j + 1) * 80])
-                            .unwrap(),
+                        &pokemon::unpack(
+                            &b[4 + (i * self.layout.slots + j) * 80
+                                ..4 + (i * self.layout.slots + j + 1) * 80],
+                        )
+                        .unwrap(),
                         0,
                     )
                     .unwrap()
@@ -659,6 +745,9 @@ impl Save {
         Ok(out)
     }
     pub fn edit_box(&mut self, index: usize, name: &str, wallpaper: u8, rom: &Rom) -> Result<()> {
+        rom.profile
+            .capabilities
+            .require(rom.profile.capabilities.save_edit, "save_edit")?;
         if index >= self.layout.boxes || wallpaper > 15 {
             return Err(err("range", "box"));
         }
@@ -670,6 +759,9 @@ impl Save {
         self.write_logical(5..=13, &b)
     }
     pub fn sort_box(&mut self, index: usize, rom: &Rom) -> Result<()> {
+        rom.profile
+            .capabilities
+            .require(rom.profile.capabilities.save_edit, "save_edit")?;
         if index >= self.layout.boxes {
             return Err(err("location", index));
         }
@@ -701,30 +793,37 @@ impl Save {
     }
     pub fn dex(&self) -> Result<Vec<DexFlag>> {
         let a = self.sections[0];
-        Ok((1..=416)
+        let Some(layout) = self.layout.dex else {
+            return Ok(Vec::new());
+        };
+        Ok((1..=layout.count)
             .map(|n| {
                 let i = (n - 1) as usize;
                 DexFlag {
                     number: n,
-                    owned: self.data[a + 0x28 + i / 8] & (1 << (i % 8)) != 0,
-                    seen: self.data[a + 0x5c + i / 8] & (1 << (i % 8)) != 0,
+                    owned: self.data[a + layout.owned + i / 8] & (1 << (i % 8)) != 0,
+                    seen: self.data[a + layout.seen + i / 8] & (1 << (i % 8)) != 0,
                 }
             })
             .collect())
     }
     pub fn edit_dex(&mut self, n: u16, seen: bool, owned: bool) -> Result<()> {
-        if !(1..=416).contains(&n) {
+        let layout = self
+            .layout
+            .dex
+            .ok_or_else(|| err("unsupported_feature", "dex"))?;
+        if !(1..=layout.count).contains(&n) {
             return Err(err("range", "dex number"));
         }
         let i = (n - 1) as usize;
         let mask = 1u8 << (i % 8);
         let a = self.sections[0];
         let mut main = self.logical(1..=4);
-        for (off, v) in [(0x28, owned), (0x5c, seen || owned)] {
+        for (off, v) in [(layout.owned, owned), (layout.seen, seen || owned)] {
             let b = &mut self.data[a + off + i / 8];
             *b = (*b & !mask) | if v { mask } else { 0 };
         }
-        for off in [0x988, 0x3b24] {
+        for off in layout.seen_mirrors {
             let b = &mut main[off + i / 8];
             *b = (*b & !mask) | if seen || owned { mask } else { 0 };
         }

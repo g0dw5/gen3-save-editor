@@ -140,6 +140,9 @@ pub(crate) fn trainer_personality(sum: u32, parameter: u8, female: bool, double:
 
 impl Rom {
     pub fn world(&self) -> Result<World> {
+        self.profile
+            .capabilities
+            .require(self.profile.capabilities.world, "world")?;
         let maps = self.maps()?;
         let trainer_locations = self.trainer_locations_for_maps(&maps)?;
         Ok(World {
@@ -228,6 +231,9 @@ impl Rom {
     }
 
     pub fn maps(&self) -> Result<Vec<Map>> {
+        self.profile
+            .capabilities
+            .require(self.profile.capabilities.world, "world")?;
         let b = &self.data;
         let mut maps = Vec::new();
         for (group, count) in self.profile.map_counts.iter().enumerate() {
@@ -321,6 +327,9 @@ impl Rom {
         Ok(maps)
     }
     pub fn encounters(&self) -> Result<Vec<Encounter>> {
+        self.profile
+            .capabilities
+            .require(self.profile.capabilities.world, "world")?;
         let maps = self.maps()?;
         let by_id: BTreeMap<_, _> = maps.iter().map(|m| (m.id.clone(), m)).collect();
         let mut out = Vec::new();
@@ -402,6 +411,9 @@ impl Rom {
         Ok(out)
     }
     pub fn trainers(&self) -> Result<Vec<Trainer>> {
+        self.profile
+            .capabilities
+            .require(self.profile.capabilities.world, "world")?;
         // The old table at 0x1132660 has no base references. The active table is
         // referenced by code at 0x3587c, 0x6e624 (+4), and 0x13094c (+16).
         let b = &self.data;

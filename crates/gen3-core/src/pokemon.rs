@@ -1,4 +1,10 @@
-use crate::{binary::*, err, rom::Rom, Result};
+use crate::{
+    adapter::{Field, PokemonCodec},
+    binary::*,
+    err,
+    rom::Rom,
+    Result,
+};
 use serde::{Deserialize, Serialize};
 
 const ORDERS: [&str; 24] = [
@@ -25,7 +31,7 @@ pub struct Pokemon {
     pub condition: [u8; 6],
     pub ivs: [u8; 6],
     pub ability_slot: u8,
-    pub ability_id: u8,
+    pub ability_id: u16,
     pub egg: bool,
     pub pokerus: u8,
     pub met_location: u8,
@@ -35,6 +41,8 @@ pub struct Pokemon {
     pub ot_gender: u8,
     pub ribbons: u32,
     pub nature: u8,
+    pub effective_nature: u8,
+    pub nature_override: Option<u8>,
     pub gender: String,
     pub shiny: bool,
     pub level: u8,
@@ -73,6 +81,8 @@ pub struct PokemonPatch {
     pub ot_gender: Option<u8>,
     pub ribbons: Option<u32>,
     pub nature: Option<u8>,
+    /// Rocket uses 26 to restore PID-derived nature. Not supported by Gen III.
+    pub nature_override: Option<u8>,
     pub gender: Option<String>,
     pub shiny: Option<bool>,
     pub current_hp: Option<u16>,
@@ -126,6 +136,9 @@ pub fn unpack(raw: &[u8]) -> Result<[u8; 48]> {
 /// Check integrity before interpreting decrypted fields or treating a slot as empty.
 /// `unpack` remains available for read-only forensic inspection of damaged records.
 pub fn checked_unpack(raw: &[u8]) -> Result<[u8; 48]> {
+    checked_unpack_with(raw, PokemonCodec::Gen3)
+}
+pub fn checked_unpack_with(raw: &[u8], codec: PokemonCodec) -> Result<[u8; 48]> {
     let canonical = unpack(raw)?;
     let stored = u16(raw, 28)?;
     let calculated = checksum(&canonical);
@@ -135,7 +148,7 @@ pub fn checked_unpack(raw: &[u8]) -> Result<[u8; 48]> {
             format!("stored {stored:#06x}, calculated {calculated:#06x}"),
         ));
     }
-    if raw[19] & 1 != 0 {
+    if codec.fields().bad_egg.read(raw)? != 0 {
         return Err(err("pokemon_bad_egg", "record is marked as a Bad Egg"));
     }
     Ok(canonical)
@@ -241,49 +254,70 @@ pub fn decode(raw: &[u8], rom: &Rom) -> Result<Pokemon> {
     let pid = u32(raw, 0)?;
     let ot_id = u32(raw, 4)?;
     let s = rom.species(u16(&c, 0)?)?;
-    let xp = u32(&c, 4)?;
+    let fields = rom.profile.save.pokemon_codec.fields();
+    let xp = fields.experience.read(&c)?;
+    let pp_ups = fields.pp_ups.read(&c)? as u8;
+    let nature_override = fields
+        .nature_override
+        .map(|f| f.read(&c))
+        .transpose()?
+        .map(|v| v as u8);
+    let effective_nature = nature_override
+        .filter(|v| *v < 25)
+        .unwrap_or((pid % 25) as u8);
     let ivword = u32(&c, 40)?;
     let origin = u16(&c, 38)?;
     let ivs = std::array::from_fn(|i| ((ivword >> (i * 5)) & 31) as u8);
     let evs = c[24..30].try_into().unwrap();
     let lv = level(s.growth, xp);
-    let slot = (ivword >> 31) as u8;
+    let slot = fields.ability.read(&c)? as u8;
     Ok(Pokemon {
         pid,
         ot_id,
         nickname: rom.codec.decode(&raw[8..18]),
-        ot_name: rom.codec.decode(&raw[20..27]),
-        language: raw[18],
-        markings: raw[27],
+        ot_name: rom.codec.decode(&raw[fields.ot_name..fields.ot_name + 7]),
+        language: fields.language.read(raw)? as u8,
+        markings: if rom.profile.save.pokemon_codec == PokemonCodec::Gen3 {
+            raw[27]
+        } else {
+            fields.markings.read(raw)? as u8
+        },
         species: s.id,
         held_item: u16(&c, 2)?,
         experience: xp,
-        pp_ups: std::array::from_fn(|i| (c[8] >> (i * 2)) & 3),
-        friendship: c[9],
+        pp_ups: std::array::from_fn(|i| (pp_ups >> (i * 2)) & 3),
+        friendship: fields.friendship.read(&c)? as u8,
         moves: std::array::from_fn(|i| u16(&c, 12 + i * 2).unwrap()),
         pps: c[20..24].try_into().unwrap(),
         evs,
         condition: c[30..36].try_into().unwrap(),
         ivs,
         ability_slot: slot,
-        ability_id: if slot == 1 && s.abilities[1] != 0 {
-            s.abilities[1]
-        } else {
-            s.abilities[0]
-        },
+        ability_id: s
+            .abilities
+            .get(slot as usize)
+            .copied()
+            .filter(|id| *id != 0)
+            .unwrap_or(if slot == 1 && s.abilities.len() == 2 {
+                s.abilities[0]
+            } else {
+                0
+            }),
         egg: ivword & (1 << 30) != 0,
         pokerus: c[36],
         met_location: c[37],
         met_level: (origin & 127) as u8,
         origin_game: ((origin >> 7) & 15) as u8,
-        ball: ((origin >> 11) & 15) as u8,
+        ball: fields.ball.read(&c)? as u8,
         ot_gender: (origin >> 15) as u8,
         ribbons: u32(&c, 44)?,
         nature: (pid % 25) as u8,
+        effective_nature,
+        nature_override,
         gender: gender(s.gender_ratio, pid).into(),
         shiny: shiny(pid, ot_id),
         level: lv,
-        stats: stats(s.stats, ivs, evs, lv, (pid % 25) as u8),
+        stats: stats(s.stats, ivs, evs, lv, effective_nature),
         current_hp: if raw.len() == 100 {
             Some(u16(raw, 86)?)
         } else {
@@ -311,11 +345,16 @@ pub fn findings(p: &Pokemon, rom: &Rom) -> Result<Vec<Finding>> {
     if p.evs.iter().map(|v| *v as u16).sum::<u16>() > 510 {
         out.push(finding("ev_total", "evs", "total > 510"));
     }
-    if p.ability_slot == 1 && s.abilities[1] == 0 {
+    if (s.abilities.len() == 2 && p.ability_slot == 1 && s.abilities[1] == 0)
+        || (s.abilities.len() != 2
+            && s.abilities
+                .get(p.ability_slot as usize)
+                .is_none_or(|a| *a == 0))
+    {
         out.push(finding(
             "ability_slot",
             "ability_slot",
-            "second ability absent",
+            "selected ability absent",
         ));
     }
     let known = rom.known_moves(p.species, p.level)?;
@@ -372,7 +411,8 @@ pub fn edit(
     rom: &Rom,
     policy: Policy,
 ) -> Result<(Vec<u8>, Vec<Finding>)> {
-    let mut c = checked_unpack(raw)?;
+    let mut c = checked_unpack_with(raw, rom.profile.save.pokemon_codec)?;
+    let fields = rom.profile.save.pokemon_codec.fields();
     let before = decode(raw, rom)?;
     let mut out = raw.to_vec();
     let species = patch.species.unwrap_or(before.species);
@@ -389,24 +429,25 @@ pub fn edit(
     }
     put16(&mut c, 0, species);
     if let Some(v) = patch.experience {
-        put32(&mut c, 4, v);
+        fields.experience.write(&mut c, v)?;
     }
     if let Some(v) = patch.level {
         check((1..=100).contains(&v), "level")?;
         if patch.experience.is_some() && level(s.growth, patch.experience.unwrap()) != v {
             return Err(err("level_experience", "inconsistent patch"));
         }
-        put32(&mut c, 4, experience(s.growth, v));
+        fields.experience.write(&mut c, experience(s.growth, v))?;
     }
     if let Some(v) = patch.friendship {
-        c[9] = v;
+        fields.friendship.write(&mut c, v as u32)?;
     }
     if let Some(v) = patch.pp_ups {
         check(v.iter().all(|x| *x <= 3), "pp_ups")?;
-        c[8] = v
+        let value = v
             .iter()
             .enumerate()
-            .fold(0, |a, (i, v)| a | (*v << (i * 2)));
+            .fold(0u8, |a, (i, v)| a | (*v << (i * 2)));
+        fields.pp_ups.write(&mut c, value as u32)?;
     }
     if patch.moves.is_some() || patch.pp_ups.is_some() {
         let v = patch.moves.unwrap_or(before.moves);
@@ -414,8 +455,9 @@ pub fn edit(
             let mv = rom.move_info(*id)?;
             put16(&mut c, 12 + i * 2, *id);
             if patch.pps.is_none() && (*id != before.moves[i] || patch.pp_ups.is_some()) {
-                c[20 + i] =
-                    (mv.pp as u16 * (5 + ((c[8] >> (i * 2)) & 3) as u16) / 5).min(255) as u8;
+                c[20 + i] = (mv.pp as u16 * (5 + ((fields.pp_ups.read(&c)? >> (i * 2)) & 3) as u16)
+                    / 5)
+                .min(255) as u8;
             }
         }
     }
@@ -431,15 +473,17 @@ pub fn edit(
     let ivs = patch.ivs.unwrap_or(before.ivs);
     check(ivs.iter().all(|x| *x <= 31), "ivs")?;
     let ability = patch.ability_slot.unwrap_or(before.ability_slot);
-    check(ability <= 1, "ability_slot")?;
+    if patch.ability_slot.is_some() {
+        check((ability as usize) < s.abilities.len(), "ability_slot")?;
+    }
     let egg = patch.egg.unwrap_or(before.egg);
     let word = ivs
         .iter()
         .enumerate()
         .fold(0u32, |w, (i, v)| w | ((*v as u32) << (5 * i)))
-        | ((egg as u32) << 30)
-        | ((ability as u32) << 31);
-    put32(&mut c, 40, word);
+        | ((egg as u32) << 30);
+    Field::new(40, 0, 31).write(&mut c, word)?;
+    fields.ability.write(&mut c, ability as u32)?;
     if let Some(v) = patch.pokerus {
         c[36] = v;
     }
@@ -452,29 +496,38 @@ pub fn edit(
     let ot_gender = patch.ot_gender.unwrap_or(before.ot_gender);
     check(met <= 127, "met_level")?;
     check(game <= 15, "origin_game")?;
-    check(ball <= 15, "ball")?;
+    check(ball as u32 <= fields.ball.max(), "ball")?;
     check(ot_gender <= 1, "ot_gender")?;
-    put16(
-        &mut c,
-        38,
-        met as u16 | ((game as u16) << 7) | ((ball as u16) << 11) | ((ot_gender as u16) << 15),
-    );
+    Field::new(38, 0, 7).write(&mut c, met as u32)?;
+    Field::new(38, 7, 4).write(&mut c, game as u32)?;
+    Field::new(39, 7, 1).write(&mut c, ot_gender as u32)?;
+    fields.ball.write(&mut c, ball as u32)?;
+    if let Some(value) = patch.nature_override {
+        check(value < 25 || value == 26, "nature_override")?;
+        fields
+            .nature_override
+            .ok_or_else(|| err("unsupported_feature", "nature_override"))?
+            .write(&mut c, value as u32)?;
+    }
     if let Some(v) = patch.ribbons {
-        put32(&mut c, 44, v);
+        fields
+            .ribbons
+            .ok_or_else(|| err("unsupported_feature", "ribbons"))?
+            .write(&mut c, v)?;
     }
     if let Some(v) = patch.language {
         check((1..=7).contains(&v) && v != 6, "language")?;
-        out[18] = v;
+        fields.language.write(&mut out, v as u32)?;
     }
     if let Some(v) = patch.markings {
         check(v <= 15, "markings")?;
-        out[27] = (out[27] & 0xf0) | v;
+        fields.markings.write(&mut out, v as u32)?;
     }
     if let Some(v) = &patch.nickname {
         out[8..18].copy_from_slice(&rom.codec.encode(v, 10)?);
     }
     if let Some(v) = &patch.ot_name {
-        out[20..27].copy_from_slice(&rom.codec.encode(v, 7)?);
+        out[fields.ot_name..fields.ot_name + 7].copy_from_slice(&rom.codec.encode(v, 7)?);
     }
     let ot = patch.ot_id.unwrap_or(before.ot_id);
     put32(&mut out, 4, ot);
@@ -509,7 +562,8 @@ pub fn edit(
         ));
     }
     put32(&mut out, 0, pid);
-    out[19] = (out[19] & !6) | 2 | ((egg as u8) << 2);
+    fields.has_species.write(&mut out, 1)?;
+    fields.header_egg.write(&mut out, egg as u32)?;
     pack(&mut out, &c);
     let mut after = decode(&out, rom)?;
     if out.len() == 100 {
@@ -565,15 +619,22 @@ pub fn create(
     let mut raw = vec![0; 80];
     put32(&mut raw, 0, pid);
     put32(&mut raw, 4, ot);
-    raw[18] = 2;
-    raw[19] = 2;
+    let fields = rom.profile.save.pokemon_codec.fields();
+    fields.language.write(&mut raw, 2)?;
+    fields.has_species.write(&mut raw, 1)?;
     raw[8..18].copy_from_slice(&rom.codec.encode(&s.name, 10)?);
-    raw[20..27].copy_from_slice(&rom.codec.encode(ot_name, 7)?);
+    raw[fields.ot_name..fields.ot_name + 7].copy_from_slice(&rom.codec.encode(ot_name, 7)?);
     let mut c = [0; 48];
     put16(&mut c, 0, species);
-    put32(&mut c, 4, experience(s.growth, level));
-    c[9] = s.friendship;
-    put16(&mut c, 38, level as u16 | (3 << 7) | (4 << 11));
+    fields
+        .experience
+        .write(&mut c, experience(s.growth, level))?;
+    fields.friendship.write(&mut c, s.friendship as u32)?;
+    put16(&mut c, 38, level as u16 | (3 << 7));
+    fields.ball.write(&mut c, fields.default_ball as u32)?;
+    if let Some(field) = fields.nature_override {
+        field.write(&mut c, 26)?;
+    }
     let mut moves = Vec::new();
     for r in rom.level_moves(species)? {
         if r.level.unwrap_or(0) <= level {
@@ -590,7 +651,7 @@ pub fn create(
     Ok(raw)
 }
 pub fn to_party(raw: &[u8], rom: &Rom) -> Result<Vec<u8>> {
-    checked_unpack(raw)?;
+    checked_unpack_with(raw, rom.profile.save.pokemon_codec)?;
     let mut out = raw[..80].to_vec();
     out.resize(100, 0);
     out[85] = 255;

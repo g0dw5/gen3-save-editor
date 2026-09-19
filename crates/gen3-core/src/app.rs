@@ -105,6 +105,10 @@ impl App {
             }
             "save_bytes" => {
                 let s = self.session()?;
+                s.rom
+                    .profile
+                    .capabilities
+                    .require(s.rom.profile.capabilities.save_edit, "save_edit")?;
                 s.save_ref()?.validate(&s.rom)?;
                 Ok(json!({"bytes":STANDARD.encode(&s.save_ref()?.data)}))
             }

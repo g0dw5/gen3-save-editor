@@ -1,4 +1,5 @@
 //! ROM-backed Gen III editing. No UI, process-global ROM or bundled game assets.
+pub mod adapter;
 pub mod app;
 pub mod binary;
 pub mod fishing;
@@ -39,3 +40,5 @@ impl From<serde_json::Error> for Error {
         err("json", e)
     }
 }
+
+pub mod forms;

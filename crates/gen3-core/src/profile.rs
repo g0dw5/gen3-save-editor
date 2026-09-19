@@ -25,6 +25,10 @@ impl SplitText {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct Profile {
+    pub formats: crate::adapter::RomFormats,
+    pub capabilities: crate::adapter::Capabilities,
+    pub ability_count: u16,
+    pub battle_forms: Option<crate::forms::BattleFormRules>,
     pub id: &'static str,
     pub label: &'static str,
     pub md5: &'static str,
@@ -114,6 +118,9 @@ pub struct MapGroup {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct SaveLayout {
+    pub pokemon_codec: crate::adapter::PokemonCodec,
+    pub pockets: &'static [crate::save::Pocket],
+    pub dex: Option<DexLayout>,
     pub sizes: [usize; 14],
     pub party_count: usize,
     pub party: usize,
@@ -123,7 +130,22 @@ pub struct SaveLayout {
     pub money: usize,
     pub coins: usize,
 }
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct DexLayout {
+    pub count: u16,
+    pub owned: usize,
+    pub seen: usize,
+    pub seen_mirrors: &'static [usize],
+}
 pub const EMERALD: SaveLayout = SaveLayout {
+    pokemon_codec: crate::adapter::PokemonCodec::Gen3,
+    pockets: &crate::save::POCKETS,
+    dex: Some(DexLayout {
+        count: 416,
+        owned: 0x28,
+        seen: 0x5c,
+        seen_mirrors: &[0x988, 0x3b24],
+    }),
     sizes: [
         3884, 3968, 3968, 3968, 3848, 3968, 3968, 3968, 3968, 3968, 3968, 3968, 3968, 2000,
     ],
@@ -136,6 +158,10 @@ pub const EMERALD: SaveLayout = SaveLayout {
     coins: 0x494,
 };
 pub const BW: Profile = Profile {
+    formats: crate::adapter::RomFormats::GEN3,
+    capabilities: crate::adapter::Capabilities::DARK_PHANTOM,
+    ability_count: 151,
+    battle_forms: None,
     id: "dark-phantom-5ex-bw",
     label: "漆黑的魅影 5.0EX+BW",
     md5: "0d9b129f7dd76895f79bb47ad7dec2fe",
@@ -281,7 +307,112 @@ pub const DP: Profile = Profile {
     md5: "cb2940215f4dafb1bef133c3af379f44",
     ..BW
 };
-pub const PROFILES: [Profile; 2] = [BW, DP];
+const UNAVAILABLE: Table = Table {
+    offset: 0,
+    count: 0,
+    stride: 0,
+};
+pub const ROCKET: Profile = Profile {
+    id: "rocket-21-zh",
+    label: "西班牙火箭队 2.1 汉化版 · 只读预览",
+    md5: "59c658a1081f542086de1060bb65f0b3",
+    size: 0x2000000,
+    formats: crate::adapter::RomFormats::ROCKET21,
+    capabilities: crate::adapter::Capabilities::ROCKET_READ_ONLY,
+    ability_count: 269,
+    battle_forms: Some(crate::forms::BattleFormRules::ExpansionEvolutionMethods),
+    move_names: SplitText {
+        first: 0x5a35e1,
+        second: 0,
+        split: 755,
+        stride: 13,
+    },
+    move_descriptions: 0,
+    ability_names: SplitText {
+        first: 0x5a815c,
+        second: 0,
+        split: 269,
+        stride: 17,
+    },
+    ability_descriptions: SplitText {
+        first: 0x5a933c,
+        second: 0,
+        split: 269,
+        stride: 4,
+    },
+    mail_items: [0, 0],
+    national_dex: 0x5b1608,
+    species: Table {
+        offset: 0x59f9f0,
+        count: 1395,
+        stride: 11,
+    },
+    base_stats: Table {
+        offset: 0x5b4764,
+        count: 1395,
+        stride: 36,
+    },
+    // Internal Z attacks have a separate namespace and must not be learned moves.
+    moves: Table {
+        offset: 0x5acd5c,
+        count: 755,
+        stride: 20,
+    },
+    move_category_offset: 16,
+    hidden_power: None,
+    items: Table {
+        offset: 0xc3d558,
+        count: 923,
+        stride: 44,
+    },
+    evolutions: Table {
+        offset: 0x5f96d4,
+        count: 1395,
+        stride: 80,
+    },
+    learnsets: 0x614ac4,
+    eggs: 0,
+    tm_moves: 0,
+    tm_bits: 0,
+    tutor_moves: 0,
+    tutor_bits: 0,
+    sprites: 0x568880,
+    palettes: 0x5545cc,
+    shiny_palettes: 0x558ea4,
+    sprite_rules: SpriteRules {
+        unown_species: u16::MAX,
+        unown_b_sprite: 0,
+        spinda_species: u16::MAX,
+        spinda_spots: 0,
+        second_frame_species: u16::MAX,
+    },
+    maps: 0,
+    map_palette_banks: [0, 0],
+    regions: 0,
+    region_count: 0,
+    wild: 0,
+    feebas: None,
+    trainers: UNAVAILABLE,
+    trainer_classes: UNAVAILABLE,
+    trainer_sprites: UNAVAILABLE,
+    trainer_palettes: 0,
+    object_graphics: &[],
+    object_palettes: UNAVAILABLE,
+    script_actors: &[],
+    map_groups: &[],
+    map_counts: &[],
+    save: SaveLayout {
+        pokemon_codec: crate::adapter::PokemonCodec::Rocket21,
+        sizes: [
+            0xe1c, 0xff4, 0xff4, 0xff4, 0x62c, 0xff4, 0xff4, 0xff4, 0xff4, 0xff4, 0xff4, 0xff4,
+            0xff4, 0x5c0,
+        ],
+        pockets: &crate::save::ROCKET_POCKETS,
+        dex: None,
+        ..EMERALD
+    },
+};
+pub const PROFILES: [Profile; 3] = [BW, DP, ROCKET];
 pub fn identify(data: &[u8]) -> Result<Profile> {
     let md5 = hash(data);
     PROFILES
