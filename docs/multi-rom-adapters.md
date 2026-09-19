@@ -1,7 +1,7 @@
 # Multi-ROM adapters / 多 ROM 适配
 
-Status: development branch, 2026-09-19. This is the first executable Rocket
-adapter milestone, not full Rocket editing support. No new release is produced.
+Status: 0.2.0 validation build, 2026-09-19. This is the first executable Rocket
+adapter milestone, not full Rocket editing support.
 
 ## Support boundary / 支持边界
 

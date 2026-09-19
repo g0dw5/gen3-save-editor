@@ -8,7 +8,10 @@ bilingual file.
 首次公开发布版本为 **0.1.5**，不追记此前的开发版本。0.1.6、0.1.7 按工程提交补记，
 不代表这些构建的对外发布日期。每次发布包均附带本中英文日志。
 
-## Unreleased / 尚未发布
+## 0.2.0 — 2026-09-19
+
+Validation build: Dark Phantom BW/DP editing and Team Rocket read-only preview.
+验证版本：漆黑的魅影 BW／DP 支持修改，西班牙火箭队目前为只读预览。
 
 - Compose per-table ROM formats, Pokémon bit-field codecs, save layouts and
   capability gates. Add an exact-MD5 read-only Team Rocket 2.1 Chinese adapter.
