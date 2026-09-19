@@ -67,19 +67,18 @@ export function TrainerParty({
               <div>
                 <dt>{t("ability")}</dt>
                 <dd>
-                  {g ? (
-                    <button
-                      className="link-button"
-                      onClick={() => onAbility(g.ability_id)}
-                      title={catalog.abilities[g.ability_id]?.description}
-                    >
-                      {catalog.abilities[g.ability_id]?.name ??
-                        `#${g.ability_id}`}{" "}
-                      ↗
-                    </button>
-                  ) : (
-                    t("unresolved")
-                  )}
+                  {g
+                    ? (g.ability_options ?? [g.ability_id]).map((id) => (
+                        <button
+                          key={id}
+                          className="link-button"
+                          onClick={() => onAbility(id)}
+                          title={catalog.abilities[id]?.description}
+                        >
+                          {catalog.abilities[id]?.name ?? `#${id}`} ↗
+                        </button>
+                      ))
+                    : t("unresolved")}
                 </dd>
               </div>
               <div>

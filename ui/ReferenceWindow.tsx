@@ -531,6 +531,12 @@ export function ReferenceWindow({
                   </section>
                 )}
                 <h3>{t("learnset")}</h3>
+                {detail.teaching_list_present === false && (
+                  <p className="small muted">{t("missingTeachingList")}</p>
+                )}
+                {catalog.profile.teaching?.shared_lists != null && (
+                  <p className="small muted">{t("sharedTeachingHelp")}</p>
+                )}
                 {catalog.profile.capabilities?.complete_learnsets === false && (
                   <p className="small muted">{t("partialLearnsetHelp")}</p>
                 )}
@@ -626,7 +632,17 @@ export function ReferenceWindow({
                         ? ` · ${t("triggerRate")} ${e.encounter_rate}`
                         : ""}
                     </div>
-                    {e.conditional && (
+                    {e.selector && (
+                      <div className="warning-text small">
+                        {t("scriptVariable")} 0x
+                        {e.selector.variable.toString(16).toUpperCase()} ={" "}
+                        {e.selector.value}
+                        {e.selector.fallback
+                          ? ` · ${t("fallbackVariant")}`
+                          : ""}
+                      </div>
+                    )}
+                    {e.conditional && !e.selector && (
                       <div className="warning-text small">
                         {t("conditional")}
                       </div>
@@ -683,7 +699,13 @@ export function ReferenceWindow({
                 ))}
               </div>
               {current.id === catalog.profile.hidden_power?.move_id ? (
-                <p className="small muted">{t("hiddenPowerReferenceHelp")}</p>
+                <p className="small muted">
+                  {t(
+                    catalog.profile.hidden_power?.formula === "gen6_fixed60"
+                      ? "hiddenPowerFixedHelp"
+                      : "hiddenPowerReferenceHelp",
+                  )}
+                </p>
               ) : (
                 <Types values={[(current as Move).move_type]} />
               )}
@@ -784,6 +806,8 @@ export function ReferenceWindow({
                     <span className="muted small">
                       {encounterMethod(e.method)}
                       {e.weight !== null ? ` · ${e.weight}%` : ""}
+                      {e.selector &&
+                        ` · ${t("scriptVariable")} 0x${e.selector.variable.toString(16).toUpperCase()} = ${e.selector.value}${e.selector.fallback ? ` · ${t("fallbackVariant")}` : ""}`}
                     </span>
                     <button
                       className="link-button small"

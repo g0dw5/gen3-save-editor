@@ -91,7 +91,7 @@ class Native:
     def word(self, address, value):
         self.write(address, struct.pack("<I", value))
 
-    def call(self, offset, *args):
+    def call(self, offset, *args, instruction_limit=1_000_000):
         registers = (UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_R3)
         for register, value in zip(registers, args):
             self.cpu.reg_write(register, value)
@@ -99,7 +99,7 @@ class Native:
         for i, value in enumerate(args[4:]):
             self.word(0x03007000 + i * 4, value)
         self.cpu.reg_write(UC_ARM_REG_LR, 0x08000001)
-        self.cpu.emu_start(0x08000001 + offset, 0x08000000, count=1_000_000)
+        self.cpu.emu_start(0x08000001 + offset, 0x08000000, count=instruction_limit)
         assert self.cpu.reg_read(UC_ARM_REG_PC) == 0x08000000, f"unfinished native call {offset:#x}"
         return self.cpu.reg_read(UC_ARM_REG_R0)
 

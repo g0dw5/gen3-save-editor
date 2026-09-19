@@ -8,7 +8,7 @@ export function hiddenPower(
   ivs: readonly number[] | null | undefined,
 ): { type: number; power: number } | null {
   if (
-    rules?.formula !== "gen3_to5" ||
+    !["gen3_to5", "gen6_fixed60"].includes(rules?.formula ?? "") ||
     ivs?.length !== 6 ||
     ivs.some((iv) => !Number.isInteger(iv) || iv < 0 || iv > 31)
   )
@@ -18,6 +18,9 @@ export function hiddenPower(
     ivs.reduce((sum, iv, i) => sum + (((iv >> shift) & 1) << i), 0);
   return {
     type: types[Math.floor((bits(0) * 15) / 63)],
-    power: Math.floor((bits(1) * 40) / 63) + 30,
+    power:
+      rules?.formula === "gen6_fixed60"
+        ? 60
+        : Math.floor((bits(1) * 40) / 63) + 30,
   };
 }

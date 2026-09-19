@@ -27,6 +27,7 @@ pub struct MapObject {
 }
 #[derive(Clone, Serialize)]
 pub struct Encounter {
+    pub selector: Option<EncounterSelector>,
     pub species: u16,
     pub map_id: String,
     pub map_name: String,
@@ -39,6 +40,12 @@ pub struct Encounter {
     pub slot: Option<u8>,
     pub offset: usize,
     pub conditional: bool,
+}
+#[derive(Clone, Serialize)]
+pub struct EncounterSelector {
+    pub variable: u16,
+    pub value: u16,
+    pub fallback: bool,
 }
 #[derive(Clone, Serialize)]
 pub struct TrainerMon {
@@ -59,6 +66,7 @@ pub struct TrainerMonGeneration {
     pub gender: &'static str,
     pub nature: u8,
     pub ability_id: u16,
+    pub ability_options: Vec<u16>,
     pub ivs: Option<[u8; 6]>,
     pub evs: [u8; 6],
     pub personality_parameter: u8,
@@ -262,7 +270,10 @@ impl Rom {
                                 if count_off == 0 {
                                     objects.push(MapObject {
                                         local_id: bytes(b, o, 1)?[0],
-                                        graphics_id: u16(b, o + 1)?,
+                                        graphics_id: u16(
+                                            b,
+                                            o + self.profile.formats.object_graphics_offset,
+                                        )?,
                                         script: pointer(b, o + script_off).ok(),
                                     });
                                 }
@@ -334,6 +345,7 @@ impl Rom {
         let by_id: BTreeMap<_, _> = maps.iter().map(|m| (m.id.clone(), m)).collect();
         let mut out = Vec::new();
         let b = &self.data;
+        let mut first_headers = BTreeMap::new();
         for i in 0..600 {
             let o = self.profile.wild + i * 20;
             let h = bytes(b, o, 20)?;
@@ -341,6 +353,29 @@ impl Rom {
                 break;
             }
             let id = format!("{}-{}", h[0], h[1]);
+            let first = *first_headers.entry(id.clone()).or_insert(i);
+            let selector = if let Some(rule) = self.profile.wild_selection {
+                if id == rule.variable_map {
+                    let value = (i - first) as u16;
+                    if value > rule.max_variant {
+                        continue;
+                    }
+                    Some(EncounterSelector {
+                        variable: rule.variable,
+                        value,
+                        fallback: value == 0,
+                    })
+                } else {
+                    // The game's map lookup returns the first record, not every
+                    // duplicate appearing later in the source table.
+                    if i != first {
+                        continue;
+                    }
+                    None
+                }
+            } else {
+                None
+            };
             let Some(map) = by_id.get(&id) else {
                 return Err(err("encounter_map", id));
             };
@@ -361,8 +396,13 @@ impl Rom {
                     let min = bytes(b, off, 2)?[0];
                     let max = b[off + 1];
                     let species = u16(b, off + 2)?;
+                    // Species zero is an empty source slot. Preserve the other
+                    // slots' original weights; never renormalize them to 100%.
+                    if species == 0 {
+                        continue;
+                    }
                     self.valid_species(species)?;
-                    if min > max || max > 100 {
+                    if min > max || max > self.profile.max_level {
                         return Err(err("encounter_level", off));
                     }
                     let (method, weight) = if method == "fishing" {
@@ -389,6 +429,7 @@ impl Rom {
                         )
                     };
                     out.push(Encounter {
+                        selector: selector.clone(),
                         species,
                         map_id: id.clone(),
                         map_name: map.name.clone(),
@@ -400,7 +441,7 @@ impl Rom {
                         encounter_rate: Some(rate),
                         slot: Some(j as u8),
                         offset: off,
-                        conditional: false,
+                        conditional: selector.is_some(),
                     });
                 }
             }
@@ -418,6 +459,10 @@ impl Rom {
         // referenced by code at 0x3587c, 0x6e624 (+4), and 0x13094c (+16).
         let b = &self.data;
         let mut out = Vec::new();
+        let expanded = matches!(
+            self.profile.formats.trainers,
+            crate::adapter::TrainerFormat::ExpandedEvs
+        );
         for id in 1..self.profile.trainers.count {
             let o = self.profile.trainers.offset + id * self.profile.trainers.stride;
             let row = bytes(b, o, 40)?;
@@ -430,7 +475,15 @@ impl Rom {
                 return Err(err("trainer_layout", id));
             }
             let ptr = pointer(b, o + 36)?;
-            let stride = if flags & 1 != 0 { 16 } else { 8 };
+            let stride = if flags & 1 != 0 {
+                if expanded {
+                    24
+                } else {
+                    16
+                }
+            } else {
+                8
+            };
             let mut party = Vec::new();
             let mut diagnostics = Vec::new();
             let mut name_sum = 0u32;
@@ -462,7 +515,7 @@ impl Rom {
                             .map(|c| *c as u32)
                             .sum::<u32>(),
                     );
-                    let parameter = b[p + 3];
+                    let parameter = if expanded { 0 } else { b[p + 3] };
                     let pid =
                         trainer_personality(name_sum, parameter, row[2] & 128 != 0, row[24] == 1);
                     let fixed_iv = ((quality as u32 * 31 / 255) & 255) as u8;
@@ -471,12 +524,35 @@ impl Rom {
                     } else {
                         (pid & 1) as usize
                     };
+                    let custom = expanded && flags & 1 != 0;
+                    let ev_offset = if flags & 2 != 0 { 8 } else { 6 };
                     Some(TrainerMonGeneration {
-                        gender: pokemon::gender(s.gender_ratio, pid),
-                        nature: (pid % 25) as u8,
+                        gender: if custom && !matches!(s.gender_ratio, 0 | 254 | 255) {
+                            "random"
+                        } else {
+                            pokemon::gender(s.gender_ratio, pid)
+                        },
+                        nature: if custom {
+                            b[p + ev_offset + 6]
+                        } else {
+                            (pid % 25) as u8
+                        },
                         ability_id: s.abilities[slot] as u16,
+                        ability_options: if custom {
+                            s.abilities[..2]
+                                .iter()
+                                .copied()
+                                .filter(|v| *v != 0)
+                                .collect()
+                        } else {
+                            vec![s.abilities[slot]]
+                        },
                         ivs: (fixed_iv <= 31).then_some([fixed_iv; 6]),
-                        evs: [0; 6],
+                        evs: if custom {
+                            b[p + ev_offset..p + ev_offset + 6].try_into().unwrap()
+                        } else {
+                            [0; 6]
+                        },
                         personality_parameter: parameter,
                     })
                 });
@@ -485,7 +561,13 @@ impl Rom {
                 }
                 // 0/101 are supported dynamic-level parameters. Larger raw
                 // values also scale at runtime but warrant a layout review.
-                if lv > 101 {
+                if lv
+                    > if expanded {
+                        self.profile.max_level as u16
+                    } else {
+                        101
+                    }
+                {
                     diagnostics.push(format!("party[{i}].raw_level={lv}"));
                 }
                 let item = if flags & 2 != 0 { u16(b, p + 6)? } else { 0 };
@@ -494,7 +576,7 @@ impl Rom {
                 }
                 let mut moves = Vec::new();
                 if flags & 1 != 0 {
-                    let start = if flags & 2 != 0 { 8 } else { 6 };
+                    let start = (if flags & 2 != 0 { 8 } else { 6 }) + if expanded { 8 } else { 0 };
                     for j in 0..4 {
                         let mv = u16(b, p + start + j * 2)?;
                         if self.move_info(mv).is_err() {
@@ -517,7 +599,7 @@ impl Rom {
                     species,
                     level: lv,
                     iv_quality: quality,
-                    level_rule: if lv == 0 || lv > 100 {
+                    level_rule: if !expanded && (lv == 0 || lv > 100) {
                         "party_max"
                     } else {
                         "fixed"
@@ -578,28 +660,36 @@ impl Rom {
                     stopped.insert(pc);
                     break;
                 };
-                let len = match op {
-                    0x5c => {
-                        let typ = *b.get(pc + 1).unwrap_or(&255);
-                        match typ {
-                            0 | 5 | 9..=12 => 14,
-                            1 | 2 | 4 | 7 => 18,
-                            3 => 10,
-                            6 | 8 => 22,
-                            _ => 0,
+                let len = if op != 0x5c
+                    && matches!(
+                        self.profile.formats.scripts,
+                        crate::adapter::ScriptFormat::EmeraldExpanded
+                    ) {
+                    crate::map_events::expanded_length(op)
+                } else {
+                    match op {
+                        0x5c => {
+                            let typ = *b.get(pc + 1).unwrap_or(&255);
+                            match typ {
+                                0 | 5 | 9..=12 => 14,
+                                1 | 2 | 4 | 7 => 18,
+                                3 => 10,
+                                6 | 8 => 22,
+                                _ => 0,
+                            }
                         }
+                        0x00 | 0x01 | 0x02 | 0x03 | 0x27 | 0x28 | 0x30 | 0x32 | 0x5a | 0x5b
+                        | 0x66 | 0x68 | 0x69 | 0x6a | 0x6b | 0x6c | 0x97 | 0xa0 | 0xb7 | 0xc5 => 1,
+                        0x04 | 0x05 | 0x16 | 0x17 | 0x18 | 0x19 | 0x1a | 0x21 | 0x23 | 0x26
+                        | 0x43 | 0x44 | 0x45 | 0x67 | 0x6f | 0xa4 => 5,
+                        0x06 | 0x07 | 0x0f | 0x4f | 0x51 | 0xb6 => 6,
+                        0x08 | 0x09 | 0xdc => 2,
+                        0x25 | 0x29 | 0x2a | 0x2b | 0x2f | 0x31 | 0x35 | 0x36 | 0x47 | 0x53
+                        | 0x55 | 0x64 | 0x7a => 3,
+                        0x79 => 15,
+                        0x33 | 0x80 => 4,
+                        _ => 0,
                     }
-                    0x00 | 0x01 | 0x02 | 0x03 | 0x27 | 0x28 | 0x30 | 0x32 | 0x5a | 0x5b | 0x66
-                    | 0x68 | 0x69 | 0x6a | 0x6b | 0x6c | 0x97 | 0xa0 | 0xb7 | 0xc5 => 1,
-                    0x04 | 0x05 | 0x16 | 0x17 | 0x18 | 0x19 | 0x1a | 0x21 | 0x23 | 0x26 | 0x43
-                    | 0x44 | 0x45 | 0x67 | 0x6f | 0xa4 => 5,
-                    0x06 | 0x07 | 0x0f | 0x4f | 0x51 | 0xb6 => 6,
-                    0x08 | 0x09 | 0xdc => 2,
-                    0x25 | 0x29 | 0x2a | 0x2b | 0x2f | 0x31 | 0x35 | 0x36 | 0x47 | 0x53 | 0x55
-                    | 0x64 | 0x7a => 3,
-                    0x79 => 15,
-                    0x33 | 0x80 => 4,
-                    _ => 0,
                 };
                 if len == 0 || bytes(b, pc, len).is_err() {
                     stopped.insert(pc);
@@ -645,14 +735,20 @@ impl Rom {
                         ));
                     }
                 }
-                if op == 0x25 && u16(b, pc + 1)? == 0x1e2 {
+                if matches!(
+                    self.profile.formats.scripts,
+                    crate::adapter::ScriptFormat::DarkPhantom
+                ) && op == 0x25
+                    && u16(b, pc + 1)? == 0x1e2
+                {
                     if let (Some(s), Some(l)) = (vars.get(&0x8004), vars.get(&0x8005)) {
                         encounter = Some((*s, *l as u8, "special_battle"));
                     }
                 }
                 if let Some((s, l, method)) = encounter {
-                    if self.valid_species(s).is_ok() && l > 0 && l <= 100 {
+                    if self.valid_species(s).is_ok() && l > 0 && l <= self.profile.max_level {
                         found.entry((pc, s)).or_insert(Encounter {
+                            selector: None,
                             species: s,
                             map_id: map.id.clone(),
                             map_name: map.name.clone(),
@@ -692,14 +788,21 @@ impl Rom {
                         vars.clear();
                     }
                 }
-                if matches!(op, 0x02 | 0x03 | 0x05) {
+                if matches!(op, 0x02 | 0x03 | 0x05)
+                    || (matches!(
+                        self.profile.formats.scripts,
+                        crate::adapter::ScriptFormat::EmeraldExpanded
+                    ) && matches!(op, 0x39 | 0x3a))
+                {
+                    // These warp handlers suspend the field script and reload the map.
+                    // Bytes after them may be movement or text, not continuation code.
                     break;
                 }
                 // Native calls can change arbitrary script variables. Menus and
                 // gender queries replace VAR_RESULT with a runtime value.
                 if matches!(op, 0x23 | 0x25) {
                     vars.clear();
-                } else if matches!(op, 0x6f | 0xa0) {
+                } else if matches!(op, 0x6f | 0xa0 | 0xe3 | 0xe4 | 0xe5) {
                     vars.remove(&0x800d);
                 }
                 pc += len;

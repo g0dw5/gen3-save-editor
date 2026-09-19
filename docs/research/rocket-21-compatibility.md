@@ -1,5 +1,8 @@
 # Team Rocket 2.1 Chinese ROM compatibility / 西班牙火箭队兼容性评估
 
+> Historical research snapshot. Current implemented support and follow-up verification:
+> [Rocket parity](rocket-21-parity.md). 初期只读结论已由后续适配与验证更新。
+
 Assessment date: 2026-09-19. This is research, **not a supported write adapter**.
 No ROM, game text dump, graphics, or user save is distributed with this document.
 

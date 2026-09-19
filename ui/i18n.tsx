@@ -1,8 +1,17 @@
 import { createContext, useContext } from "react";
 export const en = {
-  rocketReadOnly: "Team Rocket 2.1 Chinese · read-only",
-  adapterReadOnlyHelp:
-    "This adapter reads Pokémon, inventory and ROM reference tables. Editing, export, maps and Pokédex progress are not enabled yet.",
+  scriptVariable: "Story variable",
+  fallbackVariant: "also used for out-of-range values",
+  pidNature: "Use PID nature",
+  missingTeachingList:
+    "The ROM has no teaching compatibility list for this form; no compatibility is inferred from its base species.",
+  sharedTeachingHelp:
+    "Machine/tutor rows describe ROM compatibility. They do not guarantee that a teaching NPC is currently accessible.",
+  battle_species:
+    "Temporary battle form. Choose the base species and its transformation item/move, or use free editing.",
+  hiddenPowerFixedHelp:
+    "Type is calculated from IV parity; this ROM fixes base power at 60.",
+  rocketVersion: "Team Rocket 2.1 Chinese",
   battleForms: "Battle transformations",
   battleFormsHelp:
     "ROM associations, not a guarantee of battle eligibility. Select a form to compare its base stats. Temporary species and Z attacks are not ordinary stored Pokémon or learned moves.",
@@ -91,6 +100,8 @@ export const en = {
   combinedIdHelp: "Combined automatically from TID and SID.",
   pidHelp:
     "Nature, gender and shininess can generate a new PID. Direct PID editing requires free editing and no pending changes to those fields.",
+  pidOverrideHelp:
+    "Gender and shininess can generate a new PID. Nature override is stored separately; choose Follow PID to use the PID nature. Direct PID editing requires free editing.",
   markingsHelp:
     "Personal storage labels only; they do not affect stats or battle behavior.",
   pokerusState: "Infection state",
@@ -227,6 +238,10 @@ export const en = {
   pokemon: "Pokémon",
   bag: "Bag",
   inventory: "Items",
+  medicine: "Medicine",
+  battle_items: "Battle items",
+  special_items: "Special items",
+  random: "Random",
   bagItems: "General items",
   inventoryHelp:
     "Choose a pocket or PC items, then select a slot to edit. Choose an item in an empty slot to add it; clear a slot to remove it. Apply changes, then export your save.",
@@ -454,13 +469,21 @@ export const en = {
   backend: "The development bridge is unavailable.",
   io: "The file operation failed.",
   move_source_unknown: "No source found in the currently parsed learnsets.",
-  experience_limit: "Experience exceeds the level-100 threshold.",
+  experience_limit: "Experience exceeds this ROM’s maximum-level threshold.",
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
-  rocketReadOnly: "西班牙火箭队 2.1 汉化版 · 只读",
-  adapterReadOnlyHelp:
-    "此版本已接入宝可梦、道具读取及 ROM 资料；修改、导出、地图与图鉴进度暂未开放。",
+  scriptVariable: "剧情变量",
+  fallbackVariant: "变量超出范围时也使用此组",
+  pidNature: "随 PID 性格",
+  missingTeachingList:
+    "ROM 中此形态的教学兼容表为空；未擅自沿用原始形态的兼容表。",
+  sharedTeachingHelp:
+    "技能机／教学条目表示 ROM 的招式兼容性，不代表当前剧情中已有可用的教学 NPC。",
+  battle_species:
+    "这是临时战斗形态。请选择原始种类并配置转换道具／招式，或使用自由编辑。",
+  hiddenPowerFixedHelp: "属性由个体值的奇偶决定；本 ROM 的基础威力固定为 60。",
+  rocketVersion: "西班牙火箭队 2.1 汉化版",
   battleForms: "战斗形态",
   battleFormsHelp:
     "这里显示 ROM 中的转换关系，不代表已满足战斗条件。点击形态可查看种族值。临时形态与 Z 招式不作为普通存档形态或可学习招式处理。",
@@ -546,6 +569,8 @@ export const zh: Record<Key, string> = {
   combinedIdHelp: "由公开 ID 与秘密 ID 自动组合。",
   pidHelp:
     "性格、性别和闪光可联动生成 PID。直接指定 PID 需要自由编辑，且不能同时修改这三个字段。",
+  pidOverrideHelp:
+    "性别和闪光可联动生成 PID。性格覆盖值单独保存；选择“随 PID 性格”才使用 PID 决定的性格。直接指定 PID 需要自由编辑。",
   markingsHelp: "用于整理盒子的自定义标记，不影响能力或战斗。",
   pokerusState: "感染状态",
   pokerusStrain: "病毒株（1–15）",
@@ -675,6 +700,10 @@ export const zh: Record<Key, string> = {
   pokemon: "宝可梦",
   bag: "背包",
   inventory: "道具",
+  medicine: "药品",
+  battle_items: "战斗道具",
+  special_items: "特殊道具",
+  random: "随机",
   bagItems: "普通道具",
   inventoryHelp:
     "选择道具栏位，再选择槽位修改。空槽位选择道具即可添加；清空槽位即可移除。应用修改后，请导出存档。",

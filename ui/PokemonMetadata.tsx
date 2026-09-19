@@ -178,7 +178,11 @@ export function PokemonOrigin({
         onChange={(v) => change("ball", +v)}
         options={options(
           catalog.items
-            .filter((i) => i.id >= 1 && i.id <= 12)
+            .filter(
+              (i) =>
+                catalog.editor_rules?.balls.includes(i.id) ??
+                (i.id >= 1 && i.id <= 12),
+            )
             .map((i) => itemOption(catalog, i)),
           p.ball,
         )}
@@ -217,6 +221,7 @@ export function PokemonOrigin({
 
 export function PokemonAdvanced({
   pokemon: p,
+  catalog,
   change,
   free,
   pidLocked,
@@ -332,6 +337,7 @@ export function PokemonAdvanced({
       <div className="field-grid">
         {contestCategories.map((key, i) => {
           const rank = (p.ribbons >>> (i * 3)) & 7;
+          const maxRank = catalog.editor_rules?.contest_ranks[i] ?? 4;
           return (
             <SelectField
               key={key}
@@ -344,11 +350,11 @@ export function PokemonAdvanced({
                 )
               }
               options={[
-                ...Array.from({ length: 5 }, (_, value) => ({
+                ...Array.from({ length: maxRank + 1 }, (_, value) => ({
                   value,
                   label: t(`contestRank_${value}`),
                 })),
-                ...(rank > 4
+                ...(rank > maxRank
                   ? [
                       {
                         value: rank,
@@ -386,7 +392,13 @@ export function PokemonAdvanced({
           disabled={!free || pidLocked}
           onChange={(v) => change("pid", v)}
         />
-        <p className="small muted">{t("pidHelp")}</p>
+        <p className="small muted">
+          {t(
+            catalog.editor_rules?.nature_override
+              ? "pidOverrideHelp"
+              : "pidHelp",
+          )}
+        </p>
         <NumberField
           label={t("reservedRibbonBits")}
           value={(p.ribbons >>> 27) & 15}

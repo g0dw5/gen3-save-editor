@@ -1,5 +1,8 @@
 # Team Rocket battle forms and persistence / 战斗形态与存档边界
 
+> Historical research snapshot. Current implemented support and follow-up verification:
+> [Rocket parity](rocket-21-parity.md). 初期只读结论已由后续适配与验证更新。
+
 Assessment: 2026-09-19. Exact ROM MD5:
 `59c658a1081f542086de1060bb65f0b3`. Read-only research, not a supported writer.
 All ROM addresses are file offsets; RAM addresses retain their GBA prefixes.

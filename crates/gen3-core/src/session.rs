@@ -189,6 +189,9 @@ impl Session {
                 met_location,
                 egg,
             } => {
+                if policy == Policy::Standard && rom.is_battle_species(*species)? {
+                    return Err(err("battle_species", species));
+                }
                 let t = save.trainer(rom)?;
                 let pid = SystemTime::now()
                     .duration_since(UNIX_EPOCH)

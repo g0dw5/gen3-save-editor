@@ -39,7 +39,6 @@ import {
 } from "./components";
 import { I18n, en, zh, type Key, type Locale, useI18n } from "./i18n";
 import { romOption, itemOption } from "./names";
-import { PokemonReadOnly } from "./PokemonReadOnly";
 import { PokemonEditor, type PokemonEditorTab } from "./PokemonEditor";
 import { ReferenceWindow } from "./ReferenceWindow";
 import {
@@ -610,18 +609,13 @@ export default function App() {
                 5.0EX+DP <code>cb2940215f4dafb1bef133c3af379f44</code>
               </div>
               <div>
-                {t("rocketReadOnly")}{" "}
+                {t("rocketVersion")}{" "}
                 <code>59c658a1081f542086de1060bb65f0b3</code>
               </div>
             </div>
           </main>
         ) : (
           <>
-            {!canEdit && (
-              <div className="capability-banner" role="status">
-                <strong>{t("readOnly")}</strong> · {t("adapterReadOnlyHelp")}
-              </div>
-            )}
             <div className="workspace-toolbar">
               <nav>
                 {[
@@ -854,12 +848,6 @@ export default function App() {
                           }
                         }}
                       />
-                    ) : row && !canEdit ? (
-                      <PokemonReadOnly
-                        row={row}
-                        catalog={catalog}
-                        onReference={(id) => openRef("species", id)}
-                      />
                     ) : row ? (
                       <PokemonEditor
                         key={`${catalog.profile.md5}:${selected}`}
@@ -1052,7 +1040,7 @@ function Draft({
         label={t("level")}
         value={value.level}
         min={1}
-        max={100}
+        max={catalog.profile.max_level ?? 100}
         onChange={(level) => setValue((old) => ({ ...old, level }))}
       />
       <NumberField
@@ -1124,7 +1112,7 @@ function BagEditor({
         )}
       </div>
       <div className="pocket-tabs">
-        {["items", "key_items", "balls", "tmhm", "berries", "pc"].map((k) => (
+        {[...new Set(save.bag.map((e) => e.pocket))].map((k) => (
           <button
             key={k}
             className={k === pocket ? "active" : ""}

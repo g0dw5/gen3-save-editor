@@ -41,6 +41,7 @@ def check(rom, probes):
         assert native.read(PARTY, len(raw)) == raw
         native.call(0x967B4, PARTY)
         assert list(struct.unpack('<6H', native.read(PARTY + 88, 12))) == p['stats'], ('stats', p['species'], p['pid'])
+        assert native.call(0x976D0, PARTY, 56, 0) == p['level']
         if 'patch' not in case:
             continue
         patch = case['patch']

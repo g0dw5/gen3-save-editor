@@ -224,6 +224,31 @@ pub fn level(growth: u8, exp: u32) -> u8 {
         .find(|l| experience(growth, *l) <= exp)
         .unwrap_or(1)
 }
+/// Expanded engines may replace the growth tables, including levels above 100.
+pub fn rom_experience(rom: &Rom, growth: u8, level: u8) -> Result<u32> {
+    if level > rom.profile.max_level {
+        return Err(err("range", "level"));
+    }
+    if let Some(table) = rom.profile.experience_table {
+        if growth as usize >= table.count {
+            return Err(err("range", "growth"));
+        }
+        u32(
+            &rom.data,
+            table.offset + growth as usize * table.stride + level as usize * 4,
+        )
+    } else {
+        Ok(experience(growth, level))
+    }
+}
+pub fn rom_level(rom: &Rom, growth: u8, xp: u32) -> Result<u8> {
+    for level in 1..rom.profile.max_level {
+        if rom_experience(rom, growth, level + 1)? > xp {
+            return Ok(level);
+        }
+    }
+    Ok(rom.profile.max_level)
+}
 pub fn stats(base: [u8; 6], ivs: [u8; 6], evs: [u8; 6], level: u8, nature: u8) -> [u16; 6] {
     let mut out = [0; 6];
     for i in 0..6 {
@@ -269,7 +294,7 @@ pub fn decode(raw: &[u8], rom: &Rom) -> Result<Pokemon> {
     let origin = u16(&c, 38)?;
     let ivs = std::array::from_fn(|i| ((ivword >> (i * 5)) & 31) as u8);
     let evs = c[24..30].try_into().unwrap();
-    let lv = level(s.growth, xp);
+    let lv = rom_level(rom, s.growth, xp)?;
     let slot = fields.ability.read(&c)? as u8;
     Ok(Pokemon {
         pid,
@@ -310,7 +335,7 @@ pub fn decode(raw: &[u8], rom: &Rom) -> Result<Pokemon> {
         origin_game: ((origin >> 7) & 15) as u8,
         ball: fields.ball.read(&c)? as u8,
         ot_gender: (origin >> 15) as u8,
-        ribbons: u32(&c, 44)?,
+        ribbons: rom.profile.save.pokemon_codec.read_ribbons(&c)?,
         nature: (pid % 25) as u8,
         effective_nature,
         nature_override,
@@ -368,7 +393,7 @@ pub fn findings(p: &Pokemon, rom: &Rom) -> Result<Vec<Finding>> {
             out.push(finding("move_source_unknown", &format!("moves.{i}"), id));
         }
     }
-    if p.experience > experience(s.growth, 100) {
+    if p.experience > rom_experience(rom, s.growth, rom.profile.max_level)? {
         out.push(finding("experience_limit", "experience", p.experience));
     }
     Ok(out)
@@ -415,8 +440,19 @@ pub fn edit(
     let fields = rom.profile.save.pokemon_codec.fields();
     let before = decode(raw, rom)?;
     let mut out = raw.to_vec();
-    let species = patch.species.unwrap_or(before.species);
+    let mut species = patch.species.unwrap_or(before.species);
+    let item = patch.held_item.unwrap_or(before.held_item);
+    let moves = patch.moves.unwrap_or(before.moves);
+    if item != before.held_item {
+        species = rom.storage_form(species, item, &moves, 1)?;
+    }
+    if moves != before.moves {
+        species = rom.storage_form(species, item, &moves, 3)?;
+    }
     let s = rom.valid_species(species)?;
+    if policy == Policy::Standard && species != before.species && rom.is_battle_species(species)? {
+        return Err(err("battle_species", species));
+    }
     if let Some(v) = patch.held_item {
         if v != before.held_item && (rom.is_mail(v) || rom.is_mail(before.held_item)) {
             return Err(err(
@@ -432,11 +468,13 @@ pub fn edit(
         fields.experience.write(&mut c, v)?;
     }
     if let Some(v) = patch.level {
-        check((1..=100).contains(&v), "level")?;
-        if patch.experience.is_some() && level(s.growth, patch.experience.unwrap()) != v {
+        check((1..=rom.profile.max_level).contains(&v), "level")?;
+        if patch.experience.is_some() && rom_level(rom, s.growth, patch.experience.unwrap())? != v {
             return Err(err("level_experience", "inconsistent patch"));
         }
-        fields.experience.write(&mut c, experience(s.growth, v))?;
+        fields
+            .experience
+            .write(&mut c, rom_experience(rom, s.growth, v)?)?;
     }
     if let Some(v) = patch.friendship {
         fields.friendship.write(&mut c, v as u32)?;
@@ -510,10 +548,7 @@ pub fn edit(
             .write(&mut c, value as u32)?;
     }
     if let Some(v) = patch.ribbons {
-        fields
-            .ribbons
-            .ok_or_else(|| err("unsupported_feature", "ribbons"))?
-            .write(&mut c, v)?;
+        rom.profile.save.pokemon_codec.write_ribbons(&mut c, v)?;
     }
     if let Some(v) = patch.language {
         check((1..=7).contains(&v) && v != 6, "language")?;
@@ -615,7 +650,7 @@ pub fn create(
     pid: u32,
 ) -> Result<Vec<u8>> {
     let s = rom.valid_species(species)?;
-    check((1..=100).contains(&level), "level")?;
+    check((1..=rom.profile.max_level).contains(&level), "level")?;
     let mut raw = vec![0; 80];
     put32(&mut raw, 0, pid);
     put32(&mut raw, 4, ot);
@@ -628,9 +663,9 @@ pub fn create(
     put16(&mut c, 0, species);
     fields
         .experience
-        .write(&mut c, experience(s.growth, level))?;
+        .write(&mut c, rom_experience(rom, s.growth, level)?)?;
     fields.friendship.write(&mut c, s.friendship as u32)?;
-    put16(&mut c, 38, level as u16 | (3 << 7));
+    put16(&mut c, 38, level.min(127) as u16 | (3 << 7));
     fields.ball.write(&mut c, fields.default_ball as u32)?;
     if let Some(field) = fields.nature_override {
         field.write(&mut c, 26)?;

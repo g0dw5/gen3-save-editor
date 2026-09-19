@@ -56,7 +56,7 @@ struct State {
 }
 // Emerald opcode widths, including operands (trainerbattle is variable length).
 // Source: pret/pokeemerald src/scrcmd.c. Unsupported control-flow constructs stop.
-const LENGTHS: [u8; 221] = [
+pub(crate) const LENGTHS: [u8; 221] = [
     1, 1, 1, 1, 5, 5, 6, 6, 2, 2, 3, 3, 1, 1, 2, 6, 3, 6, 6, 6, 3, 9, 5, 5, 5, 5, 5, 3, 3, 6, 6, 6,
     9, 5, 5, 5, 5, 3, 5, 1, 3, 3, 3, 3, 5, 1, 1, 3, 1, 3, 1, 4, 3, 1, 3, 2, 2, 8, 8, 8, 3, 8, 8, 8,
     8, 8, 5, 1, 5, 5, 5, 5, 3, 5, 5, 3, 3, 3, 3, 7, 9, 3, 5, 3, 5, 3, 5, 7, 5, 5, 1, 4, 0, 1, 1, 1,
@@ -65,6 +65,17 @@ const LENGTHS: [u8; 221] = [
     3, 1, 5, 9, 1, 3, 1, 2, 3, 6, 5, 9, 3, 5, 5, 1, 5, 5, 8, 1, 3, 3, 3, 6, 1, 5, 5, 5, 6, 6, 5, 5,
     6, 3, 3, 3, 2, 8, 1, 4, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 8, 4, 3, 1, 3, 1, 8, 1, 1, 1, 5, 2,
 ];
+/// Expanded commands verified against Rocket's native dispatch table 0x22b218.
+pub(crate) fn expanded_length(op: u8) -> usize {
+    if op <= 0xdc {
+        LENGTHS[op as usize] as usize
+    } else {
+        [4, 4, 5, 8, 4, 6, 3, 3, 3, 8, 1, 2, 1, 3]
+            .get(op as usize - 0xdd)
+            .copied()
+            .unwrap_or(0)
+    }
+}
 fn test(value: u8, condition: u8) -> Option<bool> {
     Some(match condition {
         0 => value < 1,
@@ -118,7 +129,14 @@ impl Rom {
                         _ => 0,
                     }
                 } else {
-                    *LENGTHS.get(op as usize).unwrap_or(&0) as usize
+                    if matches!(
+                        self.profile.formats.scripts,
+                        crate::adapter::ScriptFormat::EmeraldExpanded
+                    ) {
+                        expanded_length(op)
+                    } else {
+                        *LENGTHS.get(op as usize).unwrap_or(&0) as usize
+                    }
                 };
                 if len == 0 || bytes(b, pc, len).is_err() {
                     stopped.insert(pc);
@@ -128,6 +146,14 @@ impl Rom {
                 let mut reward = None;
                 match op {
                     0x02 => break,
+                    0x39 | 0x3a
+                        if matches!(
+                            self.profile.formats.scripts,
+                            crate::adapter::ScriptFormat::EmeraldExpanded
+                        ) =>
+                    {
+                        break
+                    }
                     0x03 => {
                         if let Some(p) = s.stack.pop() {
                             s.pc = p;
@@ -315,7 +341,10 @@ impl Rom {
                     | 0x96
                     | 0xa0
                     | 0xb3
-                    | 0xce => {
+                    | 0xce
+                    | 0xe3
+                    | 0xe4
+                    | 0xe5 => {
                         s.vars.remove(&0x800d);
                     }
                     0x5c | 0x5d | 0xb7 => {
@@ -396,7 +425,8 @@ impl Rom {
                     };
                     if count_off == 0 {
                         marker.local_id = Some(b[o]);
-                        marker.graphics_id = Some(u16(b, o + 1)?);
+                        marker.graphics_id =
+                            Some(u16(b, o + self.profile.formats.object_graphics_offset)?);
                         marker.movement_type = Some(b[o + 9]);
                         marker.flag = Some(u16(b, o + 20)?).filter(|f| *f != 0);
                         marker.script = pointer(b, o + 16).ok();

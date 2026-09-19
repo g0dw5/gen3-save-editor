@@ -1,122 +1,99 @@
 # Multi-ROM adapters / 多 ROM 适配
 
-Status: 0.2.0 validation build, 2026-09-19. This is the first executable Rocket
-adapter milestone, not full Rocket editing support.
+Updated in place for **0.2.0**, 2026-09-19. Dark Phantom BW/DP and Team Rocket
+2.1 Chinese use the same editing workspace. ROM reference windows are read-only;
+there is no separate Rocket inspection-only Pokémon page.
 
-## Support boundary / 支持边界
+## Coverage / 覆盖范围
 
-| Capability | Dark Phantom BW / DP | Team Rocket 2.1 Chinese |
+| Feature | Dark Phantom BW / DP | Team Rocket 2.1 Chinese |
 | --- | --- | --- |
-| Exact ROM MD5 and length check | Required | Required |
-| Party, boxes, inventory | Read/write | Read-only |
-| Species, ordinary moves, items, abilities | Available | Available |
-| Learnsets | Existing level/TM/tutor/egg readers | Level-up and ancestor level-up only |
-| Individual artwork | Verified Unown/Spinda rules | Representative species artwork |
-| Maps, encounters, trainers, Pokédex progress | Existing supported readers | Disabled pending adapter verification |
-| Mega/primal associations | Not enabled | Read-only source/target/trigger references |
-| Z attacks | Not enabled | Reserved internal IDs excluded from ordinary moves; no editor UI |
-| Dynamax / Tera | Not enabled | Unverified; no invented persistent fields |
+| Exact MD5 and length check | Required | Required |
+| Pokémon, party, all boxes, drag/copy/swap, create/import/export | Read/write | Read/write |
+| Player, money, coins, box names, inventory, Pokédex | Read/write | Read/write |
+| Undo/redo, changes, atomic export, conflict detection | Shared | Shared |
+| Inventory | PC + five bag pockets | PC + eight bag pockets |
+| Level / experience | 1–100, growth formula | 1–150, native experience table |
+| Nature / abilities | PID nature, two slots | Optional nature override, three slots |
+| Level-up / machines / tutors / egg moves | Parsed | Parsed |
+| Maps, encounters, trainers, item/NPC layers | Parsed | Parsed: 1,363 maps, 2,558 trainers |
+| Individual artwork | Unown, Spinda, shiny | Also female artwork/palettes |
+| Hidden Power | IV type; power 30–70 | IV type; power 60 |
+| Mega / primal | Not enabled | Source/target/trigger references; separate from evolution |
+| Feebas seeded fishing tiles | Verified BW/DP rule | No rule enabled without evidence |
+| Z / Dynamax / Tera save fields | None | No invented persistent fields or ordinary Z move slots |
 
-中文：火箭队已能通过现有应用打开 ROM、查看同行与所有盒子、读取六类道具栏位，
-并浏览种族、普通招式、道具、特性、升级招式与战斗形态关系。右侧显示 PID 性格与
-实际性格、特性、六项能力、IV/EV 和 PP。地图、图鉴进度和所有写入暂未开放。
-“没有验证相遇规则”不会显示为“没有相遇地点”。ROM 中保留的表格行不等于独立
-可收集的宝可梦数量；招式目录 755 行包含空招式 0，排除内部 Z 招式。
+中文：所有常规编辑操作共用同一套 UI、事务和导出流程。版本差异由字段格式、
+表配置及明确的游戏规则提供；没有遗留临时只读页面。地图与训练家资料、图片、
+相遇及教学表均来自当前 ROM，不打包游戏资源。仅支持 README 中列出的精确 MD5。
 
-## Composition / 组合方式
+## Architecture / 组合方式
 
-A profile combines independent components, rather than subclassing another game:
+1. Identity and table locations: MD5, size, offsets, bounds and strides.
+2. Independent ROM formats: species, moves, learnsets, trainers, event opcodes
+   and object graphics IDs. A future hybrid can reuse individual readers.
+3. Pokémon codec: shared encryption/permutation/checksum shell, with bit ownership
+   for ball, PP bonuses, experience, nature, ribbons, ability and header flags.
+4. Save layout: sector payloads, party/storage, logical multi-sector inventory,
+   pocket categories and encrypted quantities, dex block and mirrors.
+5. Game rules: level/experience, appearance, Hidden Power, persistent item/move
+   forms and temporary battle transformations. Changes trigger only the relevant
+   persistent form rule; unrelated edits never normalize the species silently.
+6. Capability checks remain at public read/write boundaries for future adapters.
+   They do not select a second Pokémon editor. Free editing cannot bypass binary
+   widths, checksums, linked-mail restrictions or cross-ROM import identity.
 
-1. **Identity and tables:** exact MD5, byte length, counts, addresses and strides.
-2. **ROM table formats:** species, moves and learnsets each select their own
-   decoder. A future hybrid can reuse one expanded table without taking all
-   other tables from Rocket. Wide move powers and three `u16` ability IDs fit
-   the common domain model without truncation.
-3. **Pokémon codec:** encrypted shell, substructure permutation and checksums
-   remain shared; field ownership describes precise bits in headers/canonical
-   data. Rocket moves the ball, PP bonuses, friendship and ability; its
-   experience is 23 bits and its effective nature can override PID nature.
-4. **Save layout:** sector payload sizes, party/storage placement, pocket
-   capacities/encryption and optional Pokédex layout. Unknown extended storage
-   remains intact. A missing dex layout never falls back to Emerald's flags.
-5. **Rules:** battle transformations are separate from permanent evolutions,
-   learnable moves and storage species. Optional rules select verified behavior;
-   source and target links retain their ROM evidence offset. A transformation
-   association does not prove battle eligibility or unlock state.
-6. **Capabilities:** the UI and backend use the same profile. Session mutations,
-   Save mutation entry points, ROM patching and save export enforce support;
-   free editing cannot bypass it. Low-level in-memory codecs remain testable.
+中文：相同格式可以只配置偏移量；不同位布局、指令格式或战斗生命周期需要独立
+适配组件。不能把究极绿宝石简单继承成“西火同款”。切换 ROM 清除旧草稿与资料，
+图片缓存及异步响应按 ROM 身份隔离。
 
-中文：不能承诺所有新 ROM 只需填写偏移量。相同二进制格式可直接复用解析器；
-字段布局不同需增加编解码器；Mega 等生命周期不同需增加规则。究极绿宝石后续应
-逐项选择或补充这些组件，不应把它直接标成“火箭队同款”。本轮没有声称已经适配
-究极绿宝石，也没有给未调查的能力自动开启开关。
+## Limits / 资料边界
 
-The UI keeps its existing party/all-box arrangement. Read-only adapters get a
-separate inspection panel, explicit coverage text and no active mutation controls.
-Sprite cache keys include ROM MD5. Opening a new ROM discards reference windows,
-drafts and old save state; an in-flight world response from a previous profile
-cannot populate the new profile's map/trainer cache.
+A parsed source is not proof of current story accessibility. Trainer custom
+parties can generate random genders and either ordinary ability: the UI shows
+these choices instead of pretending there is a fixed individual. Machine/tutor
+compatibility does not establish which NPC currently offers a move. Two alternate
+species have null compatibility pointers; this is reported without inventing
+inherited compatibility. Remaining unresolved scripts retain offsets; native
+special routines are not treated as fully interpreted event code.
+
+中文：相遇、道具标记和训练家引用表示 ROM 中存在该来源，不承诺当前剧情可达。
+未解析的脚本、原生特殊函数及空教学表会明确保留诊断，不把“未找到”解释成“不可能”。
+Mega／Z 的使用条件仍受战斗状态影响，不能把预览关系当成必定可发动；没有擅自增加
+极巨化、太晶化或战斗使用次数的存档字段。
 
 ## Regression contract / 回归约束
 
-Public generated fixtures run in CI without ROMs or saves:
+Generated fixtures run without copyrighted data: all 24 PID permutations,
+bit ownership, ribbon/ability separation, every inventory slot, all 420 box slots
+across physical sector rotations and both banks, transaction rollback, undo/redo,
+export/conflict handling, independent ROM patch widths and profile composition.
+Browser tests cover BW → Rocket → DP, editable controls, stale request isolation,
+drag races, tab retention, field search, origins, Hidden Power and navigation.
 
-- All 24 Pokémon permutation orders across BW, DP and Rocket codecs; exact
-  no-op preservation and independent literal masks for owned/unowned bits.
-- Wider ability IDs, effective nature, PP/experience separation and packed balls.
-- Bad eggs and checksum errors rejected for both header formats.
-- Read-only writes rejected without mutations or undo entries, including free
-  mode and direct Save calls; expanded PC pocket capacity.
-- Battle transformations excluded from evolution ancestry; incoming and outgoing
-  form references; independent composition of ROM table formats.
-- Browser switching BW → Rocket → DP, read-only drag rejection, disabled export,
-  restored legacy controls, form references and delayed-world isolation.
-- Existing drag transactions, editor navigation, Hidden Power and origin search
-  tests continue to run alongside the new adapter tests.
-
-Local tests additionally open both exact Dark Phantom ROMs and the exact Rocket
-ROM. The native probe compares Rust-decoded fields, recalculated stats and
-synthetic field edits against the ROM's actual ARM functions under Unicorn.
-The original save is read only; synthetic edit vectors contain no user file writes.
+Local tests open all three exact ROMs. Rocket additionally renders every map,
+every species front sprite, all trainer portraits and referenced static NPC
+sprites; reads all learnsets; and checks disposable save edits/reopening.
+Native ARM probes validate decoded fields/setters/stats, all four trainer party
+formats, 955 dex bits, 6,786 compatibility queries, 5,576 palette selections and
+4,096 Hidden Power vectors and 1,910 encounter-header selections. A disposable
+edited save also completed a VBA-M load/save/reopen round trip with all decoded
+Pokémon, inventory and dex values preserved. Tests never overwrite a supplied save.
 
 ```sh
-# User-supplied paths; no ROMs are downloaded or embedded.
 GEN3_ROM_BW='/path/BW.gba' GEN3_ROM_DP='/path/DP.gba' \
 GEN3_ROM_ROCKET='/path/Rocket.gba' GEN3_SAVE_ROCKET='/path/Rocket.sav' \
 GEN3_ADAPTER_PROBES='/private/local/probes.json' \
   cargo test -p gen3-core -- --include-ignored
-
-# Python with Unicorn installed; probe JSON stays private.
 python3 scripts/verify_adapter_native.py --rom '/path/Rocket.gba' \
   --probes '/private/local/probes.json'
-
-# With Vite running; generated browser fixtures, no backend required.
-python3 scripts/test_adapter_ui.py
+gen3 world '/path/Rocket.gba' > /private/local/world.json
+gen3 catalog '/path/Rocket.gba' > /private/local/catalog.json
+python3 scripts/verify_rocket_parity.py --rom '/path/Rocket.gba' \
+  --world /private/local/world.json --catalog /private/local/catalog.json
+python3 scripts/test_adapter_ui.py  # Vite running; generated API fixtures
 ```
 
-Observed on 2026-09-19: all 50 core tests (including the two local-ROM
-regressions), six browser regression scripts, Rust formatting/Clippy, TypeScript
-and the production UI build passed. Also passed: 153 native stat comparisons, 2,907 native getter
-comparisons and 144 byte-for-byte setter comparisons passed, including all
-24 PID permutations and the nine Pokémon in the supplied gameplay save.
-Both existing Dark Phantom real-ROM regressions passed.
-
-## Next gates / 后续阶段
-
-- Validate Rocket item/mail mappings, egg/ribbon/form invariants and complete
-  evolution/learnset legality before exposing Pokémon editing.
-- Audit save mutations and derived party data against native functions; test
-  disposable edited saves in-game, save again and re-import. Native probes alone
-  are not an emulator/gameplay round trip.
-- Add map/event/trainer formats and references with independent coverage tests,
-  then verify Pokédex offsets and story-dependent sources.
-- Introduce Z eligibility previews without treating internal Z attacks as stored
-  move slots; add other battle mechanisms only with evidence of functioning code.
-- For each later ROM, commit identity, evidence, capability matrix and regression
-  fixtures together. Run all existing adapters before enabling a new writer.
-
-中文：后续按“只读结构 → 规则完整性 → 可修改 → 游戏内重存回读”的顺序逐项开放。
-新增 A 的规则时必须运行 B 的回归；不能仅用 A 的样本证明公共代码正确。详见
-[Rocket field evidence](research/rocket-21-compatibility.md) 和
-[battle lifecycle evidence](research/rocket-21-battle-forms.md)。
+See [Rocket parity evidence](research/rocket-21-parity.md),
+[initial format assessment](research/rocket-21-compatibility.md), and
+[battle lifecycle evidence](research/rocket-21-battle-forms.md).

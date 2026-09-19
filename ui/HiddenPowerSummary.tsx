@@ -31,7 +31,13 @@ export function HiddenPowerSummary({
           <span>{t("hiddenPowerUnknown")}</span>
         )}
       </div>
-      <p className="small muted">{t("hiddenPowerHelp")}</p>
+      <p className="small muted">
+        {t(
+          rules.formula === "gen6_fixed60"
+            ? "hiddenPowerFixedHelp"
+            : "hiddenPowerHelp",
+        )}
+      </p>
     </div>
   );
 }

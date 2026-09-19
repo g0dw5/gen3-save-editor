@@ -116,7 +116,8 @@ pub const POCKETS: [Pocket; 6] = [
         category: 5,
     },
 ];
-pub const ROCKET_POCKETS: [Pocket; 6] = [
+// Native bag initializer at 0x10e8d0 maps all eight categories independently.
+pub const ROCKET_POCKETS: [Pocket; 9] = [
     Pocket {
         id: "pc",
         offset: 0x498,
@@ -132,25 +133,25 @@ pub const ROCKET_POCKETS: [Pocket; 6] = [
         category: 1,
     },
     Pocket {
-        id: "key_items",
-        offset: 0x8bc,
-        count: 64,
+        id: "medicine",
+        offset: 0xf04,
+        count: 67,
         encrypted: true,
-        category: 4,
+        category: 2,
     },
     Pocket {
         id: "balls",
         offset: 0x9bc,
         count: 16,
         encrypted: true,
-        category: 2,
+        category: 3,
     },
     Pocket {
-        id: "tmhm",
-        offset: 0x9fc,
-        count: 254,
+        id: "battle_items",
+        offset: 0x1010,
+        count: 130,
         encrypted: true,
-        category: 3,
+        category: 4,
     },
     Pocket {
         id: "berries",
@@ -158,6 +159,27 @@ pub const ROCKET_POCKETS: [Pocket; 6] = [
         count: 68,
         encrypted: true,
         category: 5,
+    },
+    Pocket {
+        id: "special_items",
+        offset: 0x1218,
+        count: 102,
+        encrypted: true,
+        category: 6,
+    },
+    Pocket {
+        id: "tmhm",
+        offset: 0x9fc,
+        count: 254,
+        encrypted: true,
+        category: 7,
+    },
+    Pocket {
+        id: "key_items",
+        offset: 0x8bc,
+        count: 64,
+        encrypted: true,
+        category: 8,
     },
 ];
 #[derive(Serialize)]
@@ -640,13 +662,13 @@ impl Save {
         Ok(())
     }
     pub fn bag(&self) -> Result<Vec<BagEntry>> {
-        let b = self.sections[1];
+        let main = self.logical(1..=4);
         let key = u32(&self.data, self.sections[0] + self.layout.key)? as u16;
         let mut out = Vec::new();
         for p in self.layout.pockets {
             for i in 0..p.count {
-                let o = b + p.offset + i * 4;
-                let id = u16(&self.data, o)?;
+                let o = p.offset + i * 4;
+                let id = u16(&main, o)?;
                 out.push(BagEntry {
                     pocket: p.id.into(),
                     slot: i,
@@ -654,7 +676,7 @@ impl Save {
                     quantity: if id == 0 {
                         0
                     } else {
-                        u16(&self.data, o + 2)? ^ if p.encrypted { key } else { 0 }
+                        u16(&main, o + 2)? ^ if p.encrypted { key } else { 0 }
                     },
                 });
             }
@@ -706,15 +728,11 @@ impl Save {
         } else {
             0
         };
-        let o = self.sections[1] + p.offset + index * 4;
-        put16(&mut self.data, o, id);
-        put16(
-            &mut self.data,
-            o + 2,
-            if id == 0 { key } else { quantity ^ key },
-        );
-        self.fix(1);
-        Ok(())
+        let o = p.offset + index * 4;
+        let mut main = self.logical(1..=4);
+        put16(&mut main, o, id);
+        put16(&mut main, o + 2, if id == 0 { key } else { quantity ^ key });
+        self.write_logical(1..=4, &main)
     }
     pub fn boxes(&self, rom: &Rom) -> Result<Vec<BoxInfo>> {
         let b = self.logical(5..=13);
@@ -792,17 +810,22 @@ impl Save {
         Ok(())
     }
     pub fn dex(&self) -> Result<Vec<DexFlag>> {
-        let a = self.sections[0];
         let Some(layout) = self.layout.dex else {
             return Ok(Vec::new());
+        };
+        let main = self.logical(1..=4);
+        let block = if layout.main_block {
+            &main[..]
+        } else {
+            &self.data[self.sections[0]..]
         };
         Ok((1..=layout.count)
             .map(|n| {
                 let i = (n - 1) as usize;
                 DexFlag {
                     number: n,
-                    owned: self.data[a + layout.owned + i / 8] & (1 << (i % 8)) != 0,
-                    seen: self.data[a + layout.seen + i / 8] & (1 << (i % 8)) != 0,
+                    owned: block[layout.owned + i / 8] & (1 << (i % 8)) != 0,
+                    seen: block[layout.seen + i / 8] & (1 << (i % 8)) != 0,
                 }
             })
             .collect())
@@ -820,7 +843,11 @@ impl Save {
         let a = self.sections[0];
         let mut main = self.logical(1..=4);
         for (off, v) in [(layout.owned, owned), (layout.seen, seen || owned)] {
-            let b = &mut self.data[a + off + i / 8];
+            let b = if layout.main_block {
+                &mut main[off + i / 8]
+            } else {
+                &mut self.data[a + off + i / 8]
+            };
             *b = (*b & !mask) | if v { mask } else { 0 };
         }
         for off in layout.seen_mirrors {

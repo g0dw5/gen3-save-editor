@@ -95,7 +95,14 @@ pub struct NamedLocation {
     pub name: String,
 }
 #[derive(Serialize)]
+pub struct EditorRules {
+    pub balls: Vec<u16>,
+    pub nature_override: bool,
+    pub contest_ranks: [u8; 5],
+}
+#[derive(Serialize)]
 pub struct Catalog {
+    pub editor_rules: EditorRules,
     pub profile: Profile,
     pub species: Vec<Species>,
     pub moves: Vec<Move>,
@@ -105,6 +112,7 @@ pub struct Catalog {
 }
 #[derive(Serialize)]
 pub struct SpeciesDetail {
+    pub teaching_list_present: bool,
     pub battle_forms: Vec<crate::forms::BattleForm>,
     pub encounters_verified: bool,
     pub species: Species,
@@ -268,11 +276,14 @@ impl Rom {
             pocket: b[26],
             item_type: b[27],
             tm_move: if self.profile.capabilities.complete_learnsets
-                && (0x121..0x121 + 58).contains(&id)
+                && (self.profile.teaching.tm_first_item
+                    ..self.profile.teaching.tm_first_item + self.profile.teaching.tm_count as u16)
+                    .contains(&id)
             {
                 Some(u16(
                     &self.data,
-                    self.profile.tm_moves + (id as usize - 0x121) * 2,
+                    self.profile.tm_moves
+                        + (id as usize - self.profile.teaching.tm_first_item as usize) * 2,
                 )?)
             } else {
                 None
@@ -297,6 +308,33 @@ impl Rom {
     pub fn catalog(&self) -> Result<Catalog> {
         Ok(Catalog {
             profile: self.profile,
+            editor_rules: EditorRules {
+                balls: (1..=self.profile.save.pokemon_codec.fields().ball.max() as u16)
+                    .filter(|id| {
+                        self.item(*id).is_ok_and(|i| {
+                            self.profile
+                                .save
+                                .pockets
+                                .iter()
+                                .any(|p| p.id == "balls" && p.category == i.pocket)
+                        })
+                    })
+                    .collect(),
+                nature_override: self
+                    .profile
+                    .save
+                    .pokemon_codec
+                    .fields()
+                    .nature_override
+                    .is_some(),
+                contest_ranks: if self.profile.save.pokemon_codec
+                    == crate::adapter::PokemonCodec::Rocket21
+                {
+                    [1, 1, 4, 4, 4]
+                } else {
+                    [4; 5]
+                },
+            },
             met_locations: (0..self.profile.region_count)
                 .filter_map(|id| {
                     let name = self.ptr_text(self.profile.regions + id * 8);
@@ -406,7 +444,7 @@ impl Rom {
             return Ok(out);
         }
         let mut current = 0;
-        for i in 0..4096 {
+        for i in 0..self.profile.teaching.egg_words {
             let o = self.profile.eggs + i * 2;
             let v = u16(&self.data, o)?;
             if v == 0xffff {
@@ -429,14 +467,62 @@ impl Rom {
                 break;
             }
         }
+        let teaching = self.profile.teaching;
+        if let Some(table) = teaching.shared_lists {
+            let entry = table + id as usize * 4;
+            // Some alternate species have no compatibility list in the ROM.
+            if u32(&self.data, entry)? == 0 {
+                return Ok(out);
+            }
+            let list = pointer(&self.data, entry)?;
+            for index in 0..256 {
+                let offset = list + index * 2;
+                let move_id = u16(&self.data, offset)?;
+                if move_id == 0 {
+                    return Ok(out);
+                }
+                self.move_info(move_id)?;
+                let mut machine = false;
+                for tm in 0..teaching.tm_count {
+                    if u16(&self.data, self.profile.tm_moves + tm * 2)? == move_id {
+                        machine = true;
+                        out.push(LearnSource {
+                            move_id,
+                            source: "tm".into(),
+                            species: id,
+                            level: None,
+                            index: Some(tm as u16 + 1),
+                            offset,
+                        });
+                    }
+                }
+                if !machine {
+                    out.push(LearnSource {
+                        move_id,
+                        source: "tutor".into(),
+                        species: id,
+                        level: None,
+                        index: None,
+                        offset,
+                    });
+                }
+            }
+            return Err(err("learnset_terminator", id));
+        }
         for (source, table, bits, stride, count) in [
-            ("tm", self.profile.tm_moves, self.profile.tm_bits, 8, 58),
+            (
+                "tm",
+                self.profile.tm_moves,
+                self.profile.tm_bits,
+                teaching.tm_stride,
+                teaching.tm_count,
+            ),
             (
                 "tutor",
                 self.profile.tutor_moves,
                 self.profile.tutor_bits,
-                4,
-                32,
+                teaching.tutor_stride,
+                teaching.tutor_count,
             ),
         ] {
             for i in 0..count {
@@ -470,6 +556,10 @@ impl Rom {
     }
     pub fn detail(&self, id: u16) -> Result<SpeciesDetail> {
         Ok(SpeciesDetail {
+            teaching_list_present: match self.profile.teaching.shared_lists {
+                Some(table) => u32(&self.data, table + id as usize * 4)? != 0,
+                None => true,
+            },
             battle_forms: self.battle_forms(id)?,
             encounters_verified: self.profile.capabilities.world,
             species: self.valid_species(id)?,
@@ -548,37 +638,60 @@ impl Rom {
             let (base, field, width, max) = match edit.table.as_str() {
                 "species" => {
                     let s = self.valid_species(edit.id)?;
-                    let (off, max) = match edit.field.as_str() {
-                        "hp" => (0, 255),
-                        "attack" => (1, 255),
-                        "defense" => (2, 255),
-                        "speed" => (3, 255),
-                        "sp_attack" => (4, 255),
-                        "sp_defense" => (5, 255),
-                        "type1" => (6, 17),
-                        "type2" => (7, 17),
-                        "catch_rate" => (8, 255),
-                        "gender_ratio" => (16, 255),
-                        "egg_cycles" => (17, 255),
-                        "friendship" => (18, 255),
-                        "growth" => (19, 5),
-                        "ability1" => (22, 150),
-                        "ability2" => (23, 150),
+                    let expanded =
+                        self.profile.formats.species == crate::adapter::SpeciesFormat::Expanded36;
+                    let tail = if expanded { 2 } else { 0 };
+                    let ability = if expanded { 24 } else { 22 };
+                    let ability_width = if expanded { 2 } else { 1 };
+                    let (off, width, max) = match edit.field.as_str() {
+                        "hp" => (0, 1, 255),
+                        "attack" => (1, 1, 255),
+                        "defense" => (2, 1, 255),
+                        "speed" => (3, 1, 255),
+                        "sp_attack" => (4, 1, 255),
+                        "sp_defense" => (5, 1, 255),
+                        "type1" => (6, 1, if expanded { 18 } else { 17 }),
+                        "type2" => (7, 1, if expanded { 18 } else { 17 }),
+                        "catch_rate" => (8, 1, 255),
+                        "gender_ratio" => (16 + tail, 1, 255),
+                        "egg_cycles" => (17 + tail, 1, 255),
+                        "friendship" => (18 + tail, 1, 255),
+                        "growth" => (19 + tail, 1, 5),
+                        "ability1" => (
+                            ability,
+                            ability_width,
+                            self.profile.ability_count as u32 - 1,
+                        ),
+                        "ability2" => (
+                            ability + ability_width,
+                            ability_width,
+                            self.profile.ability_count as u32 - 1,
+                        ),
+                        "ability3" if expanded => {
+                            (ability + 4, 2, self.profile.ability_count as u32 - 1)
+                        }
                         _ => return Err(err("rom_field", &edit.field)),
                     };
-                    (s.offset, off, 1, max)
+                    (s.offset, off, width, max)
                 }
                 "moves" => {
                     let m = self.move_info(edit.id)?;
-                    let (off, max) = match edit.field.as_str() {
-                        "power" => (1, 255),
-                        "type" => (2, 17),
-                        "accuracy" => (3, 100),
-                        "pp" => (4, 99),
-                        "chance" => (5, 100),
+                    let expanded =
+                        self.profile.formats.moves == crate::adapter::MoveFormat::Expanded20;
+                    let tail = if expanded { 2 } else { 0 };
+                    let (off, width, max) = match edit.field.as_str() {
+                        "power" => (
+                            if expanded { 2 } else { 1 },
+                            if expanded { 2 } else { 1 },
+                            if expanded { 65535 } else { 255 },
+                        ),
+                        "type" => (2 + tail, 1, if expanded { 18 } else { 17 }),
+                        "accuracy" => (3 + tail, 1, 100),
+                        "pp" => (4 + tail, 1, 99),
+                        "chance" => (5 + tail, 1, 100),
                         _ => return Err(err("rom_field", &edit.field)),
                     };
-                    (m.offset, off, 1, max)
+                    (m.offset, off, width, max)
                 }
                 "items" => {
                     let i = self.item(edit.id)?;

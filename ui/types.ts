@@ -61,6 +61,11 @@ export interface Ability {
   description: string;
 }
 export interface Catalog {
+  editor_rules?: {
+    balls: number[];
+    nature_override: boolean;
+    contest_ranks: number[];
+  };
   profile: {
     capabilities?: {
       save_edit: boolean;
@@ -75,8 +80,13 @@ export interface Catalog {
     label: string;
     md5: string;
     size: number;
+    max_level?: number;
     feebas?: { map_id: string } | null;
-    hidden_power?: { move_id: number; formula: "gen3_to5" } | null;
+    teaching?: { shared_lists?: number | null };
+    hidden_power?: {
+      move_id: number;
+      formula: "gen3_to5" | "gen6_fixed60";
+    } | null;
   };
   species: Species[];
   moves: Move[];
@@ -185,6 +195,7 @@ export interface LearnSource {
   offset: number;
 }
 export interface Encounter {
+  selector?: { variable: number; value: number; fallback: boolean } | null;
   species: number;
   map_id: string;
   map_name: string;
@@ -205,6 +216,7 @@ export interface OriginOptions {
   hatch_regions: number[];
 }
 export interface SpeciesDetail {
+  teaching_list_present?: boolean;
   encounters_verified?: boolean;
   battle_forms?: {
     source: number;
@@ -294,6 +306,7 @@ export interface Opponent {
       ivs: number[] | null;
       evs: number[];
       personality_parameter: number;
+      ability_options?: number[];
     } | null;
     held_item: number;
     moves: number[];

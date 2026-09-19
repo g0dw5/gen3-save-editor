@@ -122,9 +122,14 @@ impl Rom {
     /// Static front picture. PID drives persistent individual appearances;
     /// temporary battle transformations are not inferred from a boxed Pokémon.
     pub fn pokemon_sprite(&self, id: u16, shiny: bool, pid: u32) -> Result<Vec<u8>> {
-        self.valid_species(id)?;
+        let species = self.valid_species(id)?;
         let b = &self.data;
         let rules = self.profile.sprite_rules;
+        let female = rules.female.filter(|tables| {
+            b[tables.flags + id as usize] != 0
+                && crate::pokemon::gender(species.gender_ratio, pid) == "female"
+        });
+        let sprites = female.map_or(self.profile.sprites, |tables| tables.sprites);
         let letter = unown_letter(pid);
         let picture_id = if id == rules.unown_species && letter != 0 {
             rules.unown_b_sprite + letter - 1
@@ -132,10 +137,7 @@ impl Rom {
             id
         };
         // Extra Unown picture indices are graphics records, not species IDs.
-        let mut sprite = lz77(
-            b,
-            pointer(b, self.profile.sprites + picture_id as usize * 8)?,
-        )?;
+        let mut sprite = lz77(b, pointer(b, sprites + picture_id as usize * 8)?)?;
         if id == rules.second_frame_species {
             sprite = bytes(&sprite, 2048, 2048)?.to_vec();
         }
@@ -143,9 +145,9 @@ impl Rom {
             spinda_spots(&mut sprite, bytes(b, rules.spinda_spots, 4 * 36)?, pid)?;
         }
         let table = if shiny {
-            self.profile.shiny_palettes
+            female.map_or(self.profile.shiny_palettes, |tables| tables.shiny_palettes)
         } else {
-            self.profile.palettes
+            female.map_or(self.profile.palettes, |tables| tables.palettes)
         };
         let pal = lz77(b, pointer(b, table + id as usize * 8)?)?;
         tiled_sprite(&sprite, &pal, 64, 64)

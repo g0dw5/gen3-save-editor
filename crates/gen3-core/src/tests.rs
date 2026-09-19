@@ -351,9 +351,14 @@ fn transfer_invariants_and_import_profile() {
 
 // An independent physical-byte oracle: don't use Save's logical block writer.
 fn expected_box_write(save: &Save, output: &mut [u8], index: usize, raw: &[u8]) {
+    let payload = if save.layout.pokemon_codec == crate::adapter::PokemonCodec::Rocket21 {
+        0xff4
+    } else {
+        0xf80
+    };
     for (i, byte) in raw.iter().enumerate() {
         let logical = 4 + index * 80 + i;
-        output[save.sections[5 + logical / 3968] + logical % 3968] = *byte;
+        output[save.sections[5 + logical / payload] + logical % payload] = *byte;
     }
     for section in 5..=13 {
         let start = save.sections[section];
@@ -364,59 +369,61 @@ fn expected_box_write(save: &Save, output: &mut [u8], index: usize, raw: &[u8]) 
 
 #[test]
 fn transfers_preserve_every_record_byte_across_all_box_slots() {
-    let rom = rom();
-    let fixture = save_bytes(&rom);
-    let mut source = pokemon::create(&rom, 1, 0xdeadbeef, "ASH", 46, 0xbadc5647).unwrap();
-    // Header padding is outside the Pokemon checksum and must still survive.
-    source[30..32].copy_from_slice(&[0xa7, 0x2b]);
-    let other = pokemon::create(&rom, 2, 0x87654321, "ASH", 37, 0xfeed1234).unwrap();
-    for target in 0..420 {
-        // Exercise both active banks and all fourteen physical sector rotations.
-        let mut rotated = fixture.clone();
-        for bank in 0..2 {
-            for physical in 0..14 {
-                let start = bank * 14 * 4096;
-                let dest = start + ((physical + target % 14) % 14) * 4096;
-                let original = start + physical * 4096;
-                rotated[dest..dest + 4096].copy_from_slice(&fixture[original..original + 4096]);
-                put32(
-                    &mut rotated,
-                    dest + 0xffc,
-                    if bank == target % 2 { 12 } else { 11 },
-                );
-            }
-        }
-        let mut baseline = Save::open(rotated, rom.profile.save).unwrap();
-        baseline.insert(loc(69), &source, &rom).unwrap();
-        for (occupied, copy) in [(false, false), (true, false), (false, true)] {
-            let mut save = baseline.clone();
-            if occupied && target != 69 {
-                save.insert(loc(target), &other, &rom).unwrap();
-            }
-            let before = save.data.clone();
-            let mut expected = before.clone();
-            if target != 69 {
-                if !copy {
-                    expected_box_write(
-                        &save,
-                        &mut expected,
-                        69,
-                        if occupied { &other } else { &[0; 80] },
+    for profile in profile::PROFILES {
+        let rom = adapter_rom(profile);
+        let fixture = save_bytes(&rom);
+        let mut source = pokemon::create(&rom, 1, 0xdeadbeef, "ASH", 46, 0xbadc5647).unwrap();
+        // Header padding is outside the Pokemon checksum and must still survive.
+        source[30..32].copy_from_slice(&[0xa7, 0x2b]);
+        let other = pokemon::create(&rom, 2, 0x87654321, "ASH", 37, 0xfeed1234).unwrap();
+        for target in 0..420 {
+            // Exercise both active banks and all fourteen physical sector rotations.
+            let mut rotated = fixture.clone();
+            for bank in 0..2 {
+                for physical in 0..14 {
+                    let start = bank * 14 * 4096;
+                    let dest = start + ((physical + target % 14) % 14) * 4096;
+                    let original = start + physical * 4096;
+                    rotated[dest..dest + 4096].copy_from_slice(&fixture[original..original + 4096]);
+                    put32(
+                        &mut rotated,
+                        dest + 0xffc,
+                        if bank == target % 2 { 12 } else { 11 },
                     );
                 }
-                expected_box_write(&save, &mut expected, target, &source);
             }
-            save.transfer(loc(69), loc(target), copy, &rom).unwrap();
-            assert_eq!(
-                save.data, expected,
-                "target={target} occupied={occupied} copy={copy}"
-            );
-            let reopened = Save::open(save.data.clone(), rom.profile.save).unwrap();
-            reopened.validate(&rom).unwrap();
-            assert_eq!(reopened.raw(loc(target)).unwrap(), source);
-            if !copy && target != 69 {
-                save.transfer(loc(target), loc(69), false, &rom).unwrap();
-                assert_eq!(save.data, before, "round trip to {target}");
+            let mut baseline = Save::open(rotated, rom.profile.save).unwrap();
+            baseline.insert(loc(69), &source, &rom).unwrap();
+            for (occupied, copy) in [(false, false), (true, false), (false, true)] {
+                let mut save = baseline.clone();
+                if occupied && target != 69 {
+                    save.insert(loc(target), &other, &rom).unwrap();
+                }
+                let before = save.data.clone();
+                let mut expected = before.clone();
+                if target != 69 {
+                    if !copy {
+                        expected_box_write(
+                            &save,
+                            &mut expected,
+                            69,
+                            if occupied { &other } else { &[0; 80] },
+                        );
+                    }
+                    expected_box_write(&save, &mut expected, target, &source);
+                }
+                save.transfer(loc(69), loc(target), copy, &rom).unwrap();
+                assert_eq!(
+                    save.data, expected,
+                    "target={target} occupied={occupied} copy={copy}"
+                );
+                let reopened = Save::open(save.data.clone(), rom.profile.save).unwrap();
+                reopened.validate(&rom).unwrap();
+                assert_eq!(reopened.raw(loc(target)).unwrap(), source);
+                if !copy && target != 69 {
+                    save.transfer(loc(target), loc(69), false, &rom).unwrap();
+                    assert_eq!(save.data, before, "round trip to {target}");
+                }
             }
         }
     }
@@ -1545,6 +1552,17 @@ fn adapter_rom(p: profile::Profile) -> Rom {
         return r;
     }
     let mut b = vec![0; p.size];
+    if let Some(table) = p.experience_table {
+        for growth in 0..table.count {
+            for level in 0..=p.max_level {
+                put32(
+                    &mut b,
+                    table.offset + growth * table.stride + level as usize * 4,
+                    pokemon::experience(growth as u8, level),
+                );
+            }
+        }
+    }
     for id in 1..4 {
         let o = p.base_stats.offset + id * 36;
         b[o..o + 6].copy_from_slice(&[45, 49, 49, 45, 65, 65]);
@@ -1554,6 +1572,9 @@ fn adapter_rom(p: profile::Profile) -> Rom {
         put16(&mut b, o + 26, 2);
         put16(&mut b, o + 28, 267); // Must not truncate to u8.
         put32(&mut b, p.learnsets + id * 4, 0x08020000);
+        if let Some(table) = p.teaching.shared_lists {
+            put32(&mut b, table + id * 4, 0x08020100);
+        }
     }
     put16(&mut b, 0x20000, 1);
     put16(&mut b, 0x20002, 1);
@@ -1643,7 +1664,18 @@ fn adapter_matrix_bit_ownership_all_pid_orders() {
 
 #[test]
 fn adapter_capabilities_reject_writes_without_mutation() {
-    let r = adapter_rom(profile::ROCKET);
+    let mut disabled = profile::ROCKET;
+    disabled.capabilities = crate::adapter::Capabilities {
+        save_edit: false,
+        rom_edit: false,
+        world: false,
+        dex: false,
+        complete_learnsets: false,
+        individual_sprites: false,
+        battle_forms: true,
+    };
+    disabled.save.dex = None;
+    let r = adapter_rom(disabled);
     let mut s = Session::new(r.clone());
     let original = save_bytes(&r);
     s.load(original.clone(), None).unwrap();
@@ -1731,6 +1763,81 @@ fn battle_transformations_are_not_evolution_or_ancestry() {
     assert_eq!(forms[2].kind, crate::forms::BattleFormKind::Primal);
     assert_eq!(r.battle_forms(2).unwrap().len(), 3);
     assert!(rom().battle_forms(1).unwrap().is_empty());
+    let raw = pokemon::create(&r, 1, 1, "TEST", 50, 7).unwrap();
+    let patch = PokemonPatch {
+        species: Some(2),
+        ..Default::default()
+    };
+    assert_eq!(
+        pokemon::edit(&raw, &patch, &r, Policy::Standard)
+            .unwrap_err()
+            .code,
+        "battle_species"
+    );
+    assert!(pokemon::edit(&raw, &patch, &r, Policy::Free).is_ok());
+}
+
+#[test]
+fn persistent_forms_follow_only_changed_item_or_move_triggers() {
+    let mut r = adapter_rom(profile::ROCKET);
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    for id in [1, 2] {
+        put32(b, 0x6193ac + id * 4, 0x08021000);
+    }
+    // Native format: trigger, target, item/move, comparison.
+    for (index, row) in [[1, 1, 0, 0], [1, 2, 2, 0], [3, 2, 1, 0]]
+        .iter()
+        .enumerate()
+    {
+        for (i, value) in row.iter().enumerate() {
+            put16(b, 0x21000 + index * 8 + i * 2, *value);
+        }
+    }
+    let raw = pokemon::create(&r, 1, 1, "TEST", 50, 7).unwrap();
+    let (held, _) = pokemon::edit(
+        &raw,
+        &PokemonPatch {
+            held_item: Some(2),
+            ..Default::default()
+        },
+        &r,
+        Policy::Standard,
+    )
+    .unwrap();
+    assert_eq!(pokemon::decode(&held, &r).unwrap().species, 2);
+    let (removed, _) = pokemon::edit(
+        &held,
+        &PokemonPatch {
+            held_item: Some(0),
+            ..Default::default()
+        },
+        &r,
+        Policy::Standard,
+    )
+    .unwrap();
+    assert_eq!(pokemon::decode(&removed, &r).unwrap().species, 1);
+    let (unrelated, _) = pokemon::edit(
+        &raw,
+        &PokemonPatch {
+            friendship: Some(99),
+            ..Default::default()
+        },
+        &r,
+        Policy::Standard,
+    )
+    .unwrap();
+    assert_eq!(pokemon::decode(&unrelated, &r).unwrap().species, 1);
+    let (moved, _) = pokemon::edit(
+        &raw,
+        &PokemonPatch {
+            moves: Some([1, 2, 0, 0]),
+            ..Default::default()
+        },
+        &r,
+        Policy::Standard,
+    )
+    .unwrap();
+    assert_eq!(pokemon::decode(&moved, &r).unwrap().species, 2);
 }
 
 #[test]
@@ -1822,6 +1929,23 @@ fn local_rocket_adapter_regression() {
             probes.push(serde_json::json!({"before":raw,"after":edited,"pokemon":pokemon::decode(&edited,&r).unwrap(),"patch":patch}));
         }
     }
+    for growth in 0..6 {
+        let Some(species) = catalog
+            .species
+            .iter()
+            .find(|s| s.growth == growth)
+            .map(|s| s.id)
+        else {
+            // Some growth curves are not assigned to any species in this ROM.
+            continue;
+        };
+        for level in [100, 101, 127, 150] {
+            let raw = pokemon::create(&r, species, 0x12345678, "TEST", level, 23).unwrap();
+            let p = pokemon::decode(&raw, &r).unwrap();
+            assert_eq!(p.level, level);
+            probes.push(serde_json::json!({"after":raw,"pokemon":p}));
+        }
+    }
     if let Ok(path) = std::env::var("GEN3_ADAPTER_PROBES") {
         std::fs::write(path, serde_json::to_vec(&probes).unwrap()).unwrap();
     }
@@ -1870,5 +1994,223 @@ fn bad_egg_and_checksum_rejection_follow_each_codec() {
                 .code,
             "pokemon_checksum"
         );
+    }
+}
+
+#[test]
+#[ignore = "set GEN3_ROM_ROCKET and GEN3_SAVE_ROCKET to private fixtures"]
+fn local_rocket_parity_regression() {
+    let r = Rom::open(std::fs::read(std::env::var("GEN3_ROM_ROCKET").unwrap()).unwrap()).unwrap();
+    let world = r.world().unwrap();
+    assert_eq!(world.maps.len(), 1363);
+    assert_eq!(world.trainers.len(), 2558);
+    let mut errors = Vec::new();
+    for id in 1..r.profile.species.count as u16 {
+        if let Err(e) = r.learnset(id) {
+            errors.push(format!("learnset {id}: {e:?}"));
+        }
+        if let Err(e) = r.pokemon_sprite(id, false, 0) {
+            errors.push(format!("sprite {id}: {e:?}"));
+        }
+    }
+    eprintln!("species checked");
+    for id in 0..r.profile.trainer_sprites.count as u16 {
+        if let Err(e) = r.trainer_sprite(id) {
+            errors.push(format!("trainer sprite {id}: {e:?}"));
+        }
+    }
+    let graphics: std::collections::BTreeSet<_> = world
+        .maps
+        .iter()
+        .flat_map(|m| m.objects.iter().map(|o| o.graphics_id))
+        .collect();
+    for id in graphics.into_iter().filter(|id| *id < 542) {
+        if let Err(e) = r.object_sprite(id) {
+            errors.push(format!("object {id}: {e:?}"));
+        }
+    }
+    eprintln!("objects checked");
+    for map in &world.maps {
+        if let Err(e) = r.map_image(&map.id) {
+            errors.push(format!("map {}: {e:?}", map.id));
+        }
+    }
+    eprintln!("all maps checked; {} errors: {errors:?}", errors.len());
+    assert!(errors.is_empty());
+}
+
+#[test]
+#[ignore = "requires user-supplied exact Rocket ROM and save"]
+fn local_rocket_write_regression() {
+    let r = Rom::open(std::fs::read(std::env::var("GEN3_ROM_ROCKET").unwrap()).unwrap()).unwrap();
+    let original = std::fs::read(std::env::var("GEN3_SAVE_ROCKET").unwrap()).unwrap();
+    let mut session = Session::new(r.clone());
+    session.load(original.clone(), None).unwrap();
+    for pocket in r.profile.save.pockets {
+        let item = (1..r.profile.items.count as u16)
+            .find(|id| r.item(*id).unwrap().pocket == pocket.category || pocket.category == 0)
+            .unwrap();
+        session
+            .apply(
+                Action::Bag {
+                    pocket: pocket.id.into(),
+                    slot: 0,
+                    item,
+                    quantity: 1,
+                },
+                Policy::Standard,
+            )
+            .unwrap();
+        session.undo().unwrap();
+        assert_eq!(session.save_ref().unwrap().data, original);
+    }
+    for number in [1, 416, 417, 944, 955] {
+        let mut save = session.save_ref().unwrap().clone();
+        save.edit_dex(number, true, true).unwrap();
+        let flags = save.dex().unwrap();
+        assert!(flags[number as usize - 1].owned);
+        save.validate(&r).unwrap();
+        let before = session.save_ref().unwrap().logical(1..=4);
+        let after = save.logical(1..=4);
+        let changed: Vec<_> = before
+            .iter()
+            .zip(&after)
+            .enumerate()
+            .filter(|(_, (a, b))| a != b)
+            .map(|(i, _)| i)
+            .collect();
+        assert!(changed.iter().all(|i| [
+            0x2ee4 + (number as usize - 1) / 8,
+            0x2f5c + (number as usize - 1) / 8
+        ]
+        .contains(i)));
+    }
+    for destination in [
+        loc(0),
+        Location::Box {
+            box_index: 13,
+            slot: 29,
+        },
+    ] {
+        session
+            .apply(
+                Action::Transfer {
+                    from: party(),
+                    to: destination,
+                    copy: false,
+                },
+                Policy::Standard,
+            )
+            .unwrap();
+        session.undo().unwrap();
+        assert_eq!(session.save_ref().unwrap().data, original);
+    }
+}
+
+#[test]
+fn adapter_inventory_crosses_logical_sectors_without_touching_other_bytes() {
+    for profile in profile::PROFILES {
+        let r = adapter_rom(profile);
+        let original = save_bytes(&r);
+        for pocket in r.profile.save.pockets {
+            for index in 0..pocket.count {
+                let mut save = Save::open(original.clone(), r.profile.save).unwrap();
+                let before = save.logical(1..=4);
+                save.edit_bag(pocket.id, index, 1, 17, &r, Policy::Free)
+                    .unwrap();
+                let reopened = Save::open(save.data.clone(), r.profile.save).unwrap();
+                reopened.validate(&r).unwrap();
+                let entry = reopened
+                    .bag()
+                    .unwrap()
+                    .into_iter()
+                    .find(|e| e.pocket == pocket.id && e.slot == index)
+                    .unwrap();
+                assert_eq!((entry.item, entry.quantity), (1, 17));
+                let mut expected = before;
+                let offset = pocket.offset + index * 4;
+                put16(&mut expected, offset, 1);
+                put16(
+                    &mut expected,
+                    offset + 2,
+                    17 ^ if pocket.encrypted { 0x4321 } else { 0 },
+                );
+                assert_eq!(
+                    reopened.logical(1..=4),
+                    expected,
+                    "{} {} {index}",
+                    profile.id,
+                    pocket.id
+                );
+                assert_eq!(&save.data[14 * 4096..], &original[14 * 4096..]);
+            }
+        }
+    }
+}
+
+#[test]
+fn rocket_ribbons_preserve_ivs_egg_ability_and_reserved_bits() {
+    let codec = crate::adapter::PokemonCodec::Rocket21;
+    // Literal native field locations; deliberately independent of codec fields.
+    let fields = [
+        (351usize, 1, 0),
+        (352, 1, 3),
+        (353, 3, 6),
+        (356, 3, 9),
+        (359, 3, 12),
+        (362, 12, 15),
+        (374, 2, 27),
+        (378, 1, 31),
+    ];
+    for (bit, width, logical) in fields {
+        for value in [0, (1u32 << width) - 1] {
+            let mut canonical = [0xa5; 48];
+            let mut expected = canonical;
+            let prior = codec.read_ribbons(&canonical).unwrap();
+            let mask = ((1u32 << width) - 1) << logical;
+            codec
+                .write_ribbons(&mut canonical, (prior & !mask) | value << logical)
+                .unwrap();
+            for i in 0..width {
+                let mask = 1 << ((bit + i) % 8);
+                expected[(bit + i) / 8] = (expected[(bit + i) / 8] & !mask)
+                    | if value & (1 << i) != 0 { mask } else { 0 };
+            }
+            assert_eq!(canonical, expected);
+        }
+    }
+}
+
+#[test]
+fn rom_patch_uses_each_profiles_scalar_widths_and_offsets() {
+    for profile in profile::PROFILES {
+        let r = adapter_rom(profile);
+        let expanded = profile.save.pokemon_codec == crate::adapter::PokemonCodec::Rocket21;
+        let edits = [
+            crate::rom::RomEdit {
+                table: "species".into(),
+                id: 1,
+                field: "ability2".into(),
+                value: if expanded { 267 } else { 2 },
+            },
+            crate::rom::RomEdit {
+                table: "moves".into(),
+                id: 1,
+                field: "power".into(),
+                value: if expanded { 500 } else { 200 },
+            },
+        ];
+        let (patched, _) = r.patch(&edits).unwrap();
+        let mut expected = (*r.data).clone();
+        let species = r.profile.base_stats.offset + r.profile.base_stats.stride;
+        let mv = r.profile.moves.offset + r.profile.moves.stride;
+        if expanded {
+            put16(&mut expected, species + 26, 267);
+            put16(&mut expected, mv + 2, 500);
+        } else {
+            expected[species + 23] = 2;
+            expected[mv + 1] = 200;
+        }
+        assert_eq!(patched, expected);
     }
 }

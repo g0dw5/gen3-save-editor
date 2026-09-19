@@ -28,7 +28,10 @@ pub struct Profile {
     pub formats: crate::adapter::RomFormats,
     pub capabilities: crate::adapter::Capabilities,
     pub ability_count: u16,
+    pub max_level: u8,
+    pub experience_table: Option<Table>,
     pub battle_forms: Option<crate::forms::BattleFormRules>,
+    pub storage_forms: Option<usize>,
     pub id: &'static str,
     pub label: &'static str,
     pub md5: &'static str,
@@ -48,6 +51,7 @@ pub struct Profile {
     pub evolutions: Table,
     pub learnsets: usize,
     pub eggs: usize,
+    pub teaching: TeachingRules,
     pub tm_moves: usize,
     pub tm_bits: usize,
     pub tutor_moves: usize,
@@ -62,6 +66,7 @@ pub struct Profile {
     pub regions: usize,
     pub region_count: usize,
     pub wild: usize,
+    pub wild_selection: Option<WildSelection>,
     pub feebas: Option<FeebasRules>,
     pub trainers: Table,
     pub trainer_classes: Table,
@@ -74,6 +79,25 @@ pub struct Profile {
     pub map_counts: &'static [usize],
     pub save: SaveLayout,
 }
+/// First matching map header, with an optional script-variable variant range.
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct WildSelection {
+    pub variable_map: &'static str,
+    pub variable: u16,
+    pub max_variant: u16,
+}
+/// Compatibility representation is separate from table addresses.
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct TeachingRules {
+    pub tm_first_item: u16,
+    pub tm_count: usize,
+    pub tm_stride: usize,
+    pub tutor_count: usize,
+    pub tutor_stride: usize,
+    /// A zero-terminated move list per species, shared by machines and tutors.
+    pub shared_lists: Option<usize>,
+    pub egg_words: usize,
+}
 /// Verified battle-engine behavior, not the move table's placeholder type/power.
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct HiddenPowerRules {
@@ -84,6 +108,7 @@ pub struct HiddenPowerRules {
 #[serde(rename_all = "snake_case")]
 pub enum HiddenPowerFormula {
     Gen3To5,
+    Gen6Fixed60,
 }
 /// Emerald's save-seeded fishing rule, separate from ordinary encounter tables.
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -103,6 +128,14 @@ pub struct SpriteRules {
     pub spinda_species: u16,
     pub spinda_spots: usize,
     pub second_frame_species: u16,
+    pub female: Option<FemaleSprites>,
+}
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct FemaleSprites {
+    pub flags: usize,
+    pub sprites: usize,
+    pub palettes: usize,
+    pub shiny_palettes: usize,
 }
 /// Reviewed scene actors for battles initiated outside an object's own script.
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -132,6 +165,8 @@ pub struct SaveLayout {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct DexLayout {
+    /// False: SaveBlock2; true: logical SaveBlock1 (sections 1–4).
+    pub main_block: bool,
     pub count: u16,
     pub owned: usize,
     pub seen: usize,
@@ -141,6 +176,7 @@ pub const EMERALD: SaveLayout = SaveLayout {
     pokemon_codec: crate::adapter::PokemonCodec::Gen3,
     pockets: &crate::save::POCKETS,
     dex: Some(DexLayout {
+        main_block: false,
         count: 416,
         owned: 0x28,
         seen: 0x5c,
@@ -161,7 +197,10 @@ pub const BW: Profile = Profile {
     formats: crate::adapter::RomFormats::GEN3,
     capabilities: crate::adapter::Capabilities::DARK_PHANTOM,
     ability_count: 151,
+    max_level: 100,
+    experience_table: None,
     battle_forms: None,
+    storage_forms: None,
     id: "dark-phantom-5ex-bw",
     label: "漆黑的魅影 5.0EX+BW",
     md5: "0d9b129f7dd76895f79bb47ad7dec2fe",
@@ -219,6 +258,15 @@ pub const BW: Profile = Profile {
     },
     learnsets: 0x329378,
     eggs: 0x32add8,
+    teaching: TeachingRules {
+        tm_first_item: 0x121,
+        tm_count: 58,
+        tm_stride: 8,
+        tutor_count: 32,
+        tutor_stride: 4,
+        shared_lists: None,
+        egg_words: 4096,
+    },
     tm_moves: 0x1ca0000,
     tm_bits: 0x31e898,
     tutor_moves: 0x61500c,
@@ -232,12 +280,14 @@ pub const BW: Profile = Profile {
         spinda_species: 308,
         spinda_spots: 0x31e2f0,
         second_frame_species: 410,
+        female: None,
     },
     maps: 0xe8c020,
     map_palette_banks: [6, 7],
     regions: 0x5a1480,
     region_count: 213,
     wild: 0xea2d34,
+    wild_selection: None,
     feebas: Some(FeebasRules {
         map_id: "0-34",
         seed_offset: 0x2e6a,
@@ -307,27 +357,29 @@ pub const DP: Profile = Profile {
     md5: "cb2940215f4dafb1bef133c3af379f44",
     ..BW
 };
-const UNAVAILABLE: Table = Table {
-    offset: 0,
-    count: 0,
-    stride: 0,
-};
 pub const ROCKET: Profile = Profile {
     id: "rocket-21-zh",
-    label: "西班牙火箭队 2.1 汉化版 · 只读预览",
+    label: "西班牙火箭队 2.1 汉化版",
     md5: "59c658a1081f542086de1060bb65f0b3",
     size: 0x2000000,
     formats: crate::adapter::RomFormats::ROCKET21,
-    capabilities: crate::adapter::Capabilities::ROCKET_READ_ONLY,
+    capabilities: crate::adapter::Capabilities::ROCKET21,
     ability_count: 269,
+    max_level: 150,
+    experience_table: Some(Table {
+        offset: 0x5b3484,
+        count: 6,
+        stride: 604,
+    }),
     battle_forms: Some(crate::forms::BattleFormRules::ExpansionEvolutionMethods),
+    storage_forms: Some(0x6193ac),
     move_names: SplitText {
         first: 0x5a35e1,
         second: 0,
         split: 755,
         stride: 13,
     },
-    move_descriptions: 0,
+    move_descriptions: 0xd045ec,
     ability_names: SplitText {
         first: 0x5a815c,
         second: 0,
@@ -340,7 +392,7 @@ pub const ROCKET: Profile = Profile {
         split: 269,
         stride: 4,
     },
-    mail_items: [0, 0],
+    mail_items: [200, 211],
     national_dex: 0x5b1608,
     species: Table {
         offset: 0x59f9f0,
@@ -359,7 +411,10 @@ pub const ROCKET: Profile = Profile {
         stride: 20,
     },
     move_category_offset: 16,
-    hidden_power: None,
+    hidden_power: Some(HiddenPowerRules {
+        move_id: 237,
+        formula: HiddenPowerFormula::Gen6Fixed60,
+    }),
     items: Table {
         offset: 0xc3d558,
         count: 923,
@@ -371,8 +426,17 @@ pub const ROCKET: Profile = Profile {
         stride: 80,
     },
     learnsets: 0x614ac4,
-    eggs: 0,
-    tm_moves: 0,
+    eggs: 0x61dac4,
+    teaching: TeachingRules {
+        tm_first_item: 592,
+        tm_count: 254,
+        tm_stride: 0,
+        tutor_count: 0,
+        tutor_stride: 0,
+        shared_lists: Some(0x616090),
+        egg_words: 4060,
+    },
+    tm_moves: 0xcf8c54,
     tm_bits: 0,
     tutor_moves: 0,
     tutor_bits: 0,
@@ -380,27 +444,74 @@ pub const ROCKET: Profile = Profile {
     palettes: 0x5545cc,
     shiny_palettes: 0x558ea4,
     sprite_rules: SpriteRules {
-        unown_species: u16::MAX,
-        unown_b_sprite: 0,
-        spinda_species: u16::MAX,
-        spinda_spots: 0,
+        unown_species: 201,
+        unown_b_sprite: 1098,
+        spinda_species: 327,
+        spinda_spots: 0x5b2294,
         second_frame_species: u16::MAX,
+        female: Some(FemaleSprites {
+            flags: 0x54cbe0,
+            sprites: 0x56b420,
+            palettes: 0x55716c,
+            shiny_palettes: 0x55ba44,
+        }),
     },
-    maps: 0,
-    map_palette_banks: [0, 0],
-    regions: 0,
-    region_count: 0,
-    wild: 0,
+    maps: 0x9f4f40,
+    map_palette_banks: [6, 7],
+    regions: 0xc6ad68,
+    region_count: 252,
+    wild: 0xbe8a70,
+    wild_selection: Some(WildSelection {
+        variable_map: "51-106",
+        variable: 0x403e,
+        max_variant: 8,
+    }),
     feebas: None,
-    trainers: UNAVAILABLE,
-    trainer_classes: UNAVAILABLE,
-    trainer_sprites: UNAVAILABLE,
-    trainer_palettes: 0,
-    object_graphics: &[],
-    object_palettes: UNAVAILABLE,
+    trainers: Table {
+        offset: 0x586a18,
+        count: 2559,
+        stride: 40,
+    },
+    trainer_classes: Table {
+        offset: 0x585f20,
+        count: 216,
+        stride: 13,
+    },
+    trainer_sprites: Table {
+        offset: 0x55e2f4,
+        count: 245,
+        stride: 8,
+    },
+    trainer_palettes: 0x55ea9c,
+    object_graphics: &[
+        Table {
+            offset: 0xb64c38,
+            count: 256,
+            stride: 4,
+        },
+        Table {
+            offset: 0xb65038,
+            count: 256,
+            stride: 4,
+        },
+        Table {
+            offset: 0xb65438,
+            count: 30,
+            stride: 4,
+        },
+    ],
+    object_palettes: Table {
+        offset: 0xb654cc,
+        count: 190,
+        stride: 8,
+    },
     script_actors: &[],
     map_groups: &[],
-    map_counts: &[],
+    map_counts: &[
+        61, 47, 36, 43, 11, 9, 9, 27, 23, 14, 7, 7, 12, 99, 11, 10, 8, 10, 10, 42, 20, 14, 18, 21,
+        2, 74, 88, 4, 4, 7, 7, 4, 5, 6, 80, 5, 5, 6, 7, 8, 10, 7, 7, 14, 10, 17, 10, 24, 14, 17,
+        15, 108, 61, 89, 68, 11,
+    ],
     save: SaveLayout {
         pokemon_codec: crate::adapter::PokemonCodec::Rocket21,
         sizes: [
@@ -408,7 +519,13 @@ pub const ROCKET: Profile = Profile {
             0xff4, 0x5c0,
         ],
         pockets: &crate::save::ROCKET_POCKETS,
-        dex: None,
+        dex: Some(DexLayout {
+            main_block: true,
+            count: 955,
+            owned: 0x2f5c,
+            seen: 0x2ee4,
+            seen_mirrors: &[],
+        }),
         ..EMERALD
     },
 };

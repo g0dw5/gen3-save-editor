@@ -78,8 +78,15 @@ export function PokemonEditor({
   const merged = { ...p, ...patch } as Pokemon;
   const hpRules = catalog.profile.hidden_power;
   const hp = hiddenPower(hpRules, merged.ivs);
+  const hasNatureOverride = catalog.editor_rules?.nature_override ?? false;
   const effectiveNature =
-    patch.pid !== undefined ? merged.pid % 25 : merged.nature;
+    hasNatureOverride &&
+    merged.nature_override != null &&
+    merged.nature_override < 25
+      ? merged.nature_override
+      : patch.pid !== undefined
+        ? merged.pid % 25
+        : merged.nature;
   const natureUp = Math.floor(effectiveNature / 5) + 1;
   const natureDown = (effectiveNature % 5) + 1;
   const metadataProps = {
@@ -242,17 +249,33 @@ export function PokemonEditor({
                 />
               </label>
               <div className="field-grid">
-                {num("level", 100, 1)}
+                {num("level", catalog.profile.max_level ?? 100, 1)}
                 {num("experience", 0xffffffff)}
                 <SelectField
                   searchable
                   label={t("nature")}
-                  value={merged.nature}
-                  onChange={(v) => change("nature", +v)}
-                  options={natures[locale].map((label, value) => ({
-                    value,
-                    label,
-                  }))}
+                  value={
+                    hasNatureOverride
+                      ? (merged.nature_override ?? 26)
+                      : effectiveNature
+                  }
+                  onChange={(v) =>
+                    change(hasNatureOverride ? "nature_override" : "nature", +v)
+                  }
+                  options={[
+                    ...natures[locale].map((label, value) => ({
+                      value,
+                      label,
+                    })),
+                    ...(hasNatureOverride
+                      ? [
+                          {
+                            value: 26,
+                            label: `${t("pidNature")} · ${natures[locale][merged.pid % 25]}`,
+                          },
+                        ]
+                      : []),
+                  ]}
                 />
                 <SelectField
                   searchable

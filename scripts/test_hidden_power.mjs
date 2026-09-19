@@ -16,4 +16,9 @@ for (const ivs of [null, undefined, [], [31], [0, 0, 0, 0, 0, 32],
 }
 assert.equal(hiddenPower(null, [31, 31, 31, 31, 31, 31]), null);
 assert.equal(hiddenPower({ move_id: 237, formula: "unknown" }, [31, 31, 31, 31, 31, 31]), null);
+for (let mask = 0; mask < 64; mask++) {
+  const ivs = Array.from({length: 6}, (_, i) => 30 + ((mask >> i) & 1));
+  const classic = hiddenPower(rules, ivs);
+  assert.deepEqual(hiddenPower({move_id:237, formula:"gen6_fixed60"}, ivs), {type:classic.type, power:60});
+}
 console.log("Hidden Power known vectors, stat ordering and unknown/invalid input checks passed");

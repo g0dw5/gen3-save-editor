@@ -32,3 +32,19 @@ and verify in the destination directory, then rename. Test re-opened output,
 corrupt banks, last PC slot, cross-sector records and failed batch rollback.
 A synthetic save tests serialization; it does not establish in-game progression
 or emulator compatibility. Verify a disposable real gameplay save separately.
+
+## Emulator input preflight
+
+Before automating a desktop emulator, verify the loaded ROM/save paths, switch
+to an English input source, focus the game window, and read the actual joypad
+mapping. Confirm one harmless input visibly changes the game before proceeding.
+If it does not, inspect pause/background-input settings and input interception;
+do not repeatedly send keys or conclude that the save failed to load. A menu
+virtual-button/auto-hold control can isolate keyboard delivery from game input;
+release every held button immediately after the intended action.
+
+2026-09-19, VBA-M 2.2.3 on macOS: simulated Return/L keys did not affect the
+loaded Rocket test save, while menu Auto hold Start/A/B did. The user reported
+a possible Chinese input-source conflict and manually loaded the save. The
+input source is a troubleshooting prerequisite, not a confirmed root cause;
+focus, background input and event delivery remain possible contributors.

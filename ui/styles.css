@@ -2042,21 +2042,6 @@ summary {
   margin: 6px 0 0;
 }
 
-.capability-banner {
-  padding: 10px 20px;
-  background: var(--soft);
-  border-bottom: 1px solid var(--line);
-  color: var(--ink);
-  font-size: 13px;
-}
-.readonly-pokemon {
-  padding: 20px;
-  overflow-y: auto;
-  height: 100%;
-}
-.readonly-pokemon > button {
-  margin-top: 18px;
-}
 .battle-form-reference {
   padding-block: 8px;
 }

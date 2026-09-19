@@ -10,17 +10,35 @@ bilingual file.
 
 ## 0.2.0 — 2026-09-19
 
-Validation build: Dark Phantom BW/DP editing and Team Rocket read-only preview.
-验证版本：漆黑的魅影 BW／DP 支持修改，西班牙火箭队目前为只读预览。
+Updated in place without a version bump: shared editing for Dark Phantom BW/DP
+and Team Rocket 2.1 Chinese. ROM reference windows remain read-only.
+本次沿用 0.2.0：西班牙火箭队与漆黑 BW／DP 共用编辑器，ROM 资料保持只读浮窗。
 
-- Compose per-table ROM formats, Pokémon bit-field codecs, save layouts and
-  capability gates. Add an exact-MD5 read-only Team Rocket 2.1 Chinese adapter.
-- 分离 ROM 表格式、宝可梦位字段编解码器、存档布局与能力开关；新增严格 MD5 校验的
-  西班牙火箭队 2.1 汉化版只读适配，不开放尚未验证的写入、地图与图鉴进度。
-- Show Rocket effective nature, three ability slots, inventory and Mega/primal
-  references; exclude temporary transformations from permanent evolution ancestry.
-- 读取火箭队实际性格、三特性槽位和道具，展示 Mega／原始回归关系；临时战斗形态
-  不再混入永久进化链。切换 ROM 时隔离旧地图请求，并增加跨版本及原生函数验证。
+- Enable Rocket Pokémon, party/box transfers, creation, inventory, player and
+  Pokédex editing, undo/redo and verified export. Remove the temporary read-only
+  Pokémon component, banner and styles instead of maintaining a separate UI.
+- 接通西火宝可梦、同行／盒子拖拽、创建、道具、玩家信息、图鉴、撤销重做和导出；
+  删除临时只读宝可梦组件、横幅及样式，复用原有编辑页。
+- Read all 1,363 maps and 2,558 trainer records, script references, NPC artwork,
+  item layers, wild/static/gift encounters, and level/machine/tutor/egg sources.
+  Report unresolved scripts and absent form compatibility tables explicitly.
+- 补齐 1,363 张地图、2,558 位训练家、脚本位置关联、NPC 小人、道具图层、随机／
+  定点／赠送相遇与升级／技能机／教学／遗传来源；明确显示未解析脚本与空兼容表。
+- Handle expanded trainer EV/nature records and random gender/ability choices;
+  use the native level-150 experience table, effective-nature override, packed
+  ribbons, female artwork, Unown/Spinda appearances and fixed-power Hidden Power.
+- 支持扩展训练家 EV／性格及随机性别／特性、150 级经验表、实际性格覆盖、位打包
+  缎带、雌雄图片、未知图腾／晃晃斑外观；西火觉醒力量固定 60 威力。
+- Read and write expanded inventory through logical save blocks; medicine and
+  additional pockets may cross sector boundaries. Preserve unrelated bits,
+  inactive banks and checksums. Add all-pocket and all-box cross-ROM regressions.
+- 背包改为按逻辑存档块读写，修复扩展药品等跨扇区栏位的访问；保留无关位、
+  备用存档区及校验。增加三版所有道具格与全部盒子格的交叉回归。
+- Keep Mega/primal relations separate from permanent evolution. Standard editing
+  rejects direct creation of these temporary species; free editing remains explicit.
+  Changed held items/moves use verified persistent form transitions.
+- Mega／原始回归独立于永久进化；普通编辑禁止直接创建这些临时种类，自由编辑可显式
+  操作。更换携带道具／招式时执行已验证的持久形态转换。
 
 - Show IV-derived Hidden Power type and power in the Pokémon stats/moves tabs
   and move picker, updating immediately while editing. Trainer moves show the
