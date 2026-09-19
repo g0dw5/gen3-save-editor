@@ -120,7 +120,9 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("gen3.locale", locale);
     document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
-  }, [locale]);
+    document.title = t("app");
+    if (native) getCurrentWindow().setTitle(t("app")).catch(onError);
+  }, [locale, t, onError]);
   useEffect(() => {
     const beforeUnload = (e: BeforeUnloadEvent) => {
       if (save?.dirty || formDirty || draft) {

@@ -1,4 +1,4 @@
-# Dark Fantasy Hacker
+# 三代改版修改器 · Gen III ROM Hack Editor
 
 [English](README.md)
 

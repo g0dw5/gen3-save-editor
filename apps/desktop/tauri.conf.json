@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Dark Fantasy Hacker",
+  "productName": "Gen III ROM Hack Editor",
   "version": "0.2.0",
   "identifier": "io.github.g0dw5.gen3-save-editor",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Dark Fantasy Hacker",
+        "title": "Gen III ROM Hack Editor",
         "width": 1440,
         "height": 940,
         "minWidth": 900,
@@ -40,5 +40,5 @@
       "../../CHANGELOG.md": "CHANGELOG.md"
     }
   },
-  "mainBinaryName": "DarkFantasyHacker"
+  "mainBinaryName": "Gen3RomHackEditor"
 }

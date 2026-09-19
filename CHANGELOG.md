@@ -14,6 +14,11 @@ Updated in place without a version bump: shared editing for Dark Phantom BW/DP
 and Team Rocket 2.1 Chinese. ROM reference windows remain read-only.
 本次沿用 0.2.0：西班牙火箭队与漆黑 BW／DP 共用编辑器，ROM 资料保持只读浮窗。
 
+- Rename the application to **Gen III ROM Hack Editor** (**三代改版修改器** in
+  Chinese), reflecting support for multiple ROM hacks. Update window/dialog
+  titles and package names while retaining the application identifier and 0.2.0.
+- 更名为 **三代改版修改器 / Gen III ROM Hack Editor**，同步界面、窗口、对话框及
+  安装包名称；保留应用标识和 0.2.0 版本号。
 - Enable Rocket Pokémon, party/box transfers, creation, inventory, player and
   Pokédex editing, undo/redo and verified export. Remove the temporary read-only
   Pokémon component, banner and styles instead of maintaining a separate UI.

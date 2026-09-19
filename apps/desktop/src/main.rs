@@ -26,5 +26,5 @@ fn main() {
         .manage(Arc::new(Mutex::new(App::default())))
         .invoke_handler(tauri::generate_handler![request])
         .run(tauri::generate_context!())
-        .expect("failed to start Dark Fantasy Hacker");
+        .expect("failed to start Gen III ROM Hack Editor");
 }
