@@ -6,7 +6,8 @@ A local desktop editor for user-supplied Gen III Pokémon ROM hacks and battery
 saves. Rust owns parsing and transactions; React provides a bilingual workspace;
 Tauri supplies native file dialogs. ROM data and artwork are read at runtime.
 
-**Development preview.** BW and DP are the first adapters. Core regression tests
+**Development preview.** BW and DP support editing; Team Rocket 2.1 Chinese has a
+read-only adapter. Core regression tests
 run against generated fixtures and optionally your exact ROMs. See
 [verification and remaining work](docs/IMPLEMENTATION.md) before using a build.
 
@@ -16,12 +17,18 @@ run against generated fixtures and optionally your exact ROMs. See
 | --- | --- | ---: |
 | Dark Phantom 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | 33,554,188 |
 | Dark Phantom 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | 33,554,188 |
+| Team Rocket 2.1 Chinese · read-only | `59c658a1081f542086de1060bb65f0b3` | 33,554,432 |
 
 Use a 128 KiB `.sav`/`.srm` battery save. Emulator save states are not supported.
 Renaming a ROM cannot change its compatibility. Derived ROMs have different
 fingerprints and do not become supported stock releases automatically.
 
 ## Workspace
+
+The editing features below apply to Dark Phantom BW/DP. Rocket supports read-only
+party/boxes/inventory and ROM references, including level-up moves and Mega/primal
+associations. Its maps, dex progress and writes remain disabled. See the
+[multi-ROM architecture, coverage and extension gates](docs/multi-rom-adapters.md).
 
 - Individual sprites use PID-derived Unown letters and Spinda spots, with normal
   and shiny palettes read from the ROM. See [appearance verification](docs/research/pokemon-appearance.md).

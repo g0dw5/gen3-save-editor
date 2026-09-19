@@ -39,6 +39,7 @@ import {
 } from "./components";
 import { I18n, en, zh, type Key, type Locale, useI18n } from "./i18n";
 import { romOption, itemOption } from "./names";
+import { PokemonReadOnly } from "./PokemonReadOnly";
 import { PokemonEditor, type PokemonEditorTab } from "./PokemonEditor";
 import { ReferenceWindow } from "./ReferenceWindow";
 import {
@@ -66,6 +67,7 @@ export default function App() {
     [locale],
   );
   const [catalog, setCatalog] = useState<Catalog | null>(null);
+  const canEdit = catalog?.profile.capabilities?.save_edit !== false;
   const [save, setSave] = useState<Snapshot | null>(null);
   const [world, setWorld] = useState<World | null>(null);
   const [selected, setSelected] = useState("p:0");
@@ -91,6 +93,7 @@ export default function App() {
   const [message, setMessage] = useState("");
   const inFlight = useRef(false);
   const worldLoading = useRef(false);
+  const worldGeneration = useRef(0);
   const board = useRef<HTMLDivElement>(null);
   const onError = useCallback((e: unknown) => {
     const v = e as ApiError;
@@ -151,7 +154,7 @@ export default function App() {
       action: Record<string, unknown>,
       preserveForm = false,
     ): Promise<Snapshot | null> => {
-      if (inFlight.current) return null;
+      if (!canEdit || inFlight.current) return null;
       // Reserve the mutation before yielding: two drops can arrive before React
       // renders disabled slots, and both must not pass an awaited draft guard.
       inFlight.current = true;
@@ -173,16 +176,28 @@ export default function App() {
         setBusy(false);
       }
     },
-    [free, guard, onError, refresh],
+    [canEdit, free, guard, onError, refresh],
   );
   const loadWorld = useCallback(() => {
-    if (world || worldLoading.current || !catalog) return;
+    if (
+      world ||
+      worldLoading.current ||
+      !catalog ||
+      catalog.profile.capabilities?.world === false
+    )
+      return;
     worldLoading.current = true;
+    const generation = worldGeneration.current;
     api<World>("world")
-      .then(setWorld)
-      .catch(onError)
+      .then((result) => {
+        if (generation === worldGeneration.current) setWorld(result);
+      })
+      .catch((error) => {
+        if (generation === worldGeneration.current) onError(error);
+      })
       .finally(() => {
-        worldLoading.current = false;
+        if (generation === worldGeneration.current)
+          worldLoading.current = false;
       });
   }, [catalog, world, onError]);
   const openRef = useCallback(
@@ -208,6 +223,8 @@ export default function App() {
     setError(null);
     try {
       if (kind === "rom") {
+        worldGeneration.current += 1;
+        worldLoading.current = false;
         const r = await api<{ catalog: Catalog }>("open_rom", file);
         setCatalog(r.catalog);
         setSave(null);
@@ -368,13 +385,13 @@ export default function App() {
         aria-pressed={selected === key}
         className={`storage-slot ${species ? "occupied" : ""} ${selected === key ? "selected" : ""} ${multi.includes(key) ? "multi-selected" : ""} ${isDraft ? "draft-slot" : ""} ${!match ? "dimmed" : ""}`}
         disabled={busy}
-        draggable={!!mon}
+        draggable={!!mon && canEdit}
         title={speciesName || label}
         onClick={(e) =>
           chooseSlot(location, e.ctrlKey || e.metaKey || e.shiftKey)
         }
         onDragStart={(e) => {
-          if (formDirty) {
+          if (!canEdit || formDirty) {
             e.preventDefault();
             onError({ code: "unsavedPrompt", detail: "" });
             return;
@@ -391,7 +408,7 @@ export default function App() {
           e.dataTransfer.effectAllowed = "copyMove";
         }}
         onDragOver={(e) => {
-          if (e.dataTransfer.types.includes("application/x-gen3")) {
+          if (canEdit && e.dataTransfer.types.includes("application/x-gen3")) {
             e.preventDefault();
             e.currentTarget.classList.add("drop-target");
           }
@@ -400,6 +417,7 @@ export default function App() {
         onDrop={(e) => {
           e.preventDefault();
           e.currentTarget.classList.remove("drop-target");
+          if (!canEdit) return;
           try {
             const payload = JSON.parse(
               e.dataTransfer.getData("application/x-gen3"),
@@ -525,7 +543,7 @@ export default function App() {
             </button>
             <button
               className="primary"
-              disabled={!save || busy}
+              disabled={!save || busy || !canEdit}
               onClick={() => void exportSave()}
             >
               <Download size={15} />
@@ -591,10 +609,19 @@ export default function App() {
               <div>
                 5.0EX+DP <code>cb2940215f4dafb1bef133c3af379f44</code>
               </div>
+              <div>
+                {t("rocketReadOnly")}{" "}
+                <code>59c658a1081f542086de1060bb65f0b3</code>
+              </div>
             </div>
           </main>
         ) : (
           <>
+            {!canEdit && (
+              <div className="capability-banner" role="status">
+                <strong>{t("readOnly")}</strong> · {t("adapterReadOnlyHelp")}
+              </div>
+            )}
             <div className="workspace-toolbar">
               <nav>
                 {[
@@ -603,28 +630,36 @@ export default function App() {
                   ["player", ShieldCheck],
                   ["pokedex", BookOpen],
                   ["changes", History],
-                ].map(([key, Icon]) => {
-                  const C = Icon as typeof Grid2X2;
-                  return (
-                    <button
-                      key={key as string}
-                      className={page === key ? "active" : ""}
-                      disabled={busy}
-                      onClick={async () => {
-                        if (await guard()) {
-                          setPage(key as string);
-                          setFormDirty(false);
-                        }
-                      }}
-                    >
-                      <C size={15} />
-                      {t(key === "bag" ? "inventory" : (key as string))}
-                      {key === "changes" && !!save?.changes.length && (
-                        <span className="count">{save.changes.length}</span>
-                      )}
-                    </button>
-                  );
-                })}
+                ]
+                  .filter(
+                    ([key]) =>
+                      (key !== "pokedex" ||
+                        catalog.profile.capabilities?.dex !== false) &&
+                      (canEdit ||
+                        !["player", "changes"].includes(key as string)),
+                  )
+                  .map(([key, Icon]) => {
+                    const C = Icon as typeof Grid2X2;
+                    return (
+                      <button
+                        key={key as string}
+                        className={page === key ? "active" : ""}
+                        disabled={busy}
+                        onClick={async () => {
+                          if (await guard()) {
+                            setPage(key as string);
+                            setFormDirty(false);
+                          }
+                        }}
+                      >
+                        <C size={15} />
+                        {t(key === "bag" ? "inventory" : (key as string))}
+                        {key === "changes" && !!save?.changes.length && (
+                          <span className="count">{save.changes.length}</span>
+                        )}
+                      </button>
+                    );
+                  })}
               </nav>
               <div className="toolbar-actions">
                 <button
@@ -767,6 +802,7 @@ export default function App() {
                           <header>
                             <button
                               className="box-title"
+                              disabled={!canEdit}
                               onClick={() => setBoxSettings(box.index)}
                             >
                               {box.name.trim() ||
@@ -817,6 +853,12 @@ export default function App() {
                             setDraft(null);
                           }
                         }}
+                      />
+                    ) : row && !canEdit ? (
+                      <PokemonReadOnly
+                        row={row}
+                        catalog={catalog}
+                        onReference={(id) => openRef("species", id)}
                       />
                     ) : row ? (
                       <PokemonEditor
@@ -870,6 +912,7 @@ export default function App() {
                         <p>{t("noSelection")}</p>
                         <button
                           className="primary"
+                          disabled={!canEdit}
                           onClick={() =>
                             setDraft({
                               location: selectedLocation,
@@ -879,7 +922,10 @@ export default function App() {
                         >
                           {t("createHere")}
                         </button>
-                        <button onClick={() => void importPokemon()}>
+                        <button
+                          disabled={!canEdit}
+                          onClick={() => void importPokemon()}
+                        >
                           {t("importPokemon")}
                         </button>
                       </div>
@@ -1073,7 +1119,9 @@ function BagEditor({
     <main className="data-page">
       <div className="page-heading">
         <h1>{t("inventory")}</h1>
-        <Toggle label={t("free")} checked={free} onChange={setFree} />
+        {catalog.profile.capabilities?.save_edit !== false && (
+          <Toggle label={t("free")} checked={free} onChange={setFree} />
+        )}
       </div>
       <div className="pocket-tabs">
         {["items", "key_items", "balls", "tmhm", "berries", "pc"].map((k) => (
@@ -1165,7 +1213,12 @@ function BagEditor({
                 }
               }}
             >
-              <fieldset className="inventory-fields" disabled={saving}>
+              <fieldset
+                className="inventory-fields"
+                disabled={
+                  saving || catalog.profile.capabilities?.save_edit === false
+                }
+              >
                 <h2>
                   {t(pocket === "items" ? "bagItems" : pocket)} ·{" "}
                   {selected.slot + 1}

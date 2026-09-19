@@ -62,6 +62,15 @@ export interface Ability {
 }
 export interface Catalog {
   profile: {
+    capabilities?: {
+      save_edit: boolean;
+      rom_edit: boolean;
+      world: boolean;
+      dex: boolean;
+      complete_learnsets: boolean;
+      individual_sprites: boolean;
+      battle_forms: boolean;
+    };
     id: string;
     label: string;
     md5: string;
@@ -103,6 +112,8 @@ export interface Pokemon {
   ot_gender: number;
   ribbons: number;
   nature: number;
+  effective_nature?: number;
+  nature_override?: number | null;
   gender: string;
   shiny: boolean;
   level: number;
@@ -194,6 +205,14 @@ export interface OriginOptions {
   hatch_regions: number[];
 }
 export interface SpeciesDetail {
+  encounters_verified?: boolean;
+  battle_forms?: {
+    source: number;
+    target: number;
+    kind: "mega" | "primal";
+    trigger: { kind: "held_item" | "known_move"; id: number };
+    offset: number;
+  }[];
   origins: OriginOptions;
   species: Species;
   evolutions: {

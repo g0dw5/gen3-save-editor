@@ -10,6 +10,15 @@ bilingual file.
 
 ## Unreleased / 尚未发布
 
+- Compose per-table ROM formats, Pokémon bit-field codecs, save layouts and
+  capability gates. Add an exact-MD5 read-only Team Rocket 2.1 Chinese adapter.
+- 分离 ROM 表格式、宝可梦位字段编解码器、存档布局与能力开关；新增严格 MD5 校验的
+  西班牙火箭队 2.1 汉化版只读适配，不开放尚未验证的写入、地图与图鉴进度。
+- Show Rocket effective nature, three ability slots, inventory and Mega/primal
+  references; exclude temporary transformations from permanent evolution ancestry.
+- 读取火箭队实际性格、三特性槽位和道具，展示 Mega／原始回归关系；临时战斗形态
+  不再混入永久进化链。切换 ROM 时隔离旧地图请求，并增加跨版本及原生函数验证。
+
 - Show IV-derived Hidden Power type and power in the Pokémon stats/moves tabs
   and move picker, updating immediately while editing. Trainer moves show the
   result when IVs are known; generic ROM references explain the variable values.

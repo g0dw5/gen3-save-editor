@@ -244,20 +244,26 @@ export function ReferenceWindow({
             "maps",
             "trainers",
           ] as RefTab[]
-        ).map((key) => (
-          <button
-            type="button"
-            key={key}
-            className={tab === key ? "active" : ""}
-            onClick={() => {
-              setTab(key);
-              setSearch("");
-              setRomEdit(false);
-            }}
-          >
-            {t(key)}
-          </button>
-        ))}
+        )
+          .filter(
+            (key) =>
+              catalog.profile.capabilities?.world !== false ||
+              !["maps", "trainers"].includes(key),
+          )
+          .map((key) => (
+            <button
+              type="button"
+              key={key}
+              className={tab === key ? "active" : ""}
+              onClick={() => {
+                setTab(key);
+                setSearch("");
+                setRomEdit(false);
+              }}
+            >
+              {t(key)}
+            </button>
+          ))}
       </div>
       <div className="reference-layout">
         <div className="reference-list">
@@ -365,16 +371,17 @@ export function ReferenceWindow({
             <span className="eyebrow">
               {t("readOnly")} · {catalog.profile.label}
             </span>
-            {["species", "moves", "items"].includes(tab) && (
-              <button
-                className="icon-button"
-                title={t("romEdit")}
-                aria-label={t("romEdit")}
-                onClick={() => setRomEdit((v) => !v)}
-              >
-                <FileCode2 size={17} />
-              </button>
-            )}
+            {catalog.profile.capabilities?.rom_edit !== false &&
+              ["species", "moves", "items"].includes(tab) && (
+                <button
+                  className="icon-button"
+                  title={t("romEdit")}
+                  aria-label={t("romEdit")}
+                  onClick={() => setRomEdit((v) => !v)}
+                >
+                  <FileCode2 size={17} />
+                </button>
+              )}
           </div>
           {current && (tab !== "trainers" || filtered.length > 0) && (
             <h2>
@@ -394,16 +401,25 @@ export function ReferenceWindow({
               <>
                 <div
                   className="dex-hero"
-                  draggable
+                  draggable={catalog.profile.capabilities?.save_edit !== false}
                   onDragStart={(e) => drag(e, template())}
                 >
                   <Sprite catalog={catalog} species={+selected} large />
                   <div>
                     <Types values={detail.species.types} />
-                    <p className="muted small">{t("dragTemplate")}</p>
+                    <p className="muted small">
+                      {t(
+                        catalog.profile.capabilities?.save_edit === false
+                          ? "representativeSprite"
+                          : "dragTemplate",
+                      )}
+                    </p>
                     <button
                       type="button"
                       className="link-button"
+                      disabled={
+                        catalog.profile.capabilities?.save_edit === false
+                      }
                       onClick={() => onTemplate(template())}
                     >
                       {t("pickDestination")}
@@ -470,7 +486,54 @@ export function ReferenceWindow({
                     </span>
                   </div>
                 ))}
+                {!!detail.battle_forms?.length && (
+                  <section className="battle-form-reference">
+                    <h3>{t("battleForms")}</h3>
+                    <p className="small muted">{t("battleFormsHelp")}</p>
+                    {detail.battle_forms.map((form) => (
+                      <div className="reference-line" key={form.offset}>
+                        <button
+                          className="link-button"
+                          onClick={() =>
+                            goSpecies(
+                              form.source === speciesId
+                                ? form.target
+                                : form.source,
+                            )
+                          }
+                        >
+                          {
+                            catalog.species.find((s) => s.id === form.source)
+                              ?.name
+                          }{" "}
+                          →{" "}
+                          {
+                            catalog.species.find((s) => s.id === form.target)
+                              ?.name
+                          }
+                        </button>
+                        <span>
+                          {t(form.kind)} ·{" "}
+                          {t(
+                            form.trigger.kind === "held_item"
+                              ? "held_item"
+                              : "move",
+                          )}{" "}
+                          ·{" "}
+                          {(form.trigger.kind === "held_item"
+                            ? catalog.items
+                            : catalog.moves
+                          ).find((entry) => entry.id === form.trigger.id)
+                            ?.name ?? form.trigger.id}
+                        </span>
+                      </div>
+                    ))}
+                  </section>
+                )}
                 <h3>{t("learnset")}</h3>
+                {catalog.profile.capabilities?.complete_learnsets === false && (
+                  <p className="small muted">{t("partialLearnsetHelp")}</p>
+                )}
                 <div className="learnset-table">
                   <table>
                     <thead>
@@ -522,12 +585,20 @@ export function ReferenceWindow({
                 </div>
                 <h3>{t("encounter")}</h3>
                 {!detail.encounters.length && (
-                  <p className="muted">{t("noEncounters")}</p>
+                  <p className="muted">
+                    {t(
+                      detail.encounters_verified === false
+                        ? "unverifiedEncounters"
+                        : "noEncounters",
+                    )}
+                  </p>
                 )}
                 {detail.encounters.map((e, i) => (
                   <div
                     className="encounter-card"
-                    draggable
+                    draggable={
+                      catalog.profile.capabilities?.save_edit !== false
+                    }
                     onDragStart={(event) => drag(event, template(e))}
                     key={`${e.map_id}:${e.offset}:${i}`}
                   >
@@ -687,7 +758,9 @@ export function ReferenceWindow({
                   <div
                     className="encounter-card"
                     key={`${e.offset}:${i}`}
-                    draggable
+                    draggable={
+                      catalog.profile.capabilities?.save_edit !== false
+                    }
                     onDragStart={(event) =>
                       drag(event, {
                         species: e.species,

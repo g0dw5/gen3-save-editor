@@ -22,6 +22,26 @@ jobs:
       - run: cargo clippy -p gen3-core -p gen3-cli --all-targets --all-features --locked -- -D warnings
       - run: npm run format:check
       - run: npm run build
+      - name: Install browser regression tools
+        run: |
+          python3 -m pip install playwright==1.60.0
+          python3 -m playwright install --with-deps chrome
+      - name: Cross-adapter browser regressions (synthetic fixtures)
+        timeout-minutes: 10
+        run: |
+          npm run dev > /tmp/gen3-vite.log 2>&1 &
+          vite_pid=$!
+          trap 'kill "$vite_pid"' EXIT
+          for attempt in $(seq 1 30); do
+            curl --fail --silent http://127.0.0.1:5173 > /dev/null && break
+            sleep 1
+          done
+          python3 scripts/test_adapter_ui.py
+          python3 scripts/test_drag_transactions.py
+          python3 scripts/test_editor_navigation.py
+          python3 scripts/test_reference_navigation.py
+          python3 scripts/test_hidden_power_ui.py
+          python3 scripts/test_search_origins.py
   desktop:
     strategy:
       fail-fast: false

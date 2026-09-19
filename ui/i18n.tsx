@@ -1,5 +1,22 @@
 import { createContext, useContext } from "react";
 export const en = {
+  rocketReadOnly: "Team Rocket 2.1 Chinese · read-only",
+  adapterReadOnlyHelp:
+    "This adapter reads Pokémon, inventory and ROM reference tables. Editing, export, maps and Pokédex progress are not enabled yet.",
+  battleForms: "Battle transformations",
+  battleFormsHelp:
+    "ROM associations, not a guarantee of battle eligibility. Select a form to compare its base stats. Temporary species and Z attacks are not ordinary stored Pokémon or learned moves.",
+  partialLearnsetHelp:
+    "Level-up and ancestor level-up moves only; TM, tutor and egg moves are not verified.",
+  unverifiedEncounters:
+    "Encounter and hatching rules have not been verified for this ROM.",
+  representativeSprite:
+    "Species artwork; individual appearance rules are not yet verified.",
+  effectiveNature: "Effective nature",
+  mega: "Mega",
+  primal: "Primal transformation",
+  unsupported_feature: "This feature is not enabled for this ROM.",
+
   fishingSpots: "Save-specific fishing spots",
   fishingNeedsSave:
     "Open a battery save to calculate its fishing spots. A ROM alone cannot determine them.",
@@ -441,6 +458,21 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  rocketReadOnly: "西班牙火箭队 2.1 汉化版 · 只读",
+  adapterReadOnlyHelp:
+    "此版本已接入宝可梦、道具读取及 ROM 资料；修改、导出、地图与图鉴进度暂未开放。",
+  battleForms: "战斗形态",
+  battleFormsHelp:
+    "这里显示 ROM 中的转换关系，不代表已满足战斗条件。点击形态可查看种族值。临时形态与 Z 招式不作为普通存档形态或可学习招式处理。",
+  partialLearnsetHelp:
+    "目前仅显示自身及退化形的升级招式；技能机、教学和遗传招式尚未验证。",
+  unverifiedEncounters: "此 ROM 的相遇及孵蛋规则尚未验证。",
+  representativeSprite: "种类示意图；个体外观规则尚未验证。",
+  effectiveNature: "实际生效性格",
+  mega: "Mega 进化",
+  primal: "原始回归",
+  unsupported_feature: "此 ROM 尚未开放此功能。",
+
   fishingSpots: "当前存档钓点",
   fishingNeedsSave:
     "请先打开游戏存档，再计算属于该存档的钓点；仅加载 ROM 无法确定位置。",
