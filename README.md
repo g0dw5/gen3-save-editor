@@ -41,9 +41,15 @@ See [coverage, verification and extension rules](docs/multi-rom-adapters.md).
   separate hatch source. See [search and origin rules](docs/research/search-and-origins.md).
 - Drag between slots to move or swap. Alt-drag copies. Buttons provide a pointer
   alternative; modifier-click selects multiple Pokémon for batch edits.
-- Browse species, learning sources, items, abilities, maps and trainers in movable
+- Browse Pokémon, learning sources, items, abilities, maps and trainers in movable
   nonmodal windows. Trainers and maps link to each other through parsed battle
   scripts, with evidence offsets and unresolved-condition labels. Drag an encounter to an empty slot to create an editable draft.
+- Follow the evolution tree in both directions, including sibling branches and
+  separately labeled battle/form families. Compare vertical ROM base stats and
+  totals with the latest available official values from 52Poké Wiki. This small,
+  separately attributed numeric reference is the only bundled Pokémon catalog;
+  ambiguous or custom species require manual reference selection. See the
+  [runtime-data audit](docs/research/runtime-data-and-evolution-tree.md).
 - Edit player identity, money, coins, bags, box names and Pokédex flags. Inspect
   before/after changes, undo/redo, then export. Existing output is backed up.
 - Free editing permits game-rule exceptions. Binary bounds, checksums and supported

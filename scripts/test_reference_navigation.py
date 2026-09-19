@@ -79,7 +79,7 @@ if __name__ == "__main__":
         for _ in range(3):
             tabs.get_by_role("button", name="Maps", exact=True).click()
             expect(dialog.locator(".reference-detail h2")).to_contain_text("Test map")
-            tabs.get_by_role("button", name="Species", exact=True).click()
+            tabs.get_by_role("button", name="Pokémon", exact=True).click()
             expect(dialog.locator(".dex-hero")).to_be_visible()
             expect(dialog.locator(".reference-detail h2")).to_contain_text("Test species 1")
         dialog.locator(".reference-rows button").filter(has_text="Test species 2").click()
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         expect(dialog.locator(".reference-detail h2")).to_contain_text("Test map")
         hold_species[0] = True
         with page.expect_request(lambda r: r.url.endswith("/api") and r.post_data_json["command"] == "species"):
-            tabs.get_by_role("button", name="Species", exact=True).click()
+            tabs.get_by_role("button", name="Pokémon", exact=True).click()
         expect(dialog.locator(".reference-detail h2")).to_contain_text("Test species 1")
         expect(dialog.locator(".dex-hero")).to_have_count(0)
         tabs.get_by_role("button", name="Maps", exact=True).click()
@@ -99,7 +99,7 @@ if __name__ == "__main__":
         delayed.pop().fulfill(content_type="application/json", body=json.dumps({
             "ok": False, "error": {"code": "json", "detail": "obsolete request"},
         }))
-        tabs.get_by_role("button", name="Species", exact=True).click()
+        tabs.get_by_role("button", name="Pokémon", exact=True).click()
         expect(dialog.locator(".dex-hero")).to_be_visible()
         invalid = [r for r in requests if r["command"] == "species" and r["payload"]["id"] not in (1, 2)]
         assert not invalid, f"invalid species requests during tab switch: {invalid}"

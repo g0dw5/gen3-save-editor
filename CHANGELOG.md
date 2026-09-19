@@ -14,6 +14,24 @@ Updated in place without a version bump: shared editing for Dark Phantom BW/DP
 and Team Rocket 2.1 Chinese. ROM reference windows remain read-only.
 本次沿用 0.2.0：西班牙火箭队与漆黑 BW／DP 共用编辑器，ROM 资料保持只读浮窗。
 
+- Rename the ROM Species tab to Pokémon. All supported ROMs share a navigable
+  evolution tree with incoming evolutions, sibling branches, battle forms and
+  ROM form families. Name-only associations are visibly unverified and never
+  become legal origins. Add Rocket's native form-family table reader.
+- ROM“种族”改名“宝可梦”；三版共用可反复跳转的进化树，展示进化前后、分支、
+  战斗形态及 ROM 形态家族。名称关联单独标为未确认，不扩大合法来源范围；补读
+  西火原生形态家族表，区分水箭龟、Mega 水箭龟及水箭龟 Z。
+- Compare six vertical ROM base stats and their total with the latest available
+  official numeric reference from 52Poké Wiki. Label source generation, support
+  manual reference selection, and avoid reused National Dex ID collisions.
+  Include separate dataset attribution; no wiki artwork or ROM assets are bundled.
+- 六围改为纵排，左列显示神百最新收录世代官方参照，右列为 ROM 数值，底部显示
+  总种族值；标注来源世代，支持手选参照，避免复用图鉴编号造成误配。数值资料
+  单独署名，不打包神百图片或 ROM 素材。
+- Audit runtime data ownership, read BW/DP growth thresholds from ROM, remove
+  the frontend's default rod IDs, and fix search popups hidden under ROM windows.
+- 审查运行时数据来源：漆黑经验阈值改读 ROM 表，移除前端默认钓竿编号，修复
+  搜索下拉列表被 ROM 资料窗口遮挡的问题。
 - Fix Rocket map rendering with three layers, a 640-tile/metatile boundary and
   7+6 palette banks; preserve BW/DP's independent format. Add pixel-level tests.
 - 修复西火地图黑洞和错图：正确读取三层、640 主图块及 7+6 调色板；漆黑保留独立

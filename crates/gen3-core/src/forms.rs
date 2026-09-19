@@ -85,6 +85,13 @@ impl Rom {
     /// Incoming edges let a temporary species point back to its storage species.
     pub fn battle_forms(&self, species: u16) -> Result<Vec<BattleForm>> {
         self.species(species)?;
+        Ok(self
+            .all_battle_forms()?
+            .into_iter()
+            .filter(|form| form.source == species || form.target == species)
+            .collect())
+    }
+    pub(crate) fn all_battle_forms(&self) -> Result<Vec<BattleForm>> {
         let Some(BattleFormRules::ExpansionEvolutionMethods) = self.profile.battle_forms else {
             return Ok(Vec::new());
         };
@@ -98,9 +105,6 @@ impl Rom {
                     continue;
                 }
                 let target = u16(&self.data, offset + 4)?;
-                if source != species && target != species {
-                    continue;
-                }
                 self.valid_species(target)?;
                 let parameter = u16(&self.data, offset + 2)?;
                 let trigger = if method == 0xfffe {

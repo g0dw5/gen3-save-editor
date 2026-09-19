@@ -16,6 +16,21 @@ fn rom() -> Rom {
         let mut b = vec![0; 0x2000000];
         let p = profile::BW;
         let codec = Codec::new();
+        if let Some(table) = p.experience_table {
+            for growth in 0..6 {
+                for level in 0..=100 {
+                    put32(
+                        &mut b,
+                        table.offset + growth * table.stride + level * 4,
+                        if level == 1 {
+                            1
+                        } else {
+                            pokemon::experience(growth as u8, level as u8)
+                        },
+                    );
+                }
+            }
+        }
         for id in 1..4 {
             let name = format!("MON{id}");
             b[p.species.offset + id * 11..p.species.offset + (id + 1) * 11]
@@ -760,6 +775,15 @@ fn local_rom_regression() {
         let r = Rom::open(std::fs::read(path).unwrap()).unwrap();
         let catalog = r.catalog().unwrap();
         assert_eq!(catalog.moves.len(), 472);
+        let family = r.species_relations(9).unwrap();
+        assert!(family.species.starts_with(&[7, 8, 9]));
+        assert!(family
+            .evolutions
+            .iter()
+            .any(|e| e.source == 8 && e.evolution.target == 9));
+        assert!(family.form_families.is_empty());
+        assert_eq!(pokemon::rom_experience(&r, 0, 1).unwrap(), 1);
+        assert_eq!(pokemon::rom_experience(&r, 0, 100).unwrap(), 1_000_000);
         // The split is per move, not the original Gen III type-based split.
         for (id, category) in [(7, 0), (53, 1), (14, 2), (247, 1), (174, 3)] {
             assert_eq!(catalog.moves[id].category, category);
@@ -1846,6 +1870,24 @@ fn local_rocket_adapter_regression() {
     let path = std::env::var("GEN3_ROM_ROCKET").unwrap();
     let r = Rom::open(std::fs::read(path).unwrap()).unwrap();
     assert_eq!(r.profile.id, profile::ROCKET.id);
+    for id in [9, 899, 980] {
+        let family = r.species_relations(id).unwrap();
+        assert_eq!(family.species, [7, 8, 9, 899, 980]);
+        assert_eq!(family.evolutions.len(), 2);
+        assert!(family
+            .battle_forms
+            .iter()
+            .any(|f| f.source == 9 && f.target == 980));
+        assert!(family.form_families.iter().any(|f| f.species == [9, 980]));
+        assert!(family
+            .name_relations
+            .iter()
+            .any(|f| f.source == 9 && f.target == 899));
+    }
+    assert_eq!(
+        r.ancestors(899).unwrap().into_iter().collect::<Vec<_>>(),
+        [899]
+    );
     let catalog = r.catalog().unwrap();
     assert_eq!(
         (
@@ -2220,5 +2262,64 @@ fn rom_patch_uses_each_profiles_scalar_widths_and_offsets() {
             expected[mv + 1] = 200;
         }
         assert_eq!(patched, expected);
+    }
+}
+
+#[test]
+fn relation_graph_uses_runtime_tables_and_does_not_expand_legal_ancestry_from_names() {
+    for profile in profile::PROFILES {
+        let mut r = adapter_rom(profile);
+        r.profile.species.count = 5;
+        r.profile.evolutions.count = 5;
+        let p = r.profile;
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        // Growth thresholds come from the supplied ROM, not a bundled formula.
+        let table = p.experience_table.unwrap();
+        put32(b, table.offset + 50 * 4, 123456);
+        assert_eq!(pokemon::rom_experience(&r, 0, 50).unwrap(), 123456);
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        let first_stats = b[p.base_stats.offset + p.base_stats.stride
+            ..p.base_stats.offset + 2 * p.base_stats.stride]
+            .to_vec();
+        let fourth = p.base_stats.offset + 4 * p.base_stats.stride;
+        b[fourth..fourth + p.base_stats.stride].copy_from_slice(&first_stats);
+        for (id, name) in [(1, "Root"), (2, "Branch"), (3, "Sibling"), (4, "RootZ")] {
+            let name_offset = p.species.offset + id * p.species.stride;
+            b[name_offset..name_offset + p.species.stride]
+                .copy_from_slice(&r.codec.encode(name, p.species.stride).unwrap());
+        }
+        let evolution = p.evolutions.offset + p.evolutions.stride;
+        for (row, target) in [(0, 2), (1, 3)] {
+            put16(b, evolution + row * 8, 4);
+            put16(b, evolution + row * 8 + 2, 16);
+            put16(b, evolution + row * 8 + 4, target);
+        }
+        let graph = r.species_relations(2).unwrap();
+        assert_eq!(graph.species, [1, 2, 3, 4]);
+        assert_eq!(graph.evolutions.len(), 2);
+        assert_eq!(graph.name_relations.len(), 1);
+        assert_eq!(r.ancestors(4).unwrap().into_iter().collect::<Vec<_>>(), [4]);
+        // A newly edited table row must immediately change the graph.
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        put16(b, evolution + 12, 4);
+        assert_eq!(
+            r.species_relations(2).unwrap().evolutions[1]
+                .evolution
+                .target,
+            4
+        );
+        if let Some(table) = p.form_families {
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            put32(b, table + 2 * 4, 0x08029000);
+            put16(b, 0x29000, 2);
+            put16(b, 0x29002, 3);
+            put16(b, 0x29004, 0xffff);
+            assert_eq!(r.form_families().unwrap()[0].species, [2, 3]);
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            for i in 0..5 {
+                put16(b, 0x29000 + i * 2, 2);
+            }
+            assert_eq!(r.form_families().err().unwrap().code, "form_terminator");
+        }
     }
 }

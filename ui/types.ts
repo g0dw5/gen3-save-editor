@@ -218,6 +218,13 @@ export interface OriginOptions {
   hatch_regions: number[];
 }
 export interface SpeciesDetail {
+  relations?: {
+    species: number[];
+    evolutions: (SpeciesDetail["evolutions"][number] & { source: number })[];
+    battle_forms: NonNullable<SpeciesDetail["battle_forms"]>;
+    form_families: { species: number[]; offset: number }[];
+    name_relations: { source: number; target: number }[];
+  };
   teaching_list_present?: boolean;
   encounters_verified?: boolean;
   battle_forms?: {

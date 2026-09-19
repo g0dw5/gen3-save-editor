@@ -138,7 +138,7 @@ with sync_playwright() as p:
     dialog.get_by_label('Location', exact=True).select_option(f'place:{league_region}:league')
     expect(dialog.locator('.reference-detail h2')).to_contain_text('#261')
     expect(dialog.locator('.reference-detail h2')).to_be_visible()
-    dialog.get_by_role('button', name='Species', exact=True).click()
+    dialog.get_by_role('button', name='Pokémon', exact=True).click()
     expect(dialog.locator('.dex-hero')).to_be_visible()
     # Move the nonmodal window to expose empty cells and prove actual template DnD.
     handle = dialog.locator('.floating-header')

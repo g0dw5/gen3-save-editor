@@ -22,6 +22,7 @@ jobs:
       - run: cargo clippy -p gen3-core -p gen3-cli --all-targets --all-features --locked -- -D warnings
       - run: npm run format:check
       - run: npm run build
+      - run: python3 scripts/test_official_stats.py
       - name: Install browser regression tools
         run: |
           python3 -m pip install playwright==1.60.0
@@ -42,6 +43,8 @@ jobs:
           python3 scripts/test_reference_navigation.py
           python3 scripts/test_hidden_power_ui.py
           python3 scripts/test_search_origins.py
+          python3 scripts/test_reference_readability.py
+          python3 scripts/test_evolution_reference_ui.py
   desktop:
     strategy:
       fail-fast: false

@@ -1169,25 +1169,6 @@ summary {
 .dex-hero p {
   margin: 10px 0 6px;
 }
-.base-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin: 22px 0;
-}
-.base-stats > div {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6px;
-}
-.base-stats span {
-  color: var(--muted);
-  font-size: 11px;
-}
-.base-stats strong {
-  font-size: 13px;
-  font-weight: 500;
-}
 .stat-track {
   grid-column: 1/-1;
   height: 4px;
@@ -1450,9 +1431,6 @@ summary {
   }
   .reference-detail {
     padding: 12px;
-  }
-  .base-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dex-hero {
     flex-direction: column;
@@ -1806,7 +1784,8 @@ summary {
 
 .select-popup {
   position: fixed;
-  z-index: 10000;
+  /* Floating windows occupy 100..1,000,099; portals must stay above them. */
+  z-index: 1100000;
   overflow-y: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--line);
@@ -2045,6 +2024,122 @@ summary {
   margin: 6px 0 0;
 }
 
-.battle-form-reference {
-  padding-block: 8px;
+.species-stats {
+  margin: 20px 0;
+}
+.base-stats-comparison {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 14px;
+}
+.base-stats-comparison th,
+.base-stats-comparison td {
+  text-align: right;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--line);
+}
+.base-stats-comparison th:first-child {
+  text-align: left;
+}
+.base-stats-comparison thead {
+  font-size: 10px;
+  color: var(--muted);
+}
+.base-stats-comparison td:nth-child(3) {
+  width: 36%;
+}
+.base-stats-comparison td:nth-child(2) {
+  color: var(--muted);
+}
+.base-stats-comparison .stat-track {
+  display: inline-block;
+  width: 65%;
+  height: 4px;
+  margin-left: 8px;
+  background: var(--line);
+  vertical-align: middle;
+}
+.base-stats-comparison .stat-track > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+.base-stats-comparison tfoot {
+  font-weight: 700;
+}
+.stat-increase {
+  color: var(--accent);
+}
+.stat-decrease {
+  color: #bf834c;
+}
+.evolution-tree {
+  margin: 24px 0;
+}
+.evolution-tree h4 {
+  margin: 20px 0 8px;
+}
+.evolution-edge {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(65px, 1fr) minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  padding: 8px 0;
+}
+.evolution-node {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 9px;
+  padding: 6px;
+  text-align: left;
+  min-height: 64px;
+}
+.evolution-node.current {
+  border-color: var(--accent);
+  background: var(--soft);
+}
+.evolution-node .sprite {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+.evolution-node span {
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.evolution-node small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.evolution-condition {
+  text-align: center;
+  font-size: 10px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.evolution-condition > span {
+  display: block;
+  font-size: 18px;
+  margin-bottom: 4px;
+  color: var(--accent);
+}
+.name-edge .evolution-node {
+  border-style: dashed;
+}
+.form-family-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.form-family-nodes > div {
+  min-width: 115px;
+  flex: 1;
 }

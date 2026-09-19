@@ -102,7 +102,7 @@ def main():
         expect(page.get_by_role('spinbutton', name='Quantity', exact=True)).to_be_enabled()
         page.get_by_role('button', name='ROM reference', exact=True).first.click()
         page.locator('.reference-list button').first.click()
-        expect(page.locator('.battle-form-reference')).to_be_visible()
+        expect(page.locator('.evolution-tree .battle-edge')).to_be_visible()
         page.locator('.reference-tabs').get_by_role('button', name='Maps', exact=True).click()
         page.wait_for_timeout(100)
         assert len(worlds) == 1 and requests.count('world') == 2

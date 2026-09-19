@@ -150,6 +150,7 @@ pub struct Catalog {
 }
 #[derive(Serialize)]
 pub struct SpeciesDetail {
+    pub relations: crate::relations::SpeciesRelations,
     pub teaching_list_present: bool,
     pub battle_forms: Vec<crate::forms::BattleForm>,
     pub encounters_verified: bool,
@@ -599,6 +600,7 @@ impl Rom {
     }
     pub fn detail(&self, id: u16) -> Result<SpeciesDetail> {
         Ok(SpeciesDetail {
+            relations: self.species_relations(id)?,
             teaching_list_present: match self.profile.teaching.shared_lists {
                 Some(table) => u32(&self.data, table + id as usize * 4)? != 0,
                 None => true,

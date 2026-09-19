@@ -1,5 +1,33 @@
 import { createContext, useContext } from "react";
 export const en = {
+  evolutionTree: "Evolution tree",
+  evolutionTreeHelp:
+    "Click either Pokémon to browse back, forward or along another branch. Arrows show the direction of evolution, not a way to devolve.",
+  noEvolutionRecorded:
+    "No ordinary evolution is recorded in the parsed ROM tables.",
+  formFamily: "Other forms",
+  formFamilyHelp:
+    "Linked by this ROM’s form-family table. Sharing a family does not prove a usable transformation method.",
+  relatedNames: "Related names",
+  relatedNamesHelp:
+    "These names share a base name in this ROM. This navigation aid does not establish evolution, transformation or availability.",
+  nameLinkOnly: "Name association · method unverified",
+  currentPokemon: "Current",
+  officialReference: "Official reference",
+  currentRom: "Current ROM",
+  statDifference: "Difference",
+  baseStatTotal: "Base stat total",
+  referenceEntry: "Reference Pokémon / form",
+  noOfficialReference: "No confirmed reference",
+  referenceSource: "52Poké Wiki",
+  generation: "Generation {n}",
+  referenceMatched: "Matched by name / verified form relation",
+  referenceChosen: "Manually selected comparison",
+  referenceUnmatched:
+    "No unique official match. Choose a reference to compare; custom forms may have no official counterpart.",
+  referenceHelp:
+    "Latest-generation numeric reference; absent entries use their most recent included generation. ROM names, values and artwork are read from your ROM. Choosing a reference does not edit the ROM or enable official-name search.",
+
   evo_friendship: "Level up with high friendship",
   evo_friendship_day: "Level up during the day with high friendship",
   evo_friendship_night: "Level up at night with high friendship",
@@ -333,7 +361,7 @@ export const en = {
   rename: "Box settings",
   name: "Name",
   nickname: "Nickname",
-  species: "Species",
+  species: "Pokémon",
   level: "Level",
   experience: "Experience",
   nature: "Nature",
@@ -523,6 +551,32 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  evolutionTree: "进化树",
+  evolutionTreeHelp:
+    "点击任意宝可梦，可向前、向后或沿分支查看。箭头表示进化方向，不表示游戏中可以退化。",
+  noEvolutionRecorded: "已解析的 ROM 表中没有普通进化记录。",
+  formFamily: "其他形态",
+  formFamilyHelp:
+    "关联来自当前 ROM 的形态家族表；属于同一家族，不代表存在可用的转换方法。",
+  relatedNames: "相关名称",
+  relatedNamesHelp:
+    "这些宝可梦在当前 ROM 中具有相同的基础名称，可点击对照；不据此认定进化、转换方式或可获得性。",
+  nameLinkOnly: "名称关联 · 转换方法未确认",
+  currentPokemon: "当前",
+  officialReference: "官方参照",
+  currentRom: "当前 ROM",
+  statDifference: "差值",
+  baseStatTotal: "总种族值",
+  referenceEntry: "参照宝可梦／形态",
+  noOfficialReference: "未确认对应的官方条目",
+  referenceSource: "神奇宝贝百科",
+  generation: "第 {n} 世代",
+  referenceMatched: "按名称／已验证形态关系匹配",
+  referenceChosen: "手动选择的对照条目",
+  referenceUnmatched:
+    "尚无唯一的官方对应条目，可手动选择参照；自创形态可能没有官方对应形态。",
+  referenceHelp:
+    "采用最新世代数值，未收录条目补用最近收录世代。ROM 名称、数值和图片仍从你打开的 ROM 读取；选择参照不会修改 ROM，也不启用官译名搜索。",
   evo_friendship: "亲密度足够高时升级",
   evo_friendship_day: "白天，亲密度足够高时升级",
   evo_friendship_night: "夜晚，亲密度足够高时升级",
@@ -843,7 +897,7 @@ export const zh: Record<Key, string> = {
   rename: "盒子设置",
   name: "名称",
   nickname: "昵称",
-  species: "种族",
+  species: "宝可梦",
   level: "等级",
   experience: "经验",
   nature: "性格",

@@ -11,6 +11,8 @@ import {
 import { MapExplorer } from "./MapExplorer";
 import { TrainerArt } from "./TrainerArt";
 import { TrainerParty } from "./TrainerParty";
+import { SpeciesStats } from "./SpeciesStats";
+import { EvolutionTree } from "./EvolutionTree";
 import {
   emptyTrainerFilters,
   indexTrainers,
@@ -19,8 +21,8 @@ import {
   type TrainerFacet,
   type TrainerFilters,
 } from "./trainerSearch";
-import { useI18n, statKeys, typeNames, moveCategoryNames } from "./i18n";
-import { evolutionLabel, itemPocketLabel } from "./referenceLabels";
+import { useI18n, moveCategoryNames } from "./i18n";
+import { itemPocketLabel } from "./referenceLabels";
 import type {
   Ability,
   Catalog,
@@ -60,7 +62,7 @@ export function ReferenceWindow({
   onError,
 }: Props) {
   const { t, locale } = useI18n();
-  const rods = catalog.profile.fishing_rods ?? [262, 263, 264];
+  const rods = catalog.profile.fishing_rods ?? [];
   const fishingRodItems: Record<string, number> = {
     old_rod: rods[0],
     good_rod: rods[1],
@@ -111,6 +113,13 @@ export function ReferenceWindow({
   }, [save, catalog.profile.md5, catalog.profile.feebas, onError]);
   const [romEdit, setRomEdit] = useState(false);
   const detailPane = useRef<HTMLDivElement>(null);
+  const treeScroll = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    if (detail?.species.id === selected && treeScroll.current !== null) {
+      detailPane.current?.scrollTo({ top: treeScroll.current });
+      treeScroll.current = null;
+    }
+  }, [detail, selected]);
   useLayoutEffect(() => {
     detailPane.current?.scrollTo({ top: 0 });
   }, [tab, selected]);
@@ -427,21 +436,7 @@ export function ReferenceWindow({
                     </button>
                   </div>
                 </div>
-                <div className="base-stats">
-                  {statKeys.map((key, i) => (
-                    <div key={key}>
-                      <span>{t(key)}</span>
-                      <strong>{detail.species.stats[i]}</strong>
-                      <div className="stat-track">
-                        <div
-                          style={{
-                            width: `${(detail.species.stats[i] / 255) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <SpeciesStats detail={detail} catalog={catalog} />
                 <div className="detail-pairs">
                   <span>{t("ability")}</span>
                   <span>
@@ -471,65 +466,15 @@ export function ReferenceWindow({
                     </button>
                   </div>
                 )}
-                <h3>{t("evolution")}</h3>
-                {detail.evolutions.map((e) => (
-                  <div className="reference-line" key={e.offset}>
-                    <button
-                      className="link-button"
-                      onClick={() => goSpecies(e.target)}
-                    >
-                      {catalog.species.find((s) => s.id === e.target)?.name ??
-                        e.target}
-                    </button>
-                    <span className="muted small">
-                      {evolutionLabel(e, catalog, typeNames[locale], t)}
-                    </span>
-                  </div>
-                ))}
-                {!!detail.battle_forms?.length && (
-                  <section className="battle-form-reference">
-                    <h3>{t("battleForms")}</h3>
-                    <p className="small muted">{t("battleFormsHelp")}</p>
-                    {detail.battle_forms.map((form) => (
-                      <div className="reference-line" key={form.offset}>
-                        <button
-                          className="link-button"
-                          onClick={() =>
-                            goSpecies(
-                              form.source === speciesId
-                                ? form.target
-                                : form.source,
-                            )
-                          }
-                        >
-                          {
-                            catalog.species.find((s) => s.id === form.source)
-                              ?.name
-                          }{" "}
-                          →{" "}
-                          {
-                            catalog.species.find((s) => s.id === form.target)
-                              ?.name
-                          }
-                        </button>
-                        <span>
-                          {t(form.kind)} ·{" "}
-                          {t(
-                            form.trigger.kind === "held_item"
-                              ? "held_item"
-                              : "move",
-                          )}{" "}
-                          ·{" "}
-                          {(form.trigger.kind === "held_item"
-                            ? catalog.items
-                            : catalog.moves
-                          ).find((entry) => entry.id === form.trigger.id)
-                            ?.name ?? form.trigger.id}
-                        </span>
-                      </div>
-                    ))}
-                  </section>
-                )}
+                <EvolutionTree
+                  detail={detail}
+                  catalog={catalog}
+                  onNavigate={(id) => {
+                    if (id === speciesId) return;
+                    treeScroll.current = detailPane.current?.scrollTop ?? 0;
+                    goSpecies(id);
+                  }}
+                />
                 <h3>{t("learnset")}</h3>
                 {detail.teaching_list_present === false && (
                   <p className="small muted">{t("missingTeachingList")}</p>
@@ -659,6 +604,7 @@ export function ReferenceWindow({
                       {
                         offset: detail.species.offset,
                         evolutions: detail.evolutions,
+                        relations: detail.relations,
                         learnset: detail.learnset,
                         encounters: detail.encounters,
                       },
