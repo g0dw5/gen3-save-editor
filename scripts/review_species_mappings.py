@@ -9,7 +9,8 @@ from pathlib import Path
 import secrets
 import subprocess
 import threading
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
+from functools import lru_cache
 
 ROOT = Path(__file__).resolve().parent.parent
 STATUSES = {'pending', 'direct', 'comparison', 'none'}
@@ -29,10 +30,17 @@ def atomic_json(path, value):
     temporary.replace(path)
 
 
+@lru_cache(maxsize=1)
+def form_module():
+    return subprocess.check_output(['node', str(ROOT / 'scripts/build_review_form_module.mjs')], cwd=ROOT)
+
+
 class ReviewStore:
-    def __init__(self, directory, official, catalogs, backup, output=None):
+    def __init__(self, directory, official, catalogs, backup, output=None, sprite_loader=None):
         self.directory, self.official, self.catalogs, self.backup = directory, official, catalogs, backup
         self.output = output
+        self.sprite_loader = sprite_loader
+        self.sprite_cache = {}
         self.keys = {f'{r[0]}:{r[2]}' for r in official['rows']}
         self.lock = threading.Lock()
         self.paths = {}
@@ -47,9 +55,19 @@ class ReviewStore:
 
     def state(self):
         with self.lock:
-            return {'official': self.official, 'games': [dict(
+            return {'form_rules': json.loads((ROOT / 'ui/data/species-form-rules.json').read_text()), 'official': self.official, 'games': [dict(
                 config=json.loads(self.paths[md5].read_text()), catalog=catalog,
             ) for md5, catalog in self.catalogs.items() if md5 in self.paths]}
+
+    def sprite(self, md5, species):
+        if md5 not in self.paths or md5 not in self.catalogs or not self.sprite_loader:
+            raise ValueError('Sprite unavailable for this ROM')
+        if str(species) not in json.loads(self.paths[md5].read_text())['entries']:
+            raise ValueError('Unknown species')
+        key = (md5, species)
+        if key not in self.sprite_cache:
+            self.sprite_cache[key] = self.sprite_loader(md5, species)
+        return self.sprite_cache[key]
 
     def publish(self, md5, revision):
         with self.lock:
@@ -123,6 +141,16 @@ def handler_for(store, token, port):
             if path == '/':
                 page = (ROOT / 'scripts/mapping-review/index.html').read_text().replace('__TOKEN__', token)
                 return self.send(200, page.encode(), 'text/html; charset=utf-8')
+            if path == '/form-labels.js':
+                return self.send(200, form_module(), 'text/javascript; charset=utf-8')
+            if path == '/sprite':
+                try:
+                    query = parse_qs(urlparse(self.path).query)
+                    if query.get('token') != [token]:
+                        return self.send(403, {'error': 'Invalid review session'})
+                    return self.send(200, store.sprite(query['md5'][0], int(query['species'][0])), 'image/png')
+                except (ValueError, KeyError, IndexError, subprocess.SubprocessError):
+                    return self.send(404, {'error': 'Sprite unavailable'})
             if path == '/state' and self.headers.get('X-Review-Token') == token:
                 return self.send(200, store.state())
             self.send(404, {'error': 'Not found'})
@@ -159,16 +187,24 @@ def main():
     parser.add_argument('--cli', type=Path, default=ROOT / 'target/debug/gen3')
     parser.add_argument('--port', type=int, default=8791)
     args = parser.parse_args()
-    catalogs = {}
+    catalogs, rom_paths = {}, {}
     for rom in args.rom:
         catalog = json.loads(subprocess.check_output([str(args.cli), 'catalog', str(rom)]))
         actual = hashlib.md5(rom.read_bytes()).hexdigest()
         if actual != catalog['profile']['md5']:
             raise ValueError('ROM fingerprint mismatch')
         catalogs[actual] = catalog
+        rom_paths[actual] = rom
+    def load_sprite(md5, species):
+        rom = rom_paths[md5]
+        if hashlib.md5(rom.read_bytes()).hexdigest() != md5:
+            raise ValueError('ROM changed on disk')
+        return subprocess.check_output([str(args.cli), 'sprite', str(rom), str(species)])
+
+    form_module()  # Fail before opening the server if Node dependencies are missing.
     store = ReviewStore(ROOT / 'config/species-mapping-reviews',
                         json.loads((ROOT / 'ui/data/official-stats.json').read_text()),
-                        catalogs, ROOT / '.local/mapping-review-backups', ROOT / 'ui/data/species-mappings')
+                        catalogs, ROOT / '.local/mapping-review-backups', ROOT / 'ui/data/species-mappings', load_sprite)
     if any(md5 not in store.paths for md5 in catalogs):
         raise ValueError('No game configuration exists for one of the selected ROMs')
     token = secrets.token_urlsafe(32)

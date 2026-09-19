@@ -21,7 +21,7 @@ fn run() -> Result<()> {
         println!("{}", serde_json::to_string_pretty(&v).unwrap());
     };
     if command == "help" {
-        println!("gen3 profiles\ngen3 identify ROM\ngen3 catalog ROM\ngen3 species ROM ID\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]\ngen3 patch-rom ROM EDITS.json OUTPUT.gba");
+        println!("gen3 profiles\ngen3 identify ROM\ngen3 catalog ROM\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]\ngen3 patch-rom ROM EDITS.json OUTPUT.gba");
         return Ok(());
     }
     if command == "profiles" {
@@ -46,6 +46,13 @@ fn run() -> Result<()> {
                     .map_err(|_| err("arguments", "species ID"))?,
             )?,
         )?),
+        "sprite" => {
+            use std::io::Write;
+            let id = arg(2)?
+                .parse()
+                .map_err(|_| err("arguments", "species ID"))?;
+            std::io::stdout().write_all(&rom.sprite(id, false)?)?;
+        }
         "world" => print(serde_json::to_value(rom.world()?)?),
         "fishing-spots" => {
             let save = a

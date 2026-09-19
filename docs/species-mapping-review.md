@@ -9,7 +9,8 @@ consumed by the editor's official base-stat comparison.
 
 ## Run / 启动
 
-Build the CLI with `cargo build -p gen3-cli`, then supply your own supported ROMs:
+Install frontend dependencies with `npm ci` and build the CLI with
+`cargo build -p gen3-cli`, then supply your own supported ROMs:
 
 ```sh
 python3 scripts/review_species_mappings.py \
@@ -116,3 +117,26 @@ reviewed in BW were copied to DP. Slots 253–261 differ (the nine starter-famil
 entries); they retain DP proposals and require separate review, including two
 entries that previously matched automatically. Copy provenance remains in review
 source only, not the generated editor configuration.
+
+
+## ROM-side form evidence / 审核页中的 ROM 形态证据
+
+The reviewer loads the same `ui/speciesForms.ts` resolver and translation labels
+as the editor, transpiled by Node/TypeScript at server startup. It does not carry
+a second form-identification implementation. Native catalog family/battle edges
+and verified semantic rules identify the ROM side independently of a pending
+reference proposal. Reviewed direct identities can supply additional labels;
+comparison-only references cannot. A pending official candidate inconsistent
+with a verified ROM form displays a warning instead of silently changing either.
+
+The current picture and related-form thumbnails come from `gen3 sprite ROM ID`,
+which calls the existing native-ROM graphics reader and writes PNG to stdout.
+Images are cached in server memory per exact ROM fingerprint and internal ID,
+never added to review or production mapping files. Related forms can be clicked
+to navigate; same-name entries outside those native relationships are shown in
+a separate group. This browsing does not mark an entry reviewed.
+
+审核页左侧 ROM 条目、当前形态与图片独立于右侧官方候选；已验证形态与待审核候选
+不一致时会提示核对。形态家族、战斗变身和仅同名条目分开呈现。图片直接从当前
+ROM 读取，不写入映射配置，也不加入修改器发布包。点击关联形态只切换审核条目，
+不会自动确认映射或丢弃已经保存的审核进度。

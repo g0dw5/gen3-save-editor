@@ -307,6 +307,56 @@
       color: var(--muted);
       margin-top: 12px;
     }
+    .rom-current {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+    .rom-sprite {
+      width: 96px;
+      height: 96px;
+      image-rendering: pixelated;
+      object-fit: contain;
+    }
+    .form-mismatch {
+      color: var(--amber);
+      background: #fff6e7;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .rom-form-label {
+      color: var(--green);
+      font-weight: 600;
+    }
+    .rom-relations:has(h3) {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .rom-form-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .rom-form-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+      max-width: 100%;
+      padding: 6px 10px;
+    }
+    .rom-form-card img {
+      width: 56px;
+      height: 56px;
+      image-rendering: pixelated;
+      object-fit: contain;
+    }
+    .rom-form-card small {
+      display: block;
+      color: var(--muted);
+    }
     @media (max-width: 1000px) {
       main {
         grid-template-columns: 250px minmax(0, 1fr);
@@ -396,7 +446,8 @@
     <aside class="list" id="list" aria-label="宝可梦条目"></aside>
     <section class="detail" id="detail"></section>
   </main>
-  <script>
+  <script type="module">
+    import { formLabel, formText } from "/form-labels.js";
     const token = "__TOKEN__";
     let data,
       gameIndex = 0,
@@ -480,6 +531,55 @@
             (o.form && !o.form.includes(o.name) ? " · " + o.name : "")
         : "未选择官方条目";
     }
+    function romForm(id) {
+      const decision = entries()[id],
+        official =
+          decision?.status === "direct"
+            ? byKey.get(decision.target)
+            : undefined;
+      return formLabel(
+        game().catalog,
+        Number(id),
+        (key) => formText[key] || key,
+        {
+          verified: data.form_rules,
+          approved: official ? { decision, form: official.form } : undefined,
+        },
+      );
+    }
+    function romTitle(s) {
+      const form = romForm(s.id);
+      return form ? `${s.name} · ${form}` : s.name;
+    }
+    function spriteUrl(id) {
+      return `/sprite?md5=${encodeURIComponent(game().config.rom_md5)}&species=${id}&token=${encodeURIComponent(token)}`;
+    }
+    function formCards(current) {
+      const catalog = game().catalog,
+        members = new Set([current.id]);
+      for (const family of catalog.form_families || []) {
+        if (family.species.includes(current.id))
+          family.species.forEach((id) => members.add(id));
+      }
+      for (const edge of catalog.battle_forms || []) {
+        if (edge.source === current.id || edge.target === current.id) {
+          members.add(edge.source);
+          members.add(edge.target);
+        }
+      }
+      const relatives = catalog.species.filter((s) => members.has(s.id));
+      const sameName = catalog.species.filter(
+        (s) => s.name === current.name && !members.has(s.id),
+      );
+      const cards = (rows) =>
+        rows
+          .map(
+            (s) =>
+              `<button class="rom-form-card ${s.id === current.id ? "active" : ""}" data-rom-relative="${s.id}"><img src="${spriteUrl(s.id)}" alt="" loading="lazy"><span>${esc(romTitle(s))}<small>ROM #${s.id}${s.id === current.id ? " · 当前" : ""}</small></span></button>`,
+          )
+          .join("");
+      return `${relatives.length > 1 ? `<h3>ROM 中的关联形态</h3><div class="rom-form-grid">${cards(relatives)}</div><p class="notice">来自 ROM 形态家族／战斗变身关系。点击切换审核条目；家族关系不代表转换方法已确认。</p>` : ""}${sameName.length ? `<h3>同名的其他条目</h3><div class="rom-form-grid">${cards(sameName)}</div><p class="notice">这些条目名字相同，但 ROM 未将它们直接关联到当前形态；不凭名称或六围认定身份。</p>` : ""}`;
+    }
     function visible() {
       let q = norm($("search").value),
         f = $("filter").value;
@@ -494,7 +594,7 @@
           (!$("highOnly").checked || e.confidence === "high") &&
           (!q ||
             norm(
-              `#${s.id} ${s.name} ${[e.target, ...e.candidates].map((k) => title(byKey.get(k))).join(" ")}`,
+              `#${s.id} ${romTitle(s)} ${[e.target, ...e.candidates].map((k) => title(byKey.get(k))).join(" ")}`,
             ).includes(q))
         );
       });
@@ -538,7 +638,7 @@
         ? rows
             .map((s) => {
               let e = entries()[s.id];
-              return `<button class="row ${String(s.id) === selected ? "selected" : ""}" data-species="${s.id}"><span class="id">#${s.id}</span><strong>${esc(s.name)}</strong>${e.review_required ? ' <span class="pill">版本差异</span>' : ""}<small>→ ${esc(title(byKey.get(e.target)))}</small><span class="pill">${labels[e.status]}</span> <span class="pill">${{ high: "高把握", medium: "需核对形态", low: "需判断" }[e.confidence]}</span></button>`;
+              return `<button class="row ${String(s.id) === selected ? "selected" : ""}" data-species="${s.id}"><span class="id">#${s.id}</span><strong>${esc(romTitle(s))}</strong>${e.review_required ? ' <span class="pill">版本差异</span>' : ""}<small>→ ${esc(title(byKey.get(e.target)))}</small><span class="pill">${labels[e.status]}</span> <span class="pill">${{ high: "高把握", medium: "需核对形态", low: "需判断" }[e.confidence]}</span></button>`;
             })
             .join("")
         : '<div class="empty">当前筛选没有条目。</div>';
@@ -572,7 +672,45 @@
       const delta = (a, b) =>
         b == null ? "—" : `${a - b > 0 ? "+" : ""}${a - b}`;
       $("detail").innerHTML =
-        `<div class="panel"><div class="heading"><div><div class="eyebrow">ROM #${s.id}</div><h2>${esc(s.name)}</h2></div><span class="badge ${e.status === "pending" ? "warn" : ""}">${labels[e.status]}</span></div><div class="reason">${esc(reasons[e.reason] || e.reason)}<br><span class="notice">建议：${e.suggested_mode === "comparison" ? "仅作数值参照" : e.suggested_mode === "none" ? "人工判断" : "直接映射候选"}。${e.status === "pending" ? "尚待你确认。" : "该条已有审核决定，可按需调整。"}</span></div><div class="grid"><div><h3>推荐的官方对应</h3><div id="candidates"></div><input id="officialSearch" class="full" type="search" placeholder="换一个：输入官译名、图鉴号或形态" aria-label="搜索官方参照"><div id="officialOptions" class="search-options"></div><p class="legend">X／Y、地区形态可单独选择。数值相近只用于排序；改版数值本就可能不同。</p></div><div><h3>${esc(title(o))}</h3><table><thead><tr><th>能力</th><th>官方</th><th>ROM</th><th>差值</th></tr></thead><tbody>${order.map((i) => `<tr><th>${names[i]}</th><td>${o?.stats[i] ?? "—"}</td><td>${s.stats[i]}</td><td class="${o && s.stats[i] > o.stats[i] ? "positive" : o && s.stats[i] < o.stats[i] ? "negative" : ""}">${delta(s.stats[i], o?.stats[i])}</td></tr>`).join("")}</tbody><tfoot><tr><th>合计</th><td>${o ? sum(o.stats) : "—"}</td><td>${sum(s.stats)}</td><td>${delta(sum(s.stats), o ? sum(o.stats) : null)}</td></tr></tfoot></table><p class="notice">官方数据：神奇宝贝百科，${o ? "第 " + o.generation + " 世代" : "以最新已收录世代为准"}。ROM 六围实时从所提供文件读取。</p></div></div></div><div class="panel"><label for="note">审核备注</label><textarea id="note" maxlength="2000" placeholder="例如：自创形态，只与普通形态比较">${esc(drafts.get(draftKey()) ?? e.note)}</textarea><button id="saveNote">保存备注</button><div class="notice">直接映射＝认定是同一宝可梦／形态；仅作参照＝只比较数值；无官方对应＝明确留空。修改候选会回到待审核。</div></div><div class="actions"><button class="primary" data-decision="direct" ${!o ? "disabled" : ""}>确认直接映射</button><button data-decision="comparison" ${!o ? "disabled" : ""}>仅作数值参照</button><button data-decision="none">无官方对应</button><button id="later">稍后再审</button><button id="reopen">恢复待审核</button><button id="undo" ${!lastUndo ? "disabled" : ""}>撤销上次</button><div id="message" class="full" role="status"></div></div>`;
+        `<div class="panel"><div class="heading"><div class="rom-current"><img class="rom-sprite" src="${spriteUrl(s.id)}" alt="ROM 原始图片"><div><div class="eyebrow">ROM #${s.id}</div><h2>${esc(s.name)}</h2><div class="rom-form-label">${esc(romForm(s.id) || "当前 ROM 条目")}</div></div></div><span class="badge ${e.status === "pending" ? "warn" : ""}">${labels[e.status]}</span></div><div class="rom-relations">${formCards(s)}</div><div class="reason">${esc(reasons[e.reason] || e.reason)}<br><span class="notice">建议：${e.suggested_mode === "comparison" ? "仅作数值参照" : e.suggested_mode === "none" ? "人工判断" : "直接映射候选"}。${e.status === "pending" ? "尚待你确认。" : "该条已有审核决定，可按需调整。"}</span></div><div class="grid"><div><h3>推荐的官方对应</h3><div id="candidates"></div><input id="officialSearch" class="full" type="search" placeholder="换一个：输入官译名、图鉴号或形态" aria-label="搜索官方参照"><div id="officialOptions" class="search-options"></div><p class="legend">X／Y、地区形态可单独选择。数值相近只用于排序；改版数值本就可能不同。</p></div><div><h3>${esc(title(o))}</h3><table><thead><tr><th>能力</th><th>官方</th><th>ROM</th><th>差值</th></tr></thead><tbody>${order.map((i) => `<tr><th>${names[i]}</th><td>${o?.stats[i] ?? "—"}</td><td>${s.stats[i]}</td><td class="${o && s.stats[i] > o.stats[i] ? "positive" : o && s.stats[i] < o.stats[i] ? "negative" : ""}">${delta(s.stats[i], o?.stats[i])}</td></tr>`).join("")}</tbody><tfoot><tr><th>合计</th><td>${o ? sum(o.stats) : "—"}</td><td>${sum(s.stats)}</td><td>${delta(sum(s.stats), o ? sum(o.stats) : null)}</td></tr></tfoot></table><p class="notice">官方数据：神奇宝贝百科，${o ? "第 " + o.generation + " 世代" : "以最新已收录世代为准"}。ROM 六围实时从所提供文件读取。</p></div></div></div><div class="panel"><label for="note">审核备注</label><textarea id="note" maxlength="2000" placeholder="例如：自创形态，只与普通形态比较">${esc(drafts.get(draftKey()) ?? e.note)}</textarea><button id="saveNote">保存备注</button><div class="notice">直接映射＝认定是同一宝可梦／形态；仅作参照＝只比较数值；无官方对应＝明确留空。修改候选会回到待审核。</div></div><div class="actions"><button class="primary" data-decision="direct" ${!o ? "disabled" : ""}>确认直接映射</button><button data-decision="comparison" ${!o ? "disabled" : ""}>仅作数值参照</button><button data-decision="none">无官方对应</button><button id="later">稍后再审</button><button id="reopen">恢复待审核</button><button id="undo" ${!lastUndo ? "disabled" : ""}>撤销上次</button><div id="message" class="full" role="status"></div></div>`;
+      document.querySelectorAll("[data-rom-relative]").forEach(
+        (button) =>
+          (button.onclick = () => {
+            if (busy) return;
+            const id = button.dataset.romRelative;
+            if (!visible().some((s) => String(s.id) === id)) {
+              $("search").value = "";
+              $("filter").value = "all";
+              $("missOnly").checked = false;
+              $("highOnly").checked = false;
+            }
+            selected = id;
+            render();
+          }),
+      );
+      document.querySelectorAll(".rom-form-card img,.rom-sprite").forEach(
+        (img) =>
+          (img.onerror = () => {
+            img.hidden = true;
+          }),
+      );
+      const knownLabels = new Set(
+        (data.form_rules || [])
+          .filter((rule) => rule.rom_md5 === game().config.rom_md5)
+          .flatMap((rule) => rule.labels.map((key) => formText[key])),
+      );
+      const currentLabel = romForm(s.id);
+      if (
+        e.status === "pending" &&
+        knownLabels.has(currentLabel) &&
+        o &&
+        o.form !== currentLabel
+      ) {
+        const warning = document.createElement("p");
+        warning.className = "form-mismatch";
+        warning.textContent = `ROM 已识别为「${currentLabel}」，当前官方候选为「${o.form || o.name}」，请核对后确认。`;
+        $("candidates").before(warning);
+      }
       const option = (o) =>
         `<button class="candidate ${o.key === e.target ? "active" : ""}" data-ref="${esc(o.key)}"><span>${esc(title(o))}</span><small>#${o.dex}</small></button>`;
       $("candidates").innerHTML = e.candidates.length
