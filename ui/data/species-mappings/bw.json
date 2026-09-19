@@ -2,5 +2,462 @@
   "schema": 1,
   "profile_id": "dark-phantom-5ex-bw",
   "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
-  "entries": {}
+  "entries": {
+    "12": {
+      "status": "direct",
+      "target": "12:"
+    },
+    "18": {
+      "status": "direct",
+      "target": "18:"
+    },
+    "21": {
+      "status": "direct",
+      "target": "627:"
+    },
+    "22": {
+      "status": "direct",
+      "target": "628:"
+    },
+    "29": {
+      "status": "direct",
+      "target": "29:"
+    },
+    "32": {
+      "status": "direct",
+      "target": "32:"
+    },
+    "49": {
+      "status": "direct",
+      "target": "49:"
+    },
+    "57": {
+      "status": "direct",
+      "target": "57:"
+    },
+    "61": {
+      "status": "direct",
+      "target": "61:"
+    },
+    "62": {
+      "status": "direct",
+      "target": "62:"
+    },
+    "64": {
+      "status": "direct",
+      "target": "64:"
+    },
+    "80": {
+      "status": "direct",
+      "target": "80:"
+    },
+    "91": {
+      "status": "direct",
+      "target": "91:"
+    },
+    "96": {
+      "status": "direct",
+      "target": "517:"
+    },
+    "97": {
+      "status": "direct",
+      "target": "518:"
+    },
+    "100": {
+      "status": "direct",
+      "target": "100:"
+    },
+    "101": {
+      "status": "direct",
+      "target": "101:"
+    },
+    "104": {
+      "status": "direct",
+      "target": "104:"
+    },
+    "105": {
+      "status": "direct",
+      "target": "105:"
+    },
+    "106": {
+      "status": "direct",
+      "target": "106:"
+    },
+    "107": {
+      "status": "direct",
+      "target": "107:"
+    },
+    "108": {
+      "status": "direct",
+      "target": "463:"
+    },
+    "111": {
+      "status": "direct",
+      "target": "111:"
+    },
+    "112": {
+      "status": "direct",
+      "target": "464:"
+    },
+    "115": {
+      "status": "direct",
+      "target": "115:"
+    },
+    "122": {
+      "status": "direct",
+      "target": "122:"
+    },
+    "126": {
+      "status": "direct",
+      "target": "467:"
+    },
+    "127": {
+      "status": "direct",
+      "target": "127:"
+    },
+    "131": {
+      "status": "direct",
+      "target": "131:"
+    },
+    "134": {
+      "status": "direct",
+      "target": "134:"
+    },
+    "135": {
+      "status": "direct",
+      "target": "135:"
+    },
+    "136": {
+      "status": "direct",
+      "target": "136:"
+    },
+    "137": {
+      "status": "direct",
+      "target": "137:"
+    },
+    "154": {
+      "status": "direct",
+      "target": "154:"
+    },
+    "157": {
+      "status": "direct",
+      "target": "157:"
+    },
+    "162": {
+      "status": "direct",
+      "target": "573:"
+    },
+    "167": {
+      "status": "direct",
+      "target": "167:"
+    },
+    "173": {
+      "status": "direct",
+      "target": "470:"
+    },
+    "174": {
+      "status": "direct",
+      "target": "471:"
+    },
+    "180": {
+      "status": "direct",
+      "target": "180:"
+    },
+    "185": {
+      "status": "direct",
+      "target": "185:"
+    },
+    "186": {
+      "status": "direct",
+      "target": "186:"
+    },
+    "191": {
+      "status": "direct",
+      "target": "548:"
+    },
+    "192": {
+      "status": "direct",
+      "target": "549:"
+    },
+    "193": {
+      "status": "direct",
+      "target": "469:"
+    },
+    "196": {
+      "status": "direct",
+      "target": "196:"
+    },
+    "197": {
+      "status": "direct",
+      "target": "197:"
+    },
+    "198": {
+      "status": "direct",
+      "target": "430:"
+    },
+    "199": {
+      "status": "direct",
+      "target": "199:"
+    },
+    "204": {
+      "status": "direct",
+      "target": "597:"
+    },
+    "205": {
+      "status": "direct",
+      "target": "598:"
+    },
+    "218": {
+      "status": "direct",
+      "target": "554:"
+    },
+    "219": {
+      "status": "direct",
+      "target": "555:普通模式"
+    },
+    "221": {
+      "status": "direct",
+      "target": "473:"
+    },
+    "223": {
+      "status": "direct",
+      "target": "592:"
+    },
+    "224": {
+      "status": "direct",
+      "target": "593:"
+    },
+    "231": {
+      "status": "direct",
+      "target": "529:"
+    },
+    "232": {
+      "status": "direct",
+      "target": "530:"
+    },
+    "233": {
+      "status": "direct",
+      "target": "474:"
+    },
+    "236": {
+      "status": "direct",
+      "target": "236:"
+    },
+    "237": {
+      "status": "direct",
+      "target": "237:"
+    },
+    "240": {
+      "status": "direct",
+      "target": "240:"
+    },
+    "246": {
+      "status": "direct",
+      "target": "246:"
+    },
+    "247": {
+      "status": "direct",
+      "target": "247:"
+    },
+    "248": {
+      "status": "direct",
+      "target": "248:"
+    },
+    "251": {
+      "status": "direct",
+      "target": "251:"
+    },
+    "252": {
+      "status": "direct",
+      "target": "494:"
+    },
+    "253": {
+      "status": "direct",
+      "target": "495:"
+    },
+    "254": {
+      "status": "direct",
+      "target": "496:"
+    },
+    "255": {
+      "status": "direct",
+      "target": "497:"
+    },
+    "257": {
+      "status": "direct",
+      "target": "499:"
+    },
+    "258": {
+      "status": "direct",
+      "target": "500:"
+    },
+    "259": {
+      "status": "direct",
+      "target": "501:"
+    },
+    "260": {
+      "status": "direct",
+      "target": "502:"
+    },
+    "261": {
+      "status": "direct",
+      "target": "503:"
+    },
+    "262": {
+      "status": "direct",
+      "target": "646:焰白酋雷姆"
+    },
+    "264": {
+      "status": "direct",
+      "target": "483:"
+    },
+    "265": {
+      "status": "direct",
+      "target": "484:"
+    },
+    "266": {
+      "status": "direct",
+      "target": "487:起源形态"
+    },
+    "267": {
+      "status": "direct",
+      "target": "488:"
+    },
+    "269": {
+      "status": "direct",
+      "target": "643:"
+    },
+    "271": {
+      "status": "direct",
+      "target": "646:暗黑酋雷姆"
+    },
+    "272": {
+      "status": "direct",
+      "target": "490:"
+    },
+    "273": {
+      "status": "direct",
+      "target": "492:天空形态"
+    },
+    "274": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "275": {
+      "status": "direct",
+      "target": "647:"
+    },
+    "291": {
+      "status": "direct",
+      "target": "266:"
+    },
+    "294": {
+      "status": "direct",
+      "target": "269:"
+    },
+    "311": {
+      "status": "direct",
+      "target": "636:"
+    },
+    "312": {
+      "status": "direct",
+      "target": "637:"
+    },
+    "318": {
+      "status": "direct",
+      "target": "436:"
+    },
+    "320": {
+      "status": "direct",
+      "target": "476:"
+    },
+    "322": {
+      "status": "direct",
+      "target": "442:"
+    },
+    "325": {
+      "status": "direct",
+      "target": "594:"
+    },
+    "328": {
+      "status": "direct",
+      "target": "349:"
+    },
+    "333": {
+      "status": "direct",
+      "target": "634:"
+    },
+    "334": {
+      "status": "direct",
+      "target": "635:"
+    },
+    "336": {
+      "status": "direct",
+      "target": "297:"
+    },
+    "337": {
+      "status": "direct",
+      "target": "404:"
+    },
+    "338": {
+      "status": "direct",
+      "target": "405:"
+    },
+    "350": {
+      "status": "direct",
+      "target": "403:"
+    },
+    "361": {
+      "status": "direct",
+      "target": "355:"
+    },
+    "362": {
+      "status": "direct",
+      "target": "477:"
+    },
+    "363": {
+      "status": "direct",
+      "target": "407:"
+    },
+    "364": {
+      "status": "direct",
+      "target": "287:"
+    },
+    "377": {
+      "status": "direct",
+      "target": "607:"
+    },
+    "378": {
+      "status": "direct",
+      "target": "609:"
+    },
+    "382": {
+      "status": "direct",
+      "target": "610:"
+    },
+    "385": {
+      "status": "direct",
+      "target": "351:"
+    },
+    "397": {
+      "status": "direct",
+      "target": "373:"
+    },
+    "404": {
+      "status": "direct",
+      "target": "382:"
+    },
+    "405": {
+      "status": "direct",
+      "target": "383:"
+    },
+    "406": {
+      "status": "direct",
+      "target": "384:"
+    },
+    "410": {
+      "status": "direct",
+      "target": "386:普通形态"
+    }
+  }
 }

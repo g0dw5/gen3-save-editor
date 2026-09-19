@@ -2,7 +2,7 @@
   "schema": 1,
   "profile_id": "dark-phantom-5ex-bw",
   "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
-  "revision": 0,
+  "revision": 127,
   "entries": {
     "1": {
       "status": "pending",
@@ -141,7 +141,7 @@
       "note": ""
     },
     "12": {
-      "status": "pending",
+      "status": "direct",
       "target": "12:",
       "candidates": [
         "12:"
@@ -214,7 +214,7 @@
       "note": ""
     },
     "18": {
-      "status": "pending",
+      "status": "direct",
       "target": "18:",
       "candidates": [
         "18:",
@@ -253,7 +253,7 @@
       "note": ""
     },
     "21": {
-      "status": "pending",
+      "status": "direct",
       "target": "627:",
       "candidates": [
         "627:"
@@ -265,7 +265,7 @@
       "note": ""
     },
     "22": {
-      "status": "pending",
+      "status": "direct",
       "target": "628:",
       "candidates": [
         "628:",
@@ -356,7 +356,7 @@
       "note": ""
     },
     "29": {
-      "status": "pending",
+      "status": "direct",
       "target": "29:",
       "candidates": [
         "29:"
@@ -392,7 +392,7 @@
       "note": ""
     },
     "32": {
-      "status": "pending",
+      "status": "direct",
       "target": "32:",
       "candidates": [
         "32:"
@@ -599,7 +599,7 @@
       "note": ""
     },
     "49": {
-      "status": "pending",
+      "status": "direct",
       "target": "49:",
       "candidates": [
         "49:"
@@ -700,7 +700,7 @@
       "note": ""
     },
     "57": {
-      "status": "pending",
+      "status": "direct",
       "target": "57:",
       "candidates": [
         "57:"
@@ -750,7 +750,7 @@
       "note": ""
     },
     "61": {
-      "status": "pending",
+      "status": "direct",
       "target": "61:",
       "candidates": [
         "61:"
@@ -762,7 +762,7 @@
       "note": ""
     },
     "62": {
-      "status": "pending",
+      "status": "direct",
       "target": "62:",
       "candidates": [
         "62:"
@@ -786,7 +786,7 @@
       "note": ""
     },
     "64": {
-      "status": "pending",
+      "status": "direct",
       "target": "64:",
       "candidates": [
         "64:"
@@ -986,7 +986,7 @@
       "note": ""
     },
     "80": {
-      "status": "pending",
+      "status": "direct",
       "target": "80:",
       "candidates": [
         "80:",
@@ -1123,7 +1123,7 @@
       "note": ""
     },
     "91": {
-      "status": "pending",
+      "status": "direct",
       "target": "91:",
       "candidates": [
         "91:"
@@ -1184,7 +1184,7 @@
       "note": ""
     },
     "96": {
-      "status": "pending",
+      "status": "direct",
       "target": "517:",
       "candidates": [
         "517:"
@@ -1196,7 +1196,7 @@
       "note": ""
     },
     "97": {
-      "status": "pending",
+      "status": "direct",
       "target": "518:",
       "candidates": [
         "518:"
@@ -1232,7 +1232,7 @@
       "note": ""
     },
     "100": {
-      "status": "pending",
+      "status": "direct",
       "target": "100:",
       "candidates": [
         "100:",
@@ -1245,7 +1245,7 @@
       "note": ""
     },
     "101": {
-      "status": "pending",
+      "status": "direct",
       "target": "101:",
       "candidates": [
         "101:",
@@ -1283,7 +1283,7 @@
       "note": ""
     },
     "104": {
-      "status": "pending",
+      "status": "direct",
       "target": "104:",
       "candidates": [
         "104:"
@@ -1295,7 +1295,7 @@
       "note": ""
     },
     "105": {
-      "status": "pending",
+      "status": "direct",
       "target": "105:",
       "candidates": [
         "105:",
@@ -1308,7 +1308,7 @@
       "note": ""
     },
     "106": {
-      "status": "pending",
+      "status": "direct",
       "target": "106:",
       "candidates": [
         "106:"
@@ -1320,7 +1320,7 @@
       "note": ""
     },
     "107": {
-      "status": "pending",
+      "status": "direct",
       "target": "107:",
       "candidates": [
         "107:"
@@ -1332,7 +1332,7 @@
       "note": ""
     },
     "108": {
-      "status": "pending",
+      "status": "direct",
       "target": "463:",
       "candidates": [
         "463:"
@@ -1369,7 +1369,7 @@
       "note": ""
     },
     "111": {
-      "status": "pending",
+      "status": "direct",
       "target": "111:",
       "candidates": [
         "111:"
@@ -1381,7 +1381,7 @@
       "note": ""
     },
     "112": {
-      "status": "pending",
+      "status": "direct",
       "target": "464:",
       "candidates": [
         "464:"
@@ -1417,7 +1417,7 @@
       "note": ""
     },
     "115": {
-      "status": "pending",
+      "status": "direct",
       "target": "115:",
       "candidates": [
         "115:",
@@ -1503,7 +1503,7 @@
       "note": ""
     },
     "122": {
-      "status": "pending",
+      "status": "direct",
       "target": "122:",
       "candidates": [
         "122:",
@@ -1552,7 +1552,7 @@
       "note": ""
     },
     "126": {
-      "status": "pending",
+      "status": "direct",
       "target": "467:",
       "candidates": [
         "467:"
@@ -1564,7 +1564,7 @@
       "note": ""
     },
     "127": {
-      "status": "pending",
+      "status": "direct",
       "target": "127:",
       "candidates": [
         "127:",
@@ -1615,7 +1615,7 @@
       "note": ""
     },
     "131": {
-      "status": "pending",
+      "status": "direct",
       "target": "131:",
       "candidates": [
         "131:"
@@ -1652,7 +1652,7 @@
       "note": ""
     },
     "134": {
-      "status": "pending",
+      "status": "direct",
       "target": "134:",
       "candidates": [
         "134:"
@@ -1664,7 +1664,7 @@
       "note": ""
     },
     "135": {
-      "status": "pending",
+      "status": "direct",
       "target": "135:",
       "candidates": [
         "135:"
@@ -1676,7 +1676,7 @@
       "note": ""
     },
     "136": {
-      "status": "pending",
+      "status": "direct",
       "target": "136:",
       "candidates": [
         "136:"
@@ -1688,7 +1688,7 @@
       "note": ""
     },
     "137": {
-      "status": "pending",
+      "status": "direct",
       "target": "137:",
       "candidates": [
         "137:"
@@ -1899,7 +1899,7 @@
       "note": ""
     },
     "154": {
-      "status": "pending",
+      "status": "direct",
       "target": "154:",
       "candidates": [
         "154:",
@@ -1936,7 +1936,7 @@
       "note": ""
     },
     "157": {
-      "status": "pending",
+      "status": "direct",
       "target": "157:",
       "candidates": [
         "157:",
@@ -1998,7 +1998,7 @@
       "note": ""
     },
     "162": {
-      "status": "pending",
+      "status": "direct",
       "target": "573:",
       "candidates": [
         "573:"
@@ -2058,7 +2058,7 @@
       "note": ""
     },
     "167": {
-      "status": "pending",
+      "status": "direct",
       "target": "167:",
       "candidates": [
         "167:"
@@ -2130,7 +2130,7 @@
       "note": ""
     },
     "173": {
-      "status": "pending",
+      "status": "direct",
       "target": "470:",
       "candidates": [
         "470:"
@@ -2142,7 +2142,7 @@
       "note": ""
     },
     "174": {
-      "status": "pending",
+      "status": "direct",
       "target": "471:",
       "candidates": [
         "471:"
@@ -2214,7 +2214,7 @@
       "note": ""
     },
     "180": {
-      "status": "pending",
+      "status": "direct",
       "target": "180:",
       "candidates": [
         "180:"
@@ -2275,7 +2275,7 @@
       "note": ""
     },
     "185": {
-      "status": "pending",
+      "status": "direct",
       "target": "185:",
       "candidates": [
         "185:"
@@ -2287,7 +2287,7 @@
       "note": ""
     },
     "186": {
-      "status": "pending",
+      "status": "direct",
       "target": "186:",
       "candidates": [
         "186:"
@@ -2348,7 +2348,7 @@
       "note": ""
     },
     "191": {
-      "status": "pending",
+      "status": "direct",
       "target": "548:",
       "candidates": [
         "548:"
@@ -2360,7 +2360,7 @@
       "note": ""
     },
     "192": {
-      "status": "pending",
+      "status": "direct",
       "target": "549:",
       "candidates": [
         "549:",
@@ -2373,7 +2373,7 @@
       "note": ""
     },
     "193": {
-      "status": "pending",
+      "status": "direct",
       "target": "469:",
       "candidates": [
         "469:"
@@ -2410,7 +2410,7 @@
       "note": ""
     },
     "196": {
-      "status": "pending",
+      "status": "direct",
       "target": "196:",
       "candidates": [
         "196:"
@@ -2422,7 +2422,7 @@
       "note": ""
     },
     "197": {
-      "status": "pending",
+      "status": "direct",
       "target": "197:",
       "candidates": [
         "197:"
@@ -2434,7 +2434,7 @@
       "note": ""
     },
     "198": {
-      "status": "pending",
+      "status": "direct",
       "target": "430:",
       "candidates": [
         "430:"
@@ -2446,7 +2446,7 @@
       "note": ""
     },
     "199": {
-      "status": "pending",
+      "status": "direct",
       "target": "199:",
       "candidates": [
         "199:",
@@ -2507,7 +2507,7 @@
       "note": ""
     },
     "204": {
-      "status": "pending",
+      "status": "direct",
       "target": "597:",
       "candidates": [
         "597:"
@@ -2519,7 +2519,7 @@
       "note": ""
     },
     "205": {
-      "status": "pending",
+      "status": "direct",
       "target": "598:",
       "candidates": [
         "598:"
@@ -2679,7 +2679,7 @@
       "note": ""
     },
     "218": {
-      "status": "pending",
+      "status": "direct",
       "target": "554:",
       "candidates": [
         "554:",
@@ -2692,7 +2692,7 @@
       "note": ""
     },
     "219": {
-      "status": "pending",
+      "status": "direct",
       "target": "555:普通模式",
       "candidates": [
         "555:普通模式",
@@ -2719,7 +2719,7 @@
       "note": ""
     },
     "221": {
-      "status": "pending",
+      "status": "direct",
       "target": "473:",
       "candidates": [
         "473:"
@@ -2744,7 +2744,7 @@
       "note": ""
     },
     "223": {
-      "status": "pending",
+      "status": "direct",
       "target": "592:",
       "candidates": [
         "592:"
@@ -2756,7 +2756,7 @@
       "note": ""
     },
     "224": {
-      "status": "pending",
+      "status": "direct",
       "target": "593:",
       "candidates": [
         "593:"
@@ -2843,7 +2843,7 @@
       "note": ""
     },
     "231": {
-      "status": "pending",
+      "status": "direct",
       "target": "529:",
       "candidates": [
         "529:"
@@ -2855,7 +2855,7 @@
       "note": ""
     },
     "232": {
-      "status": "pending",
+      "status": "direct",
       "target": "530:",
       "candidates": [
         "530:",
@@ -2868,7 +2868,7 @@
       "note": ""
     },
     "233": {
-      "status": "pending",
+      "status": "direct",
       "target": "474:",
       "candidates": [
         "474:"
@@ -2904,7 +2904,7 @@
       "note": ""
     },
     "236": {
-      "status": "pending",
+      "status": "direct",
       "target": "236:",
       "candidates": [
         "236:"
@@ -2916,7 +2916,7 @@
       "note": ""
     },
     "237": {
-      "status": "pending",
+      "status": "direct",
       "target": "237:",
       "candidates": [
         "237:"
@@ -2952,7 +2952,7 @@
       "note": ""
     },
     "240": {
-      "status": "pending",
+      "status": "direct",
       "target": "240:",
       "candidates": [
         "240:"
@@ -3024,7 +3024,7 @@
       "note": ""
     },
     "246": {
-      "status": "pending",
+      "status": "direct",
       "target": "246:",
       "candidates": [
         "246:"
@@ -3036,7 +3036,7 @@
       "note": ""
     },
     "247": {
-      "status": "pending",
+      "status": "direct",
       "target": "247:",
       "candidates": [
         "247:"
@@ -3048,7 +3048,7 @@
       "note": ""
     },
     "248": {
-      "status": "pending",
+      "status": "direct",
       "target": "248:",
       "candidates": [
         "248:",
@@ -3085,7 +3085,7 @@
       "note": ""
     },
     "251": {
-      "status": "pending",
+      "status": "direct",
       "target": "251:",
       "candidates": [
         "251:"
@@ -3097,7 +3097,7 @@
       "note": ""
     },
     "252": {
-      "status": "pending",
+      "status": "direct",
       "target": "494:",
       "candidates": [
         "494:"
@@ -3109,7 +3109,7 @@
       "note": ""
     },
     "253": {
-      "status": "pending",
+      "status": "direct",
       "target": "495:",
       "candidates": [
         "495:"
@@ -3121,7 +3121,7 @@
       "note": ""
     },
     "254": {
-      "status": "pending",
+      "status": "direct",
       "target": "496:",
       "candidates": [
         "496:"
@@ -3133,7 +3133,7 @@
       "note": ""
     },
     "255": {
-      "status": "pending",
+      "status": "direct",
       "target": "497:",
       "candidates": [
         "497:"
@@ -3157,7 +3157,7 @@
       "note": ""
     },
     "257": {
-      "status": "pending",
+      "status": "direct",
       "target": "499:",
       "candidates": [
         "499:"
@@ -3169,7 +3169,7 @@
       "note": ""
     },
     "258": {
-      "status": "pending",
+      "status": "direct",
       "target": "500:",
       "candidates": [
         "500:",
@@ -3182,7 +3182,7 @@
       "note": ""
     },
     "259": {
-      "status": "pending",
+      "status": "direct",
       "target": "501:",
       "candidates": [
         "501:"
@@ -3194,7 +3194,7 @@
       "note": ""
     },
     "260": {
-      "status": "pending",
+      "status": "direct",
       "target": "502:",
       "candidates": [
         "502:"
@@ -3206,7 +3206,7 @@
       "note": ""
     },
     "261": {
-      "status": "pending",
+      "status": "direct",
       "target": "503:",
       "candidates": [
         "503:",
@@ -3219,7 +3219,7 @@
       "note": ""
     },
     "262": {
-      "status": "pending",
+      "status": "direct",
       "target": "646:焰白酋雷姆",
       "candidates": [
         "646:焰白酋雷姆",
@@ -3245,7 +3245,7 @@
       "note": ""
     },
     "264": {
-      "status": "pending",
+      "status": "direct",
       "target": "483:",
       "candidates": [
         "483:",
@@ -3258,7 +3258,7 @@
       "note": ""
     },
     "265": {
-      "status": "pending",
+      "status": "direct",
       "target": "484:",
       "candidates": [
         "484:",
@@ -3271,7 +3271,7 @@
       "note": ""
     },
     "266": {
-      "status": "pending",
+      "status": "direct",
       "target": "487:起源形态",
       "candidates": [
         "487:起源形态",
@@ -3284,7 +3284,7 @@
       "note": ""
     },
     "267": {
-      "status": "pending",
+      "status": "direct",
       "target": "488:",
       "candidates": [
         "488:"
@@ -3309,7 +3309,7 @@
       "note": ""
     },
     "269": {
-      "status": "pending",
+      "status": "direct",
       "target": "643:",
       "candidates": [
         "643:"
@@ -3333,7 +3333,7 @@
       "note": ""
     },
     "271": {
-      "status": "pending",
+      "status": "direct",
       "target": "646:暗黑酋雷姆",
       "candidates": [
         "646:暗黑酋雷姆",
@@ -3347,7 +3347,7 @@
       "note": ""
     },
     "272": {
-      "status": "pending",
+      "status": "direct",
       "target": "490:",
       "candidates": [
         "490:"
@@ -3359,7 +3359,7 @@
       "note": ""
     },
     "273": {
-      "status": "pending",
+      "status": "direct",
       "target": "492:天空形态",
       "candidates": [
         "492:天空形态",
@@ -3372,7 +3372,7 @@
       "note": ""
     },
     "274": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -3384,7 +3384,7 @@
       "note": ""
     },
     "275": {
-      "status": "pending",
+      "status": "direct",
       "target": "647:",
       "candidates": [
         "647:"
@@ -3581,7 +3581,7 @@
       "note": ""
     },
     "291": {
-      "status": "pending",
+      "status": "direct",
       "target": "266:",
       "candidates": [
         "266:"
@@ -3617,7 +3617,7 @@
       "note": ""
     },
     "294": {
-      "status": "pending",
+      "status": "direct",
       "target": "269:",
       "candidates": [
         "269:"
@@ -3821,7 +3821,7 @@
       "note": ""
     },
     "311": {
-      "status": "pending",
+      "status": "direct",
       "target": "636:",
       "candidates": [
         "636:"
@@ -3833,7 +3833,7 @@
       "note": ""
     },
     "312": {
-      "status": "pending",
+      "status": "direct",
       "target": "637:",
       "candidates": [
         "637:"
@@ -3905,7 +3905,7 @@
       "note": ""
     },
     "318": {
-      "status": "pending",
+      "status": "direct",
       "target": "436:",
       "candidates": [
         "436:"
@@ -3929,7 +3929,7 @@
       "note": ""
     },
     "320": {
-      "status": "pending",
+      "status": "direct",
       "target": "476:",
       "candidates": [
         "476:"
@@ -3953,7 +3953,7 @@
       "note": ""
     },
     "322": {
-      "status": "pending",
+      "status": "direct",
       "target": "442:",
       "candidates": [
         "442:"
@@ -3989,7 +3989,7 @@
       "note": ""
     },
     "325": {
-      "status": "pending",
+      "status": "direct",
       "target": "594:",
       "candidates": [
         "594:"
@@ -4027,7 +4027,7 @@
       "note": ""
     },
     "328": {
-      "status": "pending",
+      "status": "direct",
       "target": "349:",
       "candidates": [
         "349:"
@@ -4088,7 +4088,7 @@
       "note": ""
     },
     "333": {
-      "status": "pending",
+      "status": "direct",
       "target": "634:",
       "candidates": [
         "634:"
@@ -4100,7 +4100,7 @@
       "note": ""
     },
     "334": {
-      "status": "pending",
+      "status": "direct",
       "target": "635:",
       "candidates": [
         "635:"
@@ -4124,7 +4124,7 @@
       "note": ""
     },
     "336": {
-      "status": "pending",
+      "status": "direct",
       "target": "297:",
       "candidates": [
         "297:"
@@ -4136,7 +4136,7 @@
       "note": ""
     },
     "337": {
-      "status": "pending",
+      "status": "direct",
       "target": "404:",
       "candidates": [
         "404:"
@@ -4148,7 +4148,7 @@
       "note": ""
     },
     "338": {
-      "status": "pending",
+      "status": "direct",
       "target": "405:",
       "candidates": [
         "405:"
@@ -4295,7 +4295,7 @@
       "note": ""
     },
     "350": {
-      "status": "pending",
+      "status": "direct",
       "target": "403:",
       "candidates": [
         "403:"
@@ -4431,7 +4431,7 @@
       "note": ""
     },
     "361": {
-      "status": "pending",
+      "status": "direct",
       "target": "355:",
       "candidates": [
         "355:"
@@ -4443,7 +4443,7 @@
       "note": ""
     },
     "362": {
-      "status": "pending",
+      "status": "direct",
       "target": "477:",
       "candidates": [
         "477:"
@@ -4455,7 +4455,7 @@
       "note": ""
     },
     "363": {
-      "status": "pending",
+      "status": "direct",
       "target": "407:",
       "candidates": [
         "407:"
@@ -4467,7 +4467,7 @@
       "note": ""
     },
     "364": {
-      "status": "pending",
+      "status": "direct",
       "target": "287:",
       "candidates": [
         "287:"
@@ -4627,7 +4627,7 @@
       "note": ""
     },
     "377": {
-      "status": "pending",
+      "status": "direct",
       "target": "607:",
       "candidates": [
         "607:"
@@ -4639,7 +4639,7 @@
       "note": ""
     },
     "378": {
-      "status": "pending",
+      "status": "direct",
       "target": "609:",
       "candidates": [
         "609:",
@@ -4688,7 +4688,7 @@
       "note": ""
     },
     "382": {
-      "status": "pending",
+      "status": "direct",
       "target": "610:",
       "candidates": [
         "610:"
@@ -4724,7 +4724,7 @@
       "note": ""
     },
     "385": {
-      "status": "pending",
+      "status": "direct",
       "target": "351:",
       "candidates": [
         "351:"
@@ -4870,7 +4870,7 @@
       "note": ""
     },
     "397": {
-      "status": "pending",
+      "status": "direct",
       "target": "373:",
       "candidates": [
         "373:",
@@ -4956,7 +4956,7 @@
       "note": ""
     },
     "404": {
-      "status": "pending",
+      "status": "direct",
       "target": "382:",
       "candidates": [
         "382:",
@@ -4969,7 +4969,7 @@
       "note": ""
     },
     "405": {
-      "status": "pending",
+      "status": "direct",
       "target": "383:",
       "candidates": [
         "383:",
@@ -4982,7 +4982,7 @@
       "note": ""
     },
     "406": {
-      "status": "pending",
+      "status": "direct",
       "target": "384:",
       "candidates": [
         "384:",
@@ -5033,7 +5033,7 @@
       "note": ""
     },
     "410": {
-      "status": "pending",
+      "status": "direct",
       "target": "386:普通形态",
       "candidates": [
         "386:普通形态",

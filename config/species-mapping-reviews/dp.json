@@ -2,7 +2,7 @@
   "schema": 1,
   "profile_id": "dark-phantom-5ex-dp",
   "rom_md5": "cb2940215f4dafb1bef133c3af379f44",
-  "revision": 1,
+  "revision": 10,
   "entries": {
     "1": {
       "status": "pending",
@@ -3444,7 +3444,7 @@
       }
     },
     "253": {
-      "status": "pending",
+      "status": "direct",
       "target": "387:",
       "candidates": [
         "387:"
@@ -3457,7 +3457,7 @@
       "review_required": true
     },
     "254": {
-      "status": "pending",
+      "status": "direct",
       "target": "388:",
       "candidates": [
         "388:"
@@ -3470,7 +3470,7 @@
       "review_required": true
     },
     "255": {
-      "status": "pending",
+      "status": "direct",
       "target": "389:",
       "candidates": [
         "389:"
@@ -3483,7 +3483,7 @@
       "review_required": true
     },
     "256": {
-      "status": "pending",
+      "status": "direct",
       "target": "390:",
       "candidates": [
         "390:"
@@ -3496,7 +3496,7 @@
       "review_required": true
     },
     "257": {
-      "status": "pending",
+      "status": "direct",
       "target": "391:",
       "candidates": [
         "391:"
@@ -3509,7 +3509,7 @@
       "review_required": true
     },
     "258": {
-      "status": "pending",
+      "status": "direct",
       "target": "392:",
       "candidates": [
         "392:"
@@ -3522,7 +3522,7 @@
       "review_required": true
     },
     "259": {
-      "status": "pending",
+      "status": "direct",
       "target": "393:",
       "candidates": [
         "393:"
@@ -3535,7 +3535,7 @@
       "review_required": true
     },
     "260": {
-      "status": "pending",
+      "status": "direct",
       "target": "394:",
       "candidates": [
         "394:"
@@ -3548,7 +3548,7 @@
       "review_required": true
     },
     "261": {
-      "status": "pending",
+      "status": "direct",
       "target": "395:",
       "candidates": [
         "395:"

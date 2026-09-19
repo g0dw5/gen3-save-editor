@@ -2,5 +2,1602 @@
   "schema": 1,
   "profile_id": "rocket-21-zh",
   "rom_md5": "59c658a1081f542086de1060bb65f0b3",
-  "entries": {}
+  "entries": {
+    "386": {
+      "status": "direct",
+      "target": "386:普通形态"
+    },
+    "413": {
+      "status": "direct",
+      "target": "413:草木蓑衣"
+    },
+    "487": {
+      "status": "direct",
+      "target": "487:别种形态"
+    },
+    "492": {
+      "status": "direct",
+      "target": "492:陆上形态"
+    },
+    "555": {
+      "status": "direct",
+      "target": "555:普通模式"
+    },
+    "641": {
+      "status": "direct",
+      "target": "641:化身形态"
+    },
+    "642": {
+      "status": "direct",
+      "target": "642:化身形态"
+    },
+    "645": {
+      "status": "direct",
+      "target": "645:化身形态"
+    },
+    "648": {
+      "status": "direct",
+      "target": "648:歌声形态"
+    },
+    "681": {
+      "status": "direct",
+      "target": "681:盾牌形态"
+    },
+    "710": {
+      "status": "direct",
+      "target": "710:中颗种"
+    },
+    "711": {
+      "status": "direct",
+      "target": "711:中颗种"
+    },
+    "718": {
+      "status": "direct",
+      "target": "718:５０％形态"
+    },
+    "720": {
+      "status": "direct",
+      "target": "720:惩戒胡帕"
+    },
+    "745": {
+      "status": "direct",
+      "target": "745:白昼的样子"
+    },
+    "746": {
+      "status": "direct",
+      "target": "746:单独的样子"
+    },
+    "774": {
+      "status": "direct",
+      "target": "774:流星的样子"
+    },
+    "875": {
+      "status": "direct",
+      "target": "875:结冻头"
+    },
+    "876": {
+      "status": "direct",
+      "target": "876:雄性"
+    },
+    "888": {
+      "status": "direct",
+      "target": "888:百战勇者"
+    },
+    "889": {
+      "status": "direct",
+      "target": "889:百战勇者"
+    },
+    "899": {
+      "status": "none",
+      "target": null
+    },
+    "900": {
+      "status": "none",
+      "target": null
+    },
+    "901": {
+      "status": "none",
+      "target": null
+    },
+    "902": {
+      "status": "none",
+      "target": null
+    },
+    "903": {
+      "status": "none",
+      "target": null
+    },
+    "904": {
+      "status": "none",
+      "target": null
+    },
+    "905": {
+      "status": "none",
+      "target": null
+    },
+    "906": {
+      "status": "none",
+      "target": null
+    },
+    "907": {
+      "status": "none",
+      "target": null
+    },
+    "908": {
+      "status": "none",
+      "target": null
+    },
+    "909": {
+      "status": "none",
+      "target": null
+    },
+    "910": {
+      "status": "none",
+      "target": null
+    },
+    "911": {
+      "status": "none",
+      "target": null
+    },
+    "912": {
+      "status": "none",
+      "target": null
+    },
+    "916": {
+      "status": "none",
+      "target": null
+    },
+    "917": {
+      "status": "none",
+      "target": null
+    },
+    "918": {
+      "status": "none",
+      "target": null
+    },
+    "920": {
+      "status": "none",
+      "target": null
+    },
+    "921": {
+      "status": "none",
+      "target": null
+    },
+    "922": {
+      "status": "none",
+      "target": null
+    },
+    "925": {
+      "status": "none",
+      "target": null
+    },
+    "926": {
+      "status": "none",
+      "target": null
+    },
+    "927": {
+      "status": "none",
+      "target": null
+    },
+    "928": {
+      "status": "none",
+      "target": null
+    },
+    "929": {
+      "status": "none",
+      "target": null
+    },
+    "930": {
+      "status": "none",
+      "target": null
+    },
+    "931": {
+      "status": "none",
+      "target": null
+    },
+    "932": {
+      "status": "none",
+      "target": null
+    },
+    "933": {
+      "status": "none",
+      "target": null
+    },
+    "934": {
+      "status": "none",
+      "target": null
+    },
+    "935": {
+      "status": "none",
+      "target": null
+    },
+    "936": {
+      "status": "none",
+      "target": null
+    },
+    "937": {
+      "status": "none",
+      "target": null
+    },
+    "938": {
+      "status": "none",
+      "target": null
+    },
+    "939": {
+      "status": "none",
+      "target": null
+    },
+    "940": {
+      "status": "none",
+      "target": null
+    },
+    "941": {
+      "status": "none",
+      "target": null
+    },
+    "942": {
+      "status": "none",
+      "target": null
+    },
+    "943": {
+      "status": "none",
+      "target": null
+    },
+    "944": {
+      "status": "none",
+      "target": null
+    },
+    "945": {
+      "status": "none",
+      "target": null
+    },
+    "946": {
+      "status": "none",
+      "target": null
+    },
+    "948": {
+      "status": "none",
+      "target": null
+    },
+    "949": {
+      "status": "none",
+      "target": null
+    },
+    "950": {
+      "status": "none",
+      "target": null
+    },
+    "952": {
+      "status": "none",
+      "target": null
+    },
+    "954": {
+      "status": "none",
+      "target": null
+    },
+    "955": {
+      "status": "none",
+      "target": null
+    },
+    "956": {
+      "status": "none",
+      "target": null
+    },
+    "957": {
+      "status": "none",
+      "target": null
+    },
+    "958": {
+      "status": "none",
+      "target": null
+    },
+    "959": {
+      "status": "none",
+      "target": null
+    },
+    "960": {
+      "status": "none",
+      "target": null
+    },
+    "961": {
+      "status": "none",
+      "target": null
+    },
+    "962": {
+      "status": "none",
+      "target": null
+    },
+    "963": {
+      "status": "none",
+      "target": null
+    },
+    "964": {
+      "status": "none",
+      "target": null
+    },
+    "965": {
+      "status": "none",
+      "target": null
+    },
+    "966": {
+      "status": "none",
+      "target": null
+    },
+    "967": {
+      "status": "none",
+      "target": null
+    },
+    "968": {
+      "status": "none",
+      "target": null
+    },
+    "969": {
+      "status": "none",
+      "target": null
+    },
+    "970": {
+      "status": "none",
+      "target": null
+    },
+    "971": {
+      "status": "none",
+      "target": null
+    },
+    "972": {
+      "status": "none",
+      "target": null
+    },
+    "973": {
+      "status": "none",
+      "target": null
+    },
+    "974": {
+      "status": "none",
+      "target": null
+    },
+    "975": {
+      "status": "none",
+      "target": null
+    },
+    "976": {
+      "status": "none",
+      "target": null
+    },
+    "978": {
+      "status": "direct",
+      "target": "6:超级喷火龙Ｘ"
+    },
+    "979": {
+      "status": "direct",
+      "target": "6:超级喷火龙Ｙ"
+    },
+    "990": {
+      "status": "direct",
+      "target": "150:超级超梦Ｘ"
+    },
+    "991": {
+      "status": "direct",
+      "target": "150:超级超梦Ｙ"
+    },
+    "1011": {
+      "status": "direct",
+      "target": "359:超级阿勃梭鲁"
+    },
+    "1018": {
+      "status": "direct",
+      "target": "445:超级烈咬陆鲨"
+    },
+    "1019": {
+      "status": "direct",
+      "target": "448:超级路卡利欧"
+    },
+    "1024": {
+      "status": "none",
+      "target": null
+    },
+    "1025": {
+      "status": "none",
+      "target": null
+    },
+    "1027": {
+      "status": "none",
+      "target": null
+    },
+    "1028": {
+      "status": "none",
+      "target": null
+    },
+    "1029": {
+      "status": "none",
+      "target": null
+    },
+    "1030": {
+      "status": "none",
+      "target": null
+    },
+    "1036": {
+      "status": "none",
+      "target": null
+    },
+    "1037": {
+      "status": "none",
+      "target": null
+    },
+    "1038": {
+      "status": "none",
+      "target": null
+    },
+    "1039": {
+      "status": "none",
+      "target": null
+    },
+    "1040": {
+      "status": "none",
+      "target": null
+    },
+    "1041": {
+      "status": "none",
+      "target": null
+    },
+    "1043": {
+      "status": "none",
+      "target": null
+    },
+    "1044": {
+      "status": "none",
+      "target": null
+    },
+    "1045": {
+      "status": "none",
+      "target": null
+    },
+    "1046": {
+      "status": "direct",
+      "target": "19:阿罗拉的样子"
+    },
+    "1047": {
+      "status": "direct",
+      "target": "20:阿罗拉的样子"
+    },
+    "1048": {
+      "status": "direct",
+      "target": "26:阿罗拉的样子"
+    },
+    "1049": {
+      "status": "direct",
+      "target": "27:阿罗拉的样子"
+    },
+    "1050": {
+      "status": "direct",
+      "target": "28:阿罗拉的样子"
+    },
+    "1051": {
+      "status": "direct",
+      "target": "37:阿罗拉的样子"
+    },
+    "1052": {
+      "status": "direct",
+      "target": "38:阿罗拉的样子"
+    },
+    "1053": {
+      "status": "direct",
+      "target": "50:阿罗拉的样子"
+    },
+    "1054": {
+      "status": "direct",
+      "target": "51:阿罗拉的样子"
+    },
+    "1055": {
+      "status": "direct",
+      "target": "52:阿罗拉的样子"
+    },
+    "1056": {
+      "status": "direct",
+      "target": "53:阿罗拉的样子"
+    },
+    "1057": {
+      "status": "direct",
+      "target": "74:阿罗拉的样子"
+    },
+    "1058": {
+      "status": "direct",
+      "target": "75:阿罗拉的样子"
+    },
+    "1059": {
+      "status": "direct",
+      "target": "76:阿罗拉的样子"
+    },
+    "1060": {
+      "status": "direct",
+      "target": "88:阿罗拉的样子"
+    },
+    "1061": {
+      "status": "direct",
+      "target": "89:阿罗拉的样子"
+    },
+    "1062": {
+      "status": "direct",
+      "target": "103:阿罗拉的样子"
+    },
+    "1063": {
+      "status": "direct",
+      "target": "105:阿罗拉的样子"
+    },
+    "1064": {
+      "status": "direct",
+      "target": "52:伽勒尔的样子"
+    },
+    "1065": {
+      "status": "direct",
+      "target": "77:伽勒尔的样子"
+    },
+    "1066": {
+      "status": "direct",
+      "target": "78:伽勒尔的样子"
+    },
+    "1067": {
+      "status": "direct",
+      "target": "79:伽勒尔的样子"
+    },
+    "1068": {
+      "status": "direct",
+      "target": "80:伽勒尔的样子"
+    },
+    "1069": {
+      "status": "direct",
+      "target": "83:伽勒尔的样子"
+    },
+    "1070": {
+      "status": "direct",
+      "target": "110:伽勒尔的样子"
+    },
+    "1071": {
+      "status": "direct",
+      "target": "122:伽勒尔的样子"
+    },
+    "1072": {
+      "status": "direct",
+      "target": "144:伽勒尔的样子"
+    },
+    "1073": {
+      "status": "direct",
+      "target": "145:伽勒尔的样子"
+    },
+    "1074": {
+      "status": "direct",
+      "target": "146:伽勒尔的样子"
+    },
+    "1075": {
+      "status": "direct",
+      "target": "199:伽勒尔的样子"
+    },
+    "1076": {
+      "status": "direct",
+      "target": "222:伽勒尔的样子"
+    },
+    "1077": {
+      "status": "direct",
+      "target": "263:伽勒尔的样子"
+    },
+    "1078": {
+      "status": "direct",
+      "target": "264:伽勒尔的样子"
+    },
+    "1079": {
+      "status": "direct",
+      "target": "554:伽勒尔的样子"
+    },
+    "1080": {
+      "status": "direct",
+      "target": "555:伽勒尔的样子"
+    },
+    "1081": {
+      "status": "direct",
+      "target": "562:伽勒尔的样子"
+    },
+    "1082": {
+      "status": "direct",
+      "target": "618:伽勒尔的样子"
+    },
+    "1083": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1084": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1085": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1086": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1087": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1088": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1089": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1090": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1091": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1092": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1093": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1094": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1095": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1096": {
+      "status": "direct",
+      "target": "25:"
+    },
+    "1097": {
+      "status": "direct",
+      "target": "172:"
+    },
+    "1098": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1099": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1100": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1101": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1102": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1103": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1104": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1105": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1106": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1107": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1108": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1109": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1110": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1111": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1112": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1113": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1114": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1115": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1116": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1117": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1118": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1119": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1120": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1121": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1122": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1123": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1124": {
+      "status": "direct",
+      "target": "201:"
+    },
+    "1125": {
+      "status": "direct",
+      "target": "351:"
+    },
+    "1126": {
+      "status": "direct",
+      "target": "351:"
+    },
+    "1127": {
+      "status": "none",
+      "target": null
+    },
+    "1128": {
+      "status": "direct",
+      "target": "386:攻击形态"
+    },
+    "1129": {
+      "status": "direct",
+      "target": "386:防御形态"
+    },
+    "1130": {
+      "status": "direct",
+      "target": "386:速度形态"
+    },
+    "1131": {
+      "status": "direct",
+      "target": "412:"
+    },
+    "1132": {
+      "status": "direct",
+      "target": "412:"
+    },
+    "1133": {
+      "status": "direct",
+      "target": "413:砂土蓑衣"
+    },
+    "1134": {
+      "status": "direct",
+      "target": "413:垃圾蓑衣"
+    },
+    "1135": {
+      "status": "direct",
+      "target": "421:"
+    },
+    "1136": {
+      "status": "direct",
+      "target": "422:"
+    },
+    "1137": {
+      "status": "direct",
+      "target": "423:"
+    },
+    "1138": {
+      "status": "direct",
+      "target": "479:加热洛托姆"
+    },
+    "1139": {
+      "status": "direct",
+      "target": "479:清洗洛托姆"
+    },
+    "1140": {
+      "status": "direct",
+      "target": "479:结冰洛托姆"
+    },
+    "1141": {
+      "status": "direct",
+      "target": "479:旋转洛托姆"
+    },
+    "1142": {
+      "status": "direct",
+      "target": "479:切割洛托姆"
+    },
+    "1143": {
+      "status": "direct",
+      "target": "487:起源形态"
+    },
+    "1144": {
+      "status": "direct",
+      "target": "492:天空形态"
+    },
+    "1145": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1146": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1147": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1148": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1149": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1150": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1151": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1152": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1153": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1154": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1155": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1156": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1157": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1158": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1159": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1160": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1161": {
+      "status": "direct",
+      "target": "493:"
+    },
+    "1162": {
+      "status": "direct",
+      "target": "550:"
+    },
+    "1163": {
+      "status": "direct",
+      "target": "555:伽勒尔的样子／达摩模式"
+    },
+    "1164": {
+      "status": "direct",
+      "target": "555:达摩模式"
+    },
+    "1165": {
+      "status": "direct",
+      "target": "585:"
+    },
+    "1166": {
+      "status": "direct",
+      "target": "585:"
+    },
+    "1167": {
+      "status": "direct",
+      "target": "585:"
+    },
+    "1168": {
+      "status": "direct",
+      "target": "586:"
+    },
+    "1169": {
+      "status": "direct",
+      "target": "586:"
+    },
+    "1170": {
+      "status": "direct",
+      "target": "586:"
+    },
+    "1171": {
+      "status": "direct",
+      "target": "641:灵兽形态"
+    },
+    "1172": {
+      "status": "direct",
+      "target": "642:灵兽形态"
+    },
+    "1173": {
+      "status": "direct",
+      "target": "645:灵兽形态"
+    },
+    "1174": {
+      "status": "direct",
+      "target": "646:焰白酋雷姆"
+    },
+    "1175": {
+      "status": "direct",
+      "target": "646:暗黑酋雷姆"
+    },
+    "1176": {
+      "status": "direct",
+      "target": "647:"
+    },
+    "1177": {
+      "status": "direct",
+      "target": "648:舞步形态"
+    },
+    "1178": {
+      "status": "direct",
+      "target": "649:"
+    },
+    "1179": {
+      "status": "direct",
+      "target": "649:"
+    },
+    "1180": {
+      "status": "direct",
+      "target": "649:"
+    },
+    "1181": {
+      "status": "direct",
+      "target": "649:"
+    },
+    "1182": {
+      "status": "direct",
+      "target": "658:"
+    },
+    "1183": {
+      "status": "direct",
+      "target": "658:小智版甲贺忍蛙"
+    },
+    "1184": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1185": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1186": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1187": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1188": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1189": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1190": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1191": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1192": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1193": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1194": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1195": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1196": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1197": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1198": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1199": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1200": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1201": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1202": {
+      "status": "direct",
+      "target": "666:"
+    },
+    "1203": {
+      "status": "direct",
+      "target": "669:"
+    },
+    "1204": {
+      "status": "direct",
+      "target": "669:"
+    },
+    "1205": {
+      "status": "direct",
+      "target": "669:"
+    },
+    "1206": {
+      "status": "direct",
+      "target": "669:"
+    },
+    "1207": {
+      "status": "direct",
+      "target": "670:"
+    },
+    "1208": {
+      "status": "direct",
+      "target": "670:"
+    },
+    "1209": {
+      "status": "direct",
+      "target": "670:"
+    },
+    "1210": {
+      "status": "direct",
+      "target": "670:"
+    },
+    "1211": {
+      "status": "direct",
+      "target": "670:永恒之花"
+    },
+    "1212": {
+      "status": "direct",
+      "target": "671:"
+    },
+    "1213": {
+      "status": "direct",
+      "target": "671:"
+    },
+    "1214": {
+      "status": "direct",
+      "target": "671:"
+    },
+    "1215": {
+      "status": "direct",
+      "target": "671:"
+    },
+    "1216": {
+      "status": "direct",
+      "target": "676:"
+    },
+    "1217": {
+      "status": "direct",
+      "target": "676:"
+    },
+    "1218": {
+      "status": "direct",
+      "target": "676:"
+    },
+    "1219": {
+      "status": "direct",
+      "target": "676:"
+    },
+    "1220": {
+      "status": "direct",
+      "target": "676:"
+    },
+    "1221": {
+      "status": "direct",
+      "target": "676:"
+    },
+    "1222": {
+      "status": "direct",
+      "target": "676:"
+    },
+    "1223": {
+      "status": "direct",
+      "target": "676:"
+    },
+    "1224": {
+      "status": "direct",
+      "target": "676:"
+    },
+    "1225": {
+      "status": "direct",
+      "target": "678:"
+    },
+    "1226": {
+      "status": "direct",
+      "target": "681:刀剑形态"
+    },
+    "1227": {
+      "status": "direct",
+      "target": "710:小颗种"
+    },
+    "1228": {
+      "status": "direct",
+      "target": "710:大颗种"
+    },
+    "1229": {
+      "status": "direct",
+      "target": "710:巨颗种"
+    },
+    "1230": {
+      "status": "direct",
+      "target": "711:小颗种"
+    },
+    "1231": {
+      "status": "direct",
+      "target": "711:大颗种"
+    },
+    "1232": {
+      "status": "direct",
+      "target": "711:巨颗种"
+    },
+    "1233": {
+      "status": "direct",
+      "target": "716:"
+    },
+    "1234": {
+      "status": "direct",
+      "target": "718:１０％形态"
+    },
+    "1235": {
+      "status": "direct",
+      "target": "718:１０％形态"
+    },
+    "1236": {
+      "status": "direct",
+      "target": "718:５０％形态"
+    },
+    "1237": {
+      "status": "direct",
+      "target": "718:完全体形态"
+    },
+    "1238": {
+      "status": "direct",
+      "target": "720:解放胡帕"
+    },
+    "1239": {
+      "status": "direct",
+      "target": "741:"
+    },
+    "1240": {
+      "status": "direct",
+      "target": "741:"
+    },
+    "1241": {
+      "status": "direct",
+      "target": "741:"
+    },
+    "1242": {
+      "status": "direct",
+      "target": "744:"
+    },
+    "1243": {
+      "status": "direct",
+      "target": "745:黑夜的样子"
+    },
+    "1244": {
+      "status": "direct",
+      "target": "745:黄昏的样子"
+    },
+    "1245": {
+      "status": "direct",
+      "target": "746:鱼群的样子"
+    },
+    "1246": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1247": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1248": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1249": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1250": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1251": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1252": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1253": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1254": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1255": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1256": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1257": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1258": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1259": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1260": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1261": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1262": {
+      "status": "direct",
+      "target": "773:"
+    },
+    "1263": {
+      "status": "direct",
+      "target": "774:流星的样子"
+    },
+    "1264": {
+      "status": "direct",
+      "target": "774:流星的样子"
+    },
+    "1265": {
+      "status": "direct",
+      "target": "774:流星的样子"
+    },
+    "1266": {
+      "status": "direct",
+      "target": "774:流星的样子"
+    },
+    "1267": {
+      "status": "direct",
+      "target": "774:流星的样子"
+    },
+    "1268": {
+      "status": "direct",
+      "target": "774:流星的样子"
+    },
+    "1269": {
+      "status": "direct",
+      "target": "774:核心"
+    },
+    "1270": {
+      "status": "direct",
+      "target": "774:核心"
+    },
+    "1271": {
+      "status": "direct",
+      "target": "774:核心"
+    },
+    "1272": {
+      "status": "direct",
+      "target": "774:核心"
+    },
+    "1273": {
+      "status": "direct",
+      "target": "774:核心"
+    },
+    "1274": {
+      "status": "direct",
+      "target": "774:核心"
+    },
+    "1275": {
+      "status": "direct",
+      "target": "774:核心"
+    },
+    "1276": {
+      "status": "direct",
+      "target": "778:"
+    },
+    "1277": {
+      "status": "direct",
+      "target": "800:黄昏之鬃"
+    },
+    "1278": {
+      "status": "direct",
+      "target": "800:拂晓之翼"
+    },
+    "1279": {
+      "status": "direct",
+      "target": "800:究极奈克洛兹玛"
+    },
+    "1280": {
+      "status": "direct",
+      "target": "801:"
+    },
+    "1281": {
+      "status": "direct",
+      "target": "845:"
+    },
+    "1282": {
+      "status": "direct",
+      "target": "845:"
+    },
+    "1283": {
+      "status": "direct",
+      "target": "849:"
+    },
+    "1284": {
+      "status": "direct",
+      "target": "854:"
+    },
+    "1285": {
+      "status": "direct",
+      "target": "855:"
+    },
+    "1286": {
+      "status": "direct",
+      "target": "869:"
+    },
+    "1287": {
+      "status": "direct",
+      "target": "869:"
+    },
+    "1288": {
+      "status": "direct",
+      "target": "869:"
+    },
+    "1289": {
+      "status": "direct",
+      "target": "869:"
+    },
+    "1290": {
+      "status": "direct",
+      "target": "869:"
+    },
+    "1291": {
+      "status": "direct",
+      "target": "869:"
+    },
+    "1292": {
+      "status": "direct",
+      "target": "869:"
+    },
+    "1293": {
+      "status": "direct",
+      "target": "869:"
+    },
+    "1294": {
+      "status": "direct",
+      "target": "875:解冻头"
+    },
+    "1295": {
+      "status": "direct",
+      "target": "876:雌性"
+    },
+    "1296": {
+      "status": "direct",
+      "target": "877:"
+    },
+    "1297": {
+      "status": "direct",
+      "target": "888:剑之王"
+    },
+    "1298": {
+      "status": "direct",
+      "target": "889:盾之王"
+    },
+    "1299": {
+      "status": "direct",
+      "target": "890:无极巨化"
+    },
+    "1300": {
+      "status": "direct",
+      "target": "892:"
+    },
+    "1301": {
+      "status": "direct",
+      "target": "893:"
+    },
+    "1302": {
+      "status": "direct",
+      "target": "898:骑白马的样子"
+    },
+    "1303": {
+      "status": "direct",
+      "target": "898:骑黑马的样子"
+    },
+    "1304": {
+      "status": "none",
+      "target": null
+    },
+    "1305": {
+      "status": "none",
+      "target": null
+    },
+    "1306": {
+      "status": "none",
+      "target": null
+    },
+    "1307": {
+      "status": "none",
+      "target": null
+    },
+    "1308": {
+      "status": "none",
+      "target": null
+    },
+    "1309": {
+      "status": "none",
+      "target": null
+    },
+    "1324": {
+      "status": "direct",
+      "target": "902:雄性"
+    },
+    "1325": {
+      "status": "direct",
+      "target": "902:雌性"
+    },
+    "1334": {
+      "status": "direct",
+      "target": "905:化身形态"
+    },
+    "1335": {
+      "status": "direct",
+      "target": "905:灵兽形态"
+    },
+    "1375": {
+      "status": "none",
+      "target": null
+    },
+    "1376": {
+      "status": "none",
+      "target": null
+    },
+    "1377": {
+      "status": "none",
+      "target": null
+    },
+    "1378": {
+      "status": "none",
+      "target": null
+    },
+    "1379": {
+      "status": "none",
+      "target": null
+    },
+    "1380": {
+      "status": "none",
+      "target": null
+    },
+    "1382": {
+      "status": "none",
+      "target": null
+    },
+    "1383": {
+      "status": "none",
+      "target": null
+    },
+    "1384": {
+      "status": "none",
+      "target": null
+    },
+    "1385": {
+      "status": "none",
+      "target": null
+    },
+    "1386": {
+      "status": "none",
+      "target": null
+    },
+    "1387": {
+      "status": "none",
+      "target": null
+    },
+    "1388": {
+      "status": "none",
+      "target": null
+    },
+    "1389": {
+      "status": "none",
+      "target": null
+    },
+    "1390": {
+      "status": "none",
+      "target": null
+    },
+    "1391": {
+      "status": "none",
+      "target": null
+    },
+    "1392": {
+      "status": "none",
+      "target": null
+    },
+    "1393": {
+      "status": "none",
+      "target": null
+    },
+    "1394": {
+      "status": "none",
+      "target": null
+    }
+  }
 }

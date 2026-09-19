@@ -2,7 +2,7 @@
   "schema": 1,
   "profile_id": "rocket-21-zh",
   "rom_md5": "59c658a1081f542086de1060bb65f0b3",
-  "revision": 0,
+  "revision": 453,
   "entries": {
     "1": {
       "status": "pending",
@@ -4723,7 +4723,7 @@
       "note": ""
     },
     "386": {
-      "status": "pending",
+      "status": "direct",
       "target": "386:普通形态",
       "candidates": [
         "386:普通形态",
@@ -5051,7 +5051,7 @@
       "note": ""
     },
     "413": {
-      "status": "pending",
+      "status": "direct",
       "target": "413:草木蓑衣",
       "candidates": [
         "413:草木蓑衣",
@@ -5957,7 +5957,7 @@
       "note": ""
     },
     "487": {
-      "status": "pending",
+      "status": "direct",
       "target": "487:别种形态",
       "candidates": [
         "487:别种形态",
@@ -6019,7 +6019,7 @@
       "note": ""
     },
     "492": {
-      "status": "pending",
+      "status": "direct",
       "target": "492:陆上形态",
       "candidates": [
         "492:陆上形态",
@@ -6783,7 +6783,7 @@
       "note": ""
     },
     "555": {
-      "status": "pending",
+      "status": "direct",
       "target": "555:普通模式",
       "candidates": [
         "555:普通模式",
@@ -7827,7 +7827,7 @@
       "note": ""
     },
     "641": {
-      "status": "pending",
+      "status": "direct",
       "target": "641:化身形态",
       "candidates": [
         "641:化身形态",
@@ -7840,7 +7840,7 @@
       "note": ""
     },
     "642": {
-      "status": "pending",
+      "status": "direct",
       "target": "642:化身形态",
       "candidates": [
         "642:化身形态",
@@ -7877,7 +7877,7 @@
       "note": ""
     },
     "645": {
-      "status": "pending",
+      "status": "direct",
       "target": "645:化身形态",
       "candidates": [
         "645:化身形态",
@@ -7916,7 +7916,7 @@
       "note": ""
     },
     "648": {
-      "status": "pending",
+      "status": "direct",
       "target": "648:歌声形态",
       "candidates": [
         "648:歌声形态",
@@ -8321,7 +8321,7 @@
       "note": ""
     },
     "681": {
-      "status": "pending",
+      "status": "direct",
       "target": "681:盾牌形态",
       "candidates": [
         "681:盾牌形态",
@@ -8676,7 +8676,7 @@
       "note": ""
     },
     "710": {
-      "status": "pending",
+      "status": "direct",
       "target": "710:中颗种",
       "candidates": [
         "710:中颗种",
@@ -8691,7 +8691,7 @@
       "note": ""
     },
     "711": {
-      "status": "pending",
+      "status": "direct",
       "target": "711:中颗种",
       "candidates": [
         "711:中颗种",
@@ -8780,7 +8780,7 @@
       "note": ""
     },
     "718": {
-      "status": "pending",
+      "status": "direct",
       "target": "718:５０％形态",
       "candidates": [
         "718:５０％形态",
@@ -8808,7 +8808,7 @@
       "note": ""
     },
     "720": {
-      "status": "pending",
+      "status": "direct",
       "target": "720:惩戒胡帕",
       "candidates": [
         "720:惩戒胡帕",
@@ -9111,7 +9111,7 @@
       "note": ""
     },
     "745": {
-      "status": "pending",
+      "status": "direct",
       "target": "745:白昼的样子",
       "candidates": [
         "745:白昼的样子",
@@ -9125,7 +9125,7 @@
       "note": ""
     },
     "746": {
-      "status": "pending",
+      "status": "direct",
       "target": "746:单独的样子",
       "candidates": [
         "746:单独的样子",
@@ -9463,7 +9463,7 @@
       "note": ""
     },
     "774": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:流星的样子",
       "candidates": [
         "774:流星的样子",
@@ -10683,7 +10683,7 @@
       "note": ""
     },
     "875": {
-      "status": "pending",
+      "status": "direct",
       "target": "875:结冻头",
       "candidates": [
         "875:结冻头",
@@ -10696,7 +10696,7 @@
       "note": ""
     },
     "876": {
-      "status": "pending",
+      "status": "direct",
       "target": "876:雄性",
       "candidates": [
         "876:雄性",
@@ -10843,7 +10843,7 @@
       "note": ""
     },
     "888": {
-      "status": "pending",
+      "status": "direct",
       "target": "888:百战勇者",
       "candidates": [
         "888:百战勇者",
@@ -10856,7 +10856,7 @@
       "note": ""
     },
     "889": {
-      "status": "pending",
+      "status": "direct",
       "target": "889:百战勇者",
       "candidates": [
         "889:百战勇者",
@@ -10980,8 +10980,8 @@
       "note": ""
     },
     "899": {
-      "status": "pending",
-      "target": "9:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "9:",
         "9:超级水箭龟"
@@ -10993,8 +10993,8 @@
       "note": ""
     },
     "900": {
-      "status": "pending",
-      "target": "178:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "178:"
       ],
@@ -11005,8 +11005,8 @@
       "note": ""
     },
     "901": {
-      "status": "pending",
-      "target": "101:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "101:",
         "101:洗翠的样子"
@@ -11018,8 +11018,8 @@
       "note": ""
     },
     "902": {
-      "status": "pending",
-      "target": "128:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "128:",
         "128:帕底亚的样子"
@@ -11031,8 +11031,8 @@
       "note": ""
     },
     "903": {
-      "status": "pending",
-      "target": "474:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "474:"
       ],
@@ -11043,8 +11043,8 @@
       "note": ""
     },
     "904": {
-      "status": "pending",
-      "target": "466:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "466:"
       ],
@@ -11055,8 +11055,8 @@
       "note": ""
     },
     "905": {
-      "status": "pending",
-      "target": "467:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "467:"
       ],
@@ -11067,8 +11067,8 @@
       "note": ""
     },
     "906": {
-      "status": "pending",
-      "target": "31:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "31:"
       ],
@@ -11079,8 +11079,8 @@
       "note": ""
     },
     "907": {
-      "status": "pending",
-      "target": "34:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "34:"
       ],
@@ -11091,8 +11091,8 @@
       "note": ""
     },
     "908": {
-      "status": "pending",
-      "target": "233:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "233:"
       ],
@@ -11103,8 +11103,8 @@
       "note": ""
     },
     "909": {
-      "status": "pending",
-      "target": "233:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "233:"
       ],
@@ -11115,8 +11115,8 @@
       "note": ""
     },
     "910": {
-      "status": "pending",
-      "target": "34:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "34:"
       ],
@@ -11127,8 +11127,8 @@
       "note": ""
     },
     "911": {
-      "status": "pending",
-      "target": "142:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "142:",
         "142:超级化石翼龙"
@@ -11140,8 +11140,8 @@
       "note": ""
     },
     "912": {
-      "status": "pending",
-      "target": "346:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "346:"
       ],
@@ -11188,8 +11188,8 @@
       "note": ""
     },
     "916": {
-      "status": "pending",
-      "target": "145:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "145:",
         "145:伽勒尔的样子"
@@ -11201,8 +11201,8 @@
       "note": ""
     },
     "917": {
-      "status": "pending",
-      "target": "377:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "377:"
       ],
@@ -11213,8 +11213,8 @@
       "note": ""
     },
     "918": {
-      "status": "pending",
-      "target": "378:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "378:"
       ],
@@ -11237,8 +11237,8 @@
       "note": ""
     },
     "920": {
-      "status": "pending",
-      "target": "386:速度形态",
+      "status": "none",
+      "target": null,
       "candidates": [
         "386:速度形态",
         "386:普通形态",
@@ -11252,8 +11252,8 @@
       "note": ""
     },
     "921": {
-      "status": "pending",
-      "target": "386:速度形态",
+      "status": "none",
+      "target": null,
       "candidates": [
         "386:速度形态",
         "386:普通形态",
@@ -11267,8 +11267,8 @@
       "note": ""
     },
     "922": {
-      "status": "pending",
-      "target": "150:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "150:",
         "150:超级超梦Ｘ",
@@ -11305,7 +11305,7 @@
       "note": ""
     },
     "925": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11315,8 +11315,8 @@
       "note": ""
     },
     "926": {
-      "status": "pending",
-      "target": "62:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "62:"
       ],
@@ -11327,8 +11327,8 @@
       "note": ""
     },
     "927": {
-      "status": "pending",
-      "target": "12:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "12:"
       ],
@@ -11339,8 +11339,8 @@
       "note": ""
     },
     "928": {
-      "status": "pending",
-      "target": "160:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "160:",
         "160:超级大力鳄"
@@ -11352,8 +11352,8 @@
       "note": ""
     },
     "929": {
-      "status": "pending",
-      "target": "78:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "78:",
         "78:伽勒尔的样子"
@@ -11365,8 +11365,8 @@
       "note": ""
     },
     "930": {
-      "status": "pending",
-      "target": "230:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "230:"
       ],
@@ -11377,8 +11377,8 @@
       "note": ""
     },
     "931": {
-      "status": "pending",
-      "target": "227:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "227:",
         "227:超级盔甲鸟"
@@ -11390,8 +11390,8 @@
       "note": ""
     },
     "932": {
-      "status": "pending",
-      "target": "133:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "133:",
         "133:搭檔寶可夢"
@@ -11403,8 +11403,8 @@
       "note": ""
     },
     "933": {
-      "status": "pending",
-      "target": "97:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "97:"
       ],
@@ -11415,8 +11415,8 @@
       "note": ""
     },
     "934": {
-      "status": "pending",
-      "target": "206:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "206:"
       ],
@@ -11427,8 +11427,8 @@
       "note": ""
     },
     "935": {
-      "status": "pending",
-      "target": "655:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "655:",
         "655:超级妖火红狐"
@@ -11440,8 +11440,8 @@
       "note": ""
     },
     "936": {
-      "status": "pending",
-      "target": "464:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "464:"
       ],
@@ -11452,8 +11452,8 @@
       "note": ""
     },
     "937": {
-      "status": "pending",
-      "target": "131:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "131:"
       ],
@@ -11464,8 +11464,8 @@
       "note": ""
     },
     "938": {
-      "status": "pending",
-      "target": "395:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "395:"
       ],
@@ -11476,8 +11476,8 @@
       "note": ""
     },
     "939": {
-      "status": "pending",
-      "target": "392:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "392:"
       ],
@@ -11488,8 +11488,8 @@
       "note": ""
     },
     "940": {
-      "status": "pending",
-      "target": "481:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "481:"
       ],
@@ -11500,8 +11500,8 @@
       "note": ""
     },
     "941": {
-      "status": "pending",
-      "target": "497:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "497:"
       ],
@@ -11512,8 +11512,8 @@
       "note": ""
     },
     "942": {
-      "status": "pending",
-      "target": "612:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "612:"
       ],
@@ -11524,8 +11524,8 @@
       "note": ""
     },
     "943": {
-      "status": "pending",
-      "target": "461:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "461:"
       ],
@@ -11536,8 +11536,8 @@
       "note": ""
     },
     "944": {
-      "status": "pending",
-      "target": "681:刀剑形态",
+      "status": "none",
+      "target": null,
       "candidates": [
         "681:刀剑形态",
         "681:盾牌形态"
@@ -11549,8 +11549,8 @@
       "note": ""
     },
     "945": {
-      "status": "pending",
-      "target": "637:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "637:"
       ],
@@ -11561,8 +11561,8 @@
       "note": ""
     },
     "946": {
-      "status": "pending",
-      "target": "706:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "706:",
         "706:洗翠的样子"
@@ -11586,8 +11586,8 @@
       "note": ""
     },
     "948": {
-      "status": "pending",
-      "target": "149:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "149:",
         "149:超级快龙"
@@ -11599,8 +11599,8 @@
       "note": ""
     },
     "949": {
-      "status": "pending",
-      "target": "105:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "105:",
         "105:阿罗拉的样子"
@@ -11612,8 +11612,8 @@
       "note": ""
     },
     "950": {
-      "status": "pending",
-      "target": "141:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "141:"
       ],
@@ -11636,7 +11636,7 @@
       "note": ""
     },
     "952": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11658,8 +11658,8 @@
       "note": ""
     },
     "954": {
-      "status": "pending",
-      "target": "201:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "201:"
       ],
@@ -11670,8 +11670,8 @@
       "note": ""
     },
     "955": {
-      "status": "pending",
-      "target": "144:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "144:",
         "144:伽勒尔的样子"
@@ -11683,8 +11683,8 @@
       "note": ""
     },
     "956": {
-      "status": "pending",
-      "target": "145:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "145:",
         "145:伽勒尔的样子"
@@ -11696,8 +11696,8 @@
       "note": ""
     },
     "957": {
-      "status": "pending",
-      "target": "146:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "146:",
         "146:伽勒尔的样子"
@@ -11709,8 +11709,8 @@
       "note": ""
     },
     "958": {
-      "status": "pending",
-      "target": "243:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "243:"
       ],
@@ -11721,8 +11721,8 @@
       "note": ""
     },
     "959": {
-      "status": "pending",
-      "target": "244:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "244:"
       ],
@@ -11733,8 +11733,8 @@
       "note": ""
     },
     "960": {
-      "status": "pending",
-      "target": "245:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "245:"
       ],
@@ -11745,7 +11745,7 @@
       "note": ""
     },
     "961": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11755,7 +11755,7 @@
       "note": ""
     },
     "962": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11765,7 +11765,7 @@
       "note": ""
     },
     "963": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11775,7 +11775,7 @@
       "note": ""
     },
     "964": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11785,7 +11785,7 @@
       "note": ""
     },
     "965": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11795,7 +11795,7 @@
       "note": ""
     },
     "966": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11805,7 +11805,7 @@
       "note": ""
     },
     "967": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11815,7 +11815,7 @@
       "note": ""
     },
     "968": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11825,7 +11825,7 @@
       "note": ""
     },
     "969": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11835,7 +11835,7 @@
       "note": ""
     },
     "970": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11845,7 +11845,7 @@
       "note": ""
     },
     "971": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11855,7 +11855,7 @@
       "note": ""
     },
     "972": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11865,7 +11865,7 @@
       "note": ""
     },
     "973": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11875,8 +11875,8 @@
       "note": ""
     },
     "974": {
-      "status": "pending",
-      "target": "646:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "646:",
         "646:暗黑酋雷姆",
@@ -11889,8 +11889,8 @@
       "note": ""
     },
     "975": {
-      "status": "pending",
-      "target": "493:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "493:"
       ],
@@ -11901,7 +11901,7 @@
       "note": ""
     },
     "976": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -11923,7 +11923,7 @@
       "note": ""
     },
     "978": {
-      "status": "pending",
+      "status": "direct",
       "target": "6:超级喷火龙Ｘ",
       "candidates": [
         "6:超级喷火龙Ｘ",
@@ -11936,7 +11936,7 @@
       "note": ""
     },
     "979": {
-      "status": "pending",
+      "status": "direct",
       "target": "6:超级喷火龙Ｙ",
       "candidates": [
         "6:超级喷火龙Ｙ",
@@ -12069,7 +12069,7 @@
       "note": ""
     },
     "990": {
-      "status": "pending",
+      "status": "direct",
       "target": "150:超级超梦Ｘ",
       "candidates": [
         "150:超级超梦Ｘ",
@@ -12082,7 +12082,7 @@
       "note": ""
     },
     "991": {
-      "status": "pending",
+      "status": "direct",
       "target": "150:超级超梦Ｙ",
       "candidates": [
         "150:超级超梦Ｙ",
@@ -12323,7 +12323,7 @@
       "note": ""
     },
     "1011": {
-      "status": "pending",
+      "status": "direct",
       "target": "359:超级阿勃梭鲁",
       "candidates": [
         "359:超级阿勃梭鲁",
@@ -12408,7 +12408,7 @@
       "note": ""
     },
     "1018": {
-      "status": "pending",
+      "status": "direct",
       "target": "445:超级烈咬陆鲨",
       "candidates": [
         "445:超级烈咬陆鲨",
@@ -12421,7 +12421,7 @@
       "note": ""
     },
     "1019": {
-      "status": "pending",
+      "status": "direct",
       "target": "448:超级路卡利欧",
       "candidates": [
         "448:超级路卡利欧",
@@ -12482,8 +12482,8 @@
       "note": ""
     },
     "1024": {
-      "status": "pending",
-      "target": "477:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "477:"
       ],
@@ -12494,8 +12494,8 @@
       "note": ""
     },
     "1025": {
-      "status": "pending",
-      "target": "330:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "330:"
       ],
@@ -12518,8 +12518,8 @@
       "note": ""
     },
     "1027": {
-      "status": "pending",
-      "target": "12:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "12:"
       ],
@@ -12530,8 +12530,8 @@
       "note": ""
     },
     "1028": {
-      "status": "pending",
-      "target": "715:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "715:"
       ],
@@ -12542,8 +12542,8 @@
       "note": ""
     },
     "1029": {
-      "status": "pending",
-      "target": "350:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "350:"
       ],
@@ -12554,8 +12554,8 @@
       "note": ""
     },
     "1030": {
-      "status": "pending",
-      "target": "474:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "474:"
       ],
@@ -12626,8 +12626,8 @@
       "note": ""
     },
     "1036": {
-      "status": "pending",
-      "target": "491:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "491:",
         "491:超级达克莱伊"
@@ -12639,8 +12639,8 @@
       "note": ""
     },
     "1037": {
-      "status": "pending",
-      "target": "250:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "250:"
       ],
@@ -12651,8 +12651,8 @@
       "note": ""
     },
     "1038": {
-      "status": "pending",
-      "target": "249:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "249:"
       ],
@@ -12663,8 +12663,8 @@
       "note": ""
     },
     "1039": {
-      "status": "pending",
-      "target": "251:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "251:"
       ],
@@ -12675,8 +12675,8 @@
       "note": ""
     },
     "1040": {
-      "status": "pending",
-      "target": "385:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "385:"
       ],
@@ -12687,8 +12687,8 @@
       "note": ""
     },
     "1041": {
-      "status": "pending",
-      "target": "494:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "494:"
       ],
@@ -12711,8 +12711,8 @@
       "note": ""
     },
     "1043": {
-      "status": "pending",
-      "target": "483:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "483:",
         "483:起源形态"
@@ -12724,8 +12724,8 @@
       "note": ""
     },
     "1044": {
-      "status": "pending",
-      "target": "484:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "484:",
         "484:起源形态"
@@ -12737,8 +12737,8 @@
       "note": ""
     },
     "1045": {
-      "status": "pending",
-      "target": "646:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "646:",
         "646:暗黑酋雷姆",
@@ -12751,7 +12751,7 @@
       "note": ""
     },
     "1046": {
-      "status": "pending",
+      "status": "direct",
       "target": "19:阿罗拉的样子",
       "candidates": [
         "19:阿罗拉的样子",
@@ -12764,7 +12764,7 @@
       "note": ""
     },
     "1047": {
-      "status": "pending",
+      "status": "direct",
       "target": "20:阿罗拉的样子",
       "candidates": [
         "20:阿罗拉的样子",
@@ -12777,7 +12777,7 @@
       "note": ""
     },
     "1048": {
-      "status": "pending",
+      "status": "direct",
       "target": "26:阿罗拉的样子",
       "candidates": [
         "26:阿罗拉的样子",
@@ -12792,7 +12792,7 @@
       "note": ""
     },
     "1049": {
-      "status": "pending",
+      "status": "direct",
       "target": "27:阿罗拉的样子",
       "candidates": [
         "27:阿罗拉的样子",
@@ -12805,7 +12805,7 @@
       "note": ""
     },
     "1050": {
-      "status": "pending",
+      "status": "direct",
       "target": "28:阿罗拉的样子",
       "candidates": [
         "28:阿罗拉的样子",
@@ -12818,7 +12818,7 @@
       "note": ""
     },
     "1051": {
-      "status": "pending",
+      "status": "direct",
       "target": "37:阿罗拉的样子",
       "candidates": [
         "37:阿罗拉的样子",
@@ -12831,7 +12831,7 @@
       "note": ""
     },
     "1052": {
-      "status": "pending",
+      "status": "direct",
       "target": "38:阿罗拉的样子",
       "candidates": [
         "38:阿罗拉的样子",
@@ -12844,7 +12844,7 @@
       "note": ""
     },
     "1053": {
-      "status": "pending",
+      "status": "direct",
       "target": "50:阿罗拉的样子",
       "candidates": [
         "50:阿罗拉的样子",
@@ -12857,7 +12857,7 @@
       "note": ""
     },
     "1054": {
-      "status": "pending",
+      "status": "direct",
       "target": "51:阿罗拉的样子",
       "candidates": [
         "51:阿罗拉的样子",
@@ -12870,7 +12870,7 @@
       "note": ""
     },
     "1055": {
-      "status": "pending",
+      "status": "direct",
       "target": "52:阿罗拉的样子",
       "candidates": [
         "52:阿罗拉的样子",
@@ -12884,7 +12884,7 @@
       "note": ""
     },
     "1056": {
-      "status": "pending",
+      "status": "direct",
       "target": "53:阿罗拉的样子",
       "candidates": [
         "53:阿罗拉的样子",
@@ -12897,7 +12897,7 @@
       "note": ""
     },
     "1057": {
-      "status": "pending",
+      "status": "direct",
       "target": "74:阿罗拉的样子",
       "candidates": [
         "74:阿罗拉的样子",
@@ -12910,7 +12910,7 @@
       "note": ""
     },
     "1058": {
-      "status": "pending",
+      "status": "direct",
       "target": "75:阿罗拉的样子",
       "candidates": [
         "75:阿罗拉的样子",
@@ -12923,7 +12923,7 @@
       "note": ""
     },
     "1059": {
-      "status": "pending",
+      "status": "direct",
       "target": "76:阿罗拉的样子",
       "candidates": [
         "76:阿罗拉的样子",
@@ -12936,7 +12936,7 @@
       "note": ""
     },
     "1060": {
-      "status": "pending",
+      "status": "direct",
       "target": "88:阿罗拉的样子",
       "candidates": [
         "88:阿罗拉的样子",
@@ -12949,7 +12949,7 @@
       "note": ""
     },
     "1061": {
-      "status": "pending",
+      "status": "direct",
       "target": "89:阿罗拉的样子",
       "candidates": [
         "89:阿罗拉的样子",
@@ -12962,7 +12962,7 @@
       "note": ""
     },
     "1062": {
-      "status": "pending",
+      "status": "direct",
       "target": "103:阿罗拉的样子",
       "candidates": [
         "103:阿罗拉的样子",
@@ -12975,7 +12975,7 @@
       "note": ""
     },
     "1063": {
-      "status": "pending",
+      "status": "direct",
       "target": "105:阿罗拉的样子",
       "candidates": [
         "105:阿罗拉的样子",
@@ -12988,7 +12988,7 @@
       "note": ""
     },
     "1064": {
-      "status": "pending",
+      "status": "direct",
       "target": "52:伽勒尔的样子",
       "candidates": [
         "52:伽勒尔的样子",
@@ -13002,7 +13002,7 @@
       "note": ""
     },
     "1065": {
-      "status": "pending",
+      "status": "direct",
       "target": "77:伽勒尔的样子",
       "candidates": [
         "77:伽勒尔的样子",
@@ -13015,7 +13015,7 @@
       "note": ""
     },
     "1066": {
-      "status": "pending",
+      "status": "direct",
       "target": "78:伽勒尔的样子",
       "candidates": [
         "78:伽勒尔的样子",
@@ -13028,7 +13028,7 @@
       "note": ""
     },
     "1067": {
-      "status": "pending",
+      "status": "direct",
       "target": "79:伽勒尔的样子",
       "candidates": [
         "79:伽勒尔的样子",
@@ -13041,7 +13041,7 @@
       "note": ""
     },
     "1068": {
-      "status": "pending",
+      "status": "direct",
       "target": "80:伽勒尔的样子",
       "candidates": [
         "80:伽勒尔的样子",
@@ -13055,7 +13055,7 @@
       "note": ""
     },
     "1069": {
-      "status": "pending",
+      "status": "direct",
       "target": "83:伽勒尔的样子",
       "candidates": [
         "83:伽勒尔的样子",
@@ -13068,7 +13068,7 @@
       "note": ""
     },
     "1070": {
-      "status": "pending",
+      "status": "direct",
       "target": "110:伽勒尔的样子",
       "candidates": [
         "110:伽勒尔的样子",
@@ -13081,7 +13081,7 @@
       "note": ""
     },
     "1071": {
-      "status": "pending",
+      "status": "direct",
       "target": "122:伽勒尔的样子",
       "candidates": [
         "122:伽勒尔的样子",
@@ -13094,7 +13094,7 @@
       "note": ""
     },
     "1072": {
-      "status": "pending",
+      "status": "direct",
       "target": "144:伽勒尔的样子",
       "candidates": [
         "144:伽勒尔的样子",
@@ -13107,7 +13107,7 @@
       "note": ""
     },
     "1073": {
-      "status": "pending",
+      "status": "direct",
       "target": "145:伽勒尔的样子",
       "candidates": [
         "145:伽勒尔的样子",
@@ -13120,7 +13120,7 @@
       "note": ""
     },
     "1074": {
-      "status": "pending",
+      "status": "direct",
       "target": "146:伽勒尔的样子",
       "candidates": [
         "146:伽勒尔的样子",
@@ -13133,7 +13133,7 @@
       "note": ""
     },
     "1075": {
-      "status": "pending",
+      "status": "direct",
       "target": "199:伽勒尔的样子",
       "candidates": [
         "199:伽勒尔的样子",
@@ -13146,7 +13146,7 @@
       "note": ""
     },
     "1076": {
-      "status": "pending",
+      "status": "direct",
       "target": "222:伽勒尔的样子",
       "candidates": [
         "222:伽勒尔的样子",
@@ -13159,7 +13159,7 @@
       "note": ""
     },
     "1077": {
-      "status": "pending",
+      "status": "direct",
       "target": "263:伽勒尔的样子",
       "candidates": [
         "263:伽勒尔的样子",
@@ -13172,7 +13172,7 @@
       "note": ""
     },
     "1078": {
-      "status": "pending",
+      "status": "direct",
       "target": "264:伽勒尔的样子",
       "candidates": [
         "264:伽勒尔的样子",
@@ -13185,7 +13185,7 @@
       "note": ""
     },
     "1079": {
-      "status": "pending",
+      "status": "direct",
       "target": "554:伽勒尔的样子",
       "candidates": [
         "554:伽勒尔的样子",
@@ -13198,7 +13198,7 @@
       "note": ""
     },
     "1080": {
-      "status": "pending",
+      "status": "direct",
       "target": "555:伽勒尔的样子",
       "candidates": [
         "555:伽勒尔的样子",
@@ -13213,7 +13213,7 @@
       "note": ""
     },
     "1081": {
-      "status": "pending",
+      "status": "direct",
       "target": "562:伽勒尔的样子",
       "candidates": [
         "562:伽勒尔的样子",
@@ -13226,7 +13226,7 @@
       "note": ""
     },
     "1082": {
-      "status": "pending",
+      "status": "direct",
       "target": "618:伽勒尔的样子",
       "candidates": [
         "618:伽勒尔的样子",
@@ -13239,7 +13239,7 @@
       "note": ""
     },
     "1083": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13252,7 +13252,7 @@
       "note": ""
     },
     "1084": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13265,7 +13265,7 @@
       "note": ""
     },
     "1085": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13278,7 +13278,7 @@
       "note": ""
     },
     "1086": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13291,7 +13291,7 @@
       "note": ""
     },
     "1087": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13304,7 +13304,7 @@
       "note": ""
     },
     "1088": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13317,7 +13317,7 @@
       "note": ""
     },
     "1089": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13330,7 +13330,7 @@
       "note": ""
     },
     "1090": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13343,7 +13343,7 @@
       "note": ""
     },
     "1091": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13356,7 +13356,7 @@
       "note": ""
     },
     "1092": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13369,7 +13369,7 @@
       "note": ""
     },
     "1093": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13382,7 +13382,7 @@
       "note": ""
     },
     "1094": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13395,7 +13395,7 @@
       "note": ""
     },
     "1095": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13408,7 +13408,7 @@
       "note": ""
     },
     "1096": {
-      "status": "pending",
+      "status": "direct",
       "target": "25:",
       "candidates": [
         "25:",
@@ -13421,7 +13421,7 @@
       "note": ""
     },
     "1097": {
-      "status": "pending",
+      "status": "direct",
       "target": "172:",
       "candidates": [
         "172:"
@@ -13433,7 +13433,7 @@
       "note": ""
     },
     "1098": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13445,7 +13445,7 @@
       "note": ""
     },
     "1099": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13457,7 +13457,7 @@
       "note": ""
     },
     "1100": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13469,7 +13469,7 @@
       "note": ""
     },
     "1101": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13481,7 +13481,7 @@
       "note": ""
     },
     "1102": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13493,7 +13493,7 @@
       "note": ""
     },
     "1103": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13505,7 +13505,7 @@
       "note": ""
     },
     "1104": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13517,7 +13517,7 @@
       "note": ""
     },
     "1105": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13529,7 +13529,7 @@
       "note": ""
     },
     "1106": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13541,7 +13541,7 @@
       "note": ""
     },
     "1107": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13553,7 +13553,7 @@
       "note": ""
     },
     "1108": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13565,7 +13565,7 @@
       "note": ""
     },
     "1109": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13577,7 +13577,7 @@
       "note": ""
     },
     "1110": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13589,7 +13589,7 @@
       "note": ""
     },
     "1111": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13601,7 +13601,7 @@
       "note": ""
     },
     "1112": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13613,7 +13613,7 @@
       "note": ""
     },
     "1113": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13625,7 +13625,7 @@
       "note": ""
     },
     "1114": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13637,7 +13637,7 @@
       "note": ""
     },
     "1115": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13649,7 +13649,7 @@
       "note": ""
     },
     "1116": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13661,7 +13661,7 @@
       "note": ""
     },
     "1117": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13673,7 +13673,7 @@
       "note": ""
     },
     "1118": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13685,7 +13685,7 @@
       "note": ""
     },
     "1119": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13697,7 +13697,7 @@
       "note": ""
     },
     "1120": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13709,7 +13709,7 @@
       "note": ""
     },
     "1121": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13721,7 +13721,7 @@
       "note": ""
     },
     "1122": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13733,7 +13733,7 @@
       "note": ""
     },
     "1123": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13745,7 +13745,7 @@
       "note": ""
     },
     "1124": {
-      "status": "pending",
+      "status": "direct",
       "target": "201:",
       "candidates": [
         "201:"
@@ -13757,7 +13757,7 @@
       "note": ""
     },
     "1125": {
-      "status": "pending",
+      "status": "direct",
       "target": "351:",
       "candidates": [
         "351:"
@@ -13769,7 +13769,7 @@
       "note": ""
     },
     "1126": {
-      "status": "pending",
+      "status": "direct",
       "target": "351:",
       "candidates": [
         "351:"
@@ -13781,8 +13781,8 @@
       "note": ""
     },
     "1127": {
-      "status": "pending",
-      "target": "351:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "351:"
       ],
@@ -13793,8 +13793,8 @@
       "note": ""
     },
     "1128": {
-      "status": "pending",
-      "target": "386:普通形态",
+      "status": "direct",
+      "target": "386:攻击形态",
       "candidates": [
         "386:普通形态",
         "386:攻击形态",
@@ -13808,7 +13808,7 @@
       "note": ""
     },
     "1129": {
-      "status": "pending",
+      "status": "direct",
       "target": "386:防御形态",
       "candidates": [
         "386:防御形态",
@@ -13823,7 +13823,7 @@
       "note": ""
     },
     "1130": {
-      "status": "pending",
+      "status": "direct",
       "target": "386:速度形态",
       "candidates": [
         "386:速度形态",
@@ -13838,7 +13838,7 @@
       "note": ""
     },
     "1131": {
-      "status": "pending",
+      "status": "direct",
       "target": "412:",
       "candidates": [
         "412:"
@@ -13850,7 +13850,7 @@
       "note": ""
     },
     "1132": {
-      "status": "pending",
+      "status": "direct",
       "target": "412:",
       "candidates": [
         "412:"
@@ -13862,7 +13862,7 @@
       "note": ""
     },
     "1133": {
-      "status": "pending",
+      "status": "direct",
       "target": "413:砂土蓑衣",
       "candidates": [
         "413:砂土蓑衣",
@@ -13876,7 +13876,7 @@
       "note": ""
     },
     "1134": {
-      "status": "pending",
+      "status": "direct",
       "target": "413:垃圾蓑衣",
       "candidates": [
         "413:垃圾蓑衣",
@@ -13890,7 +13890,7 @@
       "note": ""
     },
     "1135": {
-      "status": "pending",
+      "status": "direct",
       "target": "421:",
       "candidates": [
         "421:"
@@ -13902,7 +13902,7 @@
       "note": ""
     },
     "1136": {
-      "status": "pending",
+      "status": "direct",
       "target": "422:",
       "candidates": [
         "422:"
@@ -13914,7 +13914,7 @@
       "note": ""
     },
     "1137": {
-      "status": "pending",
+      "status": "direct",
       "target": "423:",
       "candidates": [
         "423:"
@@ -13926,8 +13926,8 @@
       "note": ""
     },
     "1138": {
-      "status": "pending",
-      "target": "479:切割洛托姆",
+      "status": "direct",
+      "target": "479:加热洛托姆",
       "candidates": [
         "479:切割洛托姆",
         "479:加热洛托姆",
@@ -13943,8 +13943,8 @@
       "note": ""
     },
     "1139": {
-      "status": "pending",
-      "target": "479:切割洛托姆",
+      "status": "direct",
+      "target": "479:清洗洛托姆",
       "candidates": [
         "479:切割洛托姆",
         "479:加热洛托姆",
@@ -13960,8 +13960,8 @@
       "note": ""
     },
     "1140": {
-      "status": "pending",
-      "target": "479:切割洛托姆",
+      "status": "direct",
+      "target": "479:结冰洛托姆",
       "candidates": [
         "479:切割洛托姆",
         "479:加热洛托姆",
@@ -13977,8 +13977,8 @@
       "note": ""
     },
     "1141": {
-      "status": "pending",
-      "target": "479:切割洛托姆",
+      "status": "direct",
+      "target": "479:旋转洛托姆",
       "candidates": [
         "479:切割洛托姆",
         "479:加热洛托姆",
@@ -13994,7 +13994,7 @@
       "note": ""
     },
     "1142": {
-      "status": "pending",
+      "status": "direct",
       "target": "479:切割洛托姆",
       "candidates": [
         "479:切割洛托姆",
@@ -14011,7 +14011,7 @@
       "note": ""
     },
     "1143": {
-      "status": "pending",
+      "status": "direct",
       "target": "487:起源形态",
       "candidates": [
         "487:起源形态",
@@ -14024,7 +14024,7 @@
       "note": ""
     },
     "1144": {
-      "status": "pending",
+      "status": "direct",
       "target": "492:天空形态",
       "candidates": [
         "492:天空形态",
@@ -14037,7 +14037,7 @@
       "note": ""
     },
     "1145": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14049,7 +14049,7 @@
       "note": ""
     },
     "1146": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14061,7 +14061,7 @@
       "note": ""
     },
     "1147": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14073,7 +14073,7 @@
       "note": ""
     },
     "1148": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14085,7 +14085,7 @@
       "note": ""
     },
     "1149": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14097,7 +14097,7 @@
       "note": ""
     },
     "1150": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14109,7 +14109,7 @@
       "note": ""
     },
     "1151": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14121,7 +14121,7 @@
       "note": ""
     },
     "1152": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14133,7 +14133,7 @@
       "note": ""
     },
     "1153": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14145,7 +14145,7 @@
       "note": ""
     },
     "1154": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14157,7 +14157,7 @@
       "note": ""
     },
     "1155": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14169,7 +14169,7 @@
       "note": ""
     },
     "1156": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14181,7 +14181,7 @@
       "note": ""
     },
     "1157": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14193,7 +14193,7 @@
       "note": ""
     },
     "1158": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14205,7 +14205,7 @@
       "note": ""
     },
     "1159": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14217,7 +14217,7 @@
       "note": ""
     },
     "1160": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14229,7 +14229,7 @@
       "note": ""
     },
     "1161": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
@@ -14241,7 +14241,7 @@
       "note": ""
     },
     "1162": {
-      "status": "pending",
+      "status": "direct",
       "target": "550:",
       "candidates": [
         "550:"
@@ -14253,8 +14253,8 @@
       "note": ""
     },
     "1163": {
-      "status": "pending",
-      "target": "555:达摩模式",
+      "status": "direct",
+      "target": "555:伽勒尔的样子／达摩模式",
       "candidates": [
         "555:达摩模式",
         "555:伽勒尔的样子",
@@ -14268,8 +14268,8 @@
       "note": ""
     },
     "1164": {
-      "status": "pending",
-      "target": "555:伽勒尔的样子／达摩模式",
+      "status": "direct",
+      "target": "555:达摩模式",
       "candidates": [
         "555:伽勒尔的样子／达摩模式",
         "555:伽勒尔的样子",
@@ -14283,7 +14283,7 @@
       "note": ""
     },
     "1165": {
-      "status": "pending",
+      "status": "direct",
       "target": "585:",
       "candidates": [
         "585:"
@@ -14295,7 +14295,7 @@
       "note": ""
     },
     "1166": {
-      "status": "pending",
+      "status": "direct",
       "target": "585:",
       "candidates": [
         "585:"
@@ -14307,7 +14307,7 @@
       "note": ""
     },
     "1167": {
-      "status": "pending",
+      "status": "direct",
       "target": "585:",
       "candidates": [
         "585:"
@@ -14319,7 +14319,7 @@
       "note": ""
     },
     "1168": {
-      "status": "pending",
+      "status": "direct",
       "target": "586:",
       "candidates": [
         "586:"
@@ -14331,7 +14331,7 @@
       "note": ""
     },
     "1169": {
-      "status": "pending",
+      "status": "direct",
       "target": "586:",
       "candidates": [
         "586:"
@@ -14343,7 +14343,7 @@
       "note": ""
     },
     "1170": {
-      "status": "pending",
+      "status": "direct",
       "target": "586:",
       "candidates": [
         "586:"
@@ -14355,7 +14355,7 @@
       "note": ""
     },
     "1171": {
-      "status": "pending",
+      "status": "direct",
       "target": "641:灵兽形态",
       "candidates": [
         "641:灵兽形态",
@@ -14368,7 +14368,7 @@
       "note": ""
     },
     "1172": {
-      "status": "pending",
+      "status": "direct",
       "target": "642:灵兽形态",
       "candidates": [
         "642:灵兽形态",
@@ -14381,7 +14381,7 @@
       "note": ""
     },
     "1173": {
-      "status": "pending",
+      "status": "direct",
       "target": "645:灵兽形态",
       "candidates": [
         "645:灵兽形态",
@@ -14394,7 +14394,7 @@
       "note": ""
     },
     "1174": {
-      "status": "pending",
+      "status": "direct",
       "target": "646:焰白酋雷姆",
       "candidates": [
         "646:焰白酋雷姆",
@@ -14408,7 +14408,7 @@
       "note": ""
     },
     "1175": {
-      "status": "pending",
+      "status": "direct",
       "target": "646:暗黑酋雷姆",
       "candidates": [
         "646:暗黑酋雷姆",
@@ -14422,7 +14422,7 @@
       "note": ""
     },
     "1176": {
-      "status": "pending",
+      "status": "direct",
       "target": "647:",
       "candidates": [
         "647:"
@@ -14434,7 +14434,7 @@
       "note": ""
     },
     "1177": {
-      "status": "pending",
+      "status": "direct",
       "target": "648:舞步形态",
       "candidates": [
         "648:舞步形态",
@@ -14447,7 +14447,7 @@
       "note": ""
     },
     "1178": {
-      "status": "pending",
+      "status": "direct",
       "target": "649:",
       "candidates": [
         "649:"
@@ -14459,7 +14459,7 @@
       "note": ""
     },
     "1179": {
-      "status": "pending",
+      "status": "direct",
       "target": "649:",
       "candidates": [
         "649:"
@@ -14471,7 +14471,7 @@
       "note": ""
     },
     "1180": {
-      "status": "pending",
+      "status": "direct",
       "target": "649:",
       "candidates": [
         "649:"
@@ -14483,7 +14483,7 @@
       "note": ""
     },
     "1181": {
-      "status": "pending",
+      "status": "direct",
       "target": "649:",
       "candidates": [
         "649:"
@@ -14495,7 +14495,7 @@
       "note": ""
     },
     "1182": {
-      "status": "pending",
+      "status": "direct",
       "target": "658:",
       "candidates": [
         "658:",
@@ -14509,7 +14509,7 @@
       "note": ""
     },
     "1183": {
-      "status": "pending",
+      "status": "direct",
       "target": "658:小智版甲贺忍蛙",
       "candidates": [
         "658:小智版甲贺忍蛙",
@@ -14523,7 +14523,7 @@
       "note": ""
     },
     "1184": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14535,7 +14535,7 @@
       "note": ""
     },
     "1185": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14547,7 +14547,7 @@
       "note": ""
     },
     "1186": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14559,7 +14559,7 @@
       "note": ""
     },
     "1187": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14571,7 +14571,7 @@
       "note": ""
     },
     "1188": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14583,7 +14583,7 @@
       "note": ""
     },
     "1189": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14595,7 +14595,7 @@
       "note": ""
     },
     "1190": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14607,7 +14607,7 @@
       "note": ""
     },
     "1191": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14619,7 +14619,7 @@
       "note": ""
     },
     "1192": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14631,7 +14631,7 @@
       "note": ""
     },
     "1193": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14643,7 +14643,7 @@
       "note": ""
     },
     "1194": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14655,7 +14655,7 @@
       "note": ""
     },
     "1195": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14667,7 +14667,7 @@
       "note": ""
     },
     "1196": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14679,7 +14679,7 @@
       "note": ""
     },
     "1197": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14691,7 +14691,7 @@
       "note": ""
     },
     "1198": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14703,7 +14703,7 @@
       "note": ""
     },
     "1199": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14715,7 +14715,7 @@
       "note": ""
     },
     "1200": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14727,7 +14727,7 @@
       "note": ""
     },
     "1201": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14739,7 +14739,7 @@
       "note": ""
     },
     "1202": {
-      "status": "pending",
+      "status": "direct",
       "target": "666:",
       "candidates": [
         "666:"
@@ -14751,7 +14751,7 @@
       "note": ""
     },
     "1203": {
-      "status": "pending",
+      "status": "direct",
       "target": "669:",
       "candidates": [
         "669:"
@@ -14763,7 +14763,7 @@
       "note": ""
     },
     "1204": {
-      "status": "pending",
+      "status": "direct",
       "target": "669:",
       "candidates": [
         "669:"
@@ -14775,7 +14775,7 @@
       "note": ""
     },
     "1205": {
-      "status": "pending",
+      "status": "direct",
       "target": "669:",
       "candidates": [
         "669:"
@@ -14787,7 +14787,7 @@
       "note": ""
     },
     "1206": {
-      "status": "pending",
+      "status": "direct",
       "target": "669:",
       "candidates": [
         "669:"
@@ -14799,7 +14799,7 @@
       "note": ""
     },
     "1207": {
-      "status": "pending",
+      "status": "direct",
       "target": "670:",
       "candidates": [
         "670:",
@@ -14813,7 +14813,7 @@
       "note": ""
     },
     "1208": {
-      "status": "pending",
+      "status": "direct",
       "target": "670:",
       "candidates": [
         "670:",
@@ -14827,7 +14827,7 @@
       "note": ""
     },
     "1209": {
-      "status": "pending",
+      "status": "direct",
       "target": "670:",
       "candidates": [
         "670:",
@@ -14841,7 +14841,7 @@
       "note": ""
     },
     "1210": {
-      "status": "pending",
+      "status": "direct",
       "target": "670:",
       "candidates": [
         "670:",
@@ -14855,7 +14855,7 @@
       "note": ""
     },
     "1211": {
-      "status": "pending",
+      "status": "direct",
       "target": "670:永恒之花",
       "candidates": [
         "670:永恒之花",
@@ -14869,7 +14869,7 @@
       "note": ""
     },
     "1212": {
-      "status": "pending",
+      "status": "direct",
       "target": "671:",
       "candidates": [
         "671:"
@@ -14881,7 +14881,7 @@
       "note": ""
     },
     "1213": {
-      "status": "pending",
+      "status": "direct",
       "target": "671:",
       "candidates": [
         "671:"
@@ -14893,7 +14893,7 @@
       "note": ""
     },
     "1214": {
-      "status": "pending",
+      "status": "direct",
       "target": "671:",
       "candidates": [
         "671:"
@@ -14905,7 +14905,7 @@
       "note": ""
     },
     "1215": {
-      "status": "pending",
+      "status": "direct",
       "target": "671:",
       "candidates": [
         "671:"
@@ -14917,7 +14917,7 @@
       "note": ""
     },
     "1216": {
-      "status": "pending",
+      "status": "direct",
       "target": "676:",
       "candidates": [
         "676:"
@@ -14929,7 +14929,7 @@
       "note": ""
     },
     "1217": {
-      "status": "pending",
+      "status": "direct",
       "target": "676:",
       "candidates": [
         "676:"
@@ -14941,7 +14941,7 @@
       "note": ""
     },
     "1218": {
-      "status": "pending",
+      "status": "direct",
       "target": "676:",
       "candidates": [
         "676:"
@@ -14953,7 +14953,7 @@
       "note": ""
     },
     "1219": {
-      "status": "pending",
+      "status": "direct",
       "target": "676:",
       "candidates": [
         "676:"
@@ -14965,7 +14965,7 @@
       "note": ""
     },
     "1220": {
-      "status": "pending",
+      "status": "direct",
       "target": "676:",
       "candidates": [
         "676:"
@@ -14977,7 +14977,7 @@
       "note": ""
     },
     "1221": {
-      "status": "pending",
+      "status": "direct",
       "target": "676:",
       "candidates": [
         "676:"
@@ -14989,7 +14989,7 @@
       "note": ""
     },
     "1222": {
-      "status": "pending",
+      "status": "direct",
       "target": "676:",
       "candidates": [
         "676:"
@@ -15001,7 +15001,7 @@
       "note": ""
     },
     "1223": {
-      "status": "pending",
+      "status": "direct",
       "target": "676:",
       "candidates": [
         "676:"
@@ -15013,7 +15013,7 @@
       "note": ""
     },
     "1224": {
-      "status": "pending",
+      "status": "direct",
       "target": "676:",
       "candidates": [
         "676:"
@@ -15025,7 +15025,7 @@
       "note": ""
     },
     "1225": {
-      "status": "pending",
+      "status": "direct",
       "target": "678:",
       "candidates": [
         "678:",
@@ -15038,7 +15038,7 @@
       "note": ""
     },
     "1226": {
-      "status": "pending",
+      "status": "direct",
       "target": "681:刀剑形态",
       "candidates": [
         "681:刀剑形态",
@@ -15051,7 +15051,7 @@
       "note": ""
     },
     "1227": {
-      "status": "pending",
+      "status": "direct",
       "target": "710:小颗种",
       "candidates": [
         "710:小颗种",
@@ -15066,7 +15066,7 @@
       "note": ""
     },
     "1228": {
-      "status": "pending",
+      "status": "direct",
       "target": "710:大颗种",
       "candidates": [
         "710:大颗种",
@@ -15081,7 +15081,7 @@
       "note": ""
     },
     "1229": {
-      "status": "pending",
+      "status": "direct",
       "target": "710:巨颗种",
       "candidates": [
         "710:巨颗种",
@@ -15096,7 +15096,7 @@
       "note": ""
     },
     "1230": {
-      "status": "pending",
+      "status": "direct",
       "target": "711:小颗种",
       "candidates": [
         "711:小颗种",
@@ -15111,7 +15111,7 @@
       "note": ""
     },
     "1231": {
-      "status": "pending",
+      "status": "direct",
       "target": "711:大颗种",
       "candidates": [
         "711:大颗种",
@@ -15126,7 +15126,7 @@
       "note": ""
     },
     "1232": {
-      "status": "pending",
+      "status": "direct",
       "target": "711:巨颗种",
       "candidates": [
         "711:巨颗种",
@@ -15141,7 +15141,7 @@
       "note": ""
     },
     "1233": {
-      "status": "pending",
+      "status": "direct",
       "target": "716:",
       "candidates": [
         "716:",
@@ -15154,7 +15154,7 @@
       "note": ""
     },
     "1234": {
-      "status": "pending",
+      "status": "direct",
       "target": "718:１０％形态",
       "candidates": [
         "718:１０％形态",
@@ -15169,7 +15169,7 @@
       "note": ""
     },
     "1235": {
-      "status": "pending",
+      "status": "direct",
       "target": "718:１０％形态",
       "candidates": [
         "718:１０％形态",
@@ -15184,7 +15184,7 @@
       "note": ""
     },
     "1236": {
-      "status": "pending",
+      "status": "direct",
       "target": "718:５０％形态",
       "candidates": [
         "718:５０％形态",
@@ -15199,7 +15199,7 @@
       "note": ""
     },
     "1237": {
-      "status": "pending",
+      "status": "direct",
       "target": "718:完全体形态",
       "candidates": [
         "718:完全体形态",
@@ -15214,7 +15214,7 @@
       "note": ""
     },
     "1238": {
-      "status": "pending",
+      "status": "direct",
       "target": "720:解放胡帕",
       "candidates": [
         "720:解放胡帕",
@@ -15227,7 +15227,7 @@
       "note": ""
     },
     "1239": {
-      "status": "pending",
+      "status": "direct",
       "target": "741:",
       "candidates": [
         "741:"
@@ -15239,7 +15239,7 @@
       "note": ""
     },
     "1240": {
-      "status": "pending",
+      "status": "direct",
       "target": "741:",
       "candidates": [
         "741:"
@@ -15251,7 +15251,7 @@
       "note": ""
     },
     "1241": {
-      "status": "pending",
+      "status": "direct",
       "target": "741:",
       "candidates": [
         "741:"
@@ -15263,7 +15263,7 @@
       "note": ""
     },
     "1242": {
-      "status": "pending",
+      "status": "direct",
       "target": "744:",
       "candidates": [
         "744:"
@@ -15275,7 +15275,7 @@
       "note": ""
     },
     "1243": {
-      "status": "pending",
+      "status": "direct",
       "target": "745:黑夜的样子",
       "candidates": [
         "745:黑夜的样子",
@@ -15289,7 +15289,7 @@
       "note": ""
     },
     "1244": {
-      "status": "pending",
+      "status": "direct",
       "target": "745:黄昏的样子",
       "candidates": [
         "745:黄昏的样子",
@@ -15303,7 +15303,7 @@
       "note": ""
     },
     "1245": {
-      "status": "pending",
+      "status": "direct",
       "target": "746:鱼群的样子",
       "candidates": [
         "746:鱼群的样子",
@@ -15316,7 +15316,7 @@
       "note": ""
     },
     "1246": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15328,7 +15328,7 @@
       "note": ""
     },
     "1247": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15340,7 +15340,7 @@
       "note": ""
     },
     "1248": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15352,7 +15352,7 @@
       "note": ""
     },
     "1249": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15364,7 +15364,7 @@
       "note": ""
     },
     "1250": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15376,7 +15376,7 @@
       "note": ""
     },
     "1251": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15388,7 +15388,7 @@
       "note": ""
     },
     "1252": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15400,7 +15400,7 @@
       "note": ""
     },
     "1253": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15412,7 +15412,7 @@
       "note": ""
     },
     "1254": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15424,7 +15424,7 @@
       "note": ""
     },
     "1255": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15436,7 +15436,7 @@
       "note": ""
     },
     "1256": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15448,7 +15448,7 @@
       "note": ""
     },
     "1257": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15460,7 +15460,7 @@
       "note": ""
     },
     "1258": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15472,7 +15472,7 @@
       "note": ""
     },
     "1259": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15484,7 +15484,7 @@
       "note": ""
     },
     "1260": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15496,7 +15496,7 @@
       "note": ""
     },
     "1261": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15508,7 +15508,7 @@
       "note": ""
     },
     "1262": {
-      "status": "pending",
+      "status": "direct",
       "target": "773:",
       "candidates": [
         "773:"
@@ -15520,7 +15520,7 @@
       "note": ""
     },
     "1263": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:流星的样子",
       "candidates": [
         "774:流星的样子",
@@ -15533,7 +15533,7 @@
       "note": ""
     },
     "1264": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:流星的样子",
       "candidates": [
         "774:流星的样子",
@@ -15546,7 +15546,7 @@
       "note": ""
     },
     "1265": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:流星的样子",
       "candidates": [
         "774:流星的样子",
@@ -15559,7 +15559,7 @@
       "note": ""
     },
     "1266": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:流星的样子",
       "candidates": [
         "774:流星的样子",
@@ -15572,7 +15572,7 @@
       "note": ""
     },
     "1267": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:流星的样子",
       "candidates": [
         "774:流星的样子",
@@ -15585,7 +15585,7 @@
       "note": ""
     },
     "1268": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:流星的样子",
       "candidates": [
         "774:流星的样子",
@@ -15598,7 +15598,7 @@
       "note": ""
     },
     "1269": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:核心",
       "candidates": [
         "774:核心",
@@ -15611,7 +15611,7 @@
       "note": ""
     },
     "1270": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:核心",
       "candidates": [
         "774:核心",
@@ -15624,7 +15624,7 @@
       "note": ""
     },
     "1271": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:核心",
       "candidates": [
         "774:核心",
@@ -15637,7 +15637,7 @@
       "note": ""
     },
     "1272": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:核心",
       "candidates": [
         "774:核心",
@@ -15650,7 +15650,7 @@
       "note": ""
     },
     "1273": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:核心",
       "candidates": [
         "774:核心",
@@ -15663,7 +15663,7 @@
       "note": ""
     },
     "1274": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:核心",
       "candidates": [
         "774:核心",
@@ -15676,7 +15676,7 @@
       "note": ""
     },
     "1275": {
-      "status": "pending",
+      "status": "direct",
       "target": "774:核心",
       "candidates": [
         "774:核心",
@@ -15689,7 +15689,7 @@
       "note": ""
     },
     "1276": {
-      "status": "pending",
+      "status": "direct",
       "target": "778:",
       "candidates": [
         "778:"
@@ -15701,7 +15701,7 @@
       "note": ""
     },
     "1277": {
-      "status": "pending",
+      "status": "direct",
       "target": "800:黄昏之鬃",
       "candidates": [
         "800:黄昏之鬃",
@@ -15716,7 +15716,7 @@
       "note": ""
     },
     "1278": {
-      "status": "pending",
+      "status": "direct",
       "target": "800:拂晓之翼",
       "candidates": [
         "800:拂晓之翼",
@@ -15731,7 +15731,7 @@
       "note": ""
     },
     "1279": {
-      "status": "pending",
+      "status": "direct",
       "target": "800:究极奈克洛兹玛",
       "candidates": [
         "800:究极奈克洛兹玛",
@@ -15746,7 +15746,7 @@
       "note": ""
     },
     "1280": {
-      "status": "pending",
+      "status": "direct",
       "target": "801:",
       "candidates": [
         "801:",
@@ -15759,7 +15759,7 @@
       "note": ""
     },
     "1281": {
-      "status": "pending",
+      "status": "direct",
       "target": "845:",
       "candidates": [
         "845:"
@@ -15771,7 +15771,7 @@
       "note": ""
     },
     "1282": {
-      "status": "pending",
+      "status": "direct",
       "target": "845:",
       "candidates": [
         "845:"
@@ -15783,7 +15783,7 @@
       "note": ""
     },
     "1283": {
-      "status": "pending",
+      "status": "direct",
       "target": "849:",
       "candidates": [
         "849:"
@@ -15795,7 +15795,7 @@
       "note": ""
     },
     "1284": {
-      "status": "pending",
+      "status": "direct",
       "target": "854:",
       "candidates": [
         "854:"
@@ -15807,7 +15807,7 @@
       "note": ""
     },
     "1285": {
-      "status": "pending",
+      "status": "direct",
       "target": "855:",
       "candidates": [
         "855:"
@@ -15819,7 +15819,7 @@
       "note": ""
     },
     "1286": {
-      "status": "pending",
+      "status": "direct",
       "target": "869:",
       "candidates": [
         "869:"
@@ -15831,7 +15831,7 @@
       "note": ""
     },
     "1287": {
-      "status": "pending",
+      "status": "direct",
       "target": "869:",
       "candidates": [
         "869:"
@@ -15843,7 +15843,7 @@
       "note": ""
     },
     "1288": {
-      "status": "pending",
+      "status": "direct",
       "target": "869:",
       "candidates": [
         "869:"
@@ -15855,7 +15855,7 @@
       "note": ""
     },
     "1289": {
-      "status": "pending",
+      "status": "direct",
       "target": "869:",
       "candidates": [
         "869:"
@@ -15867,7 +15867,7 @@
       "note": ""
     },
     "1290": {
-      "status": "pending",
+      "status": "direct",
       "target": "869:",
       "candidates": [
         "869:"
@@ -15879,7 +15879,7 @@
       "note": ""
     },
     "1291": {
-      "status": "pending",
+      "status": "direct",
       "target": "869:",
       "candidates": [
         "869:"
@@ -15891,7 +15891,7 @@
       "note": ""
     },
     "1292": {
-      "status": "pending",
+      "status": "direct",
       "target": "869:",
       "candidates": [
         "869:"
@@ -15903,7 +15903,7 @@
       "note": ""
     },
     "1293": {
-      "status": "pending",
+      "status": "direct",
       "target": "869:",
       "candidates": [
         "869:"
@@ -15915,7 +15915,7 @@
       "note": ""
     },
     "1294": {
-      "status": "pending",
+      "status": "direct",
       "target": "875:解冻头",
       "candidates": [
         "875:解冻头",
@@ -15928,7 +15928,7 @@
       "note": ""
     },
     "1295": {
-      "status": "pending",
+      "status": "direct",
       "target": "876:雌性",
       "candidates": [
         "876:雌性",
@@ -15943,7 +15943,7 @@
       "note": ""
     },
     "1296": {
-      "status": "pending",
+      "status": "direct",
       "target": "877:",
       "candidates": [
         "877:"
@@ -15955,7 +15955,7 @@
       "note": ""
     },
     "1297": {
-      "status": "pending",
+      "status": "direct",
       "target": "888:剑之王",
       "candidates": [
         "888:剑之王",
@@ -15968,7 +15968,7 @@
       "note": ""
     },
     "1298": {
-      "status": "pending",
+      "status": "direct",
       "target": "889:盾之王",
       "candidates": [
         "889:盾之王",
@@ -15981,7 +15981,7 @@
       "note": ""
     },
     "1299": {
-      "status": "pending",
+      "status": "direct",
       "target": "890:无极巨化",
       "candidates": [
         "890:无极巨化",
@@ -15994,7 +15994,7 @@
       "note": ""
     },
     "1300": {
-      "status": "pending",
+      "status": "direct",
       "target": "892:",
       "candidates": [
         "892:"
@@ -16006,7 +16006,7 @@
       "note": ""
     },
     "1301": {
-      "status": "pending",
+      "status": "direct",
       "target": "893:",
       "candidates": [
         "893:"
@@ -16018,7 +16018,7 @@
       "note": ""
     },
     "1302": {
-      "status": "pending",
+      "status": "direct",
       "target": "898:骑白马的样子",
       "candidates": [
         "898:骑白马的样子",
@@ -16032,7 +16032,7 @@
       "note": ""
     },
     "1303": {
-      "status": "pending",
+      "status": "direct",
       "target": "898:骑黑马的样子",
       "candidates": [
         "898:骑黑马的样子",
@@ -16046,8 +16046,8 @@
       "note": ""
     },
     "1304": {
-      "status": "pending",
-      "target": "142:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "142:",
         "142:超级化石翼龙"
@@ -16059,8 +16059,8 @@
       "note": ""
     },
     "1305": {
-      "status": "pending",
-      "target": "169:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "169:"
       ],
@@ -16071,8 +16071,8 @@
       "note": ""
     },
     "1306": {
-      "status": "pending",
-      "target": "169:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "169:"
       ],
@@ -16083,8 +16083,8 @@
       "note": ""
     },
     "1307": {
-      "status": "pending",
-      "target": "141:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "141:"
       ],
@@ -16095,7 +16095,7 @@
       "note": ""
     },
     "1308": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -16105,8 +16105,8 @@
       "note": ""
     },
     "1309": {
-      "status": "pending",
-      "target": "473:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "473:"
       ],
@@ -16295,7 +16295,7 @@
       "note": ""
     },
     "1324": {
-      "status": "pending",
+      "status": "direct",
       "target": "902:雄性",
       "candidates": [
         "902:雄性",
@@ -16310,7 +16310,7 @@
       "note": ""
     },
     "1325": {
-      "status": "pending",
+      "status": "direct",
       "target": "902:雌性",
       "candidates": [
         "902:雌性",
@@ -16428,7 +16428,7 @@
       "note": ""
     },
     "1334": {
-      "status": "pending",
+      "status": "direct",
       "target": "905:化身形态",
       "candidates": [
         "905:化身形态",
@@ -16441,7 +16441,7 @@
       "note": ""
     },
     "1335": {
-      "status": "pending",
+      "status": "direct",
       "target": "905:灵兽形态",
       "candidates": [
         "905:灵兽形态",
@@ -16929,8 +16929,8 @@
       "note": ""
     },
     "1375": {
-      "status": "pending",
-      "target": "1017:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "1017:"
       ],
@@ -16941,8 +16941,8 @@
       "note": ""
     },
     "1376": {
-      "status": "pending",
-      "target": "1014:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "1014:"
       ],
@@ -16953,8 +16953,8 @@
       "note": ""
     },
     "1377": {
-      "status": "pending",
-      "target": "1015:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "1015:"
       ],
@@ -16965,8 +16965,8 @@
       "note": ""
     },
     "1378": {
-      "status": "pending",
-      "target": "1016:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "1016:"
       ],
@@ -16977,8 +16977,8 @@
       "note": ""
     },
     "1379": {
-      "status": "pending",
-      "target": "1024:普通形态",
+      "status": "none",
+      "target": null,
       "candidates": [
         "1024:普通形态",
         "1024:太晶形态",
@@ -16991,8 +16991,8 @@
       "note": ""
     },
     "1380": {
-      "status": "pending",
-      "target": "38:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "38:",
         "38:阿罗拉的样子"
@@ -17016,8 +17016,8 @@
       "note": ""
     },
     "1382": {
-      "status": "pending",
-      "target": "964:平凡形态",
+      "status": "none",
+      "target": null,
       "candidates": [
         "964:平凡形态",
         "964:全能形态"
@@ -17029,8 +17029,8 @@
       "note": ""
     },
     "1383": {
-      "status": "pending",
-      "target": "849:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "849:"
       ],
@@ -17041,8 +17041,8 @@
       "note": ""
     },
     "1384": {
-      "status": "pending",
-      "target": "206:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "206:"
       ],
@@ -17053,8 +17053,8 @@
       "note": ""
     },
     "1385": {
-      "status": "pending",
-      "target": "206:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "206:"
       ],
@@ -17065,8 +17065,8 @@
       "note": ""
     },
     "1386": {
-      "status": "pending",
-      "target": "26:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "26:",
         "26:超级雷丘Ｘ",
@@ -17080,8 +17080,8 @@
       "note": ""
     },
     "1387": {
-      "status": "pending",
-      "target": "224:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "224:"
       ],
@@ -17092,8 +17092,8 @@
       "note": ""
     },
     "1388": {
-      "status": "pending",
-      "target": "604:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "604:",
         "604:超级麻麻鳗鱼王"
@@ -17105,7 +17105,7 @@
       "note": ""
     },
     "1389": {
-      "status": "pending",
+      "status": "none",
       "target": null,
       "candidates": [],
       "confidence": "low",
@@ -17115,8 +17115,8 @@
       "note": ""
     },
     "1390": {
-      "status": "pending",
-      "target": "348:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "348:"
       ],
@@ -17127,8 +17127,8 @@
       "note": ""
     },
     "1391": {
-      "status": "pending",
-      "target": "369:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "369:"
       ],
@@ -17139,8 +17139,8 @@
       "note": ""
     },
     "1392": {
-      "status": "pending",
-      "target": "350:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "350:"
       ],
@@ -17151,8 +17151,8 @@
       "note": ""
     },
     "1393": {
-      "status": "pending",
-      "target": "130:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "130:",
         "130:超级暴鲤龙"
@@ -17164,8 +17164,8 @@
       "note": ""
     },
     "1394": {
-      "status": "pending",
-      "target": "474:",
+      "status": "none",
+      "target": null,
       "candidates": [
         "474:"
       ],

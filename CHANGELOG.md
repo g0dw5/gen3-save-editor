@@ -14,6 +14,20 @@ Updated in place without a version bump: shared editing for Dark Phantom BW/DP
 and Team Rocket 2.1 Chinese. ROM reference windows remain read-only.
 本次沿用 0.2.0：西班牙火箭队与漆黑 BW／DP 共用编辑器，ROM 资料保持只读浮窗。
 
+- Bundle the completed manual reference mappings for Dark Phantom BW (114),
+  DP (115), and Rocket (399, including 110 explicit no-counterpart decisions).
+  Isolate mappings by ROM fingerprint and internal species ID; keep proposals,
+  review notes and the standalone review tool outside the application bundle.
+- 纳入已人工审核的官方参照映射：漆黑 BW 114 条、DP 115 条、西火 399 条（含
+  110 条明确无官方对应）；按 ROM 指纹及内部编号隔离。审核建议、备注及独立
+  审核工具不进入应用包，其余条目保留原有自动匹配行为。
+- Display form identities in ROM references and saved Pokémon using shared
+  ROM-derived relationships, verified form rules and reviewed direct mappings.
+  Distinguish Mega X/Y and Deoxys forms without treating comparison-only
+  references as identity or adding a save mutation.
+- ROM 资料与存档宝可梦共用形态展示逻辑，结合 ROM 关联、已验证的形态规则及
+  人工确认的直接映射，区分 Mega X/Y、代欧奇希斯等形态；仅作数值参照的映射
+  不改变形态身份，展示功能不改写存档。
 - Rename the ROM Species tab to Pokémon. All supported ROMs share a navigable
   evolution tree with incoming evolutions, sibling branches, battle forms and
   ROM form families. Name-only associations are visibly unverified and never

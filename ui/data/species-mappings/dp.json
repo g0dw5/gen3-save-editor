@@ -271,6 +271,42 @@
       "status": "direct",
       "target": "494:"
     },
+    "253": {
+      "status": "direct",
+      "target": "387:"
+    },
+    "254": {
+      "status": "direct",
+      "target": "388:"
+    },
+    "255": {
+      "status": "direct",
+      "target": "389:"
+    },
+    "256": {
+      "status": "direct",
+      "target": "390:"
+    },
+    "257": {
+      "status": "direct",
+      "target": "391:"
+    },
+    "258": {
+      "status": "direct",
+      "target": "392:"
+    },
+    "259": {
+      "status": "direct",
+      "target": "393:"
+    },
+    "260": {
+      "status": "direct",
+      "target": "394:"
+    },
+    "261": {
+      "status": "direct",
+      "target": "395:"
+    },
     "262": {
       "status": "direct",
       "target": "646:焰白酋雷姆"
