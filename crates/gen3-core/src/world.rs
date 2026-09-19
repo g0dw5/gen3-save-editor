@@ -543,6 +543,8 @@ impl Rom {
                                 .iter()
                                 .copied()
                                 .filter(|v| *v != 0)
+                                .collect::<BTreeSet<_>>()
+                                .into_iter()
                                 .collect()
                         } else {
                             vec![s.abilities[slot]]

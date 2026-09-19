@@ -14,6 +14,20 @@ Updated in place without a version bump: shared editing for Dark Phantom BW/DP
 and Team Rocket 2.1 Chinese. ROM reference windows remain read-only.
 本次沿用 0.2.0：西班牙火箭队与漆黑 BW／DP 共用编辑器，ROM 资料保持只读浮窗。
 
+- Fix Rocket map rendering with three layers, a 640-tile/metatile boundary and
+  7+6 palette banks; preserve BW/DP's independent format. Add pixel-level tests.
+- 修复西火地图黑洞和错图：正确读取三层、640 主图块及 7+6 调色板；漆黑保留独立
+  配置，并新增跨版本像素回归。
+- Replace raw evolution methods, effect IDs, pocket categories and story variables
+  with readable ROM-derived labels; keep raw evidence collapsible. Fix Rocket
+  rod names, Fairy labels and fixed Hidden Power reference power.
+- 进化条件、招式效果、道具栏位和剧情相遇改为可读说明；原始编号折叠保留。修正
+  西火钓竿名、妖精属性及觉醒力量固定威力的资料显示。
+- Deduplicate opponent ability choices and distinguish fixed from randomly generated
+  abilities. Verify all 13 Anya teams over 32 seeds against native ROM routines.
+- Publish the unsaved-edit drag guard before the updated form becomes interactive.
+- 对手特性候选去重，明确区分固定／随机；用原生 ROM 函数验证安雅的 13 份队伍，
+  每份 32 组随机种子。修复未保存编辑状态传递的短暂延迟，及时阻止拖拽。
 - Rename the application to **Gen III ROM Hack Editor** (**三代改版修改器** in
   Chinese), reflecting support for multiple ROM hacks. Update window/dialog
   titles and package names while retaining the application identifier and 0.2.0.

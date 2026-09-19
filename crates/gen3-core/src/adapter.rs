@@ -154,6 +154,12 @@ pub enum LearnsetFormat {
     Packed9Bit,
     MoveLevel16,
 }
+#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum EvolutionFormat {
+    Gen3,
+    Expanded,
+}
 #[derive(Clone, Copy, Debug, Serialize)]
 pub enum ScriptFormat {
     DarkPhantom,
@@ -172,6 +178,7 @@ pub struct RomFormats {
     pub species: SpeciesFormat,
     pub moves: MoveFormat,
     pub learnsets: LearnsetFormat,
+    pub evolutions: EvolutionFormat,
 }
 impl RomFormats {
     pub const GEN3: Self = Self {
@@ -181,6 +188,7 @@ impl RomFormats {
         species: SpeciesFormat::Gen3,
         moves: MoveFormat::Gen3,
         learnsets: LearnsetFormat::Packed9Bit,
+        evolutions: EvolutionFormat::Gen3,
     };
     pub const ROCKET21: Self = Self {
         trainers: TrainerFormat::ExpandedEvs,
@@ -189,6 +197,7 @@ impl RomFormats {
         species: SpeciesFormat::Expanded36,
         moves: MoveFormat::Expanded20,
         learnsets: LearnsetFormat::MoveLevel16,
+        evolutions: EvolutionFormat::Expanded,
     };
 }
 

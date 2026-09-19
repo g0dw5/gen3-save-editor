@@ -99,7 +99,8 @@ export function PokemonEditor({
   const species = catalog.species.find((s) => s.id === merged.species)!;
   const change = (key: string, value: unknown) =>
     setPatch((old) => ({ ...old, [key]: value }));
-  useEffect(() => {
+  // Publish the guard before the edited form becomes interactive.
+  useLayoutEffect(() => {
     onDirty(Object.keys(patch).length > 0);
   }, [patch, onDirty]);
   useEffect(() => {

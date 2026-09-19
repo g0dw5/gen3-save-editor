@@ -32,6 +32,9 @@ export function TrainerParty({
         const dynamic = p.level_rule === "party_max";
         const level = dynamic ? highestLevel : p.level;
         const gender = g?.gender;
+        const abilities = [
+          ...new Set(g?.ability_options ?? (g ? [g.ability_id] : [])),
+        ];
         return (
           <article className="trainer-mon-card" key={i}>
             <div className="trainer-mon-heading">
@@ -68,7 +71,7 @@ export function TrainerParty({
                 <dt>{t("ability")}</dt>
                 <dd>
                   {g
-                    ? (g.ability_options ?? [g.ability_id]).map((id) => (
+                    ? abilities.map((id) => (
                         <button
                           key={id}
                           className="link-button"
@@ -79,6 +82,13 @@ export function TrainerParty({
                         </button>
                       ))
                     : t("unresolved")}
+                  {g && (
+                    <span className="small muted">
+                      {t(
+                        abilities.length > 1 ? "abilityChoice" : "abilityFixed",
+                      )}
+                    </span>
+                  )}
                 </dd>
               </div>
               <div>

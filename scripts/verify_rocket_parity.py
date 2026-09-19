@@ -9,6 +9,8 @@ import hashlib
 import json
 import struct
 from pathlib import Path
+from unicorn import UC_HOOK_CODE
+from unicorn.arm_const import UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_PC, UC_ARM_REG_LR
 from verify_rocket_battle_forms import Native, ROM_MD5, BATTLER, BATTLE, PARTY, fixture
 
 
@@ -128,8 +130,64 @@ def check(rom, world, catalog):
             ability = species['abilities'][get(46)]
             assert ability in expected['ability_options'], (t['id'], ability, expected['ability_options'])
             trainers += 1
+    # Nature-constrained custom teams do not constrain PID gender/ability bits.
+    # Probe every Anya row across fresh RNG seeds, including fixed-slot species.
+    random_cases = 0
+    random_abilities = set()
+    random_genders = set()
+    for trainer in world['trainers']:
+        if trainer['name'] != '安雅':
+            continue
+        for seed in range(32):
+            n.reset()
+            n.word(0x03005240, seed * 0x1234567)
+            n.word(0x0300524c, 0x02030000)
+            n.word(0x03005250, 0x02034000)
+            n.word(0x02024bb8, 8)
+            n.call(0x4d3f0, 0x02028000, trainer['id'], 0, instruction_limit=20_000_000)
+            for i, mon in enumerate(trainer['party']):
+                address = 0x02028000 + i * 100
+                options = mon['generation']['ability_options']
+                assert len(options) == len(set(options)), (trainer['id'], 'duplicate abilities', options)
+                ability = n.call(0x988f0, address)
+                assert ability in options
+                pid = n.call(0x976d0, address, 0, 0)
+                gender = n.call(0x971b4, mon['species'], pid)
+                if trainer['id'] == 59 and mon['species'] == 214:
+                    random_abilities.add(ability)
+                    random_genders.add(gender)
+                random_cases += 1
+    assert random_abilities == {62, 153} and random_genders == {0, 254}
+    # Observe loader arguments at the actual call boundary; skip only the VRAM
+    # transfer itself. This checks profile constants against executable code.
+    transfers = []
+    def record_transfer(cpu, address, size, user):
+        if address in (0x080be71c, 0x080be808):
+            transfers.append((address, *(cpu.reg_read(reg) for reg in (UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2))))
+            cpu.reg_write(UC_ARM_REG_PC, cpu.reg_read(UC_ARM_REG_LR))
+    hook = n.cpu.hook_add(UC_HOOK_CODE, record_transfer)
+    try:
+        n.call(0xbe8f0, 0x087c10d0)
+        n.call(0xbe918, 0x087c10d0)
+    finally:
+        n.cpu.hook_del(hook)
+    graphics = catalog['profile']['map_graphics']
+    assert [(row[2], row[3]) for row in transfers[:2]] == [(graphics['primary_tiles'], 0), (1024 - graphics['primary_tiles'], graphics['primary_tiles'])]
+    primary_banks, secondary_banks = catalog['profile']['map_palette_banks']
+    assert [(row[2], row[3]) for row in transfers[2:]] == [(0, primary_banks * 32), (primary_banks * 16, secondary_banks * 32)]
+    assert graphics['primary_metatiles'] == 640 and graphics['layers'] == 3
+    # The native three-background writer must consume all 12 metatile entries.
+    n.reset()
+    buffers = (0x02010000, 0x02011000, 0x02012000)
+    for pointer, buffer in zip((0x03005264, 0x0300525c, 0x03005260), buffers):
+        n.word(pointer, buffer)
+    n.write(0x02013000, struct.pack('<12H', *range(101, 113)))
+    n.call(0xbfbfc, 0, 0x02013000, 0)
+    for layer, buffer in enumerate(buffers):
+        actual = [struct.unpack('<H', n.read(buffer + offset, 2))[0] for offset in (0, 2, 64, 66)]
+        assert actual == list(range(101 + 4 * layer, 105 + 4 * layer)), ('map layer', layer, actual)
     return dict(storage_form_selections=storage_forms, hidden_power=4096, palettes=pictures, compatibility=compatibility,
-                dex_flags=dex, wild_header_selections=selections, trainer_pokemon=trainers, trainer_formats=sorted(formats))
+                dex_flags=dex, wild_header_selections=selections, anya_seed_pokemon=random_cases, map_background_layers=3, trainer_pokemon=trainers, trainer_formats=sorted(formats))
 
 
 if __name__ == '__main__':

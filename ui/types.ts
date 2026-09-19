@@ -81,6 +81,8 @@ export interface Catalog {
     md5: string;
     size: number;
     max_level?: number;
+    fishing_rods?: number[];
+    save?: { pockets: { id: string; category: number }[] };
     feebas?: { map_id: string } | null;
     teaching?: { shared_lists?: number | null };
     hidden_power?: {
@@ -228,6 +230,7 @@ export interface SpeciesDetail {
   origins: OriginOptions;
   species: Species;
   evolutions: {
+    condition?: string;
     method: number;
     parameter: number;
     target: number;

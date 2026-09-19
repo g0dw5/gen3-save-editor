@@ -11,6 +11,43 @@ use std::{
     sync::Arc,
 };
 
+fn evolution_condition(method: u16, expanded: bool) -> &'static str {
+    match method {
+        1 => "friendship",
+        2 => "friendship_day",
+        3 => "friendship_night",
+        4 => "level",
+        5 => "trade",
+        6 => "trade_item",
+        7 => "item",
+        8 => "attack_higher",
+        9 => "attack_equal",
+        10 => "defense_higher",
+        11 | 12 => "personality",
+        13 => "level",
+        14 => "shedinja",
+        15 => "beauty",
+        16 if expanded => "female_level",
+        17 if expanded => "male_level",
+        18 if expanded => "night_level",
+        19 if expanded => "day_level",
+        20 if expanded => "dusk_level",
+        21 if expanded => "held_day",
+        22 if expanded => "held_night",
+        23 if expanded => "move",
+        24 if expanded => "move_type",
+        25 if expanded => "region",
+        26 if expanded => "male_item",
+        27 if expanded => "female_item",
+        28 if expanded => "rain_level",
+        29 if expanded => "party_species",
+        30 if expanded => "party_dark",
+        31 if expanded => "trade_species",
+        32 if expanded => "map",
+        _ => "unknown",
+    }
+}
+
 #[derive(Clone)]
 pub struct Rom {
     pub data: Arc<Vec<u8>>,
@@ -76,6 +113,7 @@ pub struct Ability {
 #[derive(Clone, Debug, Serialize)]
 pub struct Evolution {
     pub method: u16,
+    pub condition: &'static str,
     pub parameter: u16,
     pub target: u16,
     pub offset: usize,
@@ -366,6 +404,11 @@ impl Rom {
             if method != 0 && !crate::forms::is_battle_method(self.profile.battle_forms, method) {
                 result.push(Evolution {
                     method,
+                    condition: evolution_condition(
+                        method,
+                        self.profile.formats.evolutions
+                            == crate::adapter::EvolutionFormat::Expanded,
+                    ),
                     parameter: u16(&self.data, o + 2)?,
                     target: u16(&self.data, o + 4)?,
                     offset: o,

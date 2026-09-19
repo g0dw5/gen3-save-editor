@@ -304,9 +304,6 @@ export function MapExplorer({
                 {marker.local_id !== null ? `#${marker.local_id}` : ""} · (
                 {marker.x}, {marker.y})
               </strong>
-              <p className="small muted">
-                {t("mapElevation")} {marker.elevation}
-              </p>
               {marker.rewards.length ? (
                 [
                   ...new Set(
@@ -331,7 +328,8 @@ export function MapExplorer({
               <details>
                 <summary>{t("mapEventEvidence")}</summary>
                 <code>
-                  {t("mapEventOffset")} 0x{marker.offset.toString(16)}
+                  {t("mapElevation")} {marker.elevation} · {t("mapEventOffset")}{" "}
+                  0x{marker.offset.toString(16)}
                   {marker.script !== null
                     ? ` · Script 0x${marker.script.toString(16)}`
                     : ""}

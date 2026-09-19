@@ -19,7 +19,8 @@ import {
   type TrainerFacet,
   type TrainerFilters,
 } from "./trainerSearch";
-import { useI18n, statKeys } from "./i18n";
+import { useI18n, statKeys, typeNames, moveCategoryNames } from "./i18n";
+import { evolutionLabel, itemPocketLabel } from "./referenceLabels";
 import type {
   Ability,
   Catalog,
@@ -48,13 +49,6 @@ interface Props {
   onError: (error: unknown) => void;
 }
 
-// Gen III item identities; display names come from the loaded ROM.
-const fishingRodItems: Record<string, number> = {
-  old_rod: 262,
-  good_rod: 263,
-  super_rod: 264,
-};
-
 export function ReferenceWindow({
   window: info,
   catalog,
@@ -65,7 +59,13 @@ export function ReferenceWindow({
   onTemplate,
   onError,
 }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const rods = catalog.profile.fishing_rods ?? [262, 263, 264];
+  const fishingRodItems: Record<string, number> = {
+    old_rod: rods[0],
+    good_rod: rods[1],
+    super_rod: rods[2],
+  };
   const encounterMethod = (method: string) =>
     catalog.items.find((item) => item.id === fishingRodItems[method])?.name ||
     t(method);
@@ -482,7 +482,7 @@ export function ReferenceWindow({
                         e.target}
                     </button>
                     <span className="muted small">
-                      {t("method")} {e.method} · {t("parameter")} {e.parameter}
+                      {evolutionLabel(e, catalog, typeNames[locale], t)}
                     </span>
                   </div>
                 ))}
@@ -634,12 +634,9 @@ export function ReferenceWindow({
                     </div>
                     {e.selector && (
                       <div className="warning-text small">
-                        {t("scriptVariable")} 0x
-                        {e.selector.variable.toString(16).toUpperCase()} ={" "}
-                        {e.selector.value}
                         {e.selector.fallback
-                          ? ` · ${t("fallbackVariant")}`
-                          : ""}
+                          ? t("encounterDefault")
+                          : `${t("encounterVariant")} ${e.selector.value + 1}`}
                       </div>
                     )}
                     {e.conditional && !e.selector && (
@@ -663,6 +660,7 @@ export function ReferenceWindow({
                         offset: detail.species.offset,
                         evolutions: detail.evolutions,
                         learnset: detail.learnset,
+                        encounters: detail.encounters,
                       },
                       null,
                       2,
@@ -675,29 +673,37 @@ export function ReferenceWindow({
             ))}
           {tab === "moves" && current && (
             <>
-              <p>{(current as Move).description}</p>
+              <h3>{t("moveEffectText")}</h3>
+              <p>{(current as Move).description || t("unresolved")}</p>
               <div className="metric-grid">
                 {(
-                  [
-                    "power",
-                    "accuracy",
-                    "pp",
-                    "priority",
-                    "effect",
-                    "chance",
-                  ] as const
+                  ["power", "accuracy", "pp", "priority", "chance"] as const
                 ).map((k) => (
                   <div key={k}>
                     <span>{t(k)}</span>
                     <strong>
                       {k === "power" &&
                       current.id === catalog.profile.hidden_power?.move_id
-                        ? "30–70"
-                        : (current as Move)[k]}
+                        ? catalog.profile.hidden_power?.formula ===
+                          "gen6_fixed60"
+                          ? "60"
+                          : "30–70"
+                        : k === "accuracy" || k === "chance"
+                          ? (current as Move)[k]
+                            ? `${(current as Move)[k]}%`
+                            : "—"
+                          : k === "power" && !(current as Move).power
+                            ? "—"
+                            : (current as Move)[k]}
                     </strong>
                   </div>
                 ))}
               </div>
+              <p>
+                {t("moveCategory")} ·{" "}
+                {moveCategoryNames[locale][(current as Move).category] ??
+                  t("unresolved")}
+              </p>
               {current.id === catalog.profile.hidden_power?.move_id ? (
                 <p className="small muted">
                   {t(
@@ -709,6 +715,21 @@ export function ReferenceWindow({
               ) : (
                 <Types values={[(current as Move).move_type]} />
               )}
+              <details>
+                <summary>{t("evidence")}</summary>
+                <pre>
+                  {JSON.stringify(
+                    {
+                      effect: (current as Move).effect,
+                      target: (current as Move).target,
+                      flags: (current as Move).flags,
+                      offset: (current as Move).offset,
+                    },
+                    null,
+                    2,
+                  )}
+                </pre>
+              </details>
             </>
           )}
           {tab === "items" && current && (
@@ -718,7 +739,9 @@ export function ReferenceWindow({
                 <span>{t("price")}</span>
                 <span>{(current as Item).price}</span>
                 <span>{t("pocket")}</span>
-                <span>{(current as Item).pocket}</span>
+                <span>
+                  {itemPocketLabel((current as Item).pocket, catalog, t)}
+                </span>
               </div>
               {(current as Item).tm_move && (
                 <button
@@ -807,7 +830,7 @@ export function ReferenceWindow({
                       {encounterMethod(e.method)}
                       {e.weight !== null ? ` · ${e.weight}%` : ""}
                       {e.selector &&
-                        ` · ${t("scriptVariable")} 0x${e.selector.variable.toString(16).toUpperCase()} = ${e.selector.value}${e.selector.fallback ? ` · ${t("fallbackVariant")}` : ""}`}
+                        ` · ${e.selector.fallback ? t("encounterDefault") : `${t("encounterVariant")} ${e.selector.value + 1}`}`}
                     </span>
                     <button
                       className="link-button small"
@@ -892,13 +915,25 @@ export function ReferenceWindow({
                 </div>
               )}
               <div className="muted small">
-                {(current as Opponent).party.length} Pokémon · AI{" "}
-                {(current as Opponent).ai} · {t("items")}{" "}
+                {(current as Opponent).party.length} Pokémon · {t("items")}{" "}
                 {(current as Opponent).items
                   .filter(Boolean)
                   .map((id) => catalog.items[id]?.name ?? id)
                   .join(" / ") || "—"}
               </div>
+              <details>
+                <summary>{t("evidence")}</summary>
+                <pre>
+                  {JSON.stringify(
+                    {
+                      ai_flags: (current as Opponent).ai,
+                      offset: (current as Opponent).offset,
+                    },
+                    null,
+                    2,
+                  )}
+                </pre>
+              </details>
               <TrainerParty
                 trainer={current as Opponent}
                 catalog={catalog}
@@ -969,6 +1004,17 @@ function RomPatch({
             ] ?? 0,
           )
         : (catalog.items[id]?.price ?? 0);
+  const namedOptions = field.startsWith("ability")
+    ? catalog.abilities.map((ability) => ({
+        value: ability.id,
+        label: ability.name || t("none"),
+      }))
+    : field === "growth"
+      ? Array.from({ length: 6 }, (_, value) => ({
+          value,
+          label: t(`growth_${value}`),
+        }))
+      : null;
   const [value, setValue] = useState(original);
   useEffect(() => setValue(original), [original, field, id, table]);
   const [busy, setBusy] = useState(false);
@@ -1011,25 +1057,45 @@ function RomPatch({
       <h3>{t("romEdit")}</h3>
       <p className="small muted">{t("romEditHelp")}</p>
       <div className="field-grid">
-        <NumberField
-          label={t("before")}
-          value={original}
-          onChange={() => {}}
-          disabled
-          max={65535}
-        />
+        {namedOptions ? (
+          <SelectField
+            label={t("before")}
+            value={original}
+            options={namedOptions}
+            onChange={() => {}}
+            disabled
+          />
+        ) : (
+          <NumberField
+            label={t("before")}
+            value={original}
+            onChange={() => {}}
+            disabled
+            max={65535}
+          />
+        )}
         <SelectField
           label={t("field")}
           value={field}
           onChange={setField}
           options={fields.map((f) => ({ value: f, label: t(f) }))}
         />
-        <NumberField
-          label={t("value")}
-          value={value}
-          max={65535}
-          onChange={setValue}
-        />
+        {namedOptions ? (
+          <SelectField
+            label={t("value")}
+            value={value}
+            options={namedOptions}
+            onChange={(value) => setValue(Number(value))}
+            searchable={field.startsWith("ability")}
+          />
+        ) : (
+          <NumberField
+            label={t("value")}
+            value={value}
+            max={65535}
+            onChange={setValue}
+          />
+        )}
       </div>
       <button disabled={busy} type="submit">
         {t(busy ? "working" : "exportRom")}

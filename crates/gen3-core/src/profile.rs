@@ -7,6 +7,13 @@ pub struct Table {
     pub count: usize,
     pub stride: usize,
 }
+/// Hardware tile ownership and metatile layout are independent of save codecs.
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct MapGraphics {
+    pub primary_tiles: usize,
+    pub primary_metatiles: usize,
+    pub layers: usize,
+}
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct SplitText {
     pub first: usize,
@@ -63,11 +70,13 @@ pub struct Profile {
     pub maps: usize,
     /// Number of palette banks loaded from the primary and secondary tilesets.
     pub map_palette_banks: [usize; 2],
+    pub map_graphics: MapGraphics,
     pub regions: usize,
     pub region_count: usize,
     pub wild: usize,
     pub wild_selection: Option<WildSelection>,
     pub feebas: Option<FeebasRules>,
+    pub fishing_rods: [u16; 3],
     pub trainers: Table,
     pub trainer_classes: Table,
     pub trainer_sprites: Table,
@@ -284,6 +293,12 @@ pub const BW: Profile = Profile {
     },
     maps: 0xe8c020,
     map_palette_banks: [6, 7],
+    map_graphics: MapGraphics {
+        primary_tiles: 512,
+        primary_metatiles: 512,
+        layers: 2,
+    },
+    fishing_rods: [262, 263, 264],
     regions: 0x5a1480,
     region_count: 213,
     wild: 0xea2d34,
@@ -457,7 +472,13 @@ pub const ROCKET: Profile = Profile {
         }),
     },
     maps: 0x9f4f40,
-    map_palette_banks: [6, 7],
+    map_palette_banks: [7, 6],
+    map_graphics: MapGraphics {
+        primary_tiles: 640,
+        primary_metatiles: 640,
+        layers: 3,
+    },
+    fishing_rods: [866, 867, 868],
     regions: 0xc6ad68,
     region_count: 252,
     wild: 0xbe8a70,

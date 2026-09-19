@@ -1871,7 +1871,7 @@ fn local_rocket_adapter_regression() {
             .evolutions(species)
             .unwrap()
             .iter()
-            .all(|e| e.method < 0xfffd));
+            .all(|e| e.method < 0xfffd && e.condition != "unknown"));
     }
     assert_eq!(associations, 59);
     for id in [1, 6, 41, 330] {
@@ -1965,6 +1965,14 @@ fn table_formats_can_be_composed_without_changing_the_pokemon_codec() {
     r.profile.move_category_offset = 16;
     let mv = r.move_info(1).unwrap();
     assert_eq!((mv.effect, mv.power, mv.pp, mv.category), (356, 500, 10, 1));
+    // Evolution semantics can be changed without changing the species layout.
+    r.profile.formats.evolutions = crate::adapter::EvolutionFormat::Expanded;
+    let evo = r.profile.evolutions.offset + r.profile.evolutions.stride;
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    put16(b, evo, 24);
+    put16(b, evo + 2, 18);
+    put16(b, evo + 4, 2);
+    assert_eq!(r.evolutions(1).unwrap()[0].condition, "move_type");
     assert_eq!(r.species(1).unwrap().abilities.len(), 2);
     assert_eq!(r.level_moves(1).unwrap()[0].level, Some(1));
     assert_eq!(

@@ -207,49 +207,83 @@ impl Rom {
         }
         let b = &self.data;
         let blocks = pointer(b, m.layout + 12)?;
-        let primary = Tileset::read(b, pointer(b, m.layout + 16)?)?;
-        let secondary = Tileset::read(b, pointer(b, m.layout + 20)?)?;
+        let rules = self.profile.map_graphics;
+        let primary = Tileset::read(b, pointer(b, m.layout + 16)?, rules.primary_tiles)?;
+        let secondary = Tileset::read(b, pointer(b, m.layout + 20)?, 1024 - rules.primary_tiles)?;
         let palette = map_palette(
             &primary.palette,
             &secondary.palette,
             self.profile.map_palette_banks,
         )?;
-        let mut rgba = vec![0; w * h * 4];
-        for by in 0..m.height as usize {
-            for bx in 0..m.width as usize {
-                let id = u16(b, blocks + (by * m.width as usize + bx) * 2)? as usize & 1023;
-                let set = if id < 512 { &primary } else { &secondary };
-                let meta = set.metatiles + (id % 512) * 16;
-                for layer in 0..2 {
-                    for part in 0..4 {
-                        let e = u16(b, meta + (layer * 4 + part) * 2)?;
-                        let tile = (e & 1023) as usize;
-                        let set = if tile < 512 { &primary } else { &secondary };
-                        let bank = (e >> 12) as usize;
-                        for py in 0..8 {
-                            for px in 0..8 {
-                                let tx = if e & 0x400 != 0 { 7 - px } else { px };
-                                let ty = if e & 0x800 != 0 { 7 - py } else { py };
-                                let off = (tile % 512) * 32 + ty * 4 + tx / 2;
-                                let v = *set.tiles.get(off).unwrap_or(&0);
-                                let index = if tx % 2 == 0 { v & 15 } else { v >> 4 };
-                                if layer == 1 && index == 0 {
-                                    continue;
-                                }
-                                let x = bx * 16 + (part % 2) * 8 + px;
-                                let y = by * 16 + (part / 2) * 8 + py;
-                                rgba[(y * w + x) * 4..(y * w + x + 1) * 4].copy_from_slice(&color(
-                                    u16(&palette, bank * 32 + index as usize * 2)?,
-                                    255,
-                                ));
+        let rgba = render_map(
+            b,
+            blocks,
+            m.width as usize,
+            m.height as usize,
+            rules,
+            [&primary, &secondary],
+            &palette,
+        )?;
+        png(w as u32, h as u32, &rgba)
+    }
+}
+// The engine can partition primary/secondary tiles independently of metatiles.
+// Expanded maps also have a third background layer; format belongs to the profile.
+fn render_map(
+    b: &[u8],
+    blocks: usize,
+    width: usize,
+    height: usize,
+    rules: crate::profile::MapGraphics,
+    sets: [&Tileset; 2],
+    palette: &[u8],
+) -> Result<Vec<u8>> {
+    let [primary, secondary] = sets;
+    let w = width * 16;
+    let h = height * 16;
+    let mut rgba = vec![0; w * h * 4];
+    for by in 0..height {
+        for bx in 0..width {
+            let id = u16(b, blocks + (by * width + bx) * 2)? as usize & 1023;
+            let (set, local_id) = if id < rules.primary_metatiles {
+                (primary, id)
+            } else {
+                (secondary, id - rules.primary_metatiles)
+            };
+            let meta = set.metatiles + local_id * rules.layers * 8;
+            for layer in 0..rules.layers {
+                for part in 0..4 {
+                    let e = u16(b, meta + (layer * 4 + part) * 2)?;
+                    let tile = (e & 1023) as usize;
+                    let (set, local_tile) = if tile < rules.primary_tiles {
+                        (primary, tile)
+                    } else {
+                        (secondary, tile - rules.primary_tiles)
+                    };
+                    let bank = (e >> 12) as usize;
+                    for py in 0..8 {
+                        for px in 0..8 {
+                            let tx = if e & 0x400 != 0 { 7 - px } else { px };
+                            let ty = if e & 0x800 != 0 { 7 - py } else { py };
+                            let off = local_tile * 32 + ty * 4 + tx / 2;
+                            let v = *set.tiles.get(off).unwrap_or(&0);
+                            let index = if tx % 2 == 0 { v & 15 } else { v >> 4 };
+                            if layer > 0 && index == 0 {
+                                continue;
                             }
+                            let x = bx * 16 + (part % 2) * 8 + px;
+                            let y = by * 16 + (part / 2) * 8 + py;
+                            rgba[(y * w + x) * 4..(y * w + x + 1) * 4].copy_from_slice(&color(
+                                u16(palette, bank * 32 + index as usize * 2)?,
+                                255,
+                            ));
                         }
                     }
                 }
             }
         }
-        png(w as u32, h as u32, &rgba)
     }
+    Ok(rgba)
 }
 /// Map entries address one shared palette, independently of their tile graphics.
 fn map_palette(primary: &[u8], secondary: &[u8], banks: [usize; 2]) -> Result<[u8; 512]> {
@@ -273,13 +307,13 @@ struct Tileset {
     metatiles: usize,
 }
 impl Tileset {
-    fn read(b: &[u8], o: usize) -> Result<Self> {
+    fn read(b: &[u8], o: usize, tile_count: usize) -> Result<Self> {
         bytes(b, o, 24)?;
         let p = pointer(b, o + 4)?;
         let tiles = if b[o] != 0 {
             lz77(b, p)?
         } else {
-            bytes(b, p, 0x4000)?.to_vec()
+            bytes(b, p, tile_count * 32)?.to_vec()
         };
         let palette = bytes(b, pointer(b, o + 8)?, 512)?.to_vec();
         Ok(Self {
@@ -293,6 +327,71 @@ impl Tileset {
 #[cfg(test)]
 mod appearance_tests {
     use super::*;
+
+    #[test]
+    fn map_pixels_respect_profile_partitions_layers_flips_and_palette_banks() {
+        // A one-cell map using the first secondary metatile, the last primary
+        // tile, and the first secondary tile. No copyrighted assets are needed.
+        for profile in [
+            crate::profile::BW,
+            crate::profile::DP,
+            crate::profile::ROCKET,
+        ] {
+            let rules = profile.map_graphics;
+            let mut data = vec![0; 128];
+            crate::binary::put16(&mut data, 0, rules.primary_metatiles as u16);
+            let mut primary = Tileset {
+                tiles: vec![0; rules.primary_tiles * 32],
+                palette: vec![0; 512],
+                metatiles: 32,
+            };
+            let mut secondary = Tileset {
+                tiles: vec![0; 32],
+                palette: vec![0; 512],
+                metatiles: 64,
+            };
+            primary.tiles[(rules.primary_tiles - 1) * 32..].fill(0x11);
+            secondary.tiles[31] = 0x20; // Bottom-right pixel, moved to top-left by XY flip.
+            let bank = profile.map_palette_banks[0];
+            crate::binary::put16(&mut primary.palette, 2, 31);
+            crate::binary::put16(&mut secondary.palette, bank * 32 + 4, 31 << 5);
+            for part in 0..4 {
+                crate::binary::put16(&mut data, 64 + part * 2, (rules.primary_tiles - 1) as u16);
+            }
+            // The topmost layer supplies just one green pixel per quadrant;
+            // zero pixels must preserve the red base, including through layer 2.
+            for part in 0..4 {
+                crate::binary::put16(
+                    &mut data,
+                    64 + ((rules.layers - 1) * 4 + part) * 2,
+                    rules.primary_tiles as u16 | 0xc00 | ((bank as u16) << 12),
+                );
+            }
+            let palette = map_palette(
+                &primary.palette,
+                &secondary.palette,
+                profile.map_palette_banks,
+            )
+            .unwrap();
+            let pixels =
+                render_map(&data, 0, 1, 1, rules, [&primary, &secondary], &palette).unwrap();
+            for y in 0..16 {
+                for x in 0..16 {
+                    let expected = if x % 8 == 0 && y % 8 == 0 {
+                        [0, 255, 0, 255]
+                    } else {
+                        [255, 0, 0, 255]
+                    };
+                    assert_eq!(
+                        &pixels[(y * 16 + x) * 4..(y * 16 + x + 1) * 4],
+                        &expected,
+                        "{} ({x},{y})",
+                        profile.id
+                    );
+                }
+            }
+        }
+    }
 
     #[test]
     fn map_palette_uses_bank_ownership_and_skips_unused_source_banks() {

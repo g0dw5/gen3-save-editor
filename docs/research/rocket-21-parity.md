@@ -44,7 +44,8 @@ matching map header. Later duplicate map headers are not additional simultaneous
 encounters. The one explicit exception is map **51-106**: variable `0x403E`
 selects first-header + value for 0–8; values above 8 select variant 0. The selector
 is called by the ordinary grass/surf, fishing and rock-smash paths. These nine
-variants are displayed with their variable condition rather than merged.
+variants have readable story-dependent labels; raw selector conditions remain
+in developer evidence rather than being merged.
 This inspected selector has no RTC/time-of-day branch.
 
 中文：相遇概率是对应表内的槽位权重。保留重复宝可梦槽位的贡献，但过滤游戏不会
@@ -96,3 +97,7 @@ palette, teaching, trainer, dex and Hidden Power checks above.
 [存档研究流程](../../skills/gen3-rom-research/references/saves.md#emulator-input-preflight)。
 先检查英文输入法、窗口焦点与实际映射，再用单次输入确认响应；本次通过菜单虚拟
 按钮完成验证，不能据此断定输入法是唯一原因。
+
+Map pixel correctness and Anya random-generation follow-up: see
+[map and trainer display](rocket-map-and-trainer-display.md). The earlier bounded
+map decode checks alone did not establish visually correct rendering.
