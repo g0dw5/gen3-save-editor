@@ -2143,3 +2143,9 @@ summary {
   min-width: 115px;
   flex: 1;
 }
+
+.pokemon-form-label {
+  margin: 0.25rem 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}

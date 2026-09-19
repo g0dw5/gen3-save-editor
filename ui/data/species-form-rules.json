@@ -1,0 +1,7 @@
+[
+  {
+    "rom_md5": "59c658a1081f542086de1060bb65f0b3",
+    "members": [386, 1128, 1129, 1130],
+    "labels": ["formNormal", "formAttack", "formDefense", "formSpeed"]
+  }
+]

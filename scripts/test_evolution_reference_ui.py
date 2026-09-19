@@ -50,7 +50,7 @@ def main():
             page.get_by_role('button', name='ROM 资料', exact=True).click()
             dialog = page.get_by_role('dialog')
             expect(dialog.locator('.reference-tabs').get_by_role('button', name='宝可梦', exact=True)).to_be_visible()
-            dialog.locator('.reference-rows button').filter(has_text=re.compile(r'^9水箭龟$')).click()
+            dialog.locator('.reference-rows button').filter(has_text=re.compile(r'^9水箭龟(?: ·|$)')).click()
             table = dialog.locator('.base-stats-comparison')
             expect(table.locator('tbody tr')).to_have_count(6)
             expect(table.locator('tbody tr').first).to_contain_text('79')

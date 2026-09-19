@@ -1,3 +1,4 @@
+import { speciesDisplayName, speciesFormLabel } from "./speciesDisplay";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   BookOpen,
@@ -97,6 +98,13 @@ export function PokemonEditor({
     pidLocked: ["nature", "gender", "shiny"].some((key) => key in patch),
   };
   const species = catalog.species.find((s) => s.id === merged.species)!;
+  const currentForm = speciesFormLabel(
+    catalog,
+    merged.species,
+    t,
+    merged.pid,
+    detail?.species.id === merged.species ? detail : undefined,
+  );
   const change = (key: string, value: unknown) =>
     setPatch((old) => ({ ...old, [key]: value }));
   // Publish the guard before the edited form becomes interactive.
@@ -212,6 +220,11 @@ export function PokemonEditor({
             <h2>
               {species?.name} {merged.shiny && <Sparkles size={17} />}
             </h2>
+            {currentForm && (
+              <p className="pokemon-form-label">
+                {t("currentForm")} · {currentForm}
+              </p>
+            )}
             <Types values={species?.types ?? []} />
           </div>
         </div>
@@ -233,6 +246,13 @@ export function PokemonEditor({
         <div className="editor-fields">
           {tab === "overview" && (
             <>
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => onReference(merged.species)}
+              >
+                {t("formDetails")}
+              </button>
               <SelectField
                 searchable
                 label={t("species")}
@@ -240,7 +260,12 @@ export function PokemonEditor({
                 onChange={(v) => change("species", +v)}
                 options={catalog.species
                   .filter((s) => s.stats[0] > 0)
-                  .map((s) => romOption(s))}
+                  .map((s) =>
+                    romOption({
+                      ...s,
+                      name: speciesDisplayName(catalog, s.id, t),
+                    }),
+                  )}
               />
               <label className="field">
                 <span>{t("nickname")}</span>

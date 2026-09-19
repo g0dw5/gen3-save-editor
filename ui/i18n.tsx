@@ -5,6 +5,15 @@ export const en = {
     "Click either Pokémon to browse back, forward or along another branch. Arrows show the direction of evolution, not a way to devolve.",
   noEvolutionRecorded:
     "No ordinary evolution is recorded in the parsed ROM tables.",
+  formNormal: "Normal Forme",
+  formAttack: "Attack Forme",
+  formDefense: "Defense Forme",
+  formSpeed: "Speed Forme",
+  formBase: "Base form",
+  formVariant: "Form {n} (name unconfirmed)",
+  formSameName: "Same-name entry #{n}",
+  currentForm: "Current form",
+  formDetails: "View forms and evolution",
   formFamily: "Other forms",
   formFamilyHelp:
     "Linked by this ROM’s form-family table. Sharing a family does not prove a usable transformation method.",
@@ -559,6 +568,15 @@ export const zh: Record<Key, string> = {
   evolutionTreeHelp:
     "点击任意宝可梦，可向前、向后或沿分支查看。箭头表示进化方向，不表示游戏中可以退化。",
   noEvolutionRecorded: "已解析的 ROM 表中没有普通进化记录。",
+  formNormal: "普通形态",
+  formAttack: "攻击形态",
+  formDefense: "防御形态",
+  formSpeed: "速度形态",
+  formBase: "基础形态",
+  formVariant: "形态 {n}（名称待确认）",
+  formSameName: "同名条目 #{n}",
+  currentForm: "当前形态",
+  formDetails: "查看形态与进化关系",
   formFamily: "其他形态",
   formFamilyHelp:
     "关联来自当前 ROM 的形态家族表；属于同一家族，不代表存在可用的转换方法。",

@@ -1,3 +1,4 @@
+import { speciesDisplayName } from "./speciesDisplay";
 import { Sprite } from "./components";
 import { evolutionLabel } from "./referenceLabels";
 import { typeNames, useI18n } from "./i18n";
@@ -30,7 +31,7 @@ export function EvolutionTree({
     >
       <Sprite catalog={catalog} species={value} />
       <span>
-        {catalog.species.find((row) => row.id === value)?.name ?? `#${value}`}
+        {speciesDisplayName(catalog, value, t, undefined, detail)}
         <small>
           #{value}
           {value === id ? ` · ${t("currentPokemon")}` : ""}

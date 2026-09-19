@@ -76,3 +76,36 @@ an output PNG contact-sheet path; keep extracted previews outside the repository
 Upstream references, checked against the supplied ROM rather than assumed:
 [front-picture loader](https://github.com/pret/pokeemerald/blob/master/src/decompress.c),
 [Spinda drawing](https://github.com/pret/pokeemerald/blob/master/src/pokemon.c).
+
+## Form identity labels (2026-09-19)
+
+The catalog now includes the ROM's form families and battle-form edges. The
+reference list/tree, stored-Pokémon inspector, party labels, box tooltips and
+species selector share a presentation helper. It never writes Pokémon data or
+infers a legal conversion from a navigation relationship.
+
+Display evidence is applied in this order: Unown's stored PID; a fingerprinted
+and structurally checked form-family rule; ROM Mega/Primal edges (X/Y suffixes
+from the actual trigger item names); an explicitly reviewed **direct** official
+mapping; a conservative family index or duplicate-name identifier. A
+comparison-only mapping cannot supply identity. ROM names are preserved.
+
+For Rocket MD5 `59c658a1081f542086de1060bb65f0b3`, the native family at
+`0x61787E` contains `[386, 1128, 1129, 1130]`. The exact front sprites read through
+`Rom::pokemon_sprite` show normal, attack, defense and speed appearances,
+respectively. The four identities are configured in
+`ui/data/species-form-rules.json`; the labels activate only when both the ROM
+fingerprint and complete runtime family sequence agree. No sprite or base-stat
+snapshot is distributed. Entries 920/921 share the normal front sprite and ROM
+name but do not belong to this family. Their altered stats do not establish
+an attack/speed identity.
+
+The form family does not establish where or how a player can convert forms.
+No new save-editing or conversion action is introduced. Unresolved form names
+remain explicitly unresolved until a verified semantic rule or approved direct
+mapping is available.
+
+中文：宝可梦名称仍来自 ROM，形态标签是单独的展示信息。西火代欧奇希斯四种常规
+外观已由 ROM 形态表与原始图片交叉核对；另外两个同名条目不凭种族值擅自归类。
+普通进化、战斗变身、形态家族在资料页分别展示。家族成员可点击跳转，但不据此
+承诺游戏内一定能互相转换，也不新增存档形态写入。

@@ -140,6 +140,8 @@ pub struct EditorRules {
 }
 #[derive(Serialize)]
 pub struct Catalog {
+    pub form_families: Vec<crate::relations::FormFamily>,
+    pub battle_forms: Vec<crate::forms::BattleForm>,
     pub editor_rules: EditorRules,
     pub profile: Profile,
     pub species: Vec<Species>,
@@ -346,6 +348,8 @@ impl Rom {
     }
     pub fn catalog(&self) -> Result<Catalog> {
         Ok(Catalog {
+            form_families: self.form_families()?,
+            battle_forms: self.all_battle_forms()?,
             profile: self.profile,
             editor_rules: EditorRules {
                 balls: (1..=self.profile.save.pokemon_codec.fields().ball.max() as u16)

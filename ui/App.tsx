@@ -1,3 +1,4 @@
+import { speciesDisplayName } from "./speciesDisplay";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -370,7 +371,9 @@ export default function App() {
     const isDraft = draft && locationKey(draft.location) === key;
     const species = mon?.species ?? (isDraft ? draft.template.species : 0);
     const speciesName =
-      catalog?.species.find((s) => s.id === species)?.name ?? "";
+      catalog && species
+        ? speciesDisplayName(catalog, species, t, mon?.pid)
+        : "";
     const match =
       !query ||
       `${mon?.nickname ?? ""} ${speciesName} ${species}`
@@ -1027,7 +1030,7 @@ function Draft({
     >
       <span className="eyebrow amber">{t("draft")}</span>
       <Sprite catalog={catalog} species={value.species} large />
-      <h2>{catalog.species.find((s) => s.id === value.species)?.name}</h2>
+      <h2>{speciesDisplayName(catalog, value.species, t)}</h2>
       <p className="muted">{t("draftHelp")}</p>
       <SelectField
         searchable

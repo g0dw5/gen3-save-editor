@@ -61,6 +61,8 @@ export interface Ability {
   description: string;
 }
 export interface Catalog {
+  form_families?: { species: number[]; offset: number }[];
+  battle_forms?: NonNullable<SpeciesDetail["battle_forms"]>;
   editor_rules?: {
     balls: number[];
     nature_override: boolean;
@@ -81,6 +83,7 @@ export interface Catalog {
     md5: string;
     size: number;
     max_level?: number;
+    sprite_rules?: { unown_species: number };
     fishing_rods?: number[];
     save?: { pockets: { id: string; category: number }[] };
     feebas?: { map_id: string } | null;
