@@ -45,7 +45,7 @@ def main():
                 page.get_by_role('button',name='game-a',exact=True).click()
                 expect(page.locator('.action-scope')).to_contain_text('ROM #991')
                 page.locator('[data-decision=none]').click()
-                expect(page.locator('#count')).to_have_text('0 条')
+                expect(page.locator('#count')).to_have_text('0 个独立条目')
                 persisted=json.loads((root/'game-a.json').read_text())['entries']
                 assert persisted['990']['status']=='direct' and persisted['991']['status']=='none'
                 expect(page.locator('#globalMessage')).to_contain_text('ROM #991：无官方对应')

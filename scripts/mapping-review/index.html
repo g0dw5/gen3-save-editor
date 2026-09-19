@@ -120,7 +120,7 @@
     }
     main {
       display: grid;
-      grid-template-columns: 320px minmax(0, 1fr);
+      grid-template-columns: 410px minmax(0, 1fr);
       height: calc(100vh - 244px);
       min-height: 480px;
       padding: 20px 32px;
@@ -348,33 +348,24 @@
       color: var(--green);
       font-weight: 600;
     }
-    .rom-relations:has(h3) {
-      margin-top: 18px;
-      padding-top: 14px;
-      border-top: 1px solid var(--line);
-    }
-    .rom-form-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .rom-form-card {
+    .row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      text-align: left;
-      max-width: 100%;
-      padding: 6px 10px;
+      gap: 12px;
     }
-    .rom-form-card img {
-      width: 56px;
-      height: 56px;
+    .entry-sprite {
+      width: 64px;
+      height: 64px;
       image-rendering: pixelated;
-      object-fit: contain;
+      flex-shrink: 0;
     }
-    .rom-form-card small {
+    .entry-body {
+      min-width: 0;
+    }
+    .entry-form {
       display: block;
-      color: var(--muted);
+      font-weight: 600;
+      color: var(--green);
     }
     @media (max-width: 1000px) {
       main {
@@ -422,7 +413,7 @@
     <div class="top">
       <div>
         <div class="eyebrow">GEN III · REFERENCE MAPPING</div>
-        <h1>宝可梦映射审核</h1>
+        <h1>宝可梦形态逐条审核</h1>
       </div>
       <div class="summary">
         <span id="progressText"></span
@@ -430,7 +421,8 @@
       </div>
     </div>
     <p class="sub">
-      候选已预填，由你决定是否关联。每次确认保存审核进度；点击「生成修改器配置」输出已确认的映射。此页面独立于修改器。
+      每一个 ROM
+      形态是一条独立记录，分别选择官方对应、分别确认。左侧平级列出全部形态，不存在整组审批。
     </p>
     <div class="games" id="games"></div>
   </header>
@@ -446,8 +438,9 @@
       <option value="direct">直接映射</option>
       <option value="comparison">仅作参照</option>
       <option value="none">无官方对应</option></select
-    ><label><input id="missOnly" type="checkbox" checked />仅看需人工核对</label
+    ><label><input id="missOnly" type="checkbox" />仅看需人工核对</label
     ><label><input id="highOnly" type="checkbox" />仅高把握候选</label
+    ><button id="relatedFilter">筛选当前的同名／关联条目</button
     ><span id="count" class="muted"></span
     ><button id="publish">生成修改器配置</button
     ><button id="export">导出审核进度</button
@@ -573,31 +566,21 @@
     function spriteUrl(id) {
       return `/sprite?md5=${encodeURIComponent(game().config.rom_md5)}&species=${id}&token=${encodeURIComponent(token)}`;
     }
-    function formCards(current) {
+    let relatedScope = null;
+    function relatedIds(current) {
       const catalog = game().catalog,
-        members = new Set([current.id]);
-      for (const family of catalog.form_families || []) {
+        ids = new Set([current.id]);
+      for (const row of catalog.species)
+        if (row.name === current.name) ids.add(row.id);
+      for (const family of catalog.form_families || [])
         if (family.species.includes(current.id))
-          family.species.forEach((id) => members.add(id));
-      }
-      for (const edge of catalog.battle_forms || []) {
+          family.species.forEach((id) => ids.add(id));
+      for (const edge of catalog.battle_forms || [])
         if (edge.source === current.id || edge.target === current.id) {
-          members.add(edge.source);
-          members.add(edge.target);
+          ids.add(edge.source);
+          ids.add(edge.target);
         }
-      }
-      const relatives = catalog.species.filter((s) => members.has(s.id));
-      const sameName = catalog.species.filter(
-        (s) => s.name === current.name && !members.has(s.id),
-      );
-      const cards = (rows) =>
-        rows
-          .map(
-            (s) =>
-              `<button class="rom-form-card ${s.id === current.id ? "active" : ""}" data-rom-relative="${s.id}"><img src="${spriteUrl(s.id)}" alt="" loading="lazy"><span>${esc(romTitle(s))}<small>ROM #${s.id}${s.id === current.id ? " · 当前" : ""}</small><small class="entry-decision">本条：${labels[entries()[s.id]?.status] || "待审核"}${entries()[s.id]?.target ? ` → ${esc(title(byKey.get(entries()[s.id].target)))}` : ""}</small></span></button>`,
-          )
-          .join("");
-      return `${relatives.length > 1 ? `<h3>ROM 中的关联形态</h3><div class="rom-form-grid">${cards(relatives)}</div><p class="notice">来自 ROM 形态家族／战斗变身关系。点击切换审核条目；家族关系不代表转换方法已确认。</p>` : ""}${sameName.length ? `<h3>同名的其他条目</h3><div class="rom-form-grid">${cards(sameName)}</div><p class="notice">这些条目名字相同，但 ROM 未将它们直接关联到当前形态；不凭名称或六围认定身份。</p>` : ""}`;
+      return ids;
     }
     function visible() {
       let q = norm($("search").value),
@@ -606,6 +589,7 @@
         let e = entries()[s.id];
         return (
           e &&
+          (!relatedScope || relatedScope.has(s.id)) &&
           (f === "all" || e.status === f) &&
           (!$("missOnly").checked ||
             !e.previously_matched ||
@@ -644,20 +628,24 @@
           (b.onclick = () => {
             if (busy) return;
             gameIndex = Number(b.dataset.game);
+            relatedScope = null;
             selected = null;
             lastUndo = null;
             render();
           }),
       );
       let rows = visible();
-      $("count").textContent = `${rows.length} 条`;
+      $("count").textContent = `${rows.length} 个独立条目`;
+      $("relatedFilter").textContent = relatedScope
+        ? "取消关联筛选，查看全部条目"
+        : "筛选当前的同名／关联条目";
       if (!rows.some((s) => String(s.id) === selected))
         selected = rows[0] ? String(rows[0].id) : null;
       $("list").innerHTML = rows.length
         ? rows
             .map((s) => {
               let e = entries()[s.id];
-              return `<button class="row ${String(s.id) === selected ? "selected" : ""}" data-species="${s.id}"><span class="id">#${s.id}</span><strong>${esc(romTitle(s))}</strong>${e.review_required ? ' <span class="pill">版本差异</span>' : ""}<small>→ ${e.status === "none" ? "本条无官方对应" : esc(title(byKey.get(e.target)))}</small><span class="pill">${labels[e.status]}</span> <span class="pill">${{ high: "高把握", medium: "需核对形态", low: "需判断" }[e.confidence]}</span></button>`;
+              return `<button class="row ${String(s.id) === selected ? "selected" : ""}" data-species="${s.id}"><img class="entry-sprite" src="${spriteUrl(s.id)}" alt="" loading="lazy"><span class="entry-body"><span class="id">ROM #${s.id}</span><strong>${esc(s.name)}</strong><span class="entry-form">${esc(romForm(s.id) || "普通条目")}</span><small>官方对应 → ${e.status === "none" ? "无官方对应" : esc(title(byKey.get(e.target)))}</small><span class="pill">${labels[e.status]}</span>${e.review_required ? ' <span class="pill">版本差异</span>' : ""}</span></button>`;
             })
             .join("")
         : '<div class="empty">当前筛选没有条目。</div>';
@@ -691,23 +679,8 @@
       const delta = (a, b) =>
         b == null ? "—" : `${a - b > 0 ? "+" : ""}${a - b}`;
       $("detail").innerHTML =
-        `<div class="panel"><div class="heading"><div class="rom-current"><img class="rom-sprite" src="${spriteUrl(s.id)}" alt="ROM 原始图片"><div><div class="eyebrow">ROM #${s.id}</div><h2>${esc(s.name)} <small class="muted">#${s.id}</small></h2><div class="rom-form-label">${esc(romForm(s.id) || "当前 ROM 条目")}</div></div></div><span class="badge ${e.status === "pending" ? "warn" : ""}">${labels[e.status]}</span></div><p class="review-scope">正在审核的是 <strong>ROM #${s.id}</strong> 这一条记录。映射决定不会应用到同名宝可梦或整个形态家族。</p><div class="reason">${e.status === "pending" ? esc(reasons[e.reason] || e.reason) : `本条审核决定：${labels[e.status]}`}<br><span class="notice">${e.status === "pending" ? `建议：${e.suggested_mode === "comparison" ? "仅作数值参照" : e.suggested_mode === "none" ? "人工判断" : "直接映射候选"}，尚待你确认。` : `仅适用于 ROM #${s.id}，可按需调整。`}</span></div><div class="grid"><div><h3>#${s.id} 的官方对应</h3><div id="candidates"></div><input id="officialSearch" class="full" type="search" placeholder="换一个：输入官译名、图鉴号或形态" aria-label="搜索官方参照"><div id="officialOptions" class="search-options"></div><p class="legend">X／Y、地区形态可单独选择。数值相近只用于排序；改版数值本就可能不同。</p></div><div><h3>${e.status === "none" ? `#${s.id} 无官方对应` : esc(title(o))}</h3><table><thead><tr><th>能力</th><th>官方</th><th>ROM</th><th>差值</th></tr></thead><tbody>${order.map((i) => `<tr><th>${names[i]}</th><td>${o?.stats[i] ?? "—"}</td><td>${s.stats[i]}</td><td class="${o && s.stats[i] > o.stats[i] ? "positive" : o && s.stats[i] < o.stats[i] ? "negative" : ""}">${delta(s.stats[i], o?.stats[i])}</td></tr>`).join("")}</tbody><tfoot><tr><th>合计</th><td>${o ? sum(o.stats) : "—"}</td><td>${sum(s.stats)}</td><td>${delta(sum(s.stats), o ? sum(o.stats) : null)}</td></tr></tfoot></table><p class="notice">官方数据：神奇宝贝百科，${o ? "第 " + o.generation + " 世代" : "以最新已收录世代为准"}。ROM 六围实时从所提供文件读取。</p></div></div></div><div class="panel"><label for="note">审核备注</label><textarea id="note" maxlength="2000" placeholder="例如：自创形态，只与普通形态比较">${esc(drafts.get(draftKey()) ?? e.note)}</textarea><button id="saveNote">保存备注</button><div class="notice">直接映射＝认定是同一宝可梦／形态；仅作参照＝只比较数值；无官方对应＝明确留空。修改候选会回到待审核。</div></div>${formCards(s) ? `<details class="panel rom-relations" open><summary>相关条目导航 · 每条独立标注</summary>${formCards(s)}</details>` : ""}<div class="actions"><div class="action-scope">本次操作仅作用于 <strong>ROM #${s.id} · ${esc(romTitle(s))}</strong></div><button class="primary" data-decision="direct" ${!o ? "disabled" : ""}>确认直接映射</button><button data-decision="comparison" ${!o ? "disabled" : ""}>仅作数值参照</button><button data-decision="none">仅将 #${s.id} 标为无官方对应</button><button id="later">稍后再审</button><button id="reopen">恢复待审核</button><button id="undo" ${!lastUndo ? "disabled" : ""}>撤销上次</button><div id="message" class="full" role="status"></div></div>`;
-      document.querySelectorAll("[data-rom-relative]").forEach(
-        (button) =>
-          (button.onclick = () => {
-            if (busy) return;
-            const id = button.dataset.romRelative;
-            if (!visible().some((s) => String(s.id) === id)) {
-              $("search").value = "";
-              $("filter").value = "all";
-              $("missOnly").checked = false;
-              $("highOnly").checked = false;
-            }
-            selected = id;
-            render();
-          }),
-      );
-      document.querySelectorAll(".rom-form-card img,.rom-sprite").forEach(
+        `<div class="panel"><div class="heading"><div class="rom-current"><img class="rom-sprite" src="${spriteUrl(s.id)}" alt="ROM 原始图片"><div><div class="eyebrow">ROM #${s.id}</div><h2>${esc(s.name)} <small class="muted">#${s.id}</small></h2><div class="rom-form-label">${esc(romForm(s.id) || "当前 ROM 条目")}</div></div></div><span class="badge ${e.status === "pending" ? "warn" : ""}">${labels[e.status]}</span></div><p class="review-scope">正在审核的是 <strong>ROM #${s.id}</strong> 这一条记录。映射决定不会应用到同名宝可梦或整个形态家族。</p><div class="reason">${e.status === "pending" ? esc(reasons[e.reason] || e.reason) : `本条审核决定：${labels[e.status]}`}<br><span class="notice">${e.status === "pending" ? `建议：${e.suggested_mode === "comparison" ? "仅作数值参照" : e.suggested_mode === "none" ? "人工判断" : "直接映射候选"}，尚待你确认。` : `仅适用于 ROM #${s.id}，可按需调整。`}</span></div><div class="grid"><div><h3>#${s.id} 的官方对应</h3><div id="candidates"></div><input id="officialSearch" class="full" type="search" placeholder="换一个：输入官译名、图鉴号或形态" aria-label="搜索官方参照"><div id="officialOptions" class="search-options"></div><p class="legend">X／Y、地区形态可单独选择。数值相近只用于排序；改版数值本就可能不同。</p></div><div><h3>${e.status === "none" ? `#${s.id} 无官方对应` : esc(title(o))}</h3><table><thead><tr><th>能力</th><th>官方</th><th>ROM</th><th>差值</th></tr></thead><tbody>${order.map((i) => `<tr><th>${names[i]}</th><td>${o?.stats[i] ?? "—"}</td><td>${s.stats[i]}</td><td class="${o && s.stats[i] > o.stats[i] ? "positive" : o && s.stats[i] < o.stats[i] ? "negative" : ""}">${delta(s.stats[i], o?.stats[i])}</td></tr>`).join("")}</tbody><tfoot><tr><th>合计</th><td>${o ? sum(o.stats) : "—"}</td><td>${sum(s.stats)}</td><td>${delta(sum(s.stats), o ? sum(o.stats) : null)}</td></tr></tfoot></table><p class="notice">官方数据：神奇宝贝百科，${o ? "第 " + o.generation + " 世代" : "以最新已收录世代为准"}。ROM 六围实时从所提供文件读取。</p></div></div></div><div class="panel"><label for="note">审核备注</label><textarea id="note" maxlength="2000" placeholder="例如：自创形态，只与普通形态比较">${esc(drafts.get(draftKey()) ?? e.note)}</textarea><button id="saveNote">保存备注</button><div class="notice">直接映射＝认定是同一宝可梦／形态；仅作参照＝只比较数值；无官方对应＝明确留空。修改候选会回到待审核。</div></div><div class="actions"><div class="action-scope">本次操作仅作用于 <strong>ROM #${s.id} · ${esc(romTitle(s))}</strong></div><button class="primary" data-decision="direct" ${!o ? "disabled" : ""}>确认直接映射</button><button data-decision="comparison" ${!o ? "disabled" : ""}>仅作数值参照</button><button data-decision="none">仅将 #${s.id} 标为无官方对应</button><button id="later">稍后再审</button><button id="reopen">恢复待审核</button><button id="undo" ${!lastUndo ? "disabled" : ""}>撤销上次</button><div id="message" class="full" role="status"></div></div>`;
+      document.querySelectorAll(".entry-sprite,.rom-sprite").forEach(
         (img) =>
           (img.onerror = () => {
             img.hidden = true;
@@ -932,6 +905,20 @@
       } finally {
         $("file").value = "";
       }
+    };
+    $("relatedFilter").onclick = () => {
+      if (busy) return;
+      if (relatedScope) relatedScope = null;
+      else if (selected) {
+        relatedScope = relatedIds(
+          game().catalog.species.find((s) => String(s.id) === selected),
+        );
+        $("filter").value = "all";
+        $("search").value = "";
+        $("missOnly").checked = false;
+        $("highOnly").checked = false;
+      }
+      render();
     };
     for (const id of ["search", "filter", "missOnly", "highOnly"])
       $(id).oninput = () => {

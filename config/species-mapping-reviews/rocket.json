@@ -11237,8 +11237,8 @@
       "note": ""
     },
     "920": {
-      "status": "none",
-      "target": null,
+      "status": "pending",
+      "target": "386:速度形态",
       "candidates": [
         "386:速度形态",
         "386:普通形态",
@@ -11252,8 +11252,8 @@
       "note": ""
     },
     "921": {
-      "status": "none",
-      "target": null,
+      "status": "pending",
+      "target": "386:速度形态",
       "candidates": [
         "386:速度形态",
         "386:普通形态",

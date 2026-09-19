@@ -26,8 +26,8 @@ resume; decisions are stored on disk, not just in browser storage.
 
 先构建命令行工具，再通过 `--rom` 提供自己的 ROM，可重复指定多个游戏。
 启动时从 ROM 读取名称和六围并验证 MD5。保持服务运行，浏览器打开上面的地址即可。
-重启后会读取已保存的审核进度。页面默认显示原来未能自动关联的条目，以及明确要求单独审核的版本差异条目；取消
-「仅看需人工核对」可复核原先已匹配的记录。
+重启后会读取已保存的审核进度。页面默认平级列出全部待审核条目，包含原先自动匹配的形态。每条显示自己的图片、
+内部编号、形态名、官方候选和状态。「仅看需人工核对」是可选筛选，不会合并条目。
 
 ## Decisions / 审核决定
 
@@ -132,23 +132,23 @@ with a verified ROM form displays a warning instead of silently changing either.
 The current picture and related-form thumbnails come from `gen3 sprite ROM ID`,
 which calls the existing native-ROM graphics reader and writes PNG to stdout.
 Images are cached in server memory per exact ROM fingerprint and internal ID,
-never added to review or production mapping files. Related forms can be clicked
-to navigate; same-name entries outside those native relationships are shown in
-a separate group. This browsing does not mark an entry reviewed.
+never added to review or production mapping files. Every form is a peer row in the main review list. An optional same-name/related
+filter narrows that flat list; it does not create a parent review record or
+nested form cards. Browsing does not mark an entry reviewed.
 
 审核页左侧 ROM 条目、当前形态与图片独立于右侧官方候选；已验证形态与待审核候选
-不一致时会提示核对。形态家族、战斗变身和仅同名条目分开呈现。图片直接从当前
-ROM 读取，不写入映射配置，也不加入修改器发布包。点击关联形态只切换审核条目，
-不会自动确认映射或丢弃已经保存的审核进度。
+不一致时会提示核对。所有形态在左侧独立平级呈现；形态家族、战斗变身和同名关系仅用于筛选这些条目。
+图片直接从当前 ROM 读取，不写入映射配置，也不加入修改器发布包。右侧只编辑
+当前选中的单一形态，不存在位于某个宝可梦之下的整组形态审核操作。
 
 
 Review scope is always one exact ROM fingerprint plus one internal species ID.
 The current record is identified in the heading, decision controls and save
-receipt; relationship cards show their own independent statuses. Marking a
+receipt; each peer row shows its own independent status. Marking a
 same-name custom entry as having no official counterpart cannot reject its
-base species or sibling forms. Relationship navigation is a separate panel,
-not a parent-level mapping control.
+base species or sibling forms. Relationships are an optional filter over the peer list, never a nested panel
+or a parent-level mapping control.
 
 审核层级固定为「ROM 指纹＋内部编号」。例如西火 #920、#921 的无官方对应决定
-不影响 #386、#1128、#1129、#1130。当前条目、关联导航和各自审核状态分别呈现，
+不影响 #386、#1128、#1129、#1130。所有形态条目平级呈现且各自单独审核，
 不存在按整个名字或家族批量套用决定的操作。
