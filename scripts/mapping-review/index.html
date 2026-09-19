@@ -377,7 +377,7 @@
       <option value="direct">直接映射</option>
       <option value="comparison">仅作参照</option>
       <option value="none">无官方对应</option></select
-    ><label><input id="missOnly" type="checkbox" checked />仅看原来未匹配</label
+    ><label><input id="missOnly" type="checkbox" checked />仅看需人工核对</label
     ><label><input id="highOnly" type="checkbox" />仅高把握候选</label
     ><span id="count" class="muted"></span
     ><button id="publish">生成修改器配置</button
@@ -437,6 +437,10 @@
       none: "无官方对应",
     };
     const reasons = {
+      "version-specific":
+        "此内部编号在 DP 与 BW 中是不同的宝可梦。已保留 DP 自己的候选，请单独确认，不能沿用 BW 的映射。",
+      "reused-reviewed-identity":
+        "两版该条目的 ROM 资料一致，已按你的要求复用 BW 中确认过的映射。",
       "semantic-base-form":
         "根据原种与地区形态的语义预填普通模式；地区形态可能具有相同六围，不能只凭数值判断。",
       "exact-name": "完整名称一致。仍请留意同名的改版自定义条目。",
@@ -484,7 +488,9 @@
         return (
           e &&
           (f === "all" || e.status === f) &&
-          (!$("missOnly").checked || !e.previously_matched) &&
+          (!$("missOnly").checked ||
+            !e.previously_matched ||
+            e.review_required) &&
           (!$("highOnly").checked || e.confidence === "high") &&
           (!q ||
             norm(
@@ -532,7 +538,7 @@
         ? rows
             .map((s) => {
               let e = entries()[s.id];
-              return `<button class="row ${String(s.id) === selected ? "selected" : ""}" data-species="${s.id}"><span class="id">#${s.id}</span><strong>${esc(s.name)}</strong><small>→ ${esc(title(byKey.get(e.target)))}</small><span class="pill">${labels[e.status]}</span> <span class="pill">${{ high: "高把握", medium: "需核对形态", low: "需判断" }[e.confidence]}</span></button>`;
+              return `<button class="row ${String(s.id) === selected ? "selected" : ""}" data-species="${s.id}"><span class="id">#${s.id}</span><strong>${esc(s.name)}</strong>${e.review_required ? ' <span class="pill">版本差异</span>' : ""}<small>→ ${esc(title(byKey.get(e.target)))}</small><span class="pill">${labels[e.status]}</span> <span class="pill">${{ high: "高把握", medium: "需核对形态", low: "需判断" }[e.confidence]}</span></button>`;
             })
             .join("")
         : '<div class="empty">当前筛选没有条目。</div>';
@@ -566,7 +572,7 @@
       const delta = (a, b) =>
         b == null ? "—" : `${a - b > 0 ? "+" : ""}${a - b}`;
       $("detail").innerHTML =
-        `<div class="panel"><div class="heading"><div><div class="eyebrow">ROM #${s.id}</div><h2>${esc(s.name)}</h2></div><span class="badge ${e.status === "pending" ? "warn" : ""}">${labels[e.status]}</span></div><div class="reason">${esc(reasons[e.reason] || e.reason)}<br><span class="notice">建议：${e.suggested_mode === "comparison" ? "仅作数值参照" : e.suggested_mode === "none" ? "人工判断" : "直接映射候选"}。候选均未经你确认。</span></div><div class="grid"><div><h3>推荐的官方对应</h3><div id="candidates"></div><input id="officialSearch" class="full" type="search" placeholder="换一个：输入官译名、图鉴号或形态" aria-label="搜索官方参照"><div id="officialOptions" class="search-options"></div><p class="legend">X／Y、地区形态可单独选择。数值相近只用于排序；改版数值本就可能不同。</p></div><div><h3>${esc(title(o))}</h3><table><thead><tr><th>能力</th><th>官方</th><th>ROM</th><th>差值</th></tr></thead><tbody>${order.map((i) => `<tr><th>${names[i]}</th><td>${o?.stats[i] ?? "—"}</td><td>${s.stats[i]}</td><td class="${o && s.stats[i] > o.stats[i] ? "positive" : o && s.stats[i] < o.stats[i] ? "negative" : ""}">${delta(s.stats[i], o?.stats[i])}</td></tr>`).join("")}</tbody><tfoot><tr><th>合计</th><td>${o ? sum(o.stats) : "—"}</td><td>${sum(s.stats)}</td><td>${delta(sum(s.stats), o ? sum(o.stats) : null)}</td></tr></tfoot></table><p class="notice">官方数据：神奇宝贝百科，${o ? "第 " + o.generation + " 世代" : "以最新已收录世代为准"}。ROM 六围实时从所提供文件读取。</p></div></div></div><div class="panel"><label for="note">审核备注</label><textarea id="note" maxlength="2000" placeholder="例如：自创形态，只与普通形态比较">${esc(drafts.get(draftKey()) ?? e.note)}</textarea><button id="saveNote">保存备注</button><div class="notice">直接映射＝认定是同一宝可梦／形态；仅作参照＝只比较数值；无官方对应＝明确留空。修改候选会回到待审核。</div></div><div class="actions"><button class="primary" data-decision="direct" ${!o ? "disabled" : ""}>确认直接映射</button><button data-decision="comparison" ${!o ? "disabled" : ""}>仅作数值参照</button><button data-decision="none">无官方对应</button><button id="later">稍后再审</button><button id="reopen">恢复待审核</button><button id="undo" ${!lastUndo ? "disabled" : ""}>撤销上次</button><div id="message" class="full" role="status"></div></div>`;
+        `<div class="panel"><div class="heading"><div><div class="eyebrow">ROM #${s.id}</div><h2>${esc(s.name)}</h2></div><span class="badge ${e.status === "pending" ? "warn" : ""}">${labels[e.status]}</span></div><div class="reason">${esc(reasons[e.reason] || e.reason)}<br><span class="notice">建议：${e.suggested_mode === "comparison" ? "仅作数值参照" : e.suggested_mode === "none" ? "人工判断" : "直接映射候选"}。${e.status === "pending" ? "尚待你确认。" : "该条已有审核决定，可按需调整。"}</span></div><div class="grid"><div><h3>推荐的官方对应</h3><div id="candidates"></div><input id="officialSearch" class="full" type="search" placeholder="换一个：输入官译名、图鉴号或形态" aria-label="搜索官方参照"><div id="officialOptions" class="search-options"></div><p class="legend">X／Y、地区形态可单独选择。数值相近只用于排序；改版数值本就可能不同。</p></div><div><h3>${esc(title(o))}</h3><table><thead><tr><th>能力</th><th>官方</th><th>ROM</th><th>差值</th></tr></thead><tbody>${order.map((i) => `<tr><th>${names[i]}</th><td>${o?.stats[i] ?? "—"}</td><td>${s.stats[i]}</td><td class="${o && s.stats[i] > o.stats[i] ? "positive" : o && s.stats[i] < o.stats[i] ? "negative" : ""}">${delta(s.stats[i], o?.stats[i])}</td></tr>`).join("")}</tbody><tfoot><tr><th>合计</th><td>${o ? sum(o.stats) : "—"}</td><td>${sum(s.stats)}</td><td>${delta(sum(s.stats), o ? sum(o.stats) : null)}</td></tr></tfoot></table><p class="notice">官方数据：神奇宝贝百科，${o ? "第 " + o.generation + " 世代" : "以最新已收录世代为准"}。ROM 六围实时从所提供文件读取。</p></div></div></div><div class="panel"><label for="note">审核备注</label><textarea id="note" maxlength="2000" placeholder="例如：自创形态，只与普通形态比较">${esc(drafts.get(draftKey()) ?? e.note)}</textarea><button id="saveNote">保存备注</button><div class="notice">直接映射＝认定是同一宝可梦／形态；仅作参照＝只比较数值；无官方对应＝明确留空。修改候选会回到待审核。</div></div><div class="actions"><button class="primary" data-decision="direct" ${!o ? "disabled" : ""}>确认直接映射</button><button data-decision="comparison" ${!o ? "disabled" : ""}>仅作数值参照</button><button data-decision="none">无官方对应</button><button id="later">稍后再审</button><button id="reopen">恢复待审核</button><button id="undo" ${!lastUndo ? "disabled" : ""}>撤销上次</button><div id="message" class="full" role="status"></div></div>`;
       const option = (o) =>
         `<button class="candidate ${o.key === e.target ? "active" : ""}" data-ref="${esc(o.key)}"><span>${esc(title(o))}</span><small>#${o.dex}</small></button>`;
       $("candidates").innerHTML = e.candidates.length

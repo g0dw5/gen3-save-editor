@@ -2,7 +2,7 @@
   "schema": 1,
   "profile_id": "dark-phantom-5ex-dp",
   "rom_md5": "cb2940215f4dafb1bef133c3af379f44",
-  "revision": 0,
+  "revision": 1,
   "entries": {
     "1": {
       "status": "pending",
@@ -141,16 +141,21 @@
       "note": ""
     },
     "12": {
-      "status": "pending",
+      "status": "direct",
       "target": "12:",
       "candidates": [
         "12:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 12,
+        "revision": 127
+      }
     },
     "13": {
       "status": "pending",
@@ -214,17 +219,22 @@
       "note": ""
     },
     "18": {
-      "status": "pending",
+      "status": "direct",
       "target": "18:",
       "candidates": [
         "18:",
         "18:超级大比鸟"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 18,
+        "revision": 127
+      }
     },
     "19": {
       "status": "pending",
@@ -253,29 +263,39 @@
       "note": ""
     },
     "21": {
-      "status": "pending",
+      "status": "direct",
       "target": "627:",
       "candidates": [
         "627:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 21,
+        "revision": 127
+      }
     },
     "22": {
-      "status": "pending",
+      "status": "direct",
       "target": "628:",
       "candidates": [
         "628:",
         "628:洗翠的样子"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 22,
+        "revision": 127
+      }
     },
     "23": {
       "status": "pending",
@@ -356,16 +376,21 @@
       "note": ""
     },
     "29": {
-      "status": "pending",
+      "status": "direct",
       "target": "29:",
       "candidates": [
         "29:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 29,
+        "revision": 127
+      }
     },
     "30": {
       "status": "pending",
@@ -392,16 +417,21 @@
       "note": ""
     },
     "32": {
-      "status": "pending",
+      "status": "direct",
       "target": "32:",
       "candidates": [
         "32:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 32,
+        "revision": 127
+      }
     },
     "33": {
       "status": "pending",
@@ -599,16 +629,21 @@
       "note": ""
     },
     "49": {
-      "status": "pending",
+      "status": "direct",
       "target": "49:",
       "candidates": [
         "49:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 49,
+        "revision": 127
+      }
     },
     "50": {
       "status": "pending",
@@ -700,16 +735,21 @@
       "note": ""
     },
     "57": {
-      "status": "pending",
+      "status": "direct",
       "target": "57:",
       "candidates": [
         "57:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 57,
+        "revision": 127
+      }
     },
     "58": {
       "status": "pending",
@@ -750,28 +790,38 @@
       "note": ""
     },
     "61": {
-      "status": "pending",
+      "status": "direct",
       "target": "61:",
       "candidates": [
         "61:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 61,
+        "revision": 127
+      }
     },
     "62": {
-      "status": "pending",
+      "status": "direct",
       "target": "62:",
       "candidates": [
         "62:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 62,
+        "revision": 127
+      }
     },
     "63": {
       "status": "pending",
@@ -786,16 +836,21 @@
       "note": ""
     },
     "64": {
-      "status": "pending",
+      "status": "direct",
       "target": "64:",
       "candidates": [
         "64:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 64,
+        "revision": 127
+      }
     },
     "65": {
       "status": "pending",
@@ -986,7 +1041,7 @@
       "note": ""
     },
     "80": {
-      "status": "pending",
+      "status": "direct",
       "target": "80:",
       "candidates": [
         "80:",
@@ -994,10 +1049,15 @@
         "80:超级呆壳兽"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 80,
+        "revision": 127
+      }
     },
     "81": {
       "status": "pending",
@@ -1123,16 +1183,21 @@
       "note": ""
     },
     "91": {
-      "status": "pending",
+      "status": "direct",
       "target": "91:",
       "candidates": [
         "91:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 91,
+        "revision": 127
+      }
     },
     "92": {
       "status": "pending",
@@ -1184,28 +1249,38 @@
       "note": ""
     },
     "96": {
-      "status": "pending",
+      "status": "direct",
       "target": "517:",
       "candidates": [
         "517:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 96,
+        "revision": 127
+      }
     },
     "97": {
-      "status": "pending",
+      "status": "direct",
       "target": "518:",
       "candidates": [
         "518:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 97,
+        "revision": 127
+      }
     },
     "98": {
       "status": "pending",
@@ -1232,30 +1307,40 @@
       "note": ""
     },
     "100": {
-      "status": "pending",
+      "status": "direct",
       "target": "100:",
       "candidates": [
         "100:",
         "100:洗翠的样子"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 100,
+        "revision": 127
+      }
     },
     "101": {
-      "status": "pending",
+      "status": "direct",
       "target": "101:",
       "candidates": [
         "101:",
         "101:洗翠的样子"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 101,
+        "revision": 127
+      }
     },
     "102": {
       "status": "pending",
@@ -1283,65 +1368,90 @@
       "note": ""
     },
     "104": {
-      "status": "pending",
+      "status": "direct",
       "target": "104:",
       "candidates": [
         "104:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 104,
+        "revision": 127
+      }
     },
     "105": {
-      "status": "pending",
+      "status": "direct",
       "target": "105:",
       "candidates": [
         "105:",
         "105:阿罗拉的样子"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 105,
+        "revision": 127
+      }
     },
     "106": {
-      "status": "pending",
+      "status": "direct",
       "target": "106:",
       "candidates": [
         "106:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 106,
+        "revision": 127
+      }
     },
     "107": {
-      "status": "pending",
+      "status": "direct",
       "target": "107:",
       "candidates": [
         "107:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 107,
+        "revision": 127
+      }
     },
     "108": {
-      "status": "pending",
-      "target": "108:",
+      "status": "direct",
+      "target": "463:",
       "candidates": [
-        "108:"
+        "463:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 108,
+        "revision": 127
+      }
     },
     "109": {
       "status": "pending",
@@ -1369,28 +1479,38 @@
       "note": ""
     },
     "111": {
-      "status": "pending",
+      "status": "direct",
       "target": "111:",
       "candidates": [
         "111:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 111,
+        "revision": 127
+      }
     },
     "112": {
-      "status": "pending",
+      "status": "direct",
       "target": "464:",
       "candidates": [
         "464:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 112,
+        "revision": 127
+      }
     },
     "113": {
       "status": "pending",
@@ -1417,17 +1537,22 @@
       "note": ""
     },
     "115": {
-      "status": "pending",
+      "status": "direct",
       "target": "115:",
       "candidates": [
         "115:",
         "115:超级袋兽"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 115,
+        "revision": 127
+      }
     },
     "116": {
       "status": "pending",
@@ -1503,17 +1628,22 @@
       "note": ""
     },
     "122": {
-      "status": "pending",
+      "status": "direct",
       "target": "122:",
       "candidates": [
         "122:",
         "122:伽勒尔的样子"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 122,
+        "revision": 127
+      }
     },
     "123": {
       "status": "pending",
@@ -1552,29 +1682,39 @@
       "note": ""
     },
     "126": {
-      "status": "pending",
+      "status": "direct",
       "target": "467:",
       "candidates": [
         "467:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 126,
+        "revision": 127
+      }
     },
     "127": {
-      "status": "pending",
+      "status": "direct",
       "target": "127:",
       "candidates": [
         "127:",
         "127:超级凯罗斯"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 127,
+        "revision": 127
+      }
     },
     "128": {
       "status": "pending",
@@ -1615,16 +1755,21 @@
       "note": ""
     },
     "131": {
-      "status": "pending",
+      "status": "direct",
       "target": "131:",
       "candidates": [
         "131:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 131,
+        "revision": 127
+      }
     },
     "132": {
       "status": "pending",
@@ -1652,52 +1797,72 @@
       "note": ""
     },
     "134": {
-      "status": "pending",
+      "status": "direct",
       "target": "134:",
       "candidates": [
         "134:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 134,
+        "revision": 127
+      }
     },
     "135": {
-      "status": "pending",
+      "status": "direct",
       "target": "135:",
       "candidates": [
         "135:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 135,
+        "revision": 127
+      }
     },
     "136": {
-      "status": "pending",
+      "status": "direct",
       "target": "136:",
       "candidates": [
         "136:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 136,
+        "revision": 127
+      }
     },
     "137": {
-      "status": "pending",
+      "status": "direct",
       "target": "137:",
       "candidates": [
         "137:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 137,
+        "revision": 127
+      }
     },
     "138": {
       "status": "pending",
@@ -1899,17 +2064,22 @@
       "note": ""
     },
     "154": {
-      "status": "pending",
+      "status": "direct",
       "target": "154:",
       "candidates": [
         "154:",
         "154:超级大竺葵"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 154,
+        "revision": 127
+      }
     },
     "155": {
       "status": "pending",
@@ -1936,17 +2106,22 @@
       "note": ""
     },
     "157": {
-      "status": "pending",
+      "status": "direct",
       "target": "157:",
       "candidates": [
         "157:",
         "157:洗翠的样子"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 157,
+        "revision": 127
+      }
     },
     "158": {
       "status": "pending",
@@ -1998,16 +2173,21 @@
       "note": ""
     },
     "162": {
-      "status": "pending",
+      "status": "direct",
       "target": "573:",
       "candidates": [
         "573:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 162,
+        "revision": 127
+      }
     },
     "163": {
       "status": "pending",
@@ -2058,16 +2238,21 @@
       "note": ""
     },
     "167": {
-      "status": "pending",
+      "status": "direct",
       "target": "167:",
       "candidates": [
         "167:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 167,
+        "revision": 127
+      }
     },
     "168": {
       "status": "pending",
@@ -2130,28 +2315,38 @@
       "note": ""
     },
     "173": {
-      "status": "pending",
+      "status": "direct",
       "target": "470:",
       "candidates": [
         "470:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 173,
+        "revision": 127
+      }
     },
     "174": {
-      "status": "pending",
+      "status": "direct",
       "target": "471:",
       "candidates": [
         "471:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 174,
+        "revision": 127
+      }
     },
     "175": {
       "status": "pending",
@@ -2214,16 +2409,21 @@
       "note": ""
     },
     "180": {
-      "status": "pending",
+      "status": "direct",
       "target": "180:",
       "candidates": [
         "180:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 180,
+        "revision": 127
+      }
     },
     "181": {
       "status": "pending",
@@ -2275,28 +2475,38 @@
       "note": ""
     },
     "185": {
-      "status": "pending",
+      "status": "direct",
       "target": "185:",
       "candidates": [
         "185:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 185,
+        "revision": 127
+      }
     },
     "186": {
-      "status": "pending",
+      "status": "direct",
       "target": "186:",
       "candidates": [
         "186:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 186,
+        "revision": 127
+      }
     },
     "187": {
       "status": "pending",
@@ -2348,41 +2558,56 @@
       "note": ""
     },
     "191": {
-      "status": "pending",
+      "status": "direct",
       "target": "548:",
       "candidates": [
         "548:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 191,
+        "revision": 127
+      }
     },
     "192": {
-      "status": "pending",
+      "status": "direct",
       "target": "549:",
       "candidates": [
         "549:",
         "549:洗翠的样子"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 192,
+        "revision": 127
+      }
     },
     "193": {
-      "status": "pending",
+      "status": "direct",
       "target": "469:",
       "candidates": [
         "469:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 193,
+        "revision": 127
+      }
     },
     "194": {
       "status": "pending",
@@ -2410,53 +2635,73 @@
       "note": ""
     },
     "196": {
-      "status": "pending",
+      "status": "direct",
       "target": "196:",
       "candidates": [
         "196:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 196,
+        "revision": 127
+      }
     },
     "197": {
-      "status": "pending",
+      "status": "direct",
       "target": "197:",
       "candidates": [
         "197:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 197,
+        "revision": 127
+      }
     },
     "198": {
-      "status": "pending",
+      "status": "direct",
       "target": "430:",
       "candidates": [
         "430:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 198,
+        "revision": 127
+      }
     },
     "199": {
-      "status": "pending",
+      "status": "direct",
       "target": "199:",
       "candidates": [
         "199:",
         "199:伽勒尔的样子"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 199,
+        "revision": 127
+      }
     },
     "200": {
       "status": "pending",
@@ -2507,28 +2752,38 @@
       "note": ""
     },
     "204": {
-      "status": "pending",
+      "status": "direct",
       "target": "597:",
       "candidates": [
         "597:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 204,
+        "revision": 127
+      }
     },
     "205": {
-      "status": "pending",
+      "status": "direct",
       "target": "598:",
       "candidates": [
         "598:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 205,
+        "revision": 127
+      }
     },
     "206": {
       "status": "pending",
@@ -2679,20 +2934,25 @@
       "note": ""
     },
     "218": {
-      "status": "pending",
+      "status": "direct",
       "target": "554:",
       "candidates": [
         "554:",
         "554:伽勒尔的样子"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 218,
+        "revision": 127
+      }
     },
     "219": {
-      "status": "pending",
+      "status": "direct",
       "target": "555:普通模式",
       "candidates": [
         "555:普通模式",
@@ -2701,10 +2961,15 @@
         "555:达摩模式"
       ],
       "confidence": "medium",
-      "reason": "semantic-base-form",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 219,
+        "revision": 127
+      }
     },
     "220": {
       "status": "pending",
@@ -2719,16 +2984,21 @@
       "note": ""
     },
     "221": {
-      "status": "pending",
+      "status": "direct",
       "target": "473:",
       "candidates": [
         "473:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 221,
+        "revision": 127
+      }
     },
     "222": {
       "status": "pending",
@@ -2744,28 +3014,38 @@
       "note": ""
     },
     "223": {
-      "status": "pending",
+      "status": "direct",
       "target": "592:",
       "candidates": [
         "592:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 223,
+        "revision": 127
+      }
     },
     "224": {
-      "status": "pending",
+      "status": "direct",
       "target": "593:",
       "candidates": [
         "593:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 224,
+        "revision": 127
+      }
     },
     "225": {
       "status": "pending",
@@ -2843,41 +3123,56 @@
       "note": ""
     },
     "231": {
-      "status": "pending",
+      "status": "direct",
       "target": "529:",
       "candidates": [
         "529:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 231,
+        "revision": 127
+      }
     },
     "232": {
-      "status": "pending",
+      "status": "direct",
       "target": "530:",
       "candidates": [
         "530:",
         "530:超级龙头地鼠"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 232,
+        "revision": 127
+      }
     },
     "233": {
-      "status": "pending",
+      "status": "direct",
       "target": "474:",
       "candidates": [
         "474:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 233,
+        "revision": 127
+      }
     },
     "234": {
       "status": "pending",
@@ -2904,28 +3199,38 @@
       "note": ""
     },
     "236": {
-      "status": "pending",
+      "status": "direct",
       "target": "236:",
       "candidates": [
         "236:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 236,
+        "revision": 127
+      }
     },
     "237": {
-      "status": "pending",
+      "status": "direct",
       "target": "237:",
       "candidates": [
         "237:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 237,
+        "revision": 127
+      }
     },
     "238": {
       "status": "pending",
@@ -2952,16 +3257,21 @@
       "note": ""
     },
     "240": {
-      "status": "pending",
+      "status": "direct",
       "target": "240:",
       "candidates": [
         "240:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 240,
+        "revision": 127
+      }
     },
     "241": {
       "status": "pending",
@@ -3024,41 +3334,56 @@
       "note": ""
     },
     "246": {
-      "status": "pending",
+      "status": "direct",
       "target": "246:",
       "candidates": [
         "246:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 246,
+        "revision": 127
+      }
     },
     "247": {
-      "status": "pending",
+      "status": "direct",
       "target": "247:",
       "candidates": [
         "247:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 247,
+        "revision": 127
+      }
     },
     "248": {
-      "status": "pending",
+      "status": "direct",
       "target": "248:",
       "candidates": [
         "248:",
         "248:超级班基拉斯"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 248,
+        "revision": 127
+      }
     },
     "249": {
       "status": "pending",
@@ -3085,28 +3410,38 @@
       "note": ""
     },
     "251": {
-      "status": "pending",
+      "status": "direct",
       "target": "251:",
       "candidates": [
         "251:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 251,
+        "revision": 127
+      }
     },
     "252": {
-      "status": "pending",
+      "status": "direct",
       "target": "494:",
       "candidates": [
         "494:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 252,
+        "revision": 127
+      }
     },
     "253": {
       "status": "pending",
@@ -3115,10 +3450,11 @@
         "387:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "version-specific",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "review_required": true
     },
     "254": {
       "status": "pending",
@@ -3127,10 +3463,11 @@
         "388:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "version-specific",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "review_required": true
     },
     "255": {
       "status": "pending",
@@ -3139,10 +3476,11 @@
         "389:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "version-specific",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "review_required": true
     },
     "256": {
       "status": "pending",
@@ -3151,10 +3489,11 @@
         "390:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "version-specific",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "review_required": true
     },
     "257": {
       "status": "pending",
@@ -3163,10 +3502,11 @@
         "391:"
       ],
       "confidence": "high",
-      "reason": "exact-name",
+      "reason": "version-specific",
       "suggested_mode": "direct",
       "previously_matched": true,
-      "note": ""
+      "note": "",
+      "review_required": true
     },
     "258": {
       "status": "pending",
@@ -3175,10 +3515,11 @@
         "392:"
       ],
       "confidence": "high",
-      "reason": "exact-name",
+      "reason": "version-specific",
       "suggested_mode": "direct",
       "previously_matched": true,
-      "note": ""
+      "note": "",
+      "review_required": true
     },
     "259": {
       "status": "pending",
@@ -3187,10 +3528,11 @@
         "393:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "version-specific",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "review_required": true
     },
     "260": {
       "status": "pending",
@@ -3199,10 +3541,11 @@
         "394:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "version-specific",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "review_required": true
     },
     "261": {
       "status": "pending",
@@ -3211,13 +3554,14 @@
         "395:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "version-specific",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "review_required": true
     },
     "262": {
-      "status": "pending",
+      "status": "direct",
       "target": "646:焰白酋雷姆",
       "candidates": [
         "646:焰白酋雷姆",
@@ -3225,10 +3569,15 @@
         "646:暗黑酋雷姆"
       ],
       "confidence": "medium",
-      "reason": "semantic-form",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 262,
+        "revision": 127
+      }
     },
     "263": {
       "status": "pending",
@@ -3243,55 +3592,75 @@
       "note": ""
     },
     "264": {
-      "status": "pending",
+      "status": "direct",
       "target": "483:",
       "candidates": [
         "483:",
         "483:起源形态"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 264,
+        "revision": 127
+      }
     },
     "265": {
-      "status": "pending",
+      "status": "direct",
       "target": "484:",
       "candidates": [
         "484:",
         "484:起源形态"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 265,
+        "revision": 127
+      }
     },
     "266": {
-      "status": "pending",
+      "status": "direct",
       "target": "487:起源形态",
       "candidates": [
         "487:起源形态",
         "487:别种形态"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 266,
+        "revision": 127
+      }
     },
     "267": {
-      "status": "pending",
+      "status": "direct",
       "target": "488:",
       "candidates": [
         "488:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 267,
+        "revision": 127
+      }
     },
     "268": {
       "status": "pending",
@@ -3307,16 +3676,21 @@
       "note": ""
     },
     "269": {
-      "status": "pending",
+      "status": "direct",
       "target": "643:",
       "candidates": [
         "643:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 269,
+        "revision": 127
+      }
     },
     "270": {
       "status": "pending",
@@ -3331,7 +3705,7 @@
       "note": ""
     },
     "271": {
-      "status": "pending",
+      "status": "direct",
       "target": "646:暗黑酋雷姆",
       "candidates": [
         "646:暗黑酋雷姆",
@@ -3339,59 +3713,84 @@
         "646:焰白酋雷姆"
       ],
       "confidence": "medium",
-      "reason": "semantic-form",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 271,
+        "revision": 127
+      }
     },
     "272": {
-      "status": "pending",
+      "status": "direct",
       "target": "490:",
       "candidates": [
         "490:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 272,
+        "revision": 127
+      }
     },
     "273": {
-      "status": "pending",
+      "status": "direct",
       "target": "492:天空形态",
       "candidates": [
         "492:天空形态",
         "492:陆上形态"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 273,
+        "revision": 127
+      }
     },
     "274": {
-      "status": "pending",
+      "status": "direct",
       "target": "493:",
       "candidates": [
         "493:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 274,
+        "revision": 127
+      }
     },
     "275": {
-      "status": "pending",
+      "status": "direct",
       "target": "647:",
       "candidates": [
         "647:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 275,
+        "revision": 127
+      }
     },
     "276": {
       "status": "pending",
@@ -3579,16 +3978,21 @@
       "note": ""
     },
     "291": {
-      "status": "pending",
+      "status": "direct",
       "target": "266:",
       "candidates": [
         "266:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 291,
+        "revision": 127
+      }
     },
     "292": {
       "status": "pending",
@@ -3615,16 +4019,21 @@
       "note": ""
     },
     "294": {
-      "status": "pending",
+      "status": "direct",
       "target": "269:",
       "candidates": [
         "269:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 294,
+        "revision": 127
+      }
     },
     "295": {
       "status": "pending",
@@ -3819,28 +4228,38 @@
       "note": ""
     },
     "311": {
-      "status": "pending",
+      "status": "direct",
       "target": "636:",
       "candidates": [
         "636:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 311,
+        "revision": 127
+      }
     },
     "312": {
-      "status": "pending",
+      "status": "direct",
       "target": "637:",
       "candidates": [
         "637:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 312,
+        "revision": 127
+      }
     },
     "313": {
       "status": "pending",
@@ -3903,16 +4322,21 @@
       "note": ""
     },
     "318": {
-      "status": "pending",
+      "status": "direct",
       "target": "436:",
       "candidates": [
         "436:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 318,
+        "revision": 127
+      }
     },
     "319": {
       "status": "pending",
@@ -3927,16 +4351,21 @@
       "note": ""
     },
     "320": {
-      "status": "pending",
+      "status": "direct",
       "target": "476:",
       "candidates": [
         "476:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 320,
+        "revision": 127
+      }
     },
     "321": {
       "status": "pending",
@@ -3951,16 +4380,21 @@
       "note": ""
     },
     "322": {
-      "status": "pending",
+      "status": "direct",
       "target": "442:",
       "candidates": [
         "442:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 322,
+        "revision": 127
+      }
     },
     "323": {
       "status": "pending",
@@ -3987,16 +4421,21 @@
       "note": ""
     },
     "325": {
-      "status": "pending",
+      "status": "direct",
       "target": "594:",
       "candidates": [
         "594:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 325,
+        "revision": 127
+      }
     },
     "326": {
       "status": "pending",
@@ -4025,16 +4464,21 @@
       "note": ""
     },
     "328": {
-      "status": "pending",
+      "status": "direct",
       "target": "349:",
       "candidates": [
         "349:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 328,
+        "revision": 127
+      }
     },
     "329": {
       "status": "pending",
@@ -4086,28 +4530,38 @@
       "note": ""
     },
     "333": {
-      "status": "pending",
+      "status": "direct",
       "target": "634:",
       "candidates": [
         "634:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 333,
+        "revision": 127
+      }
     },
     "334": {
-      "status": "pending",
+      "status": "direct",
       "target": "635:",
       "candidates": [
         "635:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 334,
+        "revision": 127
+      }
     },
     "335": {
       "status": "pending",
@@ -4122,40 +4576,55 @@
       "note": ""
     },
     "336": {
-      "status": "pending",
+      "status": "direct",
       "target": "297:",
       "candidates": [
         "297:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 336,
+        "revision": 127
+      }
     },
     "337": {
-      "status": "pending",
+      "status": "direct",
       "target": "404:",
       "candidates": [
         "404:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 337,
+        "revision": 127
+      }
     },
     "338": {
-      "status": "pending",
+      "status": "direct",
       "target": "405:",
       "candidates": [
         "405:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 338,
+        "revision": 127
+      }
     },
     "339": {
       "status": "pending",
@@ -4293,16 +4762,21 @@
       "note": ""
     },
     "350": {
-      "status": "pending",
+      "status": "direct",
       "target": "403:",
       "candidates": [
         "403:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 350,
+        "revision": 127
+      }
     },
     "351": {
       "status": "pending",
@@ -4429,52 +4903,72 @@
       "note": ""
     },
     "361": {
-      "status": "pending",
+      "status": "direct",
       "target": "355:",
       "candidates": [
         "355:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 361,
+        "revision": 127
+      }
     },
     "362": {
-      "status": "pending",
+      "status": "direct",
       "target": "477:",
       "candidates": [
         "477:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 362,
+        "revision": 127
+      }
     },
     "363": {
-      "status": "pending",
+      "status": "direct",
       "target": "407:",
       "candidates": [
         "407:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 363,
+        "revision": 127
+      }
     },
     "364": {
-      "status": "pending",
+      "status": "direct",
       "target": "287:",
       "candidates": [
         "287:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 364,
+        "revision": 127
+      }
     },
     "365": {
       "status": "pending",
@@ -4625,29 +5119,39 @@
       "note": ""
     },
     "377": {
-      "status": "pending",
-      "target": "608:",
+      "status": "direct",
+      "target": "607:",
       "candidates": [
-        "608:"
+        "607:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 377,
+        "revision": 127
+      }
     },
     "378": {
-      "status": "pending",
+      "status": "direct",
       "target": "609:",
       "candidates": [
         "609:",
         "609:超级水晶灯火灵"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 378,
+        "revision": 127
+      }
     },
     "379": {
       "status": "pending",
@@ -4686,16 +5190,21 @@
       "note": ""
     },
     "382": {
-      "status": "pending",
+      "status": "direct",
       "target": "610:",
       "candidates": [
         "610:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 382,
+        "revision": 127
+      }
     },
     "383": {
       "status": "pending",
@@ -4722,16 +5231,21 @@
       "note": ""
     },
     "385": {
-      "status": "pending",
+      "status": "direct",
       "target": "351:",
       "candidates": [
         "351:"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 385,
+        "revision": 127
+      }
     },
     "386": {
       "status": "pending",
@@ -4868,17 +5382,22 @@
       "note": ""
     },
     "397": {
-      "status": "pending",
+      "status": "direct",
       "target": "373:",
       "candidates": [
         "373:",
         "373:超级暴飞龙"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 397,
+        "revision": 127
+      }
     },
     "398": {
       "status": "pending",
@@ -4954,43 +5473,58 @@
       "note": ""
     },
     "404": {
-      "status": "pending",
+      "status": "direct",
       "target": "382:",
       "candidates": [
         "382:",
         "382:原始盖欧卡"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 404,
+        "revision": 127
+      }
     },
     "405": {
-      "status": "pending",
+      "status": "direct",
       "target": "383:",
       "candidates": [
         "383:",
         "383:原始固拉多"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 405,
+        "revision": 127
+      }
     },
     "406": {
-      "status": "pending",
+      "status": "direct",
       "target": "384:",
       "candidates": [
         "384:",
         "384:超级烈空坐"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 406,
+        "revision": 127
+      }
     },
     "407": {
       "status": "pending",
@@ -5031,7 +5565,7 @@
       "note": ""
     },
     "410": {
-      "status": "pending",
+      "status": "direct",
       "target": "386:普通形态",
       "candidates": [
         "386:普通形态",
@@ -5040,10 +5574,15 @@
         "386:防御形态"
       ],
       "confidence": "medium",
-      "reason": "semantic-name",
+      "reason": "reused-reviewed-identity",
       "suggested_mode": "direct",
       "previously_matched": false,
-      "note": ""
+      "note": "",
+      "copied_from": {
+        "rom_md5": "0d9b129f7dd76895f79bb47ad7dec2fe",
+        "species": 410,
+        "revision": 127
+      }
     },
     "411": {
       "status": "pending",

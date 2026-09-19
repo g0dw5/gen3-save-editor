@@ -25,8 +25,8 @@ resume; decisions are stored on disk, not just in browser storage.
 
 先构建命令行工具，再通过 `--rom` 提供自己的 ROM，可重复指定多个游戏。
 启动时从 ROM 读取名称和六围并验证 MD5。保持服务运行，浏览器打开上面的地址即可。
-重启后会读取已保存的审核进度。页面默认只显示原来未能自动关联的待审核条目；取消
-「仅看原来未匹配」可复核原先已匹配的记录。
+重启后会读取已保存的审核进度。页面默认显示原来未能自动关联的条目，以及明确要求单独审核的版本差异条目；取消
+「仅看需人工核对」可复核原先已匹配的记录。
 
 ## Decisions / 审核决定
 
@@ -110,3 +110,9 @@ Tests cover X/Y proposals, cross-ROM isolation, rejection of stale/invalid
 writes, all-or-nothing import validation, persisted progress, undo, explicit
 no-counterpart decisions, candidate search and publishing without unreviewed
 metadata. Browser tests use temporary synthetic configurations, not real reviews.
+
+BW → DP reuse: after comparing both exact ROM catalogs, the 106 shared decisions
+reviewed in BW were copied to DP. Slots 253–261 differ (the nine starter-family
+entries); they retain DP proposals and require separate review, including two
+entries that previously matched automatically. Copy provenance remains in review
+source only, not the generated editor configuration.
