@@ -37,6 +37,10 @@ map preview, not a simulation of animated tiles, weather or runtime map edits.
 边界不同。配置现已分离；测试增加了实际像素断言，不再只验证“能输出 PNG”。
 静态地图不会播放水面动画，也不承诺模拟剧情运行时替换的全部图块。
 
+Map 42-5 was separately investigated after a scrambled-preview report. Its
+native layout/grid/layer and palette outputs match the editor; see the
+[focused evidence and limitations](rocket-map-42-5.md).
+
 ## Trainer abilities and gender / 训练家特性与性别
 
 Constructor `0x4D3F0` uses deterministic PID generation for party formats 0/2.
