@@ -422,7 +422,7 @@ export function ReferenceWindow({
                 >
                   <Sprite catalog={catalog} species={+selected} large />
                   <div>
-                    <Types values={detail.species.types} />
+                    <Types catalog={catalog} values={detail.species.types} />
                     <p className="muted small">
                       {t(
                         catalog.profile.capabilities?.save_edit === false
@@ -666,7 +666,10 @@ export function ReferenceWindow({
                   )}
                 </p>
               ) : (
-                <Types values={[(current as Move).move_type]} />
+                <Types
+                  catalog={catalog}
+                  values={[(current as Move).move_type]}
+                />
               )}
               <details>
                 <summary>{t("evidence")}</summary>

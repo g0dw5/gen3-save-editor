@@ -1,7 +1,7 @@
 import { speciesDisplayName } from "./speciesDisplay";
 import { Sprite } from "./components";
 import { evolutionLabel } from "./referenceLabels";
-import { typeNames, useI18n } from "./i18n";
+import { useI18n } from "./i18n";
 import type { Catalog, SpeciesDetail } from "./types";
 
 export function EvolutionTree({
@@ -13,7 +13,7 @@ export function EvolutionTree({
   catalog: Catalog;
   onNavigate: (id: number) => void;
 }) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const id = detail.species.id;
   const relations = detail.relations ?? {
     species: [id],
@@ -53,7 +53,7 @@ export function EvolutionTree({
               {node(edge.source)}
               <div className="evolution-condition">
                 <span aria-hidden="true">→</span>
-                {evolutionLabel(edge, catalog, typeNames[locale], t)}
+                {evolutionLabel(edge, catalog, catalog.type_names, t)}
               </div>
               {node(edge.target)}
             </div>

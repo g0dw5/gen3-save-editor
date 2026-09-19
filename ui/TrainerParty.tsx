@@ -1,5 +1,5 @@
 import { Sprite, Types } from "./components";
-import { natures, statKeys, typeNames, useI18n } from "./i18n";
+import { statKeys, useI18n } from "./i18n";
 import { hiddenPower } from "./hiddenPower";
 import type { Catalog, Opponent, Snapshot } from "./types";
 
@@ -16,7 +16,7 @@ export function TrainerParty({
   onSpecies: (id: number) => void;
   onAbility: (id: number) => void;
 }) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const party = save?.pokemon.filter((p) => p.location.kind === "party") ?? [];
   const highestLevel = party.length
     ? Math.max(...party.map((p) => p.pokemon.level))
@@ -54,7 +54,7 @@ export function TrainerParty({
                     {level === null ? t("dynamicLevel") : `Lv. ${level}`}
                   </strong>
                 </div>
-                {species && <Types values={species.types} />}
+                {species && <Types catalog={catalog} values={species.types} />}
                 {dynamic && (
                   <div className="small muted">
                     {t(
@@ -93,7 +93,7 @@ export function TrainerParty({
               </div>
               <div>
                 <dt>{t("nature")}</dt>
-                <dd>{g ? natures[locale][g.nature] : t("unresolved")}</dd>
+                <dd>{g ? catalog.natures[g.nature]?.name : t("unresolved")}</dd>
               </div>
               <div>
                 <dt>{t("held_item")}</dt>
@@ -120,7 +120,7 @@ export function TrainerParty({
                             {" "}
                             ·{" "}
                             {hp
-                              ? `${typeNames[locale][hp.type]} · ${t("power")} ${hp.power}`
+                              ? `${catalog.type_names[hp.type]} · ${t("power")} ${hp.power}`
                               : t("hiddenPowerUnknown")}
                           </>
                         )}

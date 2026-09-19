@@ -249,31 +249,38 @@ pub fn rom_level(rom: &Rom, growth: u8, xp: u32) -> Result<u8> {
     }
     Ok(rom.profile.max_level)
 }
-pub fn stats(base: [u8; 6], ivs: [u8; 6], evs: [u8; 6], level: u8, nature: u8) -> [u16; 6] {
-    let mut out = [0; 6];
-    for i in 0..6 {
+pub fn stats_with_changes(
+    base: [u8; 6],
+    ivs: [u8; 6],
+    evs: [u8; 6],
+    level: u8,
+    changes: [i8; 5],
+    product_u16: bool,
+) -> [u16; 6] {
+    std::array::from_fn(|i| {
         let x = ((2 * base[i] as u32 + ivs[i] as u32 + evs[i] as u32 / 4) * level as u32) / 100;
-        out[i] = if i == 0 {
+        if i == 0 {
             if base[0] == 1 {
                 1
             } else {
                 (x + level as u32 + 10) as u16
             }
         } else {
-            let up = nature / 5;
-            let down = nature % 5;
-            let v = x + 5;
-            if up != down && i as u8 == up + 1 {
-                (v * 110 / 100) as u16
-            } else if up != down && i as u8 == down + 1 {
-                (v * 90 / 100) as u16
-            } else {
-                v as u16
+            let percent = (100 + 10 * changes[i - 1] as i32) as u32;
+            if changes[i - 1] == 0 {
+                return (x + 5) as u16;
             }
-        };
-    }
-    out
+            let product = (x + 5) * percent;
+            let product = if product_u16 {
+                product & 0xffff
+            } else {
+                product
+            };
+            (product / 100) as u16
+        }
+    })
 }
+
 pub fn decode(raw: &[u8], rom: &Rom) -> Result<Pokemon> {
     let c = unpack(raw)?;
     let pid = u32(raw, 0)?;
@@ -342,7 +349,14 @@ pub fn decode(raw: &[u8], rom: &Rom) -> Result<Pokemon> {
         gender: gender(s.gender_ratio, pid).into(),
         shiny: shiny(pid, ot_id),
         level: lv,
-        stats: stats(s.stats, ivs, evs, lv, effective_nature),
+        stats: stats_with_changes(
+            s.stats,
+            ivs,
+            evs,
+            lv,
+            rom.nature_changes(effective_nature)?,
+            rom.profile.nature_product_u16,
+        ),
         current_hp: if raw.len() == 100 {
             Some(u16(raw, 86)?)
         } else {

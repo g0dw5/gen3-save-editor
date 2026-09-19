@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { X, GripHorizontal } from "lucide-react";
 import { api } from "./api";
 import { SearchSelect, type SelectProps } from "./SearchSelect";
-import { useI18n, typeNames } from "./i18n";
+import { useI18n } from "./i18n";
 import type { Catalog } from "./types";
 
 const sprites = new Map<string, Promise<string>>();
@@ -55,13 +55,18 @@ export function Sprite({
     </span>
   );
 }
-export function Types({ values }: { values: number[] }) {
-  const { locale } = useI18n();
+export function Types({
+  catalog,
+  values,
+}: {
+  catalog: Catalog;
+  values: number[];
+}) {
   return (
     <span className="type-tags">
       {[...new Set(values)].map((v) => (
         <span className={`type-tag type-${v}`} key={v}>
-          {typeNames[locale][v] ?? `#${v}`}
+          {catalog.type_names[v] ?? `#${v}`}
         </span>
       ))}
     </span>

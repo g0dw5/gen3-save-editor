@@ -13,13 +13,7 @@ import { romOption, itemOption } from "./names";
 import { hiddenPower } from "./hiddenPower";
 import { HiddenPowerSummary } from "./HiddenPowerSummary";
 import { PokemonOrigin, PokemonAdvanced } from "./PokemonMetadata";
-import {
-  useI18n,
-  natures,
-  statKeys,
-  typeNames,
-  moveCategoryNames,
-} from "./i18n";
+import { useI18n, statKeys, moveCategoryNames } from "./i18n";
 import { NumberField, SelectField, Sprite, Toggle, Types } from "./components";
 import type {
   Catalog,
@@ -88,8 +82,7 @@ export function PokemonEditor({
       : patch.pid !== undefined
         ? merged.pid % 25
         : merged.nature;
-  const natureUp = Math.floor(effectiveNature / 5) + 1;
-  const natureDown = (effectiveNature % 5) + 1;
+  const natureChanges = catalog.natures[effectiveNature]?.stat_changes ?? [];
   const metadataProps = {
     pokemon: merged,
     catalog,
@@ -146,9 +139,9 @@ export function PokemonEditor({
         const isHiddenPower = m.id === hpRules?.move_id;
         const moveType = isHiddenPower
           ? hp
-            ? typeNames[locale][hp.type]
+            ? catalog.type_names[hp.type]
             : t("unresolved")
-          : (typeNames[locale][m.move_type] ?? "?");
+          : (catalog.type_names[m.move_type] ?? "?");
         const power = isHiddenPower ? (hp?.power ?? "?") : m.power || "—";
         return {
           ...romOption(m),
@@ -225,7 +218,7 @@ export function PokemonEditor({
                 {t("currentForm")} · {currentForm}
               </p>
             )}
-            <Types values={species?.types ?? []} />
+            <Types catalog={catalog} values={species?.types ?? []} />
           </div>
         </div>
         <div className="editor-tabs">
@@ -289,15 +282,15 @@ export function PokemonEditor({
                     change(hasNatureOverride ? "nature_override" : "nature", +v)
                   }
                   options={[
-                    ...natures[locale].map((label, value) => ({
-                      value,
-                      label,
+                    ...catalog.natures.map(({ id, name }) => ({
+                      value: id,
+                      label: name,
                     })),
                     ...(hasNatureOverride
                       ? [
                           {
                             value: 26,
-                            label: `${t("pidNature")} · ${natures[locale][merged.pid % 25]}`,
+                            label: `${t("pidNature")} · ${catalog.natures[merged.pid % 25]?.name}`,
                           },
                         ]
                       : []),
@@ -350,8 +343,10 @@ export function PokemonEditor({
           {tab === "stats" && (
             <>
               <p className="nature-summary">
-                {t("nature")} · {natures[locale][effectiveNature]}
-                {natureUp === natureDown ? ` · ${t("neutralNature")}` : ""}
+                {t("nature")} · {catalog.natures[effectiveNature]?.name}
+                {natureChanges.every((v) => v === 0)
+                  ? ` · ${t("neutralNature")}`
+                  : ""}
               </p>
               <table className="stat-table">
                 <thead>
@@ -367,7 +362,7 @@ export function PokemonEditor({
                     <tr key={key}>
                       <th>
                         {t(key)}
-                        {natureUp !== natureDown && i === natureUp && (
+                        {i > 0 && natureChanges[i - 1] === 1 && (
                           <small
                             className="nature-modifier increase"
                             aria-label={`${t(key)} ${t("natureIncrease")}`}
@@ -375,7 +370,7 @@ export function PokemonEditor({
                             ↑ 10%
                           </small>
                         )}
-                        {natureUp !== natureDown && i === natureDown && (
+                        {i > 0 && natureChanges[i - 1] === -1 && (
                           <small
                             className="nature-modifier decrease"
                             aria-label={`${t(key)} ${t("natureDecrease")}`}

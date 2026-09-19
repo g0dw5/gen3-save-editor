@@ -8,6 +8,23 @@ bilingual file.
 首次公开发布版本为 **0.1.5**，不追记此前的开发版本。0.1.6、0.1.7 按工程提交补记，
 不代表这些构建的对外发布日期。每次发布包均附带本中英文日志。
 
+## 0.2.1 — Unreleased / 未发布
+
+Keep this development version until the user requests release packaging.
+开发期间保持此版本号，待明确要求后再制作发布包。
+
+- Read nature and type names from each loaded ROM across Pokémon editing,
+  trainer parties, move prefixes, Hidden Power and evolution conditions. Keep
+  native names in both UI languages; remove the shared bundled name lists.
+- 性格、属性名称改为实时读取当前 ROM，覆盖宝可梦编辑、训练家队伍、招式前缀、
+  觉醒力量和进化条件。西火可搜索“内敛”，漆黑保留本作译名；切换界面语言不
+  覆盖游戏原名，移除原有内置名称列表。
+- Read nature stat changes from ROM and share them between calculation and UI
+  markers. Preserve BW/DP's native 16-bit multiplication behavior separately
+  from Rocket, verified against all 25 natures in each native engine.
+- 性格能力修正与 ↑↓ 标识共用 ROM 表；区分漆黑性格乘法的 16 位截断和西火规则，
+  修复高能力值边界的计算差异，逐版交叉验证全部 25 种性格。
+
 ## 0.2.0 — 2026-09-19
 
 Updated in place without a version bump: shared editing for Dark Phantom BW/DP

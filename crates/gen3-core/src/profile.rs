@@ -44,6 +44,12 @@ pub struct Profile {
     pub label: &'static str,
     pub md5: &'static str,
     pub size: usize,
+    /// Native display strings and signed stat changes, indexed by nature ID.
+    pub nature_names: usize,
+    pub nature_effects: usize,
+    /// The Emerald hook truncates the product before division; Rocket does not.
+    pub nature_product_u16: bool,
+    pub type_names: Table,
     pub move_names: SplitText,
     pub move_descriptions: usize,
     pub ability_names: SplitText,
@@ -204,6 +210,14 @@ pub const EMERALD: SaveLayout = SaveLayout {
     coins: 0x494,
 };
 pub const BW: Profile = Profile {
+    nature_names: 0x61cb50,
+    nature_effects: 0x31e818,
+    nature_product_u16: true,
+    type_names: Table {
+        offset: 0x31ae38,
+        count: 18,
+        stride: 7,
+    },
     formats: crate::adapter::RomFormats::GEN3,
     capabilities: crate::adapter::Capabilities::DARK_PHANTOM,
     ability_count: 151,
@@ -379,6 +393,14 @@ pub const DP: Profile = Profile {
     ..BW
 };
 pub const ROCKET: Profile = Profile {
+    nature_names: 0xd052ec,
+    nature_effects: 0x5b335c,
+    nature_product_u16: false,
+    type_names: Table {
+        offset: 0x5a6480,
+        count: 19,
+        stride: 10,
+    },
     id: "rocket-21-zh",
     label: "西班牙火箭队 2.1 汉化版",
     md5: "59c658a1081f542086de1060bb65f0b3",

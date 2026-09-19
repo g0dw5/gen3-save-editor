@@ -31,9 +31,10 @@ zero ROM-specific configuration:
   lookup. Do not assume they apply to a new engine without native verification.
 - `data/charmap.txt` is a 61,903-byte byte-to-Unicode mapping, not glyph artwork or
   a Pokémon/name database. ROM glyph pixels do not identify Unicode by themselves.
-- UI translations include field labels, type/nature enums and readable engine
-  conditions. They do not replace ROM item/move/Pokémon names or add official-name
-  aliases to editing searches.
+- UI translations include field labels and readable engine conditions. Nature
+  and type names now come from the active ROM (corrected in 0.2.1; the original
+  audit incorrectly treated these as UI enums). UI translations do not replace
+  ROM content or add official-name aliases to editing searches.
 - Test fixtures and assertions intentionally contain known values; they are not
   runtime fallbacks and are excluded from release binaries/assets.
 

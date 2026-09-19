@@ -18,6 +18,8 @@ def species(identifier):
 
 
 CATALOG = {
+    "natures": [{"id": i, "name": f"Nature {i}", "stat_changes": [0]*5} for i in range(25)],
+    "type_names": [f"Type {i}" for i in range(19)],
     "profile": {"id": "synthetic", "label": "Synthetic", "md5": "test", "size": 0},
     "species": [species(1), species(2)], "moves": [], "items": [],
     "abilities": [], "met_locations": [],

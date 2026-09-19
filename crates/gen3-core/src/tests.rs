@@ -10,12 +10,42 @@ use crate::{
 };
 use std::sync::OnceLock;
 
+/// Synthetic labels deliberately differ from every supported game's names.
+fn label_fixture(b: &mut [u8], p: profile::Profile) {
+    let codec = Codec::new();
+    for n in 0..25 {
+        let address = 0x18000 + n * 64;
+        put32(b, p.nature_names + n * 4, 0x08000000 + address as u32);
+        b[address..address + 64].copy_from_slice(&codec.encode(&format!("NATURE{n}"), 64).unwrap());
+        for stat in 0..5 {
+            b[p.nature_effects + n * 5 + stat] = if n / 5 == n % 5 {
+                0
+            } else if stat == n / 5 {
+                1
+            } else if stat == n % 5 {
+                255
+            } else {
+                0
+            };
+        }
+    }
+    for id in 0..p.type_names.count {
+        let address = p.type_names.offset + id * p.type_names.stride;
+        b[address..address + p.type_names.stride].copy_from_slice(
+            &codec
+                .encode(&format!("T{id}"), p.type_names.stride)
+                .unwrap(),
+        );
+    }
+}
+
 fn rom() -> Rom {
     static ROM: OnceLock<Rom> = OnceLock::new();
     ROM.get_or_init(|| {
         let mut b = vec![0; 0x2000000];
         let p = profile::BW;
         let codec = Codec::new();
+        label_fixture(&mut b, p);
         if let Some(table) = p.experience_table {
             for growth in 0..6 {
                 for level in 0..=100 {
@@ -135,11 +165,18 @@ fn crypto_all_permutations_and_known_checksum() {
 #[test]
 fn known_stat_and_growth_vectors() {
     assert_eq!(
-        pokemon::stats([45, 49, 49, 45, 65, 65], [31; 6], [0; 6], 50, 0),
+        pokemon::stats_with_changes([45, 49, 49, 45, 65, 65], [31; 6], [0; 6], 50, [0; 5], true),
         [120, 69, 69, 65, 85, 85]
     );
     assert_eq!(
-        pokemon::stats([45, 49, 49, 45, 65, 65], [31; 6], [0; 6], 50, 3),
+        pokemon::stats_with_changes(
+            [45, 49, 49, 45, 65, 65],
+            [31; 6],
+            [0; 6],
+            50,
+            [1, 0, 0, -1, 0],
+            true
+        ),
         [120, 75, 69, 65, 76, 85]
     );
     for (g, total) in [
@@ -1576,6 +1613,7 @@ fn adapter_rom(p: profile::Profile) -> Rom {
         return r;
     }
     let mut b = vec![0; p.size];
+    label_fixture(&mut b, p);
     if let Some(table) = p.experience_table {
         for growth in 0..table.count {
             for level in 0..=p.max_level {
@@ -2321,5 +2359,58 @@ fn relation_graph_uses_runtime_tables_and_does_not_expand_legal_ancestry_from_na
             }
             assert_eq!(r.form_families().err().unwrap().code, "form_terminator");
         }
+    }
+}
+
+#[test]
+fn runtime_labels_and_nature_effects_follow_each_rom_without_cached_fallbacks() {
+    for profile in profile::PROFILES {
+        let mut r = adapter_rom(profile);
+        let original = r.nature(15).unwrap();
+        assert_eq!(original.name, "NATURE15");
+        assert_eq!(original.stat_changes, [-1, 0, 0, 1, 0]);
+        let raw = pokemon::create(&r, 1, 1, "TEST", 50, 15).unwrap();
+        let before = pokemon::decode(&raw, &r).unwrap();
+        let nature = before.effective_nature;
+        let name = r.codec.encode("CUSTOM", 64).unwrap();
+        let data = std::sync::Arc::make_mut(&mut r.data);
+        data[0x18000 + 15 * 64..0x18000 + 16 * 64].copy_from_slice(&name);
+        data[profile.nature_effects + nature as usize * 5
+            ..profile.nature_effects + nature as usize * 5 + 5]
+            .copy_from_slice(&[0, 1, 0, 0, 255]);
+        // A newly read catalog must reflect ROM changes; no locale/profile name fallback.
+        let catalog = r.catalog().unwrap();
+        assert_eq!(catalog.natures[15].name, "CUSTOM");
+        assert_eq!(catalog.type_names[0], "T0");
+        assert_eq!(catalog.type_names.len(), profile.type_names.count);
+        let after = pokemon::decode(&raw, &r).unwrap();
+        assert_eq!(after.stats[0], before.stats[0]);
+        assert!(after.stats[2] > before.stats[2]);
+        assert!(after.stats[5] < before.stats[5]);
+        assert_eq!(raw.len(), 80);
+        assert!(r.nature(25).is_err());
+        put32(
+            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+            profile.nature_names,
+            0,
+        );
+        assert!(r.nature(0).is_err());
+    }
+}
+
+#[test]
+fn nature_product_width_matches_each_native_engine() {
+    for p in profile::PROFILES {
+        let modified = pokemon::stats_with_changes(
+            [255; 6],
+            [31; 6],
+            [252; 6],
+            100,
+            [1, 0, 0, 0, 0],
+            p.nature_product_u16,
+        );
+        // Unmodified attack is 609. The BW/DP engine truncates 609*110 to u16.
+        assert_eq!(modified[1], if p.nature_product_u16 { 14 } else { 669 });
+        assert_eq!(modified[2], 609);
     }
 }

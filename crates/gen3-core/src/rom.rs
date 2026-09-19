@@ -139,7 +139,16 @@ pub struct EditorRules {
     pub contest_ranks: [u8; 5],
 }
 #[derive(Serialize)]
+pub struct Nature {
+    pub id: u8,
+    pub name: String,
+    /// Attack, Defense, Speed, Sp. Attack, Sp. Defense; -1/0/+1.
+    pub stat_changes: [i8; 5],
+}
+#[derive(Serialize)]
 pub struct Catalog {
+    pub natures: Vec<Nature>,
+    pub type_names: Vec<String>,
     pub form_families: Vec<crate::relations::FormFamily>,
     pub battle_forms: Vec<crate::forms::BattleForm>,
     pub editor_rules: EditorRules,
@@ -346,8 +355,37 @@ impl Rom {
             description: self.ptr_text(d),
         })
     }
+    pub fn nature_changes(&self, id: u8) -> Result<[i8; 5]> {
+        if id >= 25 {
+            return Err(err("nature_id", id));
+        }
+        let row = bytes(&self.data, self.profile.nature_effects + id as usize * 5, 5)?;
+        let changes = std::array::from_fn(|i| row[i] as i8);
+        if changes.iter().any(|v| !(-1..=1).contains(v)) {
+            return Err(err("nature_effect", id));
+        }
+        Ok(changes)
+    }
+    pub fn nature(&self, id: u8) -> Result<Nature> {
+        let stat_changes = self.nature_changes(id)?;
+        let address = pointer(&self.data, self.profile.nature_names + id as usize * 4)?;
+        Ok(Nature {
+            id,
+            name: self.cstring(address),
+            stat_changes,
+        })
+    }
     pub fn catalog(&self) -> Result<Catalog> {
         Ok(Catalog {
+            natures: (0..25).map(|id| self.nature(id)).collect::<Result<_>>()?,
+            type_names: (0..self.profile.type_names.count)
+                .map(|id| {
+                    self.text(
+                        self.profile.type_names.offset + id * self.profile.type_names.stride,
+                        self.profile.type_names.stride,
+                    )
+                })
+                .collect::<Result<_>>()?,
             form_families: self.form_families()?,
             battle_forms: self.all_battle_forms()?,
             profile: self.profile,

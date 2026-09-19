@@ -81,3 +81,13 @@ This exception does not authorize bundling ROM names, stats, sprites or catalogs
 用户明确允许：宝可梦与官方条目的关联采用游戏级独立配置，先由助手预填候选，再由
 用户审核。审核页独立于修改器，用于生产修改器加载的配置；超梦 X/Y 等形态应分别
 关联。待审核建议不能冒充已确认结果，也不能据此扩大内置 ROM 内容的范围。
+
+## Current development version
+
+User instruction recorded on 2026-09-19: keep the development version at
+**0.2.1** until the user explicitly requests a release package. Accumulate changes
+and bilingual changelog entries under the unreleased 0.2.1 section; do not bump
+the version again or build release installers without that request.
+
+当前开发版本固定为 **0.2.1**。用户明确要求打发布包之前，不继续递增版本号，
+不生成发布安装包；后续改动汇总到 0.2.1 的未发布日志中。

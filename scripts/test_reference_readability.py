@@ -57,7 +57,7 @@ def main():
             detail = dialog.locator('.reference-detail')
             expect(detail).to_contain_text('Lv. 90' if locale == 'en' else '达到 90 级')
             expect(detail).to_contain_text('Test medicine')
-            expect(detail).to_contain_text('Fairy' if locale == 'en' else '妖精')
+            expect(detail).to_contain_text('Type 18')
             assert '"method"' not in detail.inner_text()
             tabs = dialog.locator('.reference-tabs')
             tabs.get_by_role('button', name='Moves' if locale == 'en' else '招式', exact=True).click()

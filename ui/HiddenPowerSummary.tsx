@@ -22,7 +22,7 @@ export function HiddenPowerSummary({
         </strong>
         {value ? (
           <>
-            <Types values={[value.type]} />
+            <Types catalog={catalog} values={[value.type]} />
             <span>
               {t("power")} · {value.power}
             </span>

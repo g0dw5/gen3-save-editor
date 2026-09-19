@@ -61,6 +61,8 @@ export interface Ability {
   description: string;
 }
 export interface Catalog {
+  natures: { id: number; name: string; stat_changes: number[] }[];
+  type_names: string[];
   form_families?: { species: number[]; offset: number }[];
   battle_forms?: NonNullable<SpeciesDetail["battle_forms"]>;
   editor_rules?: {
