@@ -7,6 +7,11 @@ ROM fingerprint: MD5 `59c658a1081f542086de1060bb65f0b3`, 33,554,432 bytes.
 GBA title/code: `POKEMON EMER` / `BPEE`. Findings apply to these exact bytes,
 not every release carrying the Team Rocket 2.1 name.
 
+Follow-up: [battle forms and persistent state](rocket-21-battle-forms.md) verifies
+Mega/Z behavior and identifies additional header packing and effective-nature
+differences. That report extends this initial assessment; it still does not
+enable a save writer. 后续已进一步验证战斗形态、头部布局及实际性格字段。
+
 ## Conclusion / 结论
 
 The application architecture can be retained, but this is not an offset-only

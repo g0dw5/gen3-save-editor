@@ -5,6 +5,10 @@ Read-only assessment: 2026-09-19. ROM MD5:
 These findings describe this exact binary, not all Team Rocket releases.
 No ROM, save, full text table, or graphics are distributed here.
 
+Follow-up: [battle forms and persistence](rocket-21-battle-forms.md) verifies
+native Mega restoration and Z-move eligibility, and records the limits of the
+Dynamax/Tera evidence. 后续验证已从表存在推进到部分原生执行路径。
+
 ## Counts / 数量口径
 
 | Dataset | Observed count | Meaning / 解释 |
