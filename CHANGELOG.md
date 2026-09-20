@@ -13,6 +13,12 @@ bilingual file.
 Keep this development version until the user requests release packaging.
 开发期间保持此版本号，待明确要求后再制作发布包。
 
+- Show each internal Pokémon entry once in the evolution viewer. Preserve all
+  distinct evolution conditions, fold additional forms, and avoid re-listing
+  base forms already shown in evolution or battle relationships.
+- 进化树按内部编号去重展示，每个条目只保留一张卡片；保留不同进化条件，其他
+  形态折叠展示，避免进化、战斗形态及形态家族重复列出同一本体。
+
 - Read nature and type names from each loaded ROM across Pokémon editing,
   trainer parties, move prefixes, Hidden Power and evolution conditions. Keep
   native names in both UI languages; remove the shared bundled name lists.

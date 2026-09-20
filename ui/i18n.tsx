@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 export const en = {
   evolutionTree: "Evolution tree",
   evolutionTreeHelp:
-    "Click either Pokémon to browse back, forward or along another branch. Arrows show the direction of evolution, not a way to devolve.",
+    "Each Pokémon appears once. Its card lists incoming evolution conditions; other forms are collapsible. Click a card or source name to navigate.",
   noEvolutionRecorded:
     "No ordinary evolution is recorded in the parsed ROM tables.",
   formNormal: "Normal Forme",
@@ -566,7 +566,7 @@ export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
   evolutionTree: "进化树",
   evolutionTreeHelp:
-    "点击任意宝可梦，可向前、向后或沿分支查看。箭头表示进化方向，不表示游戏中可以退化。",
+    "每个编号只显示一张卡片，下方列出进化来源与条件；其他形态可展开。点击卡片或来源名称跳转查看。",
   noEvolutionRecorded: "已解析的 ROM 表中没有普通进化记录。",
   formNormal: "普通形态",
   formAttack: "攻击形态",

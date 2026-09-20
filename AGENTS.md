@@ -82,12 +82,13 @@ This exception does not authorize bundling ROM names, stats, sprites or catalogs
 用户审核。审核页独立于修改器，用于生产修改器加载的配置；超梦 X/Y 等形态应分别
 关联。待审核建议不能冒充已确认结果，也不能据此扩大内置 ROM 内容的范围。
 
-## Current development version
+## Release workflow
 
-User instruction recorded on 2026-09-19: keep the development version at
-**0.2.1** until the user explicitly requests a release package. Accumulate changes
-and bilingual changelog entries under the unreleased 0.2.1 section; do not bump
-the version again or build release installers without that request.
+Keep version-specific status and release details in package manifests and the
+changelog, not in this project memory. When the user asks to hold a development
+version, accumulate changes under that unreleased version until they request
+release packaging. Do not bump versions or build release installers implicitly.
 
-当前开发版本固定为 **0.2.1**。用户明确要求打发布包之前，不继续递增版本号，
-不生成发布安装包；后续改动汇总到 0.2.1 的未发布日志中。
+版本号、当前发布状态等具体信息放在工程版本配置和更新日志中，不写入本文件。
+用户要求保持开发版本时，后续改动持续汇总到该未发布版本；明确要求打包前，
+不自行递增版本号或生成发布安装包。

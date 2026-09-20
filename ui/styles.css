@@ -2081,12 +2081,24 @@ summary {
 .evolution-tree h4 {
   margin: 20px 0 8px;
 }
-.evolution-edge {
+.evolution-cards {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(65px, 1fr) minmax(0, 1fr);
-  gap: 6px;
-  align-items: center;
-  padding: 8px 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 10px;
+}
+.evolution-card {
+  min-width: 0;
+}
+.evolution-forms {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px;
+}
+.evolution-forms > summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
 }
 .evolution-node {
   width: 100%;
@@ -2120,28 +2132,19 @@ summary {
   font-size: 9px;
 }
 .evolution-condition {
-  text-align: center;
+  display: grid;
+  gap: 3px;
+  padding: 6px 4px;
   font-size: 10px;
   color: var(--muted);
   overflow-wrap: anywhere;
 }
-.evolution-condition > span {
-  display: block;
-  font-size: 18px;
-  margin-bottom: 4px;
-  color: var(--accent);
+.evolution-condition .link-button {
+  text-align: left;
+  font-size: inherit;
 }
 .name-edge .evolution-node {
   border-style: dashed;
-}
-.form-family-nodes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.form-family-nodes > div {
-  min-width: 115px;
-  flex: 1;
 }
 
 .pokemon-form-label {

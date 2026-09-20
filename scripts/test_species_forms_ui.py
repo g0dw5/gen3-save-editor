@@ -38,8 +38,8 @@ def main():
         dialog.locator('.reference-rows button').filter(has_text='1128代欧奇希斯').click()
         expect(dialog.locator('.reference-detail h2')).to_contain_text('攻击形态')
         for label in ['普通形态','攻击形态','防御形态','速度形态']:
-            expect(dialog.locator('.form-family-nodes')).to_contain_text(label)
-        dialog.locator('.form-family-nodes button').filter(has_text='防御形态').click();expect(dialog.locator('.reference-detail h2')).to_contain_text('防御形态')
+            expect(dialog.locator('.evolution-tree')).to_contain_text(label)
+        dialog.locator('.evolution-tree .evolution-node').filter(has_text='防御形态').click();expect(dialog.locator('.reference-detail h2')).to_contain_text('防御形态')
         dialog.locator('.reference-rows button').filter(has_text='920代欧奇希斯').click();expect(dialog.locator('.reference-detail h2')).to_contain_text('同名条目 #920')
         assert 'action' not in calls and before==save and not errors,(calls,errors)
         b.close()
