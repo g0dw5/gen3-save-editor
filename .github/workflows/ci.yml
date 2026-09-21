@@ -23,6 +23,13 @@ jobs:
       - run: npm run format:check
       - run: npm run build
       - run: python3 scripts/test_official_stats.py
+      - run: python3 scripts/release.py check
+      - run: python3 scripts/test_release.py
+      - run: python3 scripts/test_species_mapping_review.py
+      - run: node scripts/test_species_mappings.mjs
+      - run: node scripts/test_species_forms.mjs
+      - run: node scripts/test_evolution_graph.mjs
+      - run: node scripts/test_hidden_power.mjs
       - name: Install browser regression tools
         run: |
           python3 -m pip install playwright==1.60.0

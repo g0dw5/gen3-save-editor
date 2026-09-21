@@ -10,6 +10,11 @@ bilingual file.
 
 ## 0.2.1 — Unreleased / 未发布
 
+- Maintain annotated release tags, draft GitHub Releases with Windows/macOS
+  artifacts, source/version checks, bilingual documentation and SHA-256 hashes.
+- 增加版本标签、双平台 Release 草稿、源码版本校验、双语文档及 SHA-256；
+  GitHub Release 从已有 0.2.0 安装包开始维护，开发版仍未公开。
+
 Keep this development version until the user requests release packaging.
 开发期间保持此版本号，待明确要求后再制作发布包。
 

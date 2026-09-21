@@ -1,5 +1,7 @@
 # 三代改版修改器 · Gen III ROM Hack Editor
 
+下载：[GitHub Releases](https://github.com/g0dw5/gen3-save-editor/releases/latest)。选择 Windows 64 位或 Apple Silicon Mac 安装包；附件包含程序与说明，不包含 ROM 或存档。
+
 [English](README.md)
 
 面向用户自备三代改版 ROM 的本地桌面修改器。Rust 负责解析和事务读写，React

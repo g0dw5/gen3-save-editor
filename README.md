@@ -1,5 +1,7 @@
 # Gen III ROM Hack Editor
 
+Downloads: [GitHub Releases](https://github.com/g0dw5/gen3-save-editor/releases/latest). Choose Windows x64 or macOS Apple Silicon. Release assets contain the application and documentation, not ROMs or saves.
+
 [简体中文](README.zh-CN.md)
 
 A local desktop editor for user-supplied Gen III Pokémon ROM hacks and battery
