@@ -14,6 +14,7 @@ def main():
     catalog={'profile':{'id':'synthetic','label':'Test','md5':md5,'size':0},'species':[species(1),species(2)],'moves':moves,
              'items':[{'id':i,'name':name,'tm_move':tm} for i,name,tm in [(0,'',None),(178,'剧毒珠',None),(200,'剩饭',None),(289,'技能机器01',206)]],
              'abilities':[], 'met_locations':[{'id':i,'name':name} for i,name in [(1,'Ancestor route'),(2,'Current cave'),(3,'Sibling forest'),(4,'Hatch town'),(99,'Legacy place')]]}
+    catalog['type_names'] = ['ROM normal']
     rows=[pokemon(1,{'kind':'party','slot':0}),pokemon(2,{'kind':'box','box_index':0,'slot':0})]
     rows[0]['pokemon'].update({'moves':[206,0,0,0],'met_location':99})
     save={'trainer':{'name':'TEST','gender':0,'tid':1,'sid':0,'hours':0,'minutes':0,'seconds':0,'money':0,'coins':0,'registered_item':0},
@@ -57,7 +58,7 @@ def main():
         tabs.get_by_role('button',name='Moves',exact=True).click()
         move=page.get_by_role('combobox',name='Move 1',exact=True)
         move.fill('香甜花蜜');expect(page.locator('.select-popup').get_by_role('option')).to_have_count(1)
-        expect(page.locator('.select-popup').get_by_role('option')).to_contain_text('【Status】【Normal】')
+        expect(page.locator('.select-popup').get_by_role('option')).to_contain_text('【Status】【ROM normal】')
         move.evaluate("e=>e.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,isComposing:true}))")
         expect(apply).to_be_disabled()
         move.press('Enter');apply.click();expect(apply).to_be_disabled()

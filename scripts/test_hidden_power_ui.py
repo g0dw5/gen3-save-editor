@@ -81,7 +81,7 @@ def main():
         summary = page.locator('.pokemon-editor .hidden-power-summary')
         apply = page.locator('.editor-submit button[type=submit]')
         tabs.get_by_role('button', name='Stats', exact=True).click()
-        expect(summary).to_contain_text('Dark')
+        expect(summary).to_contain_text('Type 17')
         expect(summary).to_contain_text('70')
         expect(apply).to_be_disabled()
         # Each row contains one IV and one EV input in separate table cells.
@@ -92,14 +92,14 @@ def main():
         tabs.get_by_role('button', name='Moves', exact=True).click()
         expect(summary).to_contain_text('Ice')
         expect(page.get_by_role('combobox', name='Move 1', exact=True)).to_have_value('【Spec.】【Ice】【70】觉醒力量 #237')
-        expect(page.get_by_role('combobox', name='Move 2', exact=True)).to_have_value('【Phys.】【Normal】【50】Move 1 #1')
+        expect(page.get_by_role('combobox', name='Move 2', exact=True)).to_have_value('【Phys.】【Type 0】【50】Move 1 #1')
         apply.click()
         expect(apply).to_be_disabled()
         assert actions == [{'type': 'pokemon', 'location': {'kind': 'party', 'slot': 0},
                             'patch': {'ivs': [31, 30, 30, 31, 31, 31]}}], actions
         page.locator('[data-location="0:0"]').click()
-        expect(summary).to_contain_text('Fighting')
-        expect(page.get_by_role('combobox', name='Move 1', exact=True)).to_have_value('【Spec.】【Fighting】【70】觉醒力量 #237')
+        expect(summary).to_contain_text('Type 1')
+        expect(page.get_by_role('combobox', name='Move 1', exact=True)).to_have_value('【Spec.】【Type 1】【70】觉醒力量 #237')
         tabs.get_by_role('button', name='Stats', exact=True).click()
         ivs.nth(0).fill('32')
         expect(summary).to_contain_text('unknown')
@@ -125,7 +125,7 @@ def main():
         expect(dialog.locator('.reference-detail .type-tag')).to_have_count(0)
         ref_tabs.get_by_role('button', name='Trainers', exact=True).click()
         moves = dialog.locator('.trainer-moves')
-        expect(moves.nth(0)).to_contain_text('觉醒力量 · Dark · Power 70')
+        expect(moves.nth(0)).to_contain_text('觉醒力量 · Type 17 · Power 70')
         expect(moves.nth(1)).to_contain_text('Type / power unknown')
         assert not errors, errors
         assert len(actions) == 1
