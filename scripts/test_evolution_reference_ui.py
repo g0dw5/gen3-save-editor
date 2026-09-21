@@ -60,6 +60,10 @@ def main():
             expect(table.locator('thead th').nth(1)).to_have_text('官方参照')
             expect(table.locator('thead th').nth(2)).to_have_text('当前 ROM')
             tree = dialog.locator('.evolution-tree')
+            cards = tree.locator('.evolution-card')
+            expect(cards).to_have_count(len(names))
+            for identifier in names:
+                expect(tree.locator(f'.evolution-card[data-species="{identifier}"]')).to_have_count(1)
             if profile == 'Rocket fixture':
                 for width in (900, 1440):
                     page.set_viewport_size({'width': width, 'height': 1000})

@@ -102,7 +102,12 @@ def main():
         expect(page.get_by_role('spinbutton', name='Quantity', exact=True)).to_be_enabled()
         page.get_by_role('button', name='ROM reference', exact=True).first.click()
         page.locator('.reference-list button').first.click()
-        expect(page.locator('.evolution-tree .battle-edge')).to_be_visible()
+        tree = page.get_by_role('region', name='Evolution tree', exact=True)
+        expect(tree.get_by_role('heading', name='Battle transformations', exact=True)).to_be_visible()
+        form = tree.locator('.evolution-card[data-species="2"]')
+        expect(form).to_have_count(1)
+        expect(form).to_be_visible()
+        expect(form.locator('.evolution-condition')).to_contain_text('Mega')
         page.locator('.reference-tabs').get_by_role('button', name='Maps', exact=True).click()
         page.wait_for_timeout(100)
         assert len(worlds) == 1 and requests.count('world') == 2

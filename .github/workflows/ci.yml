@@ -52,6 +52,7 @@ jobs:
           python3 scripts/test_search_origins.py
           python3 scripts/test_reference_readability.py
           python3 scripts/test_evolution_reference_ui.py
+          python3 scripts/test_species_forms_ui.py
   desktop:
     strategy:
       fail-fast: false
