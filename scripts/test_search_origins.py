@@ -1,9 +1,10 @@
 """Generated-data browser regression for searchable IDs and origin filtering."""
+import copy
 import json
 import os
 from playwright.sync_api import sync_playwright, expect
 from test_editor_navigation import pokemon
-from test_reference_navigation import species, WORLD
+from test_reference_navigation import CATALOG, species, WORLD
 
 
 def main():
@@ -11,7 +12,7 @@ def main():
     moves=[{'id':i,'name':f'Move{i}','category':0,'move_type':0,'power':40,'pp':10} for i in range(472)]
     for i,name in [(29,'思念头槌'),(206,'刀背打'),(230,'香甜花蜜'),(409,'暗影之刃'),(463,'头槌')]:moves[i]['name']=name
     moves[230].update(category=2, power=0)
-    catalog={'profile':{'id':'synthetic','label':'Test','md5':md5,'size':0},'species':[species(1),species(2)],'moves':moves,
+    catalog={**copy.deepcopy(CATALOG), 'profile':{'id':'synthetic','label':'Test','md5':md5,'size':0},'species':[species(1),species(2)],'moves':moves,
              'items':[{'id':i,'name':name,'tm_move':tm} for i,name,tm in [(0,'',None),(178,'剧毒珠',None),(200,'剩饭',None),(289,'技能机器01',206)]],
              'abilities':[], 'met_locations':[{'id':i,'name':name} for i,name in [(1,'Ancestor route'),(2,'Current cave'),(3,'Sibling forest'),(4,'Hatch town'),(99,'Legacy place')]]}
     catalog['type_names'] = ['ROM normal']
