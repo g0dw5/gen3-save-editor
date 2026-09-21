@@ -44,15 +44,13 @@ jobs:
             curl --fail --silent http://127.0.0.1:5173 > /dev/null && break
             sleep 1
           done
-          python3 scripts/test_adapter_ui.py
-          python3 scripts/test_drag_transactions.py
-          python3 scripts/test_editor_navigation.py
-          python3 scripts/test_reference_navigation.py
-          python3 scripts/test_hidden_power_ui.py
-          python3 scripts/test_search_origins.py
-          python3 scripts/test_reference_readability.py
-          python3 scripts/test_evolution_reference_ui.py
-          python3 scripts/test_species_forms_ui.py
+          failed=0
+          for script in test_adapter_ui test_drag_transactions test_editor_navigation \
+            test_reference_navigation test_hidden_power_ui test_search_origins \
+            test_reference_readability test_evolution_reference_ui test_species_forms_ui; do
+            python3 "scripts/$script.py" || failed=1
+          done
+          exit "$failed"
   desktop:
     strategy:
       fail-fast: false
