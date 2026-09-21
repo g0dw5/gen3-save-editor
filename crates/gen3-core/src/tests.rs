@@ -10,6 +10,201 @@ use crate::{
 };
 use std::sync::OnceLock;
 
+#[test]
+fn contest_api_rejects_stale_rom_and_malformed_values() {
+    use crate::app::{App, Request};
+    let mut app = App {
+        session: Some(Session::new(rom())),
+    };
+    let bad_values = [
+        serde_json::json!([0, null, 0, 0, 0, 0]),
+        serde_json::json!([0, 256, 0, 0, 0, 0]),
+        serde_json::json!([0, -1, 0, 0, 0, 0]),
+        serde_json::json!([0, 1.5, 0, 0, 0, 0]),
+        serde_json::json!([0, 0]),
+    ];
+    for condition in bad_values {
+        let request = Request {
+            command: "contest_check".into(),
+            payload: serde_json::json!({"condition": condition, "nature": 9, "expected_rom_md5": profile::BW.md5}),
+        };
+        assert_eq!(app.dispatch(request).unwrap_err().code, "json");
+    }
+    let request = Request {
+        command: "contest_check".into(),
+        payload: serde_json::json!({"condition": [0, 0, 0, 0, 0, 0], "nature": 9, "expected_rom_md5": profile::ROCKET.md5}),
+    };
+    assert_eq!(app.dispatch(request).unwrap_err().code, "rom_mismatch");
+}
+
+#[test]
+fn contest_feeding_caps_after_the_last_block_and_obeys_gain_direction() {
+    use crate::contest::feed;
+    assert_eq!(
+        feed([0, 250, 0, 0, 0, 254], [0, 20, 0, 0, 0, 30], [0; 5]).unwrap(),
+        [0, 255, 0, 0, 0, 255]
+    );
+    assert_eq!(
+        feed([0, 250, 0, 0, 0, 255], [0, 20, 0, 0, 0, 30], [0; 5])
+            .unwrap_err()
+            .code,
+        "contest_full"
+    );
+    // Equal liked/disliked flavors have zero gain: neither receives a modifier.
+    assert_eq!(
+        feed([0; 6], [0, 0, 0, 25, 25, 20], [0, 0, 0, -1, 1]).unwrap(),
+        [0, 0, 0, 25, 25, 20]
+    );
+    assert_eq!(
+        feed([0; 6], [0, 0, 0, 25, 35, 20], [0, 0, 0, -1, 1]).unwrap(),
+        [0, 0, 0, 25, 39, 20]
+    );
+    assert_eq!(
+        feed([0; 6], [0, 0, 0, 35, 25, 20], [0, 0, 0, -1, 1]).unwrap(),
+        [0, 0, 0, 31, 25, 20]
+    );
+}
+
+#[test]
+fn contest_fields_are_independent_bytes_across_codecs_and_pid_orders() {
+    for profile in profile::PROFILES {
+        let r = adapter_rom(profile);
+        for pid in 0..24 {
+            let before =
+                pokemon::create(&r, 1, 0x12345678, "TEST", 50, 0xb4f35640 / 24 * 24 + pid).unwrap();
+            let condition = [255, 255, 255, 255, 255, 255];
+            let (after, _) = pokemon::edit(
+                &before,
+                &PokemonPatch {
+                    condition: Some(condition),
+                    ..Default::default()
+                },
+                &r,
+                Policy::Standard,
+            )
+            .unwrap();
+            let a = pokemon::checked_unpack_with(&after, profile.save.pokemon_codec).unwrap();
+            let b = pokemon::unpack(&before).unwrap();
+            assert_eq!(&a[..30], &b[..30]);
+            assert_eq!(&a[30..36], &condition);
+            assert_eq!(&a[36..], &b[36..]);
+            assert_eq!(&after[..28], &before[..28]);
+            assert_eq!(&after[30..32], &before[30..32]);
+            assert_eq!(pokemon::decode(&after, &r).unwrap().condition, condition);
+        }
+    }
+    for invalid in [
+        "[0,256,0,0,0,0]",
+        "[0,-1,0,0,0,0]",
+        "[0,null,0,0,0,0]",
+        "[0,1.5,0,0,0,0]",
+        "[0,1,0,0,0]",
+    ] {
+        assert!(
+            serde_json::from_str::<PokemonPatch>(&format!("{{\"condition\":{invalid}}}")).is_err()
+        );
+    }
+}
+
+#[test]
+#[ignore = "requires exact local ROMs and native contest probes"]
+fn contest_matches_native_feeding_and_npc_bounds() {
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_CONTEST_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for name in ["BW", "DP", "ROCKET"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{name}")).unwrap()).unwrap())
+                .unwrap();
+        let entry = probes
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|e| e["profile"] == name)
+            .unwrap();
+        assert_eq!(entry["md5"], r.profile.md5);
+        for case in entry["cases"].as_array().unwrap() {
+            let nature = case["nature"].as_u64().unwrap() as u8;
+            let before: [u8; 6] = serde_json::from_value(case["before"].clone()).unwrap();
+            let block = serde_json::from_value(case["block"].clone()).unwrap();
+            let after: [u8; 6] = serde_json::from_value(case["after"].clone()).unwrap();
+            let result = crate::contest::feed(
+                before,
+                block,
+                crate::contest::preferences(&r, nature).unwrap(),
+            );
+            if before[5] == 255 {
+                assert!(result.is_err());
+                assert_eq!(before, after);
+            } else {
+                assert_eq!(result.unwrap(), after);
+            }
+        }
+        if name == "ROCKET" {
+            assert_eq!(
+                crate::contest::check_npc(&r, 9, [255; 6]).unwrap_err().code,
+                "unsupported_feature"
+            );
+            continue;
+        }
+        let result = crate::contest::check_npc(&r, 9, [255; 6]).unwrap();
+        assert_eq!(result.status, "outside_npc_bound");
+        assert_eq!(result.minimum_sheen_lower_bound, None);
+        assert_eq!(
+            crate::contest::check_npc(&r, 9, [0, 255, 0, 0, 0, 0])
+                .unwrap()
+                .status,
+            "outside_npc_bound"
+        );
+        assert_eq!(
+            crate::contest::check_npc(&r, 9, [0, 255, 0, 0, 0, 227])
+                .unwrap()
+                .status,
+            "not_disproved"
+        );
+        let before = pokemon::create(&r, 328, 1, "TEST", 24, 0xb4f35647).unwrap();
+        let patch = PokemonPatch {
+            condition: Some([0, 255, 0, 0, 0, 0]),
+            contest_scope: Some(crate::contest::ContestScope::Npc),
+            ..Default::default()
+        };
+        assert_eq!(
+            pokemon::edit(&before, &patch, &r, Policy::Standard)
+                .unwrap_err()
+                .code,
+            "contest_npc_unreachable"
+        );
+        let (exception, findings) = pokemon::edit(&before, &patch, &r, Policy::Free).unwrap();
+        assert!(findings.iter().any(|f| f.code == "contest_npc_unreachable"));
+        // Existing exceptional data must not prevent an unrelated edit.
+        let (renamed, _) = pokemon::edit(
+            &exception,
+            &PokemonPatch {
+                nickname: Some("TEST".into()),
+                ..Default::default()
+            },
+            &r,
+            Policy::Standard,
+        )
+        .unwrap();
+        assert_eq!(
+            pokemon::decode(&renamed, &r).unwrap().condition,
+            patch.condition.unwrap()
+        );
+        // Re-read modified table bytes; no cached catalog may override the ROM.
+        let mut modified = r.clone();
+        let config = modified.profile.contest.unwrap().npc_blender.unwrap();
+        std::sync::Arc::make_mut(&mut modified.data)[config.berries + config.flavors_offset + 5] =
+            0;
+        assert!(
+            crate::contest::npc_upper_blocks(&modified, 9).is_err()
+                || crate::contest::npc_upper_blocks(&modified, 9).unwrap()
+                    != crate::contest::npc_upper_blocks(&r, 9).unwrap()
+        );
+    }
+}
+
 /// Synthetic labels deliberately differ from every supported game's names.
 fn label_fixture(b: &mut [u8], p: profile::Profile) {
     let codec = Codec::new();

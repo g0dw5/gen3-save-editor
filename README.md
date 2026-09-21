@@ -37,7 +37,8 @@ See [coverage, verification and extension rules](docs/multi-rom-adapters.md).
 - Keep the party and all 14 boxes visible; switch compact/comfortable density or
   hide the inspector. Search dims nonmatches without moving storage coordinates.
 - Edit identity, nature/shiny/gender, level/experience, IVs/EVs, moves/PP, abilities,
-  held items, origin, eggs, Pokérus, ribbons and contest values.
+  held items, origin, eggs, Pokérus, ribbons and contest values/fullness.
+  See [feeding rules and validation scope](docs/research/contest-condition.md).
 - Search editing fields by names/IDs from the loaded ROM.
   Standard origin choices include the species and its pre-evolutions, with a
   separate hatch source. See [search and origin rules](docs/research/search-and-origins.md).

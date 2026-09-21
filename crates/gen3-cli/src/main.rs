@@ -21,7 +21,7 @@ fn run() -> Result<()> {
         println!("{}", serde_json::to_string_pretty(&v).unwrap());
     };
     if command == "help" {
-        println!("gen3 profiles\ngen3 identify ROM\ngen3 catalog ROM\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]\ngen3 patch-rom ROM EDITS.json OUTPUT.gba");
+        println!("gen3 profiles\ngen3 identify ROM\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]\ngen3 patch-rom ROM EDITS.json OUTPUT.gba");
         return Ok(());
     }
     if command == "profiles" {
@@ -39,6 +39,13 @@ fn run() -> Result<()> {
     let rom = Rom::open(data)?;
     match command {
         "catalog" => print(serde_json::to_value(rom.catalog()?)?),
+        "contest-check" => {
+            let nature = arg(2)?.parse().map_err(|_| err("arguments", "nature ID"))?;
+            let condition: [u8; 6] = serde_json::from_slice(&fs::read(arg(3)?)?)?;
+            print(serde_json::to_value(gen3_core::contest::check_npc(
+                &rom, nature, condition,
+            )?)?);
+        }
         "species" => print(serde_json::to_value(
             rom.detail(
                 arg(2)?

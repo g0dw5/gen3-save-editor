@@ -12,6 +12,7 @@ import { api } from "./api";
 import { romOption, itemOption } from "./names";
 import { hiddenPower } from "./hiddenPower";
 import { HiddenPowerSummary } from "./HiddenPowerSummary";
+import { ContestCondition } from "./ContestCondition";
 import { PokemonOrigin, PokemonAdvanced } from "./PokemonMetadata";
 import { useI18n, statKeys, moveCategoryNames } from "./i18n";
 import { NumberField, SelectField, Sprite, Toggle, Types } from "./components";
@@ -65,6 +66,7 @@ export function PokemonEditor({
   const { t, locale } = useI18n();
   const p = row.pokemon;
   const [patch, setPatch] = useState<Record<string, unknown>>({});
+  const [contestNpc, setContestNpc] = useState(true);
   useLayoutEffect(() => {
     setPatch({});
   }, [p]);
@@ -180,7 +182,11 @@ export function PokemonEditor({
     setPatch((old) => ({ ...old, moves, pps }));
   };
   const submit = async () => {
-    if (await onApply(patch)) {
+    const submitted =
+      patch.condition && contestNpc && catalog.profile.contest?.npc_blender
+        ? { ...patch, contest_scope: "npc" }
+        : patch;
+    if (await onApply(submitted)) {
       setPatch({});
       onDirty(false);
     }
@@ -452,6 +458,17 @@ export function PokemonEditor({
               <p className="muted small">
                 {t("calculated")} → {t("apply")}
               </p>
+              <ContestCondition
+                catalog={catalog}
+                condition={merged.condition}
+                nature={
+                  patch.pid !== undefined ? merged.pid % 25 : merged.nature
+                }
+                npc={contestNpc}
+                free={free}
+                onNpcChange={setContestNpc}
+                onChange={(i, value) => arrayChange("condition", i, value)}
+              />
             </>
           )}
           {tab === "moves" && (
@@ -566,19 +583,6 @@ export function PokemonEditor({
           {tab === "advanced" && (
             <>
               <PokemonAdvanced {...metadataProps} />
-              <h3>{t("condition")}</h3>
-              <div className="field-grid">
-                {["cool", "beauty", "cute", "smart", "tough", "sheen"].map(
-                  (key, i) => (
-                    <NumberField
-                      key={key}
-                      label={t(key)}
-                      value={merged.condition[i]}
-                      onChange={(v) => arrayChange("condition", i, v)}
-                    />
-                  ),
-                )}
-              </div>
             </>
           )}
         </div>

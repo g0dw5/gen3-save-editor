@@ -94,6 +94,10 @@ export interface Catalog {
       move_id: number;
       formula: "gen3_to5" | "gen6_fixed60";
     } | null;
+    contest?: {
+      flavor_preferences: number;
+      npc_blender: object | null;
+    } | null;
   };
   species: Species[];
   moves: Move[];

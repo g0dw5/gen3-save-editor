@@ -120,6 +120,25 @@ impl App {
                 let r = &self.session()?.rom;
                 Ok(serde_json::to_value(r.world()?)?)
             }
+            "contest_check" => {
+                #[derive(Deserialize)]
+                #[serde(deny_unknown_fields)]
+                struct Input {
+                    condition: [u8; 6],
+                    nature: u8,
+                    expected_rom_md5: String,
+                }
+                let p: Input = serde_json::from_value(p)?;
+                let r = &self.session()?.rom;
+                if r.profile.md5 != p.expected_rom_md5 {
+                    return Err(err("rom_mismatch", "contest check"));
+                }
+                Ok(serde_json::to_value(crate::contest::check_npc(
+                    r,
+                    p.nature,
+                    p.condition,
+                )?)?)
+            }
             "fishing_spots" => {
                 let s = self.session()?;
                 Ok(serde_json::to_value(s.rom.fishing_spots(s.save.as_ref())?)?)

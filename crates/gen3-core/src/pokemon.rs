@@ -54,6 +54,9 @@ pub struct Pokemon {
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PokemonPatch {
+    /// Optional necessary-condition check for an ordinary NPC feeding history.
+    /// This is patch metadata, never part of the encrypted Pokémon record.
+    pub contest_scope: Option<crate::contest::ContestScope>,
     pub pid: Option<u32>,
     pub ot_id: Option<u32>,
     pub nickname: Option<String>,
@@ -639,7 +642,24 @@ pub fn edit(
     } else if patch.current_hp.is_some() || patch.status.is_some() {
         return Err(err("party_only", "HP/status"));
     }
-    let warnings = findings(&after, rom)?;
+    let mut warnings = findings(&after, rom)?;
+    if patch.condition.is_some()
+        && patch.contest_scope == Some(crate::contest::ContestScope::Npc)
+        && crate::contest::check_npc(rom, after.nature, after.condition)?.status
+            == "outside_npc_bound"
+    {
+        if policy == Policy::Standard {
+            return Err(err(
+                "contest_npc_unreachable",
+                "outside ordinary NPC feeding bound",
+            ));
+        }
+        warnings.push(finding(
+            "contest_npc_unreachable",
+            "condition",
+            "outside ordinary NPC feeding bound",
+        ));
+    }
     if policy == Policy::Standard {
         // Unknown sources are warnings, never proof of impossibility. Do not make
         // unrelated edits fail because an existing free-mode value is preserved.

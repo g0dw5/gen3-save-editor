@@ -438,7 +438,28 @@ export const en = {
   cute: "Cute",
   smart: "Smart",
   tough: "Tough",
-  sheen: "Sheen",
+  sheen: "Fullness (Sheen)",
+  contestRanges:
+    "Five condition values and fullness each range from 0 to 255. There is no shared total limit.",
+  contestFeedingRule:
+    "Fullness is not calculated from condition values. A Pokéblock adds flavors and feel separately; the final block can cross the fullness cap. No single formula reconstructs feeding history.",
+  contestFull: "Full: this feeding engine refuses further Pokéblocks at 255.",
+  contestCanFeed: "Below 255: the feeding engine still accepts Pokéblocks.",
+  contestNpcCheck: "Check ordinary solo NPC feeding bounds",
+  contestNpcScope:
+    "Assumes conditions start at zero; includes ordinary NPCs and the Blender Master. Excludes link blending, imported Pokémon and event-replaced Enigma Berries. Uses this ROM's berry tables and PID nature.",
+  contestChecking: "Checking feeding bounds…",
+  contestCheckFailed:
+    "Could not check feeding bounds. Applying will retry in the core; no successful check is implied.",
+  contestNotDisproved:
+    "Not ruled out by the bounds. This does not certify a reachable recipe or the lowest possible fullness.",
+  contestUnverified:
+    "Only field ranges are checked here; a normal feeding history has not been verified.",
+  contest_npc_unreachable:
+    "These values exceed the ordinary solo NPC feeding bounds. Adjust condition/fullness, choose the relevant source scope, or explicitly use free editing.",
+  contestNpcFree:
+    "Outside ordinary solo NPC feeding bounds. Free editing will retain these exceptional values.",
+  contest_full: "Already full (255); another Pokéblock cannot be fed.",
   money: "Money",
   coins: "Coins",
   hours: "Hours",
@@ -986,7 +1007,26 @@ export const zh: Record<Key, string> = {
   cute: "可爱",
   smart: "聪明",
   tough: "强壮",
-  sheen: "光泽",
+  sheen: "饱腹度（光泽）",
+  contestRanges: "五项华丽值和饱腹度分别为 0–255，五项之间没有总和上限。",
+  contestFeedingRule:
+    "饱腹度不是由华丽值换算而来。宝可方块分别增加口味对应的华丽值和饱腹度；最后一块可超过剩余额度，再封顶。仅凭六个数值不能还原喂食历史。",
+  contestFull: "已吃满：本作喂食程序在饱腹度 255 时拒绝继续喂食。",
+  contestCanFeed: "未吃满：饱腹度低于 255，喂食程序仍允许继续喂食。",
+  contestNpcCheck: "校验单机 NPC 正常喂食的数值边界",
+  contestNpcScope:
+    "按五项从零开始喂食，包含普通 NPC 和混合名人；不含联机、外来宝可梦及活动自定义树果。读取本 ROM 树果表，采用 PID 性格计算。",
+  contestChecking: "正在校验喂食边界……",
+  contestCheckFailed:
+    "喂食校验暂时失败，应用时将由核心重试；此状态不表示校验通过。",
+  contestNotDisproved:
+    "未被必要条件排除；不代表已经证明存在可达配方，也不代表找到了最低饱腹度。",
+  contestUnverified: "此处仅校验字段范围，尚未确认这些数值能通过正常喂食达到。",
+  contest_npc_unreachable:
+    "这些数值超出单机 NPC 正常喂食的边界。请调整华丽值／饱腹度、选择符合实际来源的校验范围，或明确开启自由编辑。",
+  contestNpcFree:
+    "这些数值超出单机 NPC 正常喂食的边界；自由编辑将保留这一特殊结果。",
+  contest_full: "饱腹度已达 255，不能再喂宝可方块。",
   money: "金钱",
   coins: "代币",
   hours: "小时",

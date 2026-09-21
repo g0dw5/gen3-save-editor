@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.2.1 — Unreleased / 未发布
 
+- Move contest condition to Stats and label Sheen as Fullness. Show feeding
+  saturation and add an optional ROM-backed solo NPC bound check for Dark
+  Phantom BW/DP, enforced in the core with an explicit free-edit override.
+  Passing necessary bounds is not presented as proof of a reachable recipe.
+- 华丽值移至“能力”，将“光泽”明确标为“饱腹度”，展示满值喂食限制；漆黑 BW/DP
+  新增实时读取树果与 NPC 配方的单机喂食边界校验，后端同步校验，自由编辑保留
+  提示。不会把“未被必要条件排除”误称为正常可达，西班牙火箭队不套用漆黑配方。
+
 - Maintain annotated release tags, draft GitHub Releases with Windows/macOS
   artifacts, source/version checks, bilingual documentation and SHA-256 hashes.
 - 增加版本标签、双平台 Release 草稿、源码版本校验、双语文档及 SHA-256；
