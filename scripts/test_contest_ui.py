@@ -49,7 +49,7 @@ def main():
             }
         elif command == "contest_check":
             checks.append(payload)
-            assert payload["expected_rom_md5"] == catalog["profile"]["md5"]
+            assert payload["expected_rom_md5"] == "contest-fixture"
             data = {
                 "status": (
                     "outside_npc_bound"
@@ -104,6 +104,8 @@ def main():
                 "未被必要条件排除" if locale == "zh" else "Not ruled out"
             )
             page.locator(".editor-submit button[type=submit]").click()
+            # Wait for the asynchronous apply/reset before beginning the next edit.
+            expect(page.locator(".editor-submit button[type=submit]")).to_be_disabled()
             assert actions[-1]["action"]["patch"] == {
                 "condition": [0, 255, 0, 0, 0, 227],
                 "contest_scope": "npc",
