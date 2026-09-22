@@ -8,15 +8,20 @@ bilingual file.
 首次公开发布版本为 **0.1.5**，不追记此前的开发版本。0.1.6、0.1.7 按工程提交补记，
 不代表这些构建的对外发布日期。每次发布包均附带本中英文日志。
 
-## 0.2.1 — Unreleased / 未发布
+## 0.2.2 — Unreleased / 未发布
 
 - Add a read-only, exact-ROM cheat window with bilingual guides, scoped verification,
-  copy/export and a shared Rust/CLI generator. First recipe: disable AI input peeking
-  in all modes of Ultimate Emerald 5.5. Its cheat-only ROM context is independent of
-  the editor; Dark Phantom BW/DP and Team Rocket have explicit empty recipe lists.
+  copy/export and a shared Rust/CLI generator. Includes all-mode AI input-peeking
+  suppression for Ultimate Emerald 5.5; walking-encounter suppression, guaranteed
+  wild capture and faster hatching for Dark Phantom BW/DP and Team Rocket;
+  compatible daycare egg production for Team Rocket. Exact-ROM native mGBA tests
+  cover original-byte restoration, encrypted individuals and feature guard conditions.
+  The cheat-only ROM context stays independent of the editor session.
 - 新增只读金手指窗口，按完整 ROM 指纹匹配，提供中英文使用说明、验证范围、整组
-  复制与导出，Rust 核心和 CLI 共用生成逻辑。首个条目为究极绿宝石 5.5 全模式关闭
-  AI 窥屏；金手指 ROM 与编辑器会话独立，漆黑 BW/DP、西班牙火箭队暂不提供未验证代码。
+  复制与导出，Rust 核心和 CLI 共用生成逻辑。支持究极绿宝石 5.5 全模式关闭 AI 窥屏；
+  漆黑 BW/DP、西班牙火箭队暂停走路遇敌、野生投球必定捕获、加快同行蛋孵化；
+  西班牙火箭队兼容寄养组合必定产蛋。逐 ROM 通过 mGBA 原生函数、个体校验、启停
+  恢复与限制条件回归；金手指 ROM 与编辑器会话独立，手机模拟器尚未实测。
 
 - Move contest condition to Stats and label Sheen as Fullness. Show feeding
   saturation and add an optional ROM-backed solo NPC bound check for Dark

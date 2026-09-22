@@ -2,6 +2,86 @@
 
 Verified 2026-09-22. No private saves, ROMs or extracted assets are included here.
 
+## Common recipes / 常用功能
+
+Exact MD5s and supported features are listed in [the user guide](../cheats.md).
+BW and DP share these instruction locations but were executed independently;
+Rocket uses its own bindings. Offsets below are **file offsets**, not RAM writes.
+
+| Feature | BW / DP offset and change | Rocket offset and change |
+| --- | --- | --- |
+| Pause walking encounters | `000B52A2: D100 → 46C0` | `000EC7EC: D100 → 46C0` |
+| Guaranteed wild capture | `00056566: D92F → 46C0` | `00080BB4: D948 → 46C0` |
+| Faster party hatching | `00070B46: D13B → 46C0` | `0009EB36: D13B → 46C0` |
+| Compatible daycare eggs | Not offered / 不开放 | `0009EB1C: 4284 → 2C00` |
+
+`46C0` is the Thumb `mov r8,r8` no-op. The first three remove a conditional branch:
+walking takes the existing disabled return; capture takes the existing success
+path; hatching processes egg cycles at every eligible call rather than only the
+counter boundary. Rocket's fourth patch compares adjusted compatibility with zero
+instead of the random roll. The preceding RNG call and eligibility guards remain.
+
+前三项分别选择已有的停止走路遇敌、捕捉成功、处理孵化周期分支，不覆盖背包或
+宝可梦数据块。第四项仅修改西班牙火箭队的生蛋概率比较，保留步数、父母数量、
+待领取蛋检查和原生遗传流程。孵化／捕捉引起的数据更新仍由游戏自身完成。
+
+Reproduction: `scripts/verify_common_cheats_mgba.py`, against mGBA **0.10.5**
+(commit `26b7884bc25a5933960f3cdcd98bac1ae14d42e2`) and the new CLI output.
+The native harness loads no save and exposes no file-writing API. All branch
+tests use controlled RAM; native functions and their callees run without stubs.
+
+- **All ten ROM/recipe bindings:** mGBA independently decodes final generated
+  GameShark lines. Compare all 32 MiB of in-memory ROM against exactly the expected
+  halfword replacement, then test 24 enable/disable/reset cycles per binding and
+  complete restoration. Also compare all supported recipes enabled together and
+  restored together. Source ROM bytes remain unchanged.
+- **Hatching, per ROM:** 360 cases = 24 PID permutations × cycles 0/1/2/5/255 ×
+  valid egg/ordinary Pokémon/Bad Egg. Check unpatched behavior, patched behavior,
+  disabling without rolling back progress, complete encrypted records and checksum.
+  Three additional boundary tests keep the ROM's ability-based two-cycle bonus.
+  Ability carriers are found by invoking the ROM's native bonus routine, not a
+  bundled species list. Boxed data is outside this party-only function.
+- **Capture, per ROM:** 90 full native ball-command calls = three actual ball IDs
+  × wild/trainer/tutorial flags × five RNG seeds × patched/unpatched. Patched wild
+  calls select the native success script; trainer/tutorial results remain equal.
+  Check actual ball ID and encrypted record changes (only ball bits and checksum).
+  The three ball IDs differ between Rocket and BW/DP. This does not exercise every
+  special battle facility or story-specific restriction.
+  Separate full-core UI smoke tests on disposable BW and Rocket save copies entered
+  a constructed Lv.5 Mewtwo battle, selected an ordinary Poké Ball from the bag and
+  reached the successful catch/dex-registration flow at full target HP. This was a
+  deliberately constructed battle, not a natural encounter; source saves were not edited.
+- **Walking, per ROM:** native `StandardWildEncounter` on a ROM-selected land table
+  and 32 seeds: original 5 encounters, patched 0. Synthetic party/map state, not a
+  claim that every map was walked. Fishing, Sweet Scent and scripted battles use
+  separate entry points and are not patched.
+- **Rocket breeding:** 640 native-entry calls cover 32 seeds × charm/no charm ×
+  compatible/incompatible/empty parent/pending egg/non-checkpoint × on/off. Compatible
+  fixtures produced 17/32 without charm and 26/32 with charm; patched 32/32 in both.
+  Incompatible/empty/non-checkpoint fixtures stayed at zero. Existing pending PID
+  and both parents' encrypted records remained unchanged.
+
+验证使用完整原生函数，包含受控内存夹具，不等于长期游戏实测。手机模拟器和新增
+条目的 VBA-M 兼容性尚未逐项验证；界面中明确区分这一范围。关闭后已捕获的宝可梦、
+已减少的孵化周期或待领取蛋不会回退。
+
+### Rejected shared daycare patch / 未共用的产蛋补丁
+
+BW/DP's compatibility path hooks into file offset `00310EA0`: with item 56 present,
+50 becomes 80, 70 becomes 88, and **other values gain 20, including zero**.
+Rocket's helper at `0009F338` checks item 846 and maps only 20→40, 50→80, 70→88;
+zero remains zero. These are ROM-specific item IDs, not shared inventory IDs.
+Forcing the later comparison to `compatibility > 0` would therefore lose the
+intended incompatible-parent guarantee in BW/DP. That recipe is not bound there.
+
+漆黑的魅影护符钩子和西班牙火箭队存在实际控制流差异。不能仅凭两边函数形似就
+共用“兼容组合必定产蛋”代码；本批在漆黑 BW／DP 中不展示这项功能。
+
+Harness detail: mGBA's `mCheatDeviceClear` frees sets without restoring active ROM
+patches. The runner explicitly disables/refreshes every set before clearing, and
+asserts original halfwords at the start of **every** fixture. This prevents an
+earlier enabled test from contaminating its supposedly unpatched control.
+
 ## Ultimate Emerald 5.5 / 究极绿宝石
 
 Exact ROM MD5: `17ce9785b33319b3dbda9a5d37c57ec1`, 33,554,432 bytes.

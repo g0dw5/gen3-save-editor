@@ -1,5 +1,12 @@
 import { createContext, useContext } from "react";
 export const en = {
+  cheatsCount: "{n} verified features",
+  cheatsLineCount: "{n} code lines · enable the complete set",
+  cheatsCategory_battle: "Battle AI",
+  cheatsCategory_encounters: "Encounters and exploration",
+  cheatsCategory_catching: "Capture",
+  cheatsCategory_breeding: "Hatching and daycare",
+
   cheat_context_mismatch:
     "The cheat ROM context changed. Select the matching ROM again.",
   cheatsTitle: "Cheats",
@@ -10,17 +17,17 @@ export const en = {
     "This ROM has cheat-only support, not ROM reference or save editing support.",
   cheatsOpenRom: "Choose cheat ROM",
   cheatsSupported:
-    "First available recipe: Ultimate Emerald 5.5, disable AI peeking in all modes. Exact MD5 match required; other translations or patches are not covered.",
+    "Verified catalogs: Dark Phantom BW/DP, Team Rocket 2.1 Chinese and Ultimate Emerald 5.5. Available features differ by ROM; exact MD5 match required.",
   cheatsNone: "No verified cheats for this ROM yet",
   cheatsNoneHelp:
-    "The ROM is recognized, but no recipes have been released for it. Codes from other versions are never substituted. You can select Ultimate Emerald 5.5 here without changing the editor session.",
+    "The ROM is recognized, but no recipes have been released for it. Codes from other versions are never substituted. You can select another supported ROM here without changing the editor session.",
   cheatsSearch: "Search cheats",
   cheatsVerified: "Verified · see test scope",
   cheatsNoResults: "No matching cheats",
   cheatsVba: "VBA-M input layout (no spaces per line)",
   cheatsCode: "Cheat code",
   cheatsCopied: "Set copied",
-  cheatsCopy: "Copy both lines",
+  cheatsCopy: "Copy all code lines",
   cheatsExport: "Export codes and guide",
   cheatsUsage: "How to use",
   cheatsLimits: "Effects and limitations",
@@ -612,6 +619,13 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  cheatsCount: "{n} 个已验证功能",
+  cheatsLineCount: "{n} 行代码 · 请整组启用",
+  cheatsCategory_battle: "对战 AI",
+  cheatsCategory_encounters: "遇敌与探索",
+  cheatsCategory_catching: "捕捉",
+  cheatsCategory_breeding: "孵化与寄养",
+
   cheat_context_mismatch: "金手指对应的 ROM 已改变，请重新选择匹配的 ROM。",
   cheatsTitle: "金手指",
   cheatsOpenPrompt: "打开 ROM，查看经过验证的金手指",
@@ -620,17 +634,17 @@ export const zh: Record<Key, string> = {
     "此 ROM 目前仅支持金手指，不代表已支持 ROM 资料或存档编辑。",
   cheatsOpenRom: "选择金手指 ROM",
   cheatsSupported:
-    "首个可用条目：究极绿宝石 5.5 全模式关闭 AI 窥屏。按完整 MD5 匹配；不适用于其他汉化或修改版。",
+    "支持漆黑的魅影 BW/DP、西班牙火箭队 2.1 汉化版与究极绿宝石 5.5；各版本功能不同，必须匹配完整 MD5。",
   cheatsNone: "此 ROM 暂无已验证的金手指",
   cheatsNoneHelp:
-    "已识别当前版本，但尚未发布适用于它的代码。这里不会套用其他版本或网上的通用代码。可另选究极绿宝石 5.5 查看已验证条目；当前编辑器会话保持独立。",
+    "已识别当前版本，但尚未发布适用于它的代码。这里不会套用其他版本或网上的通用代码。可另选其他支持的 ROM 查看已验证条目；当前编辑器会话保持独立。",
   cheatsSearch: "搜索金手指",
   cheatsVerified: "已验证 · 查看范围",
   cheatsNoResults: "没有匹配的金手指",
   cheatsVba: "VBA-M 输入格式（每行不带空格）",
   cheatsCode: "金手指代码",
   cheatsCopied: "已复制整组",
-  cheatsCopy: "复制整组代码",
+  cheatsCopy: "复制全部代码",
   cheatsExport: "导出代码与说明",
   cheatsUsage: "怎么使用",
   cheatsLimits: "影响与限制",

@@ -12,9 +12,9 @@ size. No emulator connection, save or ROM writes are performed.
 | ROM | MD5 | Recipes / 条目 |
 | --- | --- | --- |
 | Ultimate Emerald / 究极绿宝石 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | All modes: disable AI input peeking / 全模式关闭窥屏 |
-| Dark Phantom / 漆黑的魅影 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | No verified recipe yet / 暂无 |
-| Dark Phantom / 漆黑的魅影 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | No verified recipe yet / 暂无 |
-| Team Rocket / 西班牙火箭队 2.1 中文 | `59c658a1081f542086de1060bb65f0b3` | No verified recipe yet / 暂无 |
+| Dark Phantom / 漆黑的魅影 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | Pause walking encounters; guaranteed wild capture; faster hatching / 暂停走路遇敌、必定捕获、加快孵蛋 |
+| Dark Phantom / 漆黑的魅影 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | Same three features, independently tested / 同上三项，独立验证 |
+| Team Rocket / 西班牙火箭队 2.1 中文 | `59c658a1081f542086de1060bb65f0b3` | Those three plus compatible daycare eggs / 上述三项及兼容寄养组合必定产蛋 |
 
 Ultimate Emerald is supported **only in the cheat window**. Open it there using
 “Choose cheat ROM”; the ordinary editor importer still rejects it. Opening another
@@ -31,7 +31,7 @@ the editor ROM (or the no-ROM prompt), not a hidden last-selected cheat ROM.
 
 1. Open **Cheats** from the toolbar or ROM reference; choose the matching ROM.
 2. Search/select a recipe and read its scope, protocol and enable/disable steps.
-3. Copy the complete set or export a text guide. Both code lines are required.
+3. Copy the complete set or export a text guide. Enable every line shown for the selected recipe.
 4. Apply the set in your emulator, not in this editor.
 
 1. 顶栏或 ROM 资料中打开“金手指”，选择对应 ROM。
@@ -39,15 +39,46 @@ the editor ROM (or the no-ROM prompt), not a hidden last-selected cheat ROM.
 3. 复制整组或导出代码与说明；当前去窥屏条目必须同时启用两条。
 4. 到模拟器中添加；修改器不会自动连接模拟器。
 
-The first recipe uses **GameShark Advance V1/V2**. The default 8+8 layout and the
+All current recipes use **GameShark Advance V1/V2**. The default 8+8 layout and the
 VBA-M 16-character layout encode the **same** protocol; removing spaces is not
 conversion to CodeBreaker or Action Replay V3. VBA-M 2.2.3's input detection needs
-the compact layout. Back up and save outside battle, enable both lines, restart,
-load the in-game save and enter a new battle. Disable both and restart to stop.
+the compact layout. Back up and save outside battle, enable the full set, restart,
+and load the in-game save. Disable the full set and restart to stop. The new common
+recipes have one line each; the Ultimate Emerald recipe requires two together.
 
 当前条目为 **GameShark Advance V1/V2**。8+8 与 VBA-M 不带空格的 16 位形式只是
-同一协议的排版，不能当作转换协议。战斗外正常保存并备份后启用两条，重启并从
-游戏内存档继续，新开一场战斗验证；停用也要两条一起关闭后重启。
+同一协议的排版，不能当作转换协议。战斗外正常保存并备份后启用整组，重启并从
+游戏内存档继续；停用整组后重启。新增常用功能各一条，究极绿宝石去窥屏必须两条一起。
+
+### Common recipes / 常用功能
+
+- **Pause walking encounters:** use the native walking encounter routine's disabled
+  path. Grass, cave and surfing checks through that routine stop; fishing, Sweet
+  Scent, scripted encounters and trainers are not disabled. This is not walk-through-walls.
+- **Guaranteed wild capture:** remove the random failure branch from the native
+  ball command. Preserve the actual ball, normal consumption, capture records,
+  trainer blocking and tutorial branches. Does not unlock bags or scripted restrictions.
+- **Faster party hatching:** decrement egg cycles on every eligible step check;
+  retain native ability bonuses, Bad Egg checks, checksum updates and hatch animation.
+  Boxed eggs do not change. A zero-cycle egg hatches at the next eligible check.
+- **Compatible daycare eggs (Rocket only):** at the normal step checkpoint,
+  positive compatibility always succeeds. Two parents and no pending egg are still
+  required; inheritance is unchanged. Dark Phantom's Oval Charm hook has different
+  semantics, so the same comparison patch is intentionally not offered there.
+
+暂停走路遇敌不影响钓鱼、甜甜香气、脚本定点或训练家，也不提供穿墙。必定捕获
+仍需正常投球，消耗并记录实际使用的球；不解锁剧情捕捉限制。快速孵蛋仍使用原生
+特性加速、坏蛋检查、个体校验和孵化动画，只加速同行蛋的周期扣减。西班牙火箭队
+必定产蛋仍需两只兼容父母、无待领取蛋，并走到游戏原有检查点；不改变遗传。
+
+Stopping a code restores instructions, **not completed gameplay changes**: captures,
+hatching progress and pending eggs can persist after normal saving. These codes do
+not give maximum IVs, force a species or inject inventory slots.
+
+关闭代码恢复的是指令，不会撤销已经捕获的宝可梦、已减少的孵化周期和已产生的蛋。
+本批不提供指定遇宠、强行满个体或直接覆盖背包槽位的代码。
+
+### Ultimate Emerald / 究极绿宝石
 
 This selects the native non-peeking branch, including the combined flag's related
 switching behavior. Existing non-peeking prediction/scoring/switching remain.
@@ -59,8 +90,9 @@ Old mid-battle states can restore a flag already chosen for that turn.
 的预测／评分／换人，不改超模努力值、命中、1 HP 与 PP 等难度规则。原位置随机
 数调用保留，但后续随机结果未必相同。旧战斗中即时存档可能恢复已选好的本轮标记。
 
-mGBA 0.10.5 has decoder/full-core test coverage; VBA-M 2.2.3 has GUI import and
-memory readback coverage. Mobile emulators are **untested**. Facility coverage is
+mGBA 0.10.5 has decoder/full-core test coverage. For the Ultimate Emerald recipe,
+VBA-M 2.2.3 has GUI import and memory readback coverage; the new common recipes have
+not each been tested there. Mobile emulators are **untested**. Facility coverage is
 native branch testing, not full facility tours. See [evidence](research/cheat-verification.md).
 
 ## Developer interface / 开发接口
@@ -76,7 +108,7 @@ ROM-specific binding supplies expected original instructions and replacements,
 and the encoder owns protocol arithmetic. The UI never invents addresses or
 encodes instructions. Full editor profiles are not synthesized for cheat-only
 ROMs. Adding future species/level parameters requires typed core validation and
-runtime names/rules from that ROM; the current recipe intentionally accepts no
+runtime names/rules from that ROM; the current recipes intentionally accept no
 parameters and rejects unknown request fields.
 
 - `open_cheat_rom {path | bytes}` validates a ROM without changing `App::session`.
@@ -101,6 +133,7 @@ python3 scripts/test_cheats_ui.py
 cargo test -p gen3-core local_cheat_catalog_cross_rom_regression -- --ignored
 # Optional independent mGBA decoder/execution check (see script's environment help):
 python3 scripts/verify_cheats_mgba.py
+python3 scripts/verify_common_cheats_mgba.py
 ```
 
 The mGBA probe expects the 0.10.5 non-minimal library built with GB/GBA and debugger

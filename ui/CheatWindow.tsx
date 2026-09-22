@@ -8,6 +8,7 @@ type Text = { zh: string; en: string };
 type Format = "gameshark_v1_v2";
 interface Recipe {
   id: string;
+  category: string;
   title: Text;
   summary: Text;
   scope: Text;
@@ -46,6 +47,7 @@ export function CheatWindow({
   const [copied, setCopied] = useState(false);
   const [compact, setCompact] = useState(false);
   const generation = useRef(0);
+  const copyGeneration = useRef(0);
   const loading = useRef(false);
   const txt = (value: Text) => value[locale];
   const fail = (e: unknown) => {
@@ -83,6 +85,7 @@ export function CheatWindow({
   }, [editorMd5]);
   useEffect(() => {
     let active = true;
+    ++copyGeneration.current;
     setCode(null);
     setCopied(false);
     const entry = catalog?.entries.find((entry) => entry.id === selected);
@@ -101,6 +104,7 @@ export function CheatWindow({
     }
     return () => {
       active = false;
+      ++copyGeneration.current;
     };
   }, [catalog, selected]);
   const open = async () => {
@@ -143,12 +147,12 @@ export function CheatWindow({
     : "";
   const copy = async () => {
     if (!ready) return;
-    const token = generation.current;
+    const token = copyGeneration.current;
     try {
       await navigator.clipboard.writeText(lines);
-      if (token === generation.current) setCopied(true);
+      if (token === copyGeneration.current) setCopied(true);
     } catch (e) {
-      fail(e);
+      if (token === copyGeneration.current) fail(e);
     }
   };
   const exportText = () => {
@@ -217,6 +221,12 @@ export function CheatWindow({
         ) : (
           <div className="cheats-layout">
             <aside className="cheats-list">
+              <p className="cheats-count">
+                {t("cheatsCount").replace(
+                  "{n}",
+                  String(catalog.entries.length),
+                )}
+              </p>
               <label className="search-field">
                 <Search size={15} />
                 <input
@@ -236,6 +246,7 @@ export function CheatWindow({
                   <button
                     key={item.id}
                     className={selected === item.id ? "active" : ""}
+                    aria-pressed={selected === item.id}
                     onClick={() => {
                       setSelected(item.id);
                       setCopied(false);
@@ -243,6 +254,9 @@ export function CheatWindow({
                     }}
                   >
                     <strong>{txt(item.title)}</strong>
+                    <span>
+                      {t(`cheatsCategory_${item.category || "battle"}`)}
+                    </span>
                     <span>
                       <ShieldCheck size={13} />
                       {t("cheatsVerified")}
@@ -268,11 +282,20 @@ export function CheatWindow({
                       checked={compact}
                       onChange={(e) => {
                         setCompact(e.target.checked);
+                        ++copyGeneration.current;
                         setCopied(false);
                       }}
                     />
                     {t("cheatsVba")}
                   </label>
+                  {ready && (
+                    <p className="cheats-count">
+                      {t("cheatsLineCount").replace(
+                        "{n}",
+                        String(code.lines.length),
+                      )}
+                    </p>
+                  )}
                   <pre aria-label={t("cheatsCode")}>
                     {lines || t("working")}
                   </pre>

@@ -1,11 +1,13 @@
 # ROM-specific cheat codes — implementation plan / 金手指实现方案
 
-Status: first display slice implemented on 2026-09-22; the broader recipe roadmap below remains staged.
+Status: display slice and common fixed recipes implemented on 2026-09-22;
+parameterized recipes and additional protocols remain staged.
 
 首个闭环已落地：独立金手指窗口、完整 MD5 校验、Rust 代码生成、CLI、中英文说明、
 整组复制与导出。首个条目采用随后完成验证的**究极绿宝石 5.5 全模式关闭 AI 窥屏**，
-不是把未验证的遇宠候选提前发布。漆黑 BW／DP、西班牙火箭队显示各自的暂无已验证
-条目状态；究极绿宝石只有金手指支持，没有伪装成完整资料／存档适配。
+后续已完成漆黑 BW／DP、西班牙火箭队的暂停走路遇敌、必定捕获、加快孵蛋，以及
+西班牙火箭队兼容组合必定产蛋。指定遇宠参数仍未发布；究极绿宝石只有金手指
+支持，没有伪装成完整资料／存档适配。
 
 使用与架构：[金手指功能](cheats.md)。验证证据与旧胡说树代码复核：
 [研究记录](research/cheat-verification.md)。旧码的协议、原生指令和栈依赖已复验，

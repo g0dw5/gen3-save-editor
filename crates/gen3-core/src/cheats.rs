@@ -7,6 +7,10 @@ use serde::{Deserialize, Serialize};
 
 pub const ULTIMATE_MD5: &str = "17ce9785b33319b3dbda9a5d37c57ec1";
 pub const NO_PEEK: &str = "disable-input-peeking";
+pub const NO_ENCOUNTERS: &str = "disable-walking-encounters";
+pub const GUARANTEED_CATCH: &str = "guaranteed-wild-catch";
+pub const FAST_HATCH: &str = "faster-egg-hatching";
+pub const DAYCARE_EGG: &str = "guaranteed-compatible-daycare-egg";
 
 #[derive(Clone, Copy, Serialize)]
 pub struct Text {
@@ -30,6 +34,7 @@ pub struct Catalog {
 #[derive(Serialize)]
 pub struct Recipe {
     pub id: &'static str,
+    pub category: &'static str,
     pub title: Text,
     pub summary: Text,
     pub scope: Text,
@@ -79,13 +84,91 @@ const NO_PEEK_PATCHES: [RomHalfword; 2] = [
     },
 ];
 
+/// Semantics and bindings are separate: similar engines still require an explicit
+/// binding and independent verification for each exact fingerprint.
+struct Binding {
+    id: &'static str,
+    patches: &'static [RomHalfword],
+}
+const DARK_PHANTOM: &[Binding] = &[
+    Binding {
+        id: NO_ENCOUNTERS,
+        patches: &[RomHalfword {
+            offset: 0xb52a2,
+            before: 0xd100,
+            after: 0x46c0,
+        }],
+    },
+    Binding {
+        id: GUARANTEED_CATCH,
+        patches: &[RomHalfword {
+            offset: 0x56566,
+            before: 0xd92f,
+            after: 0x46c0,
+        }],
+    },
+    Binding {
+        id: FAST_HATCH,
+        patches: &[RomHalfword {
+            offset: 0x70b46,
+            before: 0xd13b,
+            after: 0x46c0,
+        }],
+    },
+];
+const ROCKET: &[Binding] = &[
+    Binding {
+        id: NO_ENCOUNTERS,
+        patches: &[RomHalfword {
+            offset: 0xec7ec,
+            before: 0xd100,
+            after: 0x46c0,
+        }],
+    },
+    Binding {
+        id: GUARANTEED_CATCH,
+        patches: &[RomHalfword {
+            offset: 0x80bb4,
+            before: 0xd948,
+            after: 0x46c0,
+        }],
+    },
+    Binding {
+        id: FAST_HATCH,
+        patches: &[RomHalfword {
+            offset: 0x9eb36,
+            before: 0xd13b,
+            after: 0x46c0,
+        }],
+    },
+    Binding {
+        id: DAYCARE_EGG,
+        patches: &[RomHalfword {
+            offset: 0x9eb1c,
+            before: 0x4284,
+            after: 0x2c00,
+        }],
+    },
+];
+fn bindings(md5: &str) -> &'static [Binding] {
+    match md5 {
+        ULTIMATE_MD5 => &[Binding {
+            id: NO_PEEK,
+            patches: &NO_PEEK_PATCHES,
+        }],
+        m if m == crate::profile::BW.md5 || m == crate::profile::DP.md5 => DARK_PHANTOM,
+        m if m == crate::profile::ROCKET.md5 => ROCKET,
+        _ => &[],
+    }
+}
+
 impl CheatRom {
     pub fn open(data: &[u8]) -> Result<Self> {
         let md5 = binary::hash(data);
         let rom = Self::identify(&md5, data.len())?;
-        if md5 == ULTIMATE_MD5 {
-            // A second assertion documents exactly which native instructions this recipe replaces.
-            for p in NO_PEEK_PATCHES {
+        for binding in bindings(&md5) {
+            // Document and assert every original native instruction, in addition to the hash.
+            for p in binding.patches {
                 if binary::u16(data, p.offset as usize)? != p.before {
                     return Err(err("cheat_original_bytes", p.offset));
                 }
@@ -113,11 +196,10 @@ impl CheatRom {
     pub fn catalog(&self) -> Catalog {
         Catalog {
             rom: self.clone(),
-            entries: if self.md5 == ULTIMATE_MD5 {
-                vec![no_peek()]
-            } else {
-                vec![]
-            },
+            entries: bindings(&self.md5)
+                .iter()
+                .map(|binding| recipe(binding.id))
+                .collect(),
         }
     }
     pub fn matches(&self, md5: &str) -> bool {
@@ -130,13 +212,17 @@ impl CheatRom {
                 "cheat ROM changed; reopen its catalog",
             ));
         }
-        if self.md5 != ULTIMATE_MD5 || request.cheat_id != NO_PEEK {
-            return Err(err(
-                "unsupported_feature",
-                "no verified recipe for this ROM and cheat",
-            ));
-        }
-        let lines = NO_PEEK_PATCHES
+        let binding = bindings(&self.md5)
+            .iter()
+            .find(|binding| binding.id == request.cheat_id)
+            .ok_or_else(|| {
+                err(
+                    "unsupported_feature",
+                    "no verified recipe for this ROM and cheat",
+                )
+            })?;
+        let lines = binding
+            .patches
             .iter()
             .map(|p| encode_rom_halfword(p.offset, p.after))
             .collect::<Result<Vec<_>>>()?;
@@ -178,9 +264,68 @@ fn encode_rom_halfword(offset: u32, value: u16) -> Result<String> {
     Ok(format!("{a:08X} {b:08X}"))
 }
 
+fn recipe(id: &'static str) -> Recipe {
+    if id == NO_PEEK {
+        return no_peek();
+    }
+    let (category, title, summary, limitation, evidence) = match id {
+        NO_ENCOUNTERS => (
+            "encounters",
+            text("暂停走路遇敌", "Pause walking encounters"),
+            text("走路、骑车或冲浪移动时，跳过原生随机遇敌入口。适合赶路、捡道具。", "Skip the native random-encounter entry while walking, cycling or moving on water. Useful for travel and item collection."),
+            text("也会挡住该入口触发的游走、群聚或设施随机战。不关闭 NPC、脚本定点、钓鱼、甜甜香气和碎岩的独立触发；已经开始的战斗不会结束。", "Also blocks roamers, outbreaks and facility random encounters using this entry. Separate NPC, scripted, fishing, Sweet Scent and Rock Smash triggers remain; an existing battle is not ended."),
+            text("按本 ROM 的原生移动遇敌入口执行有／无补丁对照；开启后返回不遇敌，停用恢复原有入口。独立野生生成与训练家流程未被补丁覆盖。", "Patched/unpatched tests execute this ROM's native movement encounter entry. Enabling returns no encounter; disabling restores the entry. Separate wild constructors and trainer paths are not patched."),
+        ),
+        GUARANTEED_CATCH => (
+            "catching",
+            text("野生战斗投球必定捕获", "Guaranteed wild-battle capture"),
+            text("在能正常投球的野生战斗中，让捕捉判定走游戏原有的成功分支。仍记录实际使用的球，不把球改成大师球。", "Use the game's native success path when a ball can normally be thrown in a wild battle. The actual ball used is recorded; it is not replaced with a Master Ball."),
+            text("保留训练家挡球和教程分支，不解锁禁用背包、禁用捕捉或剧情限制。仍消耗正常投出的球。已捕获个体和图鉴登记会随正常保存留下，关闭代码不会撤销。", "Trainer ball-blocking and tutorial branches remain. Does not unlock banned bags, blocked captures or story restrictions. Balls are still consumed normally. Caught Pokémon and dex registrations persist when saved; disabling does not undo them."),
+            text("mGBA 完整执行原生投球指令，对照不同随机种子、野生／训练家／教程分支及用球记录，核对成功脚本与个体校验。不是对所有剧情捕捉限制的穷举。", "mGBA executes the complete native ball-throw command with different seeds and wild/trainer/tutorial cases, checking success scripts, ball records and individual checksums. Not exhaustive coverage of all story capture restrictions."),
+        ),
+        FAST_HATCH => (
+            "breeding",
+            text("加快同行蛋孵化", "Faster party-egg hatching"),
+            text("每次有效行走步数检查都扣减蛋的孵化周期，不再等到原来的周期检查点；继续使用本作原有的特性加速和孵化流程。", "Reduce egg cycles at each eligible walking-step check instead of waiting for the usual cycle boundary. The ROM's ability bonuses and normal hatching flow remain."),
+            text("只处理同行中有效的蛋，跳过坏蛋，盒子里的蛋不变。剩余周期仍需走完，降为 0 后下一次检查触发正常孵化，不是直接把蛋标记成已孵化。已经减少的周期不会因停用而回退。", "Only valid party eggs are processed; Bad Eggs and boxed eggs are untouched. Remaining cycles still count down, then the next check triggers normal hatching. This does not simply clear the egg flag. Progress already made is not rolled back when disabled."),
+            text("mGBA 执行原生孵蛋入口，检查全部 24 种加密排列、周期边界、普通同行／坏蛋跳过、特性加速及关闭恢复；无关个体字段逐字节比较。", "mGBA native hatching-entry tests cover all 24 encrypted permutations, cycle boundaries, non-egg/Bad Egg skips, ability bonuses and disable/restore. Unrelated individual fields are compared byte for byte."),
+        ),
+        DAYCARE_EGG => (
+            "breeding",
+            text("兼容寄养组合必定产蛋", "Guaranteed egg for compatible daycare parents"),
+            text("在原有产蛋检查点，将相性大于 0 的组合改为必定产蛋。仍需要走到检查点、寄养两只宝可梦，且没有尚未领取的蛋。", "At the normal breeding checkpoint, make a positive-compatibility pair produce an egg. Still requires reaching the checkpoint, two daycare parents and no pending egg."),
+            text("仅支持已核对的西班牙火箭队。不改变遗传、父母身份、蛋的生成方式或步数门槛；不兼容组合仍不产蛋。新产生的待领取蛋可随存档保留，停用不会删除。", "Only available for the verified Team Rocket ROM. Inheritance, parent identity, egg generation and the step threshold remain. Incompatible parents still produce no egg. A pending egg can persist in a save and is not removed by disabling."),
+            text("mGBA 对照正常相性和圆形护身符、兼容／不兼容组合、空寄养位、已有待领取蛋与非检查点；父母加密记录保持不变。漆黑的魅影护符分支存在不同语义，因此未套用。", "mGBA compares compatibility with/without Oval Charm, compatible/incompatible pairs, empty slots, pending eggs and non-checkpoint steps. Parent records stay unchanged. Dark Phantom's charm branch has different semantics and is not given this recipe."),
+        ),
+        _ => unreachable!("only private verified bindings construct recipes"),
+    };
+    Recipe {
+        id,
+        category,
+        title,
+        summary,
+        scope: text("GameShark Advance V1/V2 · 无需主码 · 复制完整代码组", "GameShark Advance V1/V2 · no master code · copy the complete set"),
+        steps: vec![
+            text("战斗、孵化动画和保存过程之外，正常保存并备份电池存档。", "Outside battles, hatching animations and saving, save in-game and back up the battery save."),
+            text("在模拟器中按 GameShark Advance V1/V2 添加本条目的全部代码，作为同一组启用；不要选 CodeBreaker 或 Action Replay V3。", "Add all lines as one GameShark Advance V1/V2 set in the emulator. Do not select CodeBreaker or Action Replay V3."),
+            text("重启游戏，从游戏内存档继续。投球功能请新开野生战斗；孵蛋和产蛋功能请继续行走。不要拿旧即时存档的结果判断启用状态。", "Restart and continue from the in-game save. Enter a new wild battle for capture; walk for egg features. Do not infer activation from an old save state."),
+            text("停用整组后重启。指令补丁恢复不等于撤销已经捕获的宝可梦或已经发生的孵化／产蛋。", "Disable the full set and restart. Restoring instructions does not undo captures, hatching progress or eggs already produced."),
+        ],
+        limitations: vec![limitation,
+            text("只支持本页完整 MD5 对应的原始 ROM。手机模拟器尚未实测，不保证仅凭相同代码格式名称就兼容。不要与其他修改同一功能的代码混用。", "Only the original ROM with this exact MD5 is supported. Mobile emulators are untested; matching format names do not prove compatibility. Do not combine with other cheats changing the same feature."),
+        ],
+        verification: vec![evidence,
+            text("验证引擎：mGBA 0.10.5。逐条解析最终代码、比较 ROM 补丁差异，执行启用／停用／重置检查；源 ROM 和用户存档不写入。测试包含受控内存夹具，不代表全剧情或长期手机游玩的保证。", "Test engine: mGBA 0.10.5. Final codes are independently decoded, ROM patch differences compared and enable/disable/reset checked. Source ROMs and user saves are not written. Tests include controlled RAM fixtures, not a guarantee of full-story or long mobile play."),
+            text("VBA-M 16 位无空格选项只是输入排版；这些新增条目未逐项在 VBA-M 实测。当前已验证范围以 mGBA 记录为准。", "The compact VBA-M option is only an input layout; these new recipes have not each been tested in VBA-M. Current verified coverage is the mGBA record."),
+        ],
+        formats: vec![Format::GamesharkV1V2],
+    }
+}
+
 fn no_peek() -> Recipe {
     Recipe {
         id: NO_PEEK,
+        category: "battle",
         title: text("关闭 AI 窥屏 · 全模式", "Disable AI input peeking · all modes"),
         summary: text("让 AI 走游戏已有的不窥屏分支，关闭读取本轮玩家指令的组合模式。包括挑战、疯子及特殊设施。", "Select the game's existing non-peeking path, disabling the combined mode that reads the player's current input. Covers Challenge, Lunatic and special facilities."),
         scope: text("对战 AI · 两条代码须一起启用 · 无需主码", "Battle AI · enable both lines together · no master code required"),
@@ -234,7 +379,14 @@ mod tests {
         assert!(CheatRom::identify(ULTIMATE_MD5, 1024).is_err());
         for p in PROFILES {
             let rom = CheatRom::identify(p.md5, p.size).unwrap();
-            assert!(rom.catalog().entries.is_empty());
+            assert_eq!(
+                rom.catalog().entries.len(),
+                if p.md5 == crate::profile::ROCKET.md5 {
+                    4
+                } else {
+                    3
+                }
+            );
             let mut request = request();
             assert_eq!(
                 rom.generate(&request).unwrap_err().code,
@@ -265,6 +417,43 @@ mod tests {
                 .unwrap()
                 .extend(value.as_object().unwrap().clone());
             assert!(serde_json::from_value::<GenerateRequest>(v).is_err());
+        }
+    }
+    #[test]
+    fn common_recipes_remain_scoped_and_do_not_overlap() {
+        for p in PROFILES {
+            let rom = CheatRom::identify(p.md5, p.size).unwrap();
+            let mut ids = std::collections::HashSet::new();
+            let mut offsets = std::collections::HashSet::new();
+            for binding in bindings(p.md5) {
+                assert!(ids.insert(binding.id));
+                for patch in binding.patches {
+                    assert!(offsets.insert(patch.offset));
+                    assert_ne!(patch.before, patch.after);
+                }
+                let recipe = recipe(binding.id);
+                assert!(!recipe.title.zh.is_empty() && !recipe.title.en.is_empty());
+                let mut request = GenerateRequest {
+                    expected_rom_md5: p.md5.into(),
+                    cheat_id: binding.id.into(),
+                    format: Format::GamesharkV1V2,
+                };
+                let code = rom.generate(&request).unwrap();
+                assert_eq!(code.rom_md5, p.md5);
+                assert_eq!(code.lines.len(), binding.patches.len());
+                assert_eq!(code.lines, rom.generate(&request).unwrap().lines);
+                request.expected_rom_md5 = ULTIMATE_MD5.into();
+                assert_eq!(
+                    rom.generate(&request).unwrap_err().code,
+                    "cheat_context_mismatch"
+                );
+            }
+            let daycare = rom.generate(&GenerateRequest {
+                expected_rom_md5: p.md5.into(),
+                cheat_id: DAYCARE_EGG.into(),
+                format: Format::GamesharkV1V2,
+            });
+            assert_eq!(daycare.is_ok(), p.md5 == crate::profile::ROCKET.md5);
         }
     }
     #[test]
@@ -318,8 +507,29 @@ mod tests {
             let baseline = app.session.as_ref().unwrap().rom.data.clone();
             let catalog =
                 dispatch(&mut app, "cheats", json!({"expected_rom_md5": profile.md5})).unwrap();
-            assert_eq!(catalog["entries"], json!([]));
+            assert_eq!(
+                catalog["entries"].as_array().unwrap().len(),
+                if profile.md5 == crate::profile::ROCKET.md5 {
+                    4
+                } else {
+                    3
+                }
+            );
             assert_eq!(catalog["rom"]["md5"], profile.md5);
+            for entry in catalog["entries"].as_array().unwrap() {
+                let code = dispatch(
+                    &mut app,
+                    "cheat_code",
+                    json!({
+                        "expected_rom_md5": profile.md5,
+                        "cheat_id": entry["id"],
+                        "format": "gameshark_v1_v2"
+                    }),
+                )
+                .unwrap();
+                assert_eq!(code["rom_md5"], profile.md5);
+                assert_eq!(code["lines"].as_array().unwrap().len(), 1);
+            }
             dispatch(&mut app, "open_cheat_rom", json!({"path": ue_path})).unwrap();
             dispatch(&mut app, "cheat_code", request.clone()).unwrap();
             assert!(std::sync::Arc::ptr_eq(
