@@ -4,6 +4,9 @@
 //! A cheat-only identity is deliberately separate from a full editor Profile.
 use crate::{binary, err, profile::PROFILES, Result};
 use serde::{Deserialize, Serialize};
+mod parameters;
+pub use parameters::{Options, Parameters};
+use parameters::{ENCOUNTER, SHINY, TELEPORT};
 
 pub const ULTIMATE_MD5: &str = "17ce9785b33319b3dbda9a5d37c57ec1";
 pub const NO_PEEK: &str = "disable-input-peeking";
@@ -25,16 +28,20 @@ pub struct CheatRom {
     md5: String,
     label: String,
     editor_supported: bool,
+    #[serde(skip)]
+    options: Options,
 }
 #[derive(Serialize)]
 pub struct Catalog {
     pub rom: CheatRom,
     pub entries: Vec<Recipe>,
+    pub options: Options,
 }
 #[derive(Serialize)]
 pub struct Recipe {
     pub id: &'static str,
     pub category: &'static str,
+    pub parameters: Option<&'static str>,
     pub title: Text,
     pub summary: Text,
     pub scope: Text,
@@ -54,6 +61,8 @@ pub struct GenerateRequest {
     pub expected_rom_md5: String,
     pub cheat_id: String,
     pub format: Format,
+    #[serde(default)]
+    pub parameters: Option<Parameters>,
 }
 #[derive(Debug, Serialize)]
 pub struct Code {
@@ -63,6 +72,7 @@ pub struct Code {
     pub lines: Vec<String>,
     /// Same protocol, alternate whitespace for VBA-M's format detection.
     pub compact_lines: Vec<String>,
+    pub parameters: Option<Parameters>,
 }
 
 #[derive(Clone, Copy)]
@@ -165,7 +175,20 @@ fn bindings(md5: &str) -> &'static [Binding] {
 impl CheatRom {
     pub fn open(data: &[u8]) -> Result<Self> {
         let md5 = binary::hash(data);
-        let rom = Self::identify(&md5, data.len())?;
+        let mut rom = Self::identify(&md5, data.len())?;
+        if parameters::supported(&rom.md5) {
+            let rocket = md5 == crate::profile::ROCKET.md5;
+            for p in parameters::encounter(rocket, 1, 1)
+                .into_iter()
+                .chain(parameters::shiny(rocket))
+                .chain(parameters::teleport(rocket, 0, 0, 0))
+            {
+                if binary::u16(data, p.offset as usize)? != p.before {
+                    return Err(err("cheat_original_bytes", p.offset));
+                }
+            }
+            rom.options = Options::read(&crate::rom::Rom::open(data.to_vec())?)?;
+        }
         for binding in bindings(&md5) {
             // Document and assert every original native instruction, in addition to the hash.
             for p in binding.patches {
@@ -182,6 +205,7 @@ impl CheatRom {
                 md5: md5.into(),
                 label: "究极绿宝石 5.5 · Ultimate Emerald 5.5".into(),
                 editor_supported: false,
+                options: Options::default(),
             });
         }
         if let Some(p) = PROFILES.iter().find(|p| p.md5 == md5 && p.size == size) {
@@ -189,17 +213,23 @@ impl CheatRom {
                 md5: md5.into(),
                 label: p.label.into(),
                 editor_supported: true,
+                options: Options::default(),
             });
         }
         Err(err("unsupported_rom", format!("MD5 {md5}; {size} bytes")))
     }
     pub fn catalog(&self) -> Catalog {
+        let mut entries: Vec<_> = bindings(&self.md5)
+            .iter()
+            .map(|binding| recipe(binding.id))
+            .collect();
+        if parameters::supported(&self.md5) {
+            entries.extend([ENCOUNTER, SHINY, TELEPORT].map(parameter_recipe));
+        }
         Catalog {
             rom: self.clone(),
-            entries: bindings(&self.md5)
-                .iter()
-                .map(|binding| recipe(binding.id))
-                .collect(),
+            entries,
+            options: self.options.clone(),
         }
     }
     pub fn matches(&self, md5: &str) -> bool {
@@ -212,17 +242,24 @@ impl CheatRom {
                 "cheat ROM changed; reopen its catalog",
             ));
         }
-        let binding = bindings(&self.md5)
-            .iter()
-            .find(|binding| binding.id == request.cheat_id)
-            .ok_or_else(|| {
-                err(
-                    "unsupported_feature",
-                    "no verified recipe for this ROM and cheat",
-                )
-            })?;
-        let lines = binding
-            .patches
+        let patches = if [ENCOUNTER, SHINY, TELEPORT].contains(&request.cheat_id.as_str()) {
+            parameters::generate(self, request)?
+        } else {
+            if request.parameters.is_some() {
+                return Err(err("cheat_parameters", "this recipe has no parameters"));
+            }
+            let binding = bindings(&self.md5)
+                .iter()
+                .find(|binding| binding.id == request.cheat_id)
+                .ok_or_else(|| {
+                    err(
+                        "unsupported_feature",
+                        "no verified recipe for this ROM and cheat",
+                    )
+                })?;
+            binding.patches.to_vec()
+        };
+        let lines = patches
             .iter()
             .map(|p| encode_rom_halfword(p.offset, p.after))
             .collect::<Result<Vec<_>>>()?;
@@ -233,6 +270,7 @@ impl CheatRom {
             format: request.format,
             lines,
             compact_lines,
+            parameters: request.parameters.clone(),
         })
     }
 }
@@ -302,6 +340,7 @@ fn recipe(id: &'static str) -> Recipe {
     Recipe {
         id,
         category,
+        parameters: None,
         title,
         summary,
         scope: text("GameShark Advance V1/V2 · 无需主码 · 复制完整代码组", "GameShark Advance V1/V2 · no master code · copy the complete set"),
@@ -322,10 +361,44 @@ fn recipe(id: &'static str) -> Recipe {
     }
 }
 
+fn parameter_recipe(id: &'static str) -> Recipe {
+    let (title, summary, kind, limitation) = match id {
+        ENCOUNTER => (text("指定野生宝可梦与等级", "Choose wild Pokémon and level"),
+            text("选择当前 ROM 的宝可梦和等级，在下一场普通野生遭遇中生成。可与闪光代码一起使用。", "Choose a Pokémon and level from this ROM for the next ordinary wild encounter. Can be combined with the shiny recipe."), Some("encounter"),
+            text("改变普通野生生成入口，不覆盖单独生成的游走、定点、礼物、蛋和训练家。不会主动触发战斗；走路遇敌暂停时，请先关闭暂停。列表不提供临时战斗形态。", "Changes the ordinary wild constructor, not separate roamer, static, gift, egg or trainer constructors. Does not trigger a battle; disable paused walking encounters first. Temporary battle forms are excluded.")),
+        SHINY => (text("普通野生遭遇必定闪光", "Shiny ordinary wild encounters"),
+            text("仅在普通野生生成链中构造闪光 PID，继续执行本作原生性格、性别筛选和个体加密。", "Construct a shiny PID only in the ordinary wild generation chain, retaining native nature/gender selection and Pokémon encryption."), None,
+            text("只影响新生成的普通野生个体，保留同步和迷人之躯；不把已有宝可梦、礼物、蛋或训练家的宝可梦变闪。完整代码组较长，必须一次性全部启用，不能只复制前几行。", "Only newly generated ordinary wild Pokémon; Synchronize and Cute Charm remain. Existing Pokémon, gifts, eggs and trainer Pokémon are not made shiny. Enable the entire long code set together, never just its first few lines.")),
+        TELEPORT => (text("传送到指定地图", "Teleport to a chosen map"),
+            text("按区域和地图选择目的地，查看十进制地图编号和十六进制组／图编码。下一次经原生传送入口切图时替换目的地。", "Choose a region and map, with decimal map IDs and hexadecimal group/map codes. Redirect the next transition using the native warp setter."), Some("teleport"),
+            text("仅开放 ROM 中有入口引用、坐标有效的落点；这不证明当前剧情可达或已实机走遍。进图脚本仍会运行，可能触发剧情。不要在战斗、动画或保存时使用；到达后立即停用整组，确认可行走与出入后再保存。连续道路连接、部分动态返回入口不经此函数，不会触发。", "Only referenced, in-bounds ROM landings are offered; this is not proof of story reachability or gameplay testing of every map. Arrival scripts still run and may advance events. Use outside battles, animations and saving. Disable the whole set immediately after arrival; verify movement and exits before saving. Continuous map connections and some dynamic return warps bypass this setter.")),
+        _ => unreachable!(),
+    };
+    let mut result = recipe(NO_ENCOUNTERS);
+    result.id = id;
+    result.category = if id == TELEPORT {
+        "travel"
+    } else {
+        "encounters"
+    };
+    result.title = title;
+    result.summary = summary;
+    result.parameters = kind;
+    result.limitations[0] = limitation;
+    result.steps[2] = if id == TELEPORT {
+        text("备份后在门外启用，进入普通房门触发传送。到达后立即关闭整组；下次切图前确认代码已停用。若模拟器不能即时恢复 ROM 指令，请先保留原存档再重启验证。", "After backing up, enable outside a door and enter it. Disable the complete set immediately on arrival, before another transition. If the emulator cannot restore ROM instructions live, retain the original save and restart to verify.")
+    } else {
+        text("重启后进入新的普通野生战斗。指定遇怪与闪光可叠加；更换目标前先停用旧的整组代码。", "Restart and enter a new ordinary wild battle. Species/level and shiny recipes can be combined. Disable the previous complete set before changing the target.")
+    };
+    result.verification[0] = text("mGBA 原生函数夹具验证生成、校验和与代码启停；地图落点来自当前 ROM 的门／洞口记录，未承诺所有地图剧情可达。", "mGBA native-function fixtures verify generation, checksums and code toggling. Landings come from this ROM's warp records; not all maps are claimed story-reachable.");
+    result
+}
+
 fn no_peek() -> Recipe {
     Recipe {
         id: NO_PEEK,
         category: "battle",
+        parameters: None,
         title: text("关闭 AI 窥屏 · 全模式", "Disable AI input peeking · all modes"),
         summary: text("让 AI 走游戏已有的不窥屏分支，关闭读取本轮玩家指令的组合模式。包括挑战、疯子及特殊设施。", "Select the game's existing non-peeking path, disabling the combined mode that reads the player's current input. Covers Challenge, Lunatic and special facilities."),
         scope: text("对战 AI · 两条代码须一起启用 · 无需主码", "Battle AI · enable both lines together · no master code required"),
@@ -362,6 +435,7 @@ mod tests {
             expected_rom_md5: ULTIMATE_MD5.into(),
             cheat_id: NO_PEEK.into(),
             format: Format::GamesharkV1V2,
+            parameters: None,
         }
     }
     #[test]
@@ -382,9 +456,9 @@ mod tests {
             assert_eq!(
                 rom.catalog().entries.len(),
                 if p.md5 == crate::profile::ROCKET.md5 {
-                    4
+                    7
                 } else {
-                    3
+                    6
                 }
             );
             let mut request = request();
@@ -437,6 +511,7 @@ mod tests {
                     expected_rom_md5: p.md5.into(),
                     cheat_id: binding.id.into(),
                     format: Format::GamesharkV1V2,
+                    parameters: None,
                 };
                 let code = rom.generate(&request).unwrap();
                 assert_eq!(code.rom_md5, p.md5);
@@ -452,10 +527,84 @@ mod tests {
                 expected_rom_md5: p.md5.into(),
                 cheat_id: DAYCARE_EGG.into(),
                 format: Format::GamesharkV1V2,
+                parameters: None,
             });
             assert_eq!(daycare.is_ok(), p.md5 == crate::profile::ROCKET.md5);
         }
     }
+    #[test]
+    fn parameter_validation_and_patch_isolation() {
+        use parameters::{Landing, MapChoice, SpeciesChoice};
+        for p in PROFILES {
+            let mut rom = CheatRom::identify(p.md5, p.size).unwrap();
+            rom.options = Options {
+                species: vec![SpeciesChoice {
+                    id: 400,
+                    name: "Fixture".into(),
+                }],
+                maps: vec![MapChoice {
+                    id: "1-2".into(),
+                    group: 1,
+                    number: 2,
+                    name: "Fixture".into(),
+                    region: 1,
+                    code: "01 02".into(),
+                    landings: vec![Landing { id: 0, x: 2, y: 3 }],
+                }],
+            };
+            let mut r = GenerateRequest {
+                expected_rom_md5: p.md5.into(),
+                cheat_id: ENCOUNTER.into(),
+                format: Format::GamesharkV1V2,
+                parameters: None,
+            };
+            assert!(rom.generate(&r).is_err());
+            for (species, level) in [(400, 0), (400, 101), (0, 5), (65535, 5)] {
+                r.parameters = Some(Parameters::Encounter { species, level });
+                assert!(rom.generate(&r).is_err());
+            }
+            r.parameters = Some(Parameters::Encounter {
+                species: 400,
+                level: 100,
+            });
+            assert_eq!(rom.generate(&r).unwrap().lines.len(), 4);
+            r.cheat_id = TELEPORT.into();
+            assert!(rom.generate(&r).is_err());
+            for (map_id, warp_id, valid) in [("1-2", 0, true), ("1-2", 1, false), ("2-1", 0, false)]
+            {
+                r.parameters = Some(Parameters::Teleport {
+                    map_id: map_id.into(),
+                    warp_id,
+                });
+                assert_eq!(rom.generate(&r).is_ok(), valid);
+            }
+            r.cheat_id = SHINY.into();
+            assert!(rom.generate(&r).is_err());
+            r.parameters = None;
+            assert_eq!(rom.generate(&r).unwrap().lines.len(), 86);
+            let rocket = p.md5 == crate::profile::ROCKET.md5;
+            let mut offsets = std::collections::HashSet::new();
+            for patch in bindings(p.md5)
+                .iter()
+                .flat_map(|b| b.patches.iter().copied())
+                .chain(parameters::encounter(rocket, 400, 100))
+                .chain(parameters::shiny(rocket))
+                .chain(parameters::teleport(rocket, 1, 2, 0))
+            {
+                assert!(offsets.insert(patch.offset));
+                assert!(patch.offset < p.size as u32);
+            }
+        }
+        for value in [
+            serde_json::json!({"kind":"encounter","species":null,"level":5}),
+            serde_json::json!({"kind":"encounter","species":1,"level":1.5}),
+            serde_json::json!({"kind":"encounter","species":1,"level":256}),
+            serde_json::json!({"kind":"teleport","map_id":"1-2","warp_id":0,"x":1}),
+        ] {
+            assert!(serde_json::from_value::<Parameters>(value).is_err());
+        }
+    }
+
     #[test]
     fn api_never_generates_without_a_loaded_identity() {
         let mut app = crate::app::App::default();
@@ -510,9 +659,9 @@ mod tests {
             assert_eq!(
                 catalog["entries"].as_array().unwrap().len(),
                 if profile.md5 == crate::profile::ROCKET.md5 {
-                    4
+                    7
                 } else {
-                    3
+                    6
                 }
             );
             assert_eq!(catalog["rom"]["md5"], profile.md5);
@@ -523,12 +672,20 @@ mod tests {
                     json!({
                         "expected_rom_md5": profile.md5,
                         "cheat_id": entry["id"],
-                        "format": "gameshark_v1_v2"
+                        "format": "gameshark_v1_v2",
+                        "parameters": match entry["parameters"].as_str() {
+                            Some("encounter") => json!({"kind":"encounter", "species":catalog["options"]["species"][0]["id"], "level":5}),
+                            Some("teleport") => {
+                                let m = catalog["options"]["maps"].as_array().unwrap().iter().find(|m| !m["landings"].as_array().unwrap().is_empty()).unwrap();
+                                json!({"kind":"teleport", "map_id":m["id"], "warp_id":m["landings"][0]["id"]})
+                            },
+                            _ => serde_json::Value::Null,
+                        }
                     }),
                 )
                 .unwrap();
                 assert_eq!(code["rom_md5"], profile.md5);
-                assert_eq!(code["lines"].as_array().unwrap().len(), 1);
+                assert!(!code["lines"].as_array().unwrap().is_empty());
             }
             dispatch(&mut app, "open_cheat_rom", json!({"path": ue_path})).unwrap();
             dispatch(&mut app, "cheat_code", request.clone()).unwrap();

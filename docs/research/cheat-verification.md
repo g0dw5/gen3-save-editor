@@ -190,3 +190,104 @@ late responses after closure, search and narrow-window behavior.
 
 Simulation logs/screenshots stay private under the local analysis directory. This
 file describes test scope without shipping the games, user history or save data.
+
+## Parameterized encounters, shiny and map warps
+
+Exact fingerprints: BW `0d9b129f7dd76895f79bb47ad7dec2fe`, DP
+`cb2940215f4dafb1bef133c3af379f44`, Rocket
+`59c658a1081f542086de1060bb65f0b3`. UE does not inherit these bindings.
+All addresses below are **file offsets** unless explicitly marked RAM.
+
+### Generation path
+
+| Engine | Ordinary wild entry | Species/level patch | Nature PID hook | Cute Charm PID hook |
+| --- | --- | --- | --- | --- |
+| BW / DP | `B4E68` | `B4E6C..B4E72` | `67EB4..67EC0` | `67FA2..67FAE` |
+| Rocket | `EC2D0` | `EC2D4..EC2DA` | `95A90..95A9C` | `95B7E..95B8A` |
+
+Species/level replaces original halfwords `0400 0C06 0609 0E0F` with
+`mov r6,high; lsl r6,8; add r6,low; mov r7,level`. R6/R7 are the native
+wild constructor's species and level. There is no fixed emulator stack-address
+write as in the rejected historical Sudowoodo pair. Downstream IVs, moves, OT,
+checksum and encryption remain native. Separate generators are not redirected.
+
+Shiny uses the original native low-PID draw and original high-PID RNG call.
+Only when the saved caller is the corresponding ordinary wild call site does
+it replace high PID with `low PID XOR TID XOR SID XOR (random & 7)`. Native
+nature and gender loops still accept/reject candidates. Other callers retain
+the original high draw; byte-for-byte native non-wild comparisons cover this.
+BW/DP's later Shiny Charm hook is left intact. The explicit-letter PID loop is
+not patched: the ordinary Cute Charm call passes letter zero and uses the
+ordinary gender/nature loop. This is not a global shiny predicate bypass.
+
+The owned assembly template is [shiny-wild-hook.s](shiny-wild-hook.s); constants
+in `cheats/parameters.rs` bind its literals and saved-return offsets per engine.
+Each 72-byte helper occupies asserted `FFFF` padding: BW/DP `311200` and `311280`,
+Rocket `1F00000` and `1F00080`. Each entry replaces 14 bytes with an absolute Thumb
+jump; the helper replays the native low/high combine and resumes immediately
+following it. Caller registers and stack are restored. All original halfwords,
+including padding and the displaced Random BL, are checked in addition to MD5.
+The 86 encrypted lines are imported as **one mGBA set**, not just independent
+single-line sets. No extracted game content is shipped as part of the helpers.
+
+### Warp path and destination eligibility
+
+| Engine | SetWarpDestination | Patched argument moves | WarpIntoMap | sWarpDestination (RAM) |
+| --- | --- | --- | --- | --- |
+| BW / DP | `84BEC` | `84C12, 84C14, 84C16` | `84BD8` | `020322E4` |
+| Rocket | `BA498` | `BA4BE, BA4C0, BA4C2` | `BA484` | `020332A0` |
+
+The three original moves `1C21 1C2A 1C33` become immediate group/map/warp values
+right before SetWarpData. ApplyCurrentWarp, native header/layout selection and
+SetPlayerCoordsFromWarp remain intact. This does not overwrite the current
+SaveBlock1 location while the player is walking. Continuous connections and
+setters which copy dynamic warp records directly are outside this hook.
+
+Runtime parsing reads each MapEvents warp count at +1, table pointer at +8,
+and 8-byte records: x/y at +0/+2, target warp/map/group at +5/+6/+7. A selectable
+landing must have an incoming static warp reference, coordinates inside its
+map layout and group/map/warp values below 128 (native signed-byte indexing).
+All parsed maps remain available to inspect codes; unsupported landing entries
+are disabled. Static references do **not** establish current-save reachability,
+all script prerequisites, runtime layout substitutions or escape routes.
+
+`GG NN` means hex group, hex map number, in that order; decimal group-number is
+shown separately. This is not a packed met-location number. UI groups by the
+ROM region name, never by a bundled region/map catalog. Source arrays and the
+editor-side runtime cache are tied to the loaded ROM; switching its data object
+invalidates the cache. Invalid/unknown/extra parameters fail closed in Rust.
+
+### Verification record
+
+`scripts/verify_parameter_cheats_mgba.py` runs final CLI-generated codes in mGBA
+0.10.5 without loading a user save. For **each** BW, DP and Rocket:
+
+- Full 32 MiB ROM-window comparison for all three recipes, restricted to the
+  intended instruction/padding ranges; eight whole-set toggle/reset cycles per
+  recipe and exact original restoration.
+- 384 complete ordinary wild constructor cases: species 25, 185 and 400;
+  levels 1, 17 and 100; 64 seeds with/without shiny. Native encrypted-record
+  checksum, species, level and shiny XOR are independently checked.
+- 32 non-wild nature-constructor on/off comparisons produce byte-identical
+  records. 256 lead-ability cases use native-discovered Synchronize/Cute Charm
+  carriers, both lead genders, and verify preserved nature selection and forced
+  opposite gender when Cute Charm activates.
+- Five spread-out map destinations execute SetWarpDestination → WarpIntoMap,
+  verify actual SaveBlock1 map and coordinates, then verify the setter restores
+  after disabling. This is 15 native transition cases, not all-map gameplay.
+- Existing common-cheat native regression remains passing for BW/DP/Rocket.
+
+Additional private full-frame mGBA checks use **copied** BW/Rocket saves:
+DoWarp performs a visible transition to Rustboro/卡那兹市 `0-3`, landing at
+warp 0 `(27,19)` and completing the door exit at `(27,20)`. Both walk to `(27,22)`.
+After disabling, walking back into that door enters BW `11-3` / Rocket `45-3`
+through the original destination, demonstrating that the ordinary door resumes.
+The species+shiny group also constructs species 185 at level 17 in these running
+game contexts and starts the native wild battle. These are controlled native
+entry triggers, not a claim of having walked through every encounter method.
+No original save or ROM is written; private screenshots and logs are not shipped.
+
+UI tests cover both languages, ROM-name/ID search, invalid levels, late responses
+after target changes, Region → Map selection, disabled unreferenced landings,
+landing changes, export descriptions, full-group copying and narrow layouts.
+Mobile emulators and long-term play remain untested.

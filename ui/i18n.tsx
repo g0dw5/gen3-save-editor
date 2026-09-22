@@ -1,5 +1,16 @@
 import { createContext, useContext } from "react";
 export const en = {
+  cheatsCategory_travel: "Map teleport",
+  cheat_parameters: "Choose a valid Pokémon, level or map landing.",
+  cheatsSelectParameters: "Choose the target to generate its codes",
+  cheatsSpecies: "Pokémon (ROM name / ID search)",
+  cheatsRegion: "Region",
+  cheatsMap: "Map / location code",
+  cheatsLanding: "Landing (warp ID / tile)",
+  cheatsNoLanding: "No eligible landing",
+  cheatsMapCode: "Hex: map group / map number",
+  cheatsLandingHelp:
+    "Read from the current ROM. Only referenced, in-bounds warp tiles are offered; story access is not guaranteed. Disable teleport immediately after arrival.",
   cheatsCount: "{n} verified features",
   cheatsLineCount: "{n} code lines · enable the complete set",
   cheatsCategory_battle: "Battle AI",
@@ -619,6 +630,17 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  cheatsCategory_travel: "地图传送",
+  cheat_parameters: "请选择有效的宝可梦、等级或传送落点。",
+  cheatsSelectParameters: "请先选择目标，生成对应代码",
+  cheatsSpecies: "宝可梦（本 ROM 名称／编号搜索）",
+  cheatsRegion: "区域",
+  cheatsMap: "具体地图／地点编码",
+  cheatsLanding: "落点（入口编号／格位）",
+  cheatsNoLanding: "无可用入口落点",
+  cheatsMapCode: "十六进制：地图组／地图号",
+  cheatsLandingHelp:
+    "列表取自当前 ROM。仅提供有门／洞口引用的有效格位，不代表当前剧情已解锁。抵达后立即停用传送代码。",
   cheatsCount: "{n} 个已验证功能",
   cheatsLineCount: "{n} 行代码 · 请整组启用",
   cheatsCategory_battle: "对战 AI",

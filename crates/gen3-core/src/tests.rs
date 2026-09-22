@@ -14,8 +14,8 @@ use std::sync::OnceLock;
 fn contest_api_rejects_stale_rom_and_malformed_values() {
     use crate::app::{App, Request};
     let mut app = App {
-        cheat_rom: None,
         session: Some(Session::new(rom())),
+        ..Default::default()
     };
     let bad_values = [
         serde_json::json!([0, null, 0, 0, 0, 0]),

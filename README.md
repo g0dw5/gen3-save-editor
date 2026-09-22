@@ -21,7 +21,9 @@ ROM or save. The first verified recipe disables AI input peeking in all modes of
 Ultimate Emerald 5.5, exact MD5 `17ce9785b33319b3dbda9a5d37c57ec1`.
 This is **cheat-only support**, not a full Ultimate Emerald editor adapter.
 Dark Phantom BW/DP and Team Rocket include walking-encounter suppression, guaranteed
-wild capture and faster egg hatching. Team Rocket also has guaranteed daycare eggs
+wild capture, faster egg hatching, species/level selection, shiny wild encounters
+and map teleport with a Region → Map selector and ROM-derived landing tiles.
+Team Rocket also has guaranteed daycare eggs
 for compatible parents at the normal checkpoint. Availability is fingerprint-scoped;
 all added recipes have native mGBA regression tests.
 See [usage, formats, limitations and developer tests](docs/cheats.md).

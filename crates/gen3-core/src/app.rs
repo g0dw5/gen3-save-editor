@@ -22,6 +22,7 @@ pub struct Request {
 pub struct App {
     pub session: Option<Session>,
     pub cheat_rom: Option<crate::cheats::CheatRom>,
+    pub(crate) editor_cheat_cache: Option<(std::sync::Arc<Vec<u8>>, crate::cheats::CheatRom)>,
 }
 fn required(v: &Value, key: &str) -> Result<String> {
     v.get(key)
@@ -67,7 +68,17 @@ impl App {
                 let rom = if let Some(r) = self.cheat_rom.as_ref().filter(|r| r.matches(&md5)) {
                     r.clone()
                 } else if let Some(s) = self.session.as_ref().filter(|s| s.rom.profile.md5 == md5) {
-                    crate::cheats::CheatRom::open(&s.rom.data)?
+                    if let Some((_, cached)) = self
+                        .editor_cheat_cache
+                        .as_ref()
+                        .filter(|(data, _)| std::sync::Arc::ptr_eq(data, &s.rom.data))
+                    {
+                        cached.clone()
+                    } else {
+                        let rom = crate::cheats::CheatRom::open(&s.rom.data)?;
+                        self.editor_cheat_cache = Some((s.rom.data.clone(), rom.clone()));
+                        rom
+                    }
                 } else {
                     return Err(err(
                         "cheat_context_mismatch",
@@ -87,6 +98,7 @@ impl App {
                 let session = Session::new(Rom::open(data)?);
                 let catalog = session.rom.catalog()?;
                 self.session = Some(session);
+                self.editor_cheat_cache = None;
                 Ok(json!({"catalog":catalog,"save":null}))
             }
             "open_save" => {

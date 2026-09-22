@@ -2323,3 +2323,29 @@ summary {
 .cheats-list button + button {
   margin-top: 8px;
 }
+
+.cheats-parameters {
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
+  margin: 14px 0;
+}
+.cheats-parameters label {
+  display: grid;
+  gap: 6px;
+}
+.cheats-parameters input[type="number"] {
+  width: 100%;
+  max-width: 160px;
+}
+.cheats-parameters p {
+  margin: 0;
+  font-size: 12px;
+}
+.cheats-code pre {
+  max-height: 280px;
+  overflow: auto;
+}

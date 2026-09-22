@@ -95,7 +95,7 @@ class Probe:
         self.codes = {key: json.loads(subprocess.check_output(
             [cli, "cheat-code", str(path), key, "gameshark_v1_v2"]))["lines"] for key in self.p["patches"]}
         catalog = json.loads(subprocess.check_output([cli, "cheats", str(path)]))
-        assert {e["id"] for e in catalog["entries"]} == set(self.codes)
+        assert set(self.codes).issubset({e["id"] for e in catalog["entries"]})
         assert self.c.start(str(path).encode())
 
     def read(self, a, n):

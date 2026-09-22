@@ -9,10 +9,12 @@
 #include <mgba/internal/arm/isa-inlines.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static struct mCore *core;
 static struct mCheatDevice *device;
-static struct mCheatSet *sets[16];
+static struct mCheatSet *sets[256];
 static unsigned count;
 static color_t pixels[240 * 160];
 static void quiet(struct mLogger *log, int category, enum mLogLevel level,
@@ -60,13 +62,31 @@ void writebytes(unsigned address, const unsigned char *bytes, unsigned length) {
     for (unsigned i = 0; i < length; ++i) core->busWrite8(core, address + i, bytes[i]);
 }
 int addcode(const char *line) {
-    assert(count < 16);
+    assert(count < 256);
     struct mCheatSet *set = device->createSet(device, "fixture");
     if (!mCheatAddLine(set, line, GBA_CHEAT_GAMESHARK)) return -1;
     mCheatAddSet(device, set);
     set->enabled = true;
     mCheatRefresh(device, set);
     assert(mCheatPatchListSize(&set->romPatches) == 1);
+    sets[count] = set;
+    return count++;
+}
+/* Import exactly as a user would: one multiline emulator cheat set. */
+int addgroup(const char *lines) {
+    assert(count < 256);
+    struct mCheatSet *set = device->createSet(device, "multiline fixture");
+    char *copy = strdup(lines), *cursor = NULL;
+    unsigned expected = 0;
+    for (char *line = strtok_r(copy, "\n", &cursor); line; line = strtok_r(NULL, "\n", &cursor)) {
+        if (!mCheatAddLine(set, line, GBA_CHEAT_GAMESHARK)) { free(copy); return -1; }
+        ++expected;
+    }
+    free(copy);
+    mCheatAddSet(device, set);
+    set->enabled = true;
+    mCheatRefresh(device, set);
+    assert(mCheatPatchListSize(&set->romPatches) == expected);
     sets[count] = set;
     return count++;
 }

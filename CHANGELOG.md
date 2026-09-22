@@ -10,6 +10,18 @@ bilingual file.
 
 ## 0.2.2 — Unreleased / 未发布
 
+- Add species/level encounters, shiny ordinary wild encounters and map teleport
+  for Dark Phantom BW/DP and Team Rocket. Read Pokémon and map choices from the
+  loaded ROM; provide searchable names, a Region → Map selector, hex map codes
+  and referenced entrance tiles. Validate parameters in Rust and invalidate stale
+  generated codes. Preserve native Pokémon generation and test final encrypted
+  code sets in mGBA; no save or ROM file is modified by the catalog.
+- 漆黑的魅影 BW／DP、西班牙火箭队新增指定遇怪与等级、普通野生必闪和地图传送。
+  宝可梦及地图列表实时读取 ROM，支持名称搜索、区域→地图二级选择、十六进制地点
+  编码和入口格位。后端校验参数，切换目标立即作废旧代码；保留原生个体生成流程，
+  使用最终加密代码进行 mGBA 验证，金手指目录不修改 ROM／存档文件。
+
+
 - Add a read-only, exact-ROM cheat window with bilingual guides, scoped verification,
   copy/export and a shared Rust/CLI generator. Includes all-mode AI input-peeking
   suppression for Ultimate Emerald 5.5; walking-encounter suppression, guaranteed

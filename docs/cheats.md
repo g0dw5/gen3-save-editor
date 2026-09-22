@@ -12,9 +12,9 @@ size. No emulator connection, save or ROM writes are performed.
 | ROM | MD5 | Recipes / 条目 |
 | --- | --- | --- |
 | Ultimate Emerald / 究极绿宝石 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | All modes: disable AI input peeking / 全模式关闭窥屏 |
-| Dark Phantom / 漆黑的魅影 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | Pause walking encounters; guaranteed wild capture; faster hatching / 暂停走路遇敌、必定捕获、加快孵蛋 |
-| Dark Phantom / 漆黑的魅影 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | Same three features, independently tested / 同上三项，独立验证 |
-| Team Rocket / 西班牙火箭队 2.1 中文 | `59c658a1081f542086de1060bb65f0b3` | Those three plus compatible daycare eggs / 上述三项及兼容寄养组合必定产蛋 |
+| Dark Phantom / 漆黑的魅影 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | Pause walking encounters; guaranteed wild capture; faster hatching; species/level; shiny; map teleport / 暂停走路遇敌、必定捕获、加快孵蛋、指定遇怪、闪光、地图传送 |
+| Dark Phantom / 漆黑的魅影 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | Same six features, independently tested / 同上六项，独立验证 |
+| Team Rocket / 西班牙火箭队 2.1 中文 | `59c658a1081f542086de1060bb65f0b3` | Those six plus compatible daycare eggs / 上述六项及兼容寄养组合必定产蛋 |
 
 Ultimate Emerald is supported **only in the cheat window**. Open it there using
 “Choose cheat ROM”; the ordinary editor importer still rejects it. Opening another
@@ -44,11 +44,14 @@ VBA-M 16-character layout encode the **same** protocol; removing spaces is not
 conversion to CodeBreaker or Action Replay V3. VBA-M 2.2.3's input detection needs
 the compact layout. Back up and save outside battle, enable the full set, restart,
 and load the in-game save. Disable the full set and restart to stop. The new common
-recipes have one line each; the Ultimate Emerald recipe requires two together.
+fixed recipes have one line each; the Ultimate Emerald recipe requires two together.
+Species/level uses four lines, teleport three, and shiny 86. Copy the entire set.
+For teleport, follow the recipe-specific live enable/disable steps below.
 
 当前条目为 **GameShark Advance V1/V2**。8+8 与 VBA-M 不带空格的 16 位形式只是
 同一协议的排版，不能当作转换协议。战斗外正常保存并备份后启用整组，重启并从
-游戏内存档继续；停用整组后重启。新增常用功能各一条，究极绿宝石去窥屏必须两条一起。
+游戏内存档继续；停用整组后重启。固定常用功能各一条，究极绿宝石去窥屏必须两条一起。
+指定遇怪 4 行、传送 3 行、闪光 86 行，必须完整复制；传送按下方专门的即时启停步骤操作。
 
 ### Common recipes / 常用功能
 
@@ -73,10 +76,74 @@ recipes have one line each; the Ultimate Emerald recipe requires two together.
 
 Stopping a code restores instructions, **not completed gameplay changes**: captures,
 hatching progress and pending eggs can persist after normal saving. These codes do
-not give maximum IVs, force a species or inject inventory slots.
+not give maximum IVs or inject inventory slots.
 
 关闭代码恢复的是指令，不会撤销已经捕获的宝可梦、已减少的孵化周期和已产生的蛋。
-本批不提供指定遇宠、强行满个体或直接覆盖背包槽位的代码。
+不提供强行满个体或直接覆盖背包槽位的代码。
+
+### Species, shiny and teleport / 指定遇怪、闪光与传送
+
+For Dark Phantom BW/DP and Team Rocket, select a ROM Pokémon (searchable by
+native name/ID) and level 1–100. The four-line recipe changes the ordinary wild
+constructor's inputs; IVs, moves, encryption and subsequent encounter handling
+remain native. It does not start a battle or replace separate static/gift/egg/
+trainer/roamer constructors. Battle-only species are excluded. Disable the old
+set before choosing another target. Pause-walking-encounter codes can prevent
+walking encounters from starting even when the species recipe is enabled.
+
+指定遇怪读取当前 ROM 的名称和编号，可搜索并选择 1–100 级。后续个体值、招式、
+加密仍由原生流程生成；不主动发动战斗，不替换独立的定点、礼物、蛋、训练家或
+游走生成器，排除临时战斗形态。换目标前关闭旧组，走路遇敌暂停功能也要先停用。
+
+The shiny recipe may be combined with species/level. It constrains the newly
+created PID only in the ordinary wild call chain, leaving native nature and
+gender acceptance loops (including Synchronize and Cute Charm) intact. Other
+callers retain their original random-PID construction. No existing Pokémon's
+PID or encrypted blocks are edited. Mobile emulator support for the entire
+86-line ROM hook is untested; the single-set import is verified in mGBA.
+
+闪光与指定遇怪可以叠加，仅约束新生成的普通野生 PID，保留原生性格／性别筛选、
+同步和迷人之躯。不会改已有宝可梦的 PID 或加密块。86 行整组已在 mGBA 导入与启停
+验证，手机模拟器对长代码组的支持尚未实测，不能只启用前几行。
+
+Teleport uses **Region → Map**, then offers referenced entrance landing tiles.
+Labels and codes are read from the ROM at runtime. `GG NN` displays hexadecimal
+map group and map number separately; decimal `group-number` remains visible.
+This is not a packed integer or a met-location code. Maps without an eligible
+incoming warp reference or in-bounds landing remain visible but disabled.
+A static entrance reference is not proof of story reachability, a usable exit,
+or complete gameplay testing of that destination.
+
+传送使用“区域 → 具体地图”二级选择，可再选入口格位。地图名称及编码直接从 ROM
+读取；`GG NN` 分别是十六进制地图组、地图号，旁边保留十进制 `组-图`，不是相遇
+地点编号，也不是把两项拼成整数。没有入口引用或有效格位的地图仅显示编码，不
+生成传送代码。入口引用不证明当前剧情可达、出口可用或已逐图实机验证。
+
+Back up, stand outside an ordinary door, enable the complete teleport set, then
+enter. Disable **immediately after arrival**, before using another exit. Verify
+movement and a normal exit before saving; arrival scripts may run story events.
+Continuous road connections and some dynamic return warps bypass the patched
+setter. If the emulator cannot restore ROM instructions live, retain the original
+save and restart to verify instead of relying on a still-active warp override.
+
+先备份，在普通门外启用整组，进入门后切换到目的地。**抵达后立即停用**，再测试
+行走和正常出入，确认后保存。进图脚本仍会执行，可能触发剧情；连续道路连接与
+部分动态返回入口不经过这个设置函数。如果模拟器不能即时恢复指令，保留原存档
+并重启验证，不要带着仍生效的传送替换继续过门。
+
+CLI: `gen3 cheat-code ROM CHEAT_ID gameshark_v1_v2 [PARAMETERS.json]`.
+Examples of the parameter file (IDs must exist in that exact ROM's catalog):
+
+```json
+{"kind":"encounter","species":185,"level":17}
+```
+
+```json
+{"kind":"teleport","map_id":"0-3","warp_id":0}
+```
+
+参数文件必须对应同一个 ROM 的可选条目，后端会拒绝空值、越界等级、无效地图、
+入口、临时形态和多余字段；无需参数的条目不接受附带参数。
 
 ### Ultimate Emerald / 究极绿宝石
 
