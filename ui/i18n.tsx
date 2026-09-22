@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 export const en = {
   cheatsCategory_travel: "Map teleport",
+  cheatsCategory_storage: "Pokémon storage",
   cheat_parameters: "Choose a valid Pokémon, level or map landing.",
   cheatsSelectParameters: "Choose the target to generate its codes",
   cheatsSpecies: "Pokémon (ROM name / ID search)",
@@ -631,6 +632,7 @@ export const en = {
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
   cheatsCategory_travel: "地图传送",
+  cheatsCategory_storage: "宝可梦电脑",
   cheat_parameters: "请选择有效的宝可梦、等级或传送落点。",
   cheatsSelectParameters: "请先选择目标，生成对应代码",
   cheatsSpecies: "宝可梦（本 ROM 名称／编号搜索）",

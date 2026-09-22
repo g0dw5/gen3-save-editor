@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.2.2 — Unreleased / 未发布
 
+- Add a seven-line portable Pokémon PC cheat for Dark Phantom BW/DP and Team
+  Rocket: SELECT opens the native storage menu while walking. Preserve native
+  facility guards and registered-item data; provide bilingual usage and full-set
+  copy/export through the existing cheat window.
+- 漆黑的魅影 BW／DP、西班牙火箭队新增 7 行随身电脑金手指：自由行走时按 SELECT
+  打开原生宝可梦电脑，保留原生设施限制与登记道具，沿用金手指窗口的双语说明、
+  整组复制及导出。
+
 - Add species/level encounters, shiny ordinary wild encounters and map teleport
   for Dark Phantom BW/DP and Team Rocket. Read Pokémon and map choices from the
   loaded ROM; provide searchable names, a Region → Map selector, hex map codes

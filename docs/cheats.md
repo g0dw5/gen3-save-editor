@@ -12,9 +12,9 @@ size. No emulator connection, save or ROM writes are performed.
 | ROM | MD5 | Recipes / 条目 |
 | --- | --- | --- |
 | Ultimate Emerald / 究极绿宝石 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | All modes: disable AI input peeking / 全模式关闭窥屏 |
-| Dark Phantom / 漆黑的魅影 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | Pause walking encounters; guaranteed wild capture; faster hatching; species/level; shiny; map teleport / 暂停走路遇敌、必定捕获、加快孵蛋、指定遇怪、闪光、地图传送 |
-| Dark Phantom / 漆黑的魅影 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | Same six features, independently tested / 同上六项，独立验证 |
-| Team Rocket / 西班牙火箭队 2.1 中文 | `59c658a1081f542086de1060bb65f0b3` | Those six plus compatible daycare eggs / 上述六项及兼容寄养组合必定产蛋 |
+| Dark Phantom / 漆黑的魅影 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | Portable PC; pause walking encounters; guaranteed wild capture; faster hatching; species/level; shiny; map teleport / 随身电脑、暂停走路遇敌、必定捕获、加快孵蛋、指定遇怪、闪光、地图传送 |
+| Dark Phantom / 漆黑的魅影 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | Same seven features, independently tested / 同上七项，独立验证 |
+| Team Rocket / 西班牙火箭队 2.1 中文 | `59c658a1081f542086de1060bb65f0b3` | Those seven plus compatible daycare eggs / 上述七项及兼容寄养组合必定产蛋 |
 
 Ultimate Emerald is supported **only in the cheat window**. Open it there using
 “Choose cheat ROM”; the ordinary editor importer still rejects it. Opening another
@@ -45,13 +45,37 @@ conversion to CodeBreaker or Action Replay V3. VBA-M 2.2.3's input detection nee
 the compact layout. Back up and save outside battle, enable the full set, restart,
 and load the in-game save. Disable the full set and restart to stop. The new common
 fixed recipes have one line each; the Ultimate Emerald recipe requires two together.
-Species/level uses four lines, teleport three, and shiny 86. Copy the entire set.
+Portable PC uses seven lines, species/level four, teleport three, and shiny 86. Copy the entire set.
 For teleport, follow the recipe-specific live enable/disable steps below.
 
 当前条目为 **GameShark Advance V1/V2**。8+8 与 VBA-M 不带空格的 16 位形式只是
 同一协议的排版，不能当作转换协议。战斗外正常保存并备份后启用整组，重启并从
 游戏内存档继续；停用整组后重启。固定常用功能各一条，究极绿宝石去窥屏必须两条一起。
-指定遇怪 4 行、传送 3 行、闪光 86 行，必须完整复制；传送按下方专门的即时启停步骤操作。
+随身电脑 7 行、指定遇怪 4 行、传送 3 行、闪光 86 行，必须完整复制；传送按下方专门的即时启停步骤操作。
+
+### Portable Pokémon PC / 随身电脑
+
+Enable all seven lines as one GameShark Advance V1/V2 set. While freely walking,
+press **SELECT** to open the ROM's original Pokémon PC menu. It offers deposit,
+withdrawal, organization and held-item management. Exit normally with B or the
+exit option; disable the complete set only after leaving the PC, then restart.
+SELECT returns to the previously registered item, which is never cleared.
+
+将 7 行作为同一组 GameShark Advance V1/V2 启用。在可以自由行走时按 **SELECT**，
+原地打开本作的宝可梦电脑菜单，可存取、整理宝可梦及整理携带道具。用 B 或退出选项
+正常退出电脑，再停用整组并重启；SELECT 恢复原登记道具，登记内容不会清空。
+
+Native overworld input and Union Room / certain battle-facility restrictions
+remain. This does not force-open a PC during battle, dialogue or other menus.
+Access away from a PC is a gameplay convenience change; transfers and saving
+still use native routines. Disabling does not undo saved transfers. Exact ROM
+fingerprints are required; mobile emulators and every story location are untested.
+Ultimate Emerald does not expose this recipe.
+
+保留原生地图输入处理以及联机房、部分对战设施的限制，不强行从战斗、对话或其他
+菜单打开电脑。这会改变远离电脑时可换队的规则；实际存取和保存仍由游戏原生流程
+处理，停用不会撤销已经保存的整理结果。仅支持所列完整 ROM 指纹，尚未逐剧情地点
+或手机模拟器测试；究极绿宝石暂不提供此条目。
 
 ### Common recipes / 常用功能
 

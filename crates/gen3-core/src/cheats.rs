@@ -5,6 +5,7 @@
 use crate::{binary, err, profile::PROFILES, Result};
 use serde::{Deserialize, Serialize};
 mod parameters;
+mod storage;
 pub use parameters::{Options, Parameters};
 use parameters::{ENCOUNTER, SHINY, TELEPORT};
 
@@ -14,6 +15,7 @@ pub const NO_ENCOUNTERS: &str = "disable-walking-encounters";
 pub const GUARANTEED_CATCH: &str = "guaranteed-wild-catch";
 pub const FAST_HATCH: &str = "faster-egg-hatching";
 pub const DAYCARE_EGG: &str = "guaranteed-compatible-daycare-egg";
+pub const PORTABLE_PC: &str = "portable-pokemon-storage";
 
 #[derive(Clone, Copy, Serialize)]
 pub struct Text {
@@ -102,6 +104,10 @@ struct Binding {
 }
 const DARK_PHANTOM: &[Binding] = &[
     Binding {
+        id: PORTABLE_PC,
+        patches: &storage::DARK_PHANTOM,
+    },
+    Binding {
         id: NO_ENCOUNTERS,
         patches: &[RomHalfword {
             offset: 0xb52a2,
@@ -127,6 +133,10 @@ const DARK_PHANTOM: &[Binding] = &[
     },
 ];
 const ROCKET: &[Binding] = &[
+    Binding {
+        id: PORTABLE_PC,
+        patches: &storage::ROCKET,
+    },
     Binding {
         id: NO_ENCOUNTERS,
         patches: &[RomHalfword {
@@ -303,6 +313,9 @@ fn encode_rom_halfword(offset: u32, value: u16) -> Result<String> {
 }
 
 fn recipe(id: &'static str) -> Recipe {
+    if id == PORTABLE_PC {
+        return storage::recipe();
+    }
     if id == NO_PEEK {
         return no_peek();
     }
@@ -456,9 +469,9 @@ mod tests {
             assert_eq!(
                 rom.catalog().entries.len(),
                 if p.md5 == crate::profile::ROCKET.md5 {
-                    7
+                    8
                 } else {
-                    6
+                    7
                 }
             );
             let mut request = request();
@@ -473,6 +486,11 @@ mod tests {
             );
         }
         let mut request = request();
+        request.cheat_id = PORTABLE_PC.into();
+        assert_eq!(
+            ultimate().generate(&request).unwrap_err().code,
+            "unsupported_feature"
+        );
         request.cheat_id = "unknown".into();
         assert!(ultimate().generate(&request).is_err());
     }
@@ -659,9 +677,9 @@ mod tests {
             assert_eq!(
                 catalog["entries"].as_array().unwrap().len(),
                 if profile.md5 == crate::profile::ROCKET.md5 {
-                    7
+                    8
                 } else {
-                    6
+                    7
                 }
             );
             assert_eq!(catalog["rom"]["md5"], profile.md5);

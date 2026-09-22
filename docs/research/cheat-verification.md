@@ -291,3 +291,65 @@ UI tests cover both languages, ROM-name/ID search, invalid levels, late response
 after target changes, Region → Map selection, disabled unreferenced landings,
 landing changes, export descriptions, full-group copying and narrow layouts.
 Mobile emulators and long-term play remain untested.
+
+## Portable Pokémon PC / 随身电脑
+
+The seven-line set routes the native field SELECT handler to a small owned script.
+It uses the same BW, DP and Rocket fingerprints above; UE has no portable-PC binding.
+
+| Binding (file offset) | BW / DP | Rocket |
+| --- | --- | --- |
+| Native SELECT handler | `1AD520` | `1F9B8C` |
+| `cmp r0,#0` → `cmp r0,r0` | `1AD568: 2800 → 4280` | `1F9BD4: 2800 → 4280` |
+| Script pointer literal | `1AD5D8: 082736B3 → 08311300` | `1F9C44: 082E04F7 → 09F00100` |
+| Eight bytes of asserted FF padding | `311300` | `1F00100` |
+
+The script is `6A 25 3F 00 27 6C 02 00`: lockall; special 63; waitstate;
+releaseall; end; padding. Special 63 is the native Pokémon storage menu in each
+ROM (also referenced by its original PC script). Normal exit resumes the script
+and releases field controls. The registered-item halfword at SaveBlock1 + `496`
+is preserved. The native guards before the comparison are not bypassed:
+
+- Union Room map: BW/DP `3C19`, Rocket `3C34` (packed native location halfwords).
+- Pyramid layouts `169`, `17A`; Pike layouts `15F`, `160`, `166`, `167`.
+- Multi partner room: BW/DP `0F1A`, Rocket `0F35`, when variable `40CE` equals 2.
+
+This is a SELECT field-handler hook, not a frame-independent RAM callback write.
+Battle/dialogue/menu input dispatch remains native. It intentionally changes
+access to team organization away from a PC; it is not claimed as normal gameplay.
+
+`scripts/verify_storage_cheats_mgba.py` imports final CLI-generated encrypted lines
+as one mGBA set. Each of BW, DP and Rocket is executed separately:
+
+- Compare the entire 32 MiB in-memory ROM with the expected patch; run 12 toggle/
+  reset checks and verify exact restoration after disabling the complete set.
+- Execute eight native eligibility guard cases both enabled and disabled (16
+  cases). Test no registration, an item registration and an invalid registration;
+  none is erased by the enabled handler. Check the actual script-context pointer.
+- In a running outdoor fixture, open/exit Organize, deposit a native-generated
+  Pokémon, move it to the adjacent box slot, save through the game's START menu,
+  destroy the emulator core, boot a new core from the exported battery save with
+  cheats absent, re-enable and withdraw that exact record.
+- Verify complete 80-byte records, native encryption checksums, party/box counts,
+  empty source slots, registered-item preservation and three repeated open/cancel
+  cycles. Disable and walk to demonstrate that field control resumed.
+
+Full-frame fixtures use private save/state copies with controlled RAM party and
+boxes; they do not alter the user's originals. DP starts from the compatible BW
+overworld fixture but executes the DP ROM and performs its own native save/cold
+boot. This is controlled testing, not a naturally played DP campaign. SaveBlock
+and storage pointers are reread after every native exit/save because the engine
+reallocates them. Inputs are read into memory, never attached as writable files;
+only explicit disposable test exports are written. Source hashes are checked.
+
+Screenshots explicitly export opaque RGBA: mGBA's high pixel byte contains renderer
+flags, not usable PNG alpha. The runner checks alpha is 255 for every pixel before
+writing PNG. Earlier transparent exploratory exports are not visual evidence.
+No ROMs, saves, states or screenshots are bundled. Mobile emulators, every story
+location, held-item transfers and long-term play are not exhaustively tested.
+
+三版分别验证最终 7 行加密代码、整组启停恢复、16 个原生限制检查，以及实际按键的
+存入→盒内移动→正常保存→全新模拟器核心读档→取回流程。逐字节检查个体和校验和，
+不会把“电脑菜单能打开”当作完整存取验证。DP 使用兼容的 BW 场景夹具启动，但后续
+执行自己的 ROM、保存及冷启动；不宣称覆盖自然游玩全部流程或手机模拟器。
+原始存档和 ROM 均不修改，截图导出单独修正不透明通道并进行检查。
