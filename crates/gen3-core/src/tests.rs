@@ -14,6 +14,7 @@ use std::sync::OnceLock;
 fn contest_api_rejects_stale_rom_and_malformed_values() {
     use crate::app::{App, Request};
     let mut app = App {
+        cheat_rom: None,
         session: Some(Session::new(rom())),
     };
     let bad_values = [
@@ -1981,7 +1982,10 @@ fn adapter_capabilities_reject_writes_without_mutation() {
     );
     assert_eq!(r.world().err().unwrap().code, "unsupported_feature");
     assert_eq!(r.patch(&[]).err().unwrap().code, "unsupported_feature");
-    let mut app = crate::app::App { session: Some(s) };
+    let mut app = crate::app::App {
+        session: Some(s),
+        ..Default::default()
+    };
     assert_eq!(
         app.dispatch(crate::app::Request {
             command: "save_bytes".into(),

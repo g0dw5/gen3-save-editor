@@ -2164,3 +2164,153 @@ summary {
   gap: 12px;
   margin-top: 12px;
 }
+
+/* Cheat-only ROM context is independent of the save editor. */
+.cheats {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  container-type: inline-size;
+}
+.cheats-context {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.cheats-context p {
+  margin: 6px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.cheats-context code {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.cheats-context button {
+  flex-shrink: 0;
+}
+.cheats-scope {
+  color: var(--accent);
+  font-size: 12px;
+}
+.cheats-layout {
+  display: grid;
+  grid-template-columns: 185px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+.cheats-list {
+  padding: 12px;
+  border-right: 1px solid var(--line);
+  overflow: auto;
+}
+.cheats-list .search-field {
+  margin-bottom: 12px;
+}
+.cheats-list button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 8px;
+  width: 100%;
+  line-height: 1.5;
+  padding: 12px;
+}
+.cheats-list button.active {
+  background: var(--soft);
+}
+.cheats-list button span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+.cheats-detail {
+  padding: 18px 22px;
+  overflow: auto;
+  line-height: 1.8;
+}
+.cheats-detail h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+.cheats-detail h3 {
+  margin: 22px 0 8px;
+  font-size: 14px;
+}
+.cheats-detail ol,
+.cheats-detail ul {
+  padding-left: 20px;
+}
+.cheats-detail li {
+  margin-bottom: 10px;
+}
+.cheats-code {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--background);
+}
+.cheats-code label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.cheats-code pre {
+  font-size: 19px;
+  line-height: 1.8;
+  white-space: pre;
+  overflow: auto;
+  user-select: all;
+}
+.cheats-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cheats-empty {
+  padding: 30px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.cheats-error {
+  margin: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.cheats-evidence {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.cheats-evidence summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+@container (max-width:580px) {
+  .cheats-context {
+    flex-direction: column;
+  }
+  .cheats-layout {
+    grid-template-columns: 1fr;
+    overflow: auto;
+    display: block;
+  }
+  .cheats-list {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .cheats-detail {
+    overflow: visible;
+    padding: 16px;
+  }
+}

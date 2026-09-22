@@ -2,6 +2,7 @@
 pub mod adapter;
 pub mod app;
 pub mod binary;
+pub mod cheats;
 pub mod contest;
 pub mod fishing;
 pub mod graphics;

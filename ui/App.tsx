@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
+  Code2,
   Box,
   Check,
   ChevronDown,
@@ -41,6 +42,7 @@ import {
 import { I18n, en, zh, type Key, type Locale, useI18n } from "./i18n";
 import { romOption, itemOption } from "./names";
 import { PokemonEditor, type PokemonEditorTab } from "./PokemonEditor";
+import { CheatWindow } from "./CheatWindow";
 import { ReferenceWindow } from "./ReferenceWindow";
 import {
   fromKey,
@@ -75,6 +77,7 @@ export default function App() {
   const [multi, setMulti] = useState<string[]>([]);
   const [revision, setRevision] = useState(0);
   const [page, setPage] = useState("pokemon");
+  const [cheatsOpen, setCheatsOpen] = useState(false);
   const [windows, setWindows] = useState<RefWindow[]>([]);
   const nextWindow = useRef(0);
   const [free, setFree] = useState(false);
@@ -541,6 +544,10 @@ export default function App() {
               <FolderOpen size={15} />
               {t("openSave")}
             </button>
+            <button onClick={() => setCheatsOpen(true)}>
+              <Code2 size={15} />
+              {t("cheatsTitle")}
+            </button>
             <button onClick={() => openRef()} disabled={!catalog}>
               <BookOpen size={15} />
               {t("references")}
@@ -961,6 +968,12 @@ export default function App() {
             )}
           </span>
         </footer>
+        {cheatsOpen && (
+          <CheatWindow
+            editorMd5={catalog?.profile.md5}
+            onClose={() => setCheatsOpen(false)}
+          />
+        )}
         {catalog &&
           windows.map((info) => (
             <ReferenceWindow
@@ -970,6 +983,7 @@ export default function App() {
               world={world}
               save={save}
               loadWorld={loadWorld}
+              onCheats={() => setCheatsOpen(true)}
               onClose={() =>
                 setWindows((old) => old.filter((w) => w.id !== info.id))
               }

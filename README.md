@@ -13,6 +13,16 @@ workspace. Core regression tests
 run against generated fixtures and optionally your exact ROMs. See
 [verification and remaining work](docs/IMPLEMENTATION.md) before using a build.
 
+## Cheat codes
+
+Use **Cheats** in the toolbar (also accessible from ROM reference). No save is
+required. Select a ROM inside the cheat window; this does not replace the editor's
+ROM or save. The first verified recipe disables AI input peeking in all modes of
+Ultimate Emerald 5.5, exact MD5 `17ce9785b33319b3dbda9a5d37c57ec1`.
+This is **cheat-only support**, not a full Ultimate Emerald editor adapter.
+Dark Phantom BW/DP and Team Rocket currently show no verified recipes.
+See [usage, formats, limitations and developer tests](docs/cheats.md).
+
 ## Supported inputs
 
 | ROM | Required MD5 | Bytes |

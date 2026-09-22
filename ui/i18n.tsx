@@ -1,5 +1,32 @@
 import { createContext, useContext } from "react";
 export const en = {
+  cheat_context_mismatch:
+    "The cheat ROM context changed. Select the matching ROM again.",
+  cheatsTitle: "Cheats",
+  cheatsOpenPrompt: "Open a ROM to view verified cheats",
+  cheatsReadOnly:
+    "Read-only · no save required · does not activate codes or write files",
+  cheatsOnlySupport:
+    "This ROM has cheat-only support, not ROM reference or save editing support.",
+  cheatsOpenRom: "Choose cheat ROM",
+  cheatsSupported:
+    "First available recipe: Ultimate Emerald 5.5, disable AI peeking in all modes. Exact MD5 match required; other translations or patches are not covered.",
+  cheatsNone: "No verified cheats for this ROM yet",
+  cheatsNoneHelp:
+    "The ROM is recognized, but no recipes have been released for it. Codes from other versions are never substituted. You can select Ultimate Emerald 5.5 here without changing the editor session.",
+  cheatsSearch: "Search cheats",
+  cheatsVerified: "Verified · see test scope",
+  cheatsNoResults: "No matching cheats",
+  cheatsVba: "VBA-M input layout (no spaces per line)",
+  cheatsCode: "Cheat code",
+  cheatsCopied: "Set copied",
+  cheatsCopy: "Copy both lines",
+  cheatsExport: "Export codes and guide",
+  cheatsUsage: "How to use",
+  cheatsLimits: "Effects and limitations",
+  cheatsEvidence: "Emulator verification and coverage",
+  cheat_original_bytes: "ROM instructions do not match the verified version.",
+
   evolutionTree: "Evolution tree",
   evolutionTreeHelp:
     "Each Pokémon appears once. Its card lists incoming evolution conditions; other forms are collapsible. Click a card or source name to navigate.",
@@ -585,6 +612,31 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  cheat_context_mismatch: "金手指对应的 ROM 已改变，请重新选择匹配的 ROM。",
+  cheatsTitle: "金手指",
+  cheatsOpenPrompt: "打开 ROM，查看经过验证的金手指",
+  cheatsReadOnly: "只读工具 · 无需存档 · 不会启用代码或写入文件",
+  cheatsOnlySupport:
+    "此 ROM 目前仅支持金手指，不代表已支持 ROM 资料或存档编辑。",
+  cheatsOpenRom: "选择金手指 ROM",
+  cheatsSupported:
+    "首个可用条目：究极绿宝石 5.5 全模式关闭 AI 窥屏。按完整 MD5 匹配；不适用于其他汉化或修改版。",
+  cheatsNone: "此 ROM 暂无已验证的金手指",
+  cheatsNoneHelp:
+    "已识别当前版本，但尚未发布适用于它的代码。这里不会套用其他版本或网上的通用代码。可另选究极绿宝石 5.5 查看已验证条目；当前编辑器会话保持独立。",
+  cheatsSearch: "搜索金手指",
+  cheatsVerified: "已验证 · 查看范围",
+  cheatsNoResults: "没有匹配的金手指",
+  cheatsVba: "VBA-M 输入格式（每行不带空格）",
+  cheatsCode: "金手指代码",
+  cheatsCopied: "已复制整组",
+  cheatsCopy: "复制整组代码",
+  cheatsExport: "导出代码与说明",
+  cheatsUsage: "怎么使用",
+  cheatsLimits: "影响与限制",
+  cheatsEvidence: "模拟器验证与测试范围",
+  cheat_original_bytes: "ROM 原始指令与已验证版本不符。",
+
   evolutionTree: "进化树",
   evolutionTreeHelp:
     "每个编号只显示一张卡片，下方列出进化来源与条件；其他形态可展开。点击卡片或来源名称跳转查看。",

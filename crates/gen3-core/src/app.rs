@@ -21,6 +21,7 @@ pub struct Request {
 #[derive(Default)]
 pub struct App {
     pub session: Option<Session>,
+    pub cheat_rom: Option<crate::cheats::CheatRom>,
 }
 fn required(v: &Value, key: &str) -> Result<String> {
     v.get(key)
@@ -53,6 +54,33 @@ impl App {
     pub fn dispatch(&mut self, input: Request) -> Result<Value> {
         let p = input.payload;
         match input.command.as_str() {
+            "open_cheat_rom" => {
+                let (data, _) = read_file(&p)?;
+                let rom = crate::cheats::CheatRom::open(&data)?;
+                let catalog = rom.catalog();
+                self.cheat_rom = Some(rom);
+                Ok(serde_json::to_value(catalog)?)
+            }
+            "cheats" | "cheat_code" => {
+                let md5 = required(&p, "expected_rom_md5")?;
+                // Editor and cheat-only contexts are independent, but never fall back to a different ROM.
+                let rom = if let Some(r) = self.cheat_rom.as_ref().filter(|r| r.matches(&md5)) {
+                    r.clone()
+                } else if let Some(s) = self.session.as_ref().filter(|s| s.rom.profile.md5 == md5) {
+                    crate::cheats::CheatRom::open(&s.rom.data)?
+                } else {
+                    return Err(err(
+                        "cheat_context_mismatch",
+                        "load the matching ROM before requesting cheats",
+                    ));
+                };
+                if input.command == "cheats" {
+                    Ok(serde_json::to_value(rom.catalog())?)
+                } else {
+                    let request = serde_json::from_value(p)?;
+                    Ok(serde_json::to_value(rom.generate(&request)?)?)
+                }
+            }
             "profiles" => Ok(serde_json::to_value(crate::profile::PROFILES)?),
             "open_rom" => {
                 let (data, _) = read_file(&p)?;

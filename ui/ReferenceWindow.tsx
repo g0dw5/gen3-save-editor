@@ -48,6 +48,7 @@ interface Props {
   save: Snapshot | null;
   loadWorld: () => void;
   onClose: () => void;
+  onCheats: () => void;
   onTemplate: (template: Template) => void;
   onError: (error: unknown) => void;
 }
@@ -59,6 +60,7 @@ export function ReferenceWindow({
   save,
   loadWorld,
   onClose,
+  onCheats,
   onTemplate,
   onError,
 }: Props) {
@@ -251,6 +253,7 @@ export function ReferenceWindow({
   return (
     <Floating title={t("references")} onClose={onClose} initial={info.id} wide>
       <div className="reference-tabs">
+        <button onClick={onCheats}>{t("cheatsTitle")}</button>
         {(
           [
             "species",

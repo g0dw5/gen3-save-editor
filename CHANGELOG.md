@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.2.1 — Unreleased / 未发布
 
+- Add a read-only, exact-ROM cheat window with bilingual guides, scoped verification,
+  copy/export and a shared Rust/CLI generator. First recipe: disable AI input peeking
+  in all modes of Ultimate Emerald 5.5. Its cheat-only ROM context is independent of
+  the editor; Dark Phantom BW/DP and Team Rocket have explicit empty recipe lists.
+- 新增只读金手指窗口，按完整 ROM 指纹匹配，提供中英文使用说明、验证范围、整组
+  复制与导出，Rust 核心和 CLI 共用生成逻辑。首个条目为究极绿宝石 5.5 全模式关闭
+  AI 窥屏；金手指 ROM 与编辑器会话独立，漆黑 BW/DP、西班牙火箭队暂不提供未验证代码。
+
 - Move contest condition to Stats and label Sheen as Fullness. Show feeding
   saturation and add an optional ROM-backed solo NPC bound check for Dark
   Phantom BW/DP, enforced in the core with an explicit free-edit override.

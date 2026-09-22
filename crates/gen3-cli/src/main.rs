@@ -21,7 +21,7 @@ fn run() -> Result<()> {
         println!("{}", serde_json::to_string_pretty(&v).unwrap());
     };
     if command == "help" {
-        println!("gen3 profiles\ngen3 identify ROM\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]\ngen3 patch-rom ROM EDITS.json OUTPUT.gba");
+        println!("gen3 profiles\ngen3 identify ROM\ngen3 cheats ROM\ngen3 cheat-code ROM CHEAT_ID gameshark_v1_v2\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]\ngen3 patch-rom ROM EDITS.json OUTPUT.gba");
         return Ok(());
     }
     if command == "profiles" {
@@ -34,6 +34,27 @@ fn run() -> Result<()> {
         print(
             serde_json::json!({"md5":binary::hash(&data),"sha256":binary::sha256(&data),"bytes":data.len(),"profile":gen3_core::profile::identify(&data).ok()}),
         );
+        return Ok(());
+    }
+    if command == "cheats" || command == "cheat-code" {
+        let rom = gen3_core::cheats::CheatRom::open(&data)?;
+        if command == "cheats" {
+            if a.len() != 2 {
+                return Err(err("arguments", "gen3 cheats ROM"));
+            }
+            print(serde_json::to_value(rom.catalog())?);
+        } else {
+            if a.len() != 4 {
+                return Err(err(
+                    "arguments",
+                    "gen3 cheat-code ROM CHEAT_ID gameshark_v1_v2",
+                ));
+            }
+            let request = serde_json::from_value(serde_json::json!({
+                "expected_rom_md5": binary::hash(&data), "cheat_id": arg(2)?, "format": arg(3)?
+            }))?;
+            print(serde_json::to_value(rom.generate(&request)?)?);
+        }
         return Ok(());
     }
     let rom = Rom::open(data)?;
