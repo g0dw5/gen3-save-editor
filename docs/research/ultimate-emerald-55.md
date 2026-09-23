@@ -32,6 +32,8 @@ tileset points to bytes without the expected compressed header, plus species
 slot `1199` with an invalid front-image pointer. One object sprite (`62`) has
 fewer image bytes than its declared dimensions. Their ROM entries remain
 listed; those images cannot currently be rendered reliably. The map reference
+shows an explicit unavailable-image message for those entries while keeping
+their location and trainer links visible. The map reference
 also flags two ROM headers with malformed event pointers instead of treating
 their event bytes as valid NPCs or pickups. These are input-ROM findings; the
 editor does not replace the missing artwork with bundled assets.
@@ -39,7 +41,8 @@ editor does not replace the missing artwork with bundled assets.
 全量渲染检查发现第 36 地图组有八张图的第二图块集指向非标准压缩数据，
 以及编号 `1199` 的正面图片指针无有效压缩头。NPC 图片编号 `62` 的图像字节
 少于声明尺寸。条目仍可查，相关图片当前
-不能可靠绘制。另有两张地图的事件指针不完整，页面会提示该地图的 NPC／
+不能可靠绘制；地图页会明确提示，仍保留地点和训练家链接。另有两张地图的事件指针
+不完整，页面会提示该地图的 NPC／
 拾取标记不可确认，而不会把随机字节当成事件。
 
 ## Save editing / 存档修改

@@ -44,6 +44,9 @@ def main():
         req = route.request.post_data_json
         command = req['command']; requests.append(command)
         if command == 'state': data = {'catalog': current[0], 'save': save}
+        elif command == 'map_image' and current[0] == ultimate:
+            route.fulfill(content_type='application/json', body=json.dumps({'ok':False, 'error':{'code':'lz77_header','detail':'test map graphics'}}))
+            return
         elif command in ('sprite', 'map_image', 'object_sprite', 'trainer_sprite'): data = {'url': ''}
         elif command == 'world':
             worlds.append(route)
@@ -147,6 +150,7 @@ def main():
         page.wait_for_timeout(100)
         assert len(worlds) == 1 and requests.count('world') == 4
         reply(worlds.pop(), WORLD)
+        expect(page.get_by_text("This ROM entry's map image could not be decoded.", exact=False)).to_be_visible()
         assert not errors, errors
         browser.close()
     print('Passed: BW → Rocket → DP → Ultimate, shared editing, item controls, dex, form references and stale world isolation.')

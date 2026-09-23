@@ -268,6 +268,8 @@ export const en = {
     "Uses an effective IV of 31 for stats. Original IVs, breeding and Hidden Power are preserved.",
   mapEventUnavailable:
     "This map has an invalid event table in the ROM. NPC and item layers are unavailable.",
+  mapImageUnavailable:
+    "This ROM entry's map image could not be decoded. Trainer and location records remain available below.",
   checksumInvalid: "Invalid",
   status_sleep: "Asleep: turns remaining",
   battlePortrait: "Battle portrait",
@@ -906,6 +908,8 @@ export const zh: Record<Key, string> = {
   hyperTrainingHelp:
     "计算能力时按 31 个体值处理；原始个体值、孵蛋遗传和觉醒力量保持不变。",
   mapEventUnavailable: "ROM 中此地图的事件表无效，无法显示 NPC 和道具图层。",
+  mapImageUnavailable:
+    "此 ROM 条目的地图图像无法解析，下方仍可查看训练家和地点资料。",
   checksumInvalid: "异常",
   status_sleep: "睡眠：剩余回合",
   battlePortrait: "对战立绘",

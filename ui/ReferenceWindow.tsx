@@ -89,6 +89,7 @@ export function ReferenceWindow({
   );
   const [detail, setDetail] = useState<SpeciesDetail | null>(null);
   const [mapImage, setMapImage] = useState("");
+  const [mapImageError, setMapImageError] = useState(false);
   const [fishingState, setFishingState] = useState<{
     save: Snapshot | null;
     md5: string;
@@ -191,12 +192,18 @@ export function ReferenceWindow({
   useEffect(() => {
     let active = true;
     setMapImage("");
+    setMapImageError(false);
     if (tab === "maps" && typeof selected === "string")
       api<{ url: string }>("map_image", { id: selected })
         .then((r) => {
           if (active) setMapImage(r.url);
         })
-        .catch(onError);
+        .catch((error) => {
+          if (active) {
+            setMapImageError(true);
+            onError(error);
+          }
+        });
     return () => {
       active = false;
     };
@@ -731,6 +738,8 @@ export function ReferenceWindow({
                   catalog={catalog}
                   fishing={fishing?.map_id === selected ? fishing : null}
                 />
+              ) : mapImageError ? (
+                <p className="warning-text">{t("mapImageUnavailable")}</p>
               ) : (
                 <p className="muted">{t("loading")}</p>
               )}
