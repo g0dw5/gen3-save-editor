@@ -167,6 +167,14 @@ impl App {
                     &request,
                 )?)?)
             }
+            "trainer_battle_preview" => {
+                let request: crate::ultimate_battle::TrainerBattleRequest =
+                    serde_json::from_value(p)?;
+                Ok(serde_json::to_value(crate::ultimate_battle::preview(
+                    &self.session()?.rom,
+                    &request,
+                )?)?)
+            }
             "contest_check" => {
                 #[derive(Deserialize)]
                 #[serde(deny_unknown_fields)]

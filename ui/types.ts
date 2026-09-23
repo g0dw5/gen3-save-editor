@@ -330,7 +330,7 @@ export interface Opponent {
     iv_quality: number;
     level_rule: "fixed" | "party_max" | "difficulty";
     generation: {
-      context?: "ordinary" | "ultimate_template";
+      context?: "ordinary" | "ultimate_template" | "ultimate_plain";
       ev_increment?: number | null;
       gender: string;
       nature: number;
@@ -359,6 +359,25 @@ export interface TrainerEvPreview {
     alternate_ivs: number[] | null;
     evs: number[] | null;
     alternate_evs: number[] | null;
+  }[];
+}
+export interface TrainerBattlePreview {
+  trainer_id: number;
+  difficulty: TrainerDifficulty;
+  player_max_level: number | null;
+  mons: {
+    species: number;
+    base_level: number;
+    level: number | null;
+    level_source:
+      | "rom"
+      | "player_max"
+      | "lunatic_scaled"
+      | "needs_player_max"
+      | "unsupported_raw";
+    moves: number[] | null;
+    ivs: number[] | null;
+    evs: number[] | null;
   }[];
 }
 export interface World {

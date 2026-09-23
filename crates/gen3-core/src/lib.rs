@@ -48,4 +48,5 @@ pub mod forms;
 pub mod relations;
 
 pub mod ultimate;
+mod ultimate_battle;
 mod ultimate_ev;

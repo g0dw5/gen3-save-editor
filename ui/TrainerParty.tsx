@@ -8,6 +8,7 @@ import type {
   Opponent,
   Snapshot,
   TrainerDifficulty,
+  TrainerBattlePreview,
   TrainerEvPreview,
 } from "./types";
 
@@ -61,10 +62,17 @@ export function TrainerParty({
   const [manual, setManual] = useState<ManualMon[]>([newManualMon()]);
   const [source, setSource] = useState<"save" | "manual">("save");
   const [levels, setLevels] = useState<number[]>([]);
+  const [manualMaxLevel, setManualMaxLevel] = useState<number>(0);
+  const [battlePreview, setBattlePreview] =
+    useState<TrainerBattlePreview | null>(null);
+  const [battleError, setBattleError] = useState("");
   const [preview, setPreview] = useState<TrainerEvPreview | null>(null);
   const [previewError, setPreviewError] = useState("");
   const [loading, setLoading] = useState(false);
   useEffect(() => setLevels([]), [trainer.id]);
+  const hasTemplate = trainer.party.some(
+    (p) => p.generation?.context === "ultimate_template",
+  );
   const savedParty = useMemo<BattleMon[]>(
     () =>
       (save?.pokemon ?? [])
@@ -80,7 +88,62 @@ export function TrainerParty({
         })),
     [save],
   );
-  const useSave = source === "save" && savedParty.length > 0;
+  const useSave = savedParty.length > 0 && (!hasTemplate || source === "save");
+  const saveMaxLevel = useMemo(() => {
+    const levels = (save?.pokemon ?? [])
+      .filter((p) => p.location.kind === "party" && !p.pokemon.egg)
+      .map((p) => p.pokemon.level);
+    return levels.length ? Math.max(...levels) : null;
+  }, [save]);
+  const playerMaxLevel = useSave
+    ? saveMaxLevel
+    : manualMaxLevel > 0
+      ? manualMaxLevel
+      : null;
+  const needsMaxLevel = trainer.party.some(
+    (p) =>
+      p.level === 0 ||
+      (difficulty === 4 &&
+        p.level > 1 &&
+        p.level < (catalog.profile.max_level ?? 100)),
+  );
+  const battleKey = JSON.stringify({
+    trainer_id: trainer.id,
+    difficulty,
+    player_max_level: playerMaxLevel,
+  });
+  useEffect(() => {
+    if (difficulty === null) {
+      setBattlePreview(null);
+      setBattleError("");
+      return;
+    }
+    let alive = true;
+    setBattlePreview(null);
+    setBattleError("");
+    const timer = window.setTimeout(() => {
+      api<TrainerBattlePreview>("trainer_battle_preview", JSON.parse(battleKey))
+        .then((result) => {
+          if (alive) setBattlePreview(result);
+        })
+        .catch((error) => {
+          if (alive)
+            setBattleError(
+              `${error?.code ?? "error"}: ${error?.detail ?? error}`,
+            );
+        });
+    }, 120);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, [difficulty, battleKey]);
+  const currentBattle =
+    battlePreview?.trainer_id === trainer.id &&
+    battlePreview.difficulty === difficulty &&
+    battlePreview.player_max_level === playerMaxLevel
+      ? battlePreview
+      : null;
   const playerParty = useSave
     ? savedParty
     : manual.map((m) => ({
@@ -100,10 +163,22 @@ export function TrainerParty({
     trainer_id: trainer.id,
     difficulty,
     player_party: playerParty,
-    opponent_levels: trainer.party.map((p, i) => levels[i] || p.level),
+    opponent_levels: trainer.party.map(
+      (p, i) => levels[i] || currentBattle?.mons[i]?.level || p.level,
+    ),
   });
   useEffect(() => {
-    if (difficulty === null || !scenario) {
+    if (
+      difficulty === null ||
+      !hasTemplate ||
+      !scenario ||
+      !currentBattle ||
+      trainer.party.some(
+        (p, i) =>
+          p.generation?.context === "ultimate_template" &&
+          !(levels[i] || currentBattle.mons[i]?.level),
+      )
+    ) {
       setPreview(null);
       setLoading(false);
       setPreviewError("");
@@ -134,7 +209,15 @@ export function TrainerParty({
       alive = false;
       window.clearTimeout(timer);
     };
-  }, [difficulty, scenario, scenarioKey]);
+  }, [
+    difficulty,
+    hasTemplate,
+    scenario,
+    scenarioKey,
+    currentBattle,
+    trainer.party,
+    levels,
+  ]);
   const editManual = (index: number, change: Partial<ManualMon>) =>
     setManual((old) =>
       old.map((m, i) => (i === index ? { ...m, ...change } : m)),
@@ -154,164 +237,191 @@ export function TrainerParty({
           </strong>
           <p>{t(`trainerDifficultyHelp_${difficulty}`)}</p>
           <p>{t("trainerDifficultyPartySource")}</p>
-          <div className="trainer-ev-scenario">
-            <strong>{t("trainerEvScenario")}</strong>
-            {savedParty.length > 0 && (
-              <div className="trainer-ev-source">
-                <label>
-                  <input
-                    type="radio"
-                    checked={useSave}
-                    onChange={() => setSource("save")}
-                  />
-                  {t("trainerEvCurrentParty")}
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    checked={!useSave}
-                    onChange={() => setSource("manual")}
-                  />
-                  {t("trainerEvManualParty")}
-                </label>
-              </div>
-            )}
-            {useSave ? (
-              <p className="small">
-                {savedParty
-                  .map(
-                    (m) =>
-                      catalog.species.find((s) => s.id === m.species)?.name ??
-                      `#${m.species}`,
-                  )
-                  .join(" · ")}
-              </p>
-            ) : (
-              <>
-                <p className="small muted">{t("trainerEvManualHelp")}</p>
-                {manual.map((m, i) => (
-                  <div className="trainer-ev-manual-row" key={i}>
+          {!hasTemplate && (
+            <p className="small">{t("trainerRomOnlyPreview")}</p>
+          )}
+          {needsMaxLevel && !useSave && (
+            <label className="trainer-ev-level">
+              {t("trainerPlayerMaxLevel")}
+              <input
+                type="number"
+                min="1"
+                max={catalog.profile.max_level ?? 100}
+                value={manualMaxLevel || ""}
+                onChange={(e) => setManualMaxLevel(Number(e.target.value))}
+              />
+            </label>
+          )}
+          {needsMaxLevel && playerMaxLevel === null && (
+            <p className="small muted">{t("trainerMaxLevelNeeded")}</p>
+          )}
+          {battleError && (
+            <p className="small" role="alert">
+              {battleError}
+            </p>
+          )}
+          {hasTemplate && (
+            <div className="trainer-ev-scenario">
+              <strong>{t("trainerEvScenario")}</strong>
+              {savedParty.length > 0 && (
+                <div className="trainer-ev-source">
+                  <label>
                     <input
-                      list="trainer-ev-species"
-                      aria-label={`${t("pokemon")} ${i + 1}`}
-                      placeholder={t("pokemon")}
-                      value={m.speciesText}
-                      onChange={(e) =>
-                        editManual(i, { speciesText: e.target.value })
-                      }
+                      type="radio"
+                      checked={useSave}
+                      onChange={() => setSource("save")}
                     />
-                    <label>
-                      {t("speed")}
+                    {t("trainerEvCurrentParty")}
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      checked={!useSave}
+                      onChange={() => setSource("manual")}
+                    />
+                    {t("trainerEvManualParty")}
+                  </label>
+                </div>
+              )}
+              {useSave ? (
+                <p className="small">
+                  {savedParty
+                    .map(
+                      (m) =>
+                        catalog.species.find((s) => s.id === m.species)?.name ??
+                        `#${m.species}`,
+                    )
+                    .join(" · ")}
+                </p>
+              ) : (
+                <>
+                  <p className="small muted">{t("trainerEvManualHelp")}</p>
+                  {manual.map((m, i) => (
+                    <div className="trainer-ev-manual-row" key={i}>
                       <input
-                        type="number"
-                        min="1"
-                        max="9999"
-                        value={m.speed || ""}
+                        list="trainer-ev-species"
+                        aria-label={`${t("pokemon")} ${i + 1}`}
+                        placeholder={t("pokemon")}
+                        value={m.speciesText}
                         onChange={(e) =>
-                          editManual(i, { speed: Number(e.target.value) })
+                          editManual(i, { speciesText: e.target.value })
                         }
                       />
-                    </label>
-                    <label>
-                      {t("nature")}
-                      <select
-                        value={m.nature}
-                        onChange={(e) =>
-                          editManual(i, { nature: Number(e.target.value) })
-                        }
-                      >
-                        {catalog.natures.map((n) => (
-                          <option value={n.id} key={n.id}>
-                            {n.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      {t("held_item")}
-                      <select
-                        value={m.held_item}
-                        onChange={(e) =>
-                          editManual(i, { held_item: Number(e.target.value) })
-                        }
-                      >
-                        <option value="0">{t("noHeldItem")}</option>
-                        {catalog.items
-                          .filter((item) => item.id && item.name)
-                          .map((item) => (
-                            <option value={item.id} key={item.id}>
-                              {item.name}
+                      <label>
+                        {t("speed")}
+                        <input
+                          type="number"
+                          min="1"
+                          max="9999"
+                          value={m.speed || ""}
+                          onChange={(e) =>
+                            editManual(i, { speed: Number(e.target.value) })
+                          }
+                        />
+                      </label>
+                      <label>
+                        {t("nature")}
+                        <select
+                          value={m.nature}
+                          onChange={(e) =>
+                            editManual(i, { nature: Number(e.target.value) })
+                          }
+                        >
+                          {catalog.natures.map((n) => (
+                            <option value={n.id} key={n.id}>
+                              {n.name}
                             </option>
                           ))}
-                      </select>
-                    </label>
-                    <label>
-                      {t("trainerEvAbilitySlot")}
-                      <select
-                        value={m.ability_slot}
-                        onChange={(e) =>
-                          editManual(i, {
-                            ability_slot: Number(e.target.value),
-                          })
+                        </select>
+                      </label>
+                      <label>
+                        {t("held_item")}
+                        <select
+                          value={m.held_item}
+                          onChange={(e) =>
+                            editManual(i, { held_item: Number(e.target.value) })
+                          }
+                        >
+                          <option value="0">{t("noHeldItem")}</option>
+                          {catalog.items
+                            .filter((item) => item.id && item.name)
+                            .map((item) => (
+                              <option value={item.id} key={item.id}>
+                                {item.name}
+                              </option>
+                            ))}
+                        </select>
+                      </label>
+                      <label>
+                        {t("trainerEvAbilitySlot")}
+                        <select
+                          value={m.ability_slot}
+                          onChange={(e) =>
+                            editManual(i, {
+                              ability_slot: Number(e.target.value),
+                            })
+                          }
+                        >
+                          <option value="0">1</option>
+                          <option value="1">2</option>
+                          <option value="2">3</option>
+                        </select>
+                      </label>
+                      <label>
+                        {t("trainerEvCurrentHp")}
+                        <input
+                          type="number"
+                          min="0"
+                          max="9999"
+                          value={m.current_hp}
+                          onChange={(e) =>
+                            editManual(i, {
+                              current_hp: Number(e.target.value),
+                            })
+                          }
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={manual.length === 1}
+                        onClick={() =>
+                          setManual((old) => old.filter((_, j) => j !== i))
                         }
                       >
-                        <option value="0">1</option>
-                        <option value="1">2</option>
-                        <option value="2">3</option>
-                      </select>
-                    </label>
-                    <label>
-                      {t("trainerEvCurrentHp")}
-                      <input
-                        type="number"
-                        min="0"
-                        max="9999"
-                        value={m.current_hp}
-                        onChange={(e) =>
-                          editManual(i, { current_hp: Number(e.target.value) })
-                        }
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      disabled={manual.length === 1}
-                      onClick={() =>
-                        setManual((old) => old.filter((_, j) => j !== i))
-                      }
-                    >
-                      −
-                    </button>
-                  </div>
-                ))}
-                <datalist id="trainer-ev-species">
-                  {catalog.species
-                    .filter((s) => s.id && s.name)
-                    .map((s) => (
-                      <option value={`${s.name} (#${s.id})`} key={s.id} />
-                    ))}
-                </datalist>
-                <button
-                  type="button"
-                  disabled={manual.length >= 6}
-                  onClick={() => setManual((old) => [...old, newManualMon()])}
-                >
-                  {t("trainerEvAddMon")}
-                </button>
-              </>
-            )}
-            {!scenario && (
-              <p className="small muted">{t("trainerEvNeedsParty")}</p>
-            )}
-            {loading && (
-              <p className="small muted">{t("trainerEvCalculating")}</p>
-            )}
-            {previewError && (
-              <p className="small" role="alert">
-                {previewError}
-              </p>
-            )}
-            {preview && <p className="small">{t("trainerEvComputed")}</p>}
-          </div>
+                        −
+                      </button>
+                    </div>
+                  ))}
+                  <datalist id="trainer-ev-species">
+                    {catalog.species
+                      .filter((s) => s.id && s.name)
+                      .map((s) => (
+                        <option value={`${s.name} (#${s.id})`} key={s.id} />
+                      ))}
+                  </datalist>
+                  <button
+                    type="button"
+                    disabled={manual.length >= 6}
+                    onClick={() => setManual((old) => [...old, newManualMon()])}
+                  >
+                    {t("trainerEvAddMon")}
+                  </button>
+                </>
+              )}
+              {!scenario && (
+                <p className="small muted">{t("trainerEvNeedsParty")}</p>
+              )}
+              {loading && (
+                <p className="small muted">{t("trainerEvCalculating")}</p>
+              )}
+              {previewError && (
+                <p className="small" role="alert">
+                  {previewError}
+                </p>
+              )}
+              {preview && <p className="small">{t("trainerEvComputed")}</p>}
+            </div>
+          )}
         </div>
       )}
       <p className="small muted">{t("trainerGenerationHelp")}</p>
@@ -325,11 +435,19 @@ export function TrainerParty({
           preview.difficulty === difficulty
             ? preview.mons[i]
             : null;
+        const battleMon = currentBattle?.mons[i];
+        const resolvedIvs = simulated?.ivs ?? battleMon?.ivs ?? g?.ivs;
+        const resolvedEvs = simulated?.evs ?? battleMon?.evs ?? g?.evs;
         const hpRules = catalog.profile.hidden_power;
-        const hp = hiddenPower(hpRules, simulated?.ivs ?? g?.ivs);
+        const hp = hiddenPower(hpRules, resolvedIvs);
         const hpAlternate = hiddenPower(hpRules, simulated?.alternate_ivs);
         const dynamic = p.level_rule === "party_max";
-        const level = dynamic ? highestLevel : p.level;
+        const level = battleMon
+          ? battleMon.level
+          : dynamic
+            ? highestLevel
+            : p.level;
+        const moveIds = battleMon?.moves ?? p.moves;
         const gender = g?.gender;
         const abilities = [
           ...new Set(g?.ability_options ?? (g ? [g.ability_id] : [])),
@@ -353,16 +471,28 @@ export function TrainerParty({
                     {t("gender")} · {gender ? t(gender) : t("unresolved")}
                   </span>
                   <strong>
-                    {level === null
-                      ? t("dynamicLevel")
-                      : p.level_rule === "difficulty"
-                        ? `${t("trainerBaseLevel")} ${level}`
-                        : `Lv. ${level}`}
+                    {battleMon && level === null
+                      ? t(
+                          battleMon.level_source === "needs_player_max"
+                            ? "trainerMaxLevelNeeded"
+                            : "dynamicLevel",
+                        )
+                      : level === null
+                        ? t("dynamicLevel")
+                        : p.level_rule === "difficulty"
+                          ? battleMon
+                            ? `Lv. ${level}`
+                            : `${t("trainerBaseLevel")} ${level}`
+                          : `Lv. ${level}`}
                   </strong>
                 </div>
                 {species && <Types catalog={catalog} values={species.types} />}
                 {p.level_rule === "difficulty" && (
-                  <p className="small muted">{t("ultimateTrainerLevel")}</p>
+                  <p className="small muted">
+                    {battleMon
+                      ? t(`trainerLevelSource_${battleMon.level_source}`)
+                      : t("ultimateTrainerLevel")}
+                  </p>
                 )}
                 {template && (
                   <label className="trainer-ev-level">
@@ -437,9 +567,10 @@ export function TrainerParty({
                 {t(p.moves_explicit ? "explicitMoves" : "levelSource")}
               </span>
               <div>
-                {dynamic && !p.moves_explicit
+                {(dynamic || (battleMon && battleMon.moves === null)) &&
+                !p.moves_explicit
                   ? t("dynamicMoves")
-                  : p.moves.filter(Boolean).map((id) => (
+                  : moveIds.filter(Boolean).map((id) => (
                       <span key={id}>
                         {catalog.moves[id]?.name ?? id}
                         {id === hpRules?.move_id && (
@@ -469,8 +600,7 @@ export function TrainerParty({
                   <th>{t("ivs")}</th>
                   {statKeys.map((key, s) => (
                     <td key={key}>
-                      {simulated?.ivs?.[s] ??
-                        (template ? "?" : (g?.ivs?.[s] ?? "?"))}
+                      {resolvedIvs?.[s] ?? "?"}
                       {simulated?.alternate_ivs &&
                       simulated.alternate_ivs[s] !== simulated.ivs?.[s]
                         ? ` / ${simulated.alternate_ivs[s]}`
@@ -482,8 +612,7 @@ export function TrainerParty({
                   <th>{t("evs")}</th>
                   {statKeys.map((key, s) => (
                     <td key={key}>
-                      {simulated?.evs?.[s] ??
-                        (template ? "?" : (g?.evs?.[s] ?? "?"))}
+                      {resolvedEvs?.[s] ?? "?"}
                       {simulated?.alternate_evs &&
                       simulated.alternate_evs[s] !== simulated.evs?.[s]
                         ? ` / ${simulated.alternate_evs[s]}`
@@ -510,7 +639,13 @@ export function TrainerParty({
             <details className="trainer-evidence">
               <summary>{t("rawParameters")}</summary>
               <p className="small muted">
-                {t(template ? "ultimateTemplateEvidence" : "ivQualityHelp")}
+                {t(
+                  template
+                    ? "ultimateTemplateEvidence"
+                    : g?.context === "ultimate_plain"
+                      ? "ultimatePlainEvidence"
+                      : "ivQualityHelp",
+                )}
               </p>
               <pre>
                 {JSON.stringify(

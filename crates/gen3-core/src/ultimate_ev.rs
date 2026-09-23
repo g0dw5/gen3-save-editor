@@ -137,7 +137,11 @@ pub fn preview(rom: &Rom, request: &TrainerEvRequest) -> Result<TrainerEvPreview
                 evs: None,
                 alternate_evs: None,
             };
-            if let Some(g) = p.generation.as_ref().filter(|g| g.context == "ultimate_template") {
+            if let Some(g) = p
+                .generation
+                .as_ref()
+                .filter(|g| g.context == "ultimate_template")
+            {
                 let iv = g.ivs.ok_or_else(|| err("trainer_ev_ivs", i))?[0];
                 let template = crate::binary::bytes(
                     &rom.data,
@@ -166,15 +170,7 @@ pub fn preview(rom: &Rom, request: &TrainerEvRequest) -> Result<TrainerEvPreview
                 let moves = if p.moves_explicit {
                     p.moves.clone()
                 } else {
-                    let mut moves = Vec::new();
-                    for learned in rom.level_moves(p.species)? {
-                        if learned.level.unwrap_or(0) <= level {
-                            moves.retain(|m| *m != learned.move_id);
-                            moves.push(learned.move_id);
-                        }
-                    }
-                    moves.into_iter().rev().take(4).collect::<Vec<_>>()
-                        .into_iter().rev().collect()
+                    crate::ultimate_battle::level_moves(rom, p.species, level)?
                 };
                 for (j, move_id) in moves.iter().take(4).enumerate() {
                     mem.mons.get_mut(&addr).unwrap().fields[13 + j] = u32::from(*move_id);
@@ -571,8 +567,7 @@ mod tests {
         let rom = std::fs::read(path).unwrap();
         let mut mem = Sandbox::new(&rom);
         mem.mon(MON, 6, 0, 0, 13, 150, 100);
-        mem.mons.get_mut(&MON).unwrap().fields[13..17]
-            .copy_from_slice(&[53, 337, 76, 126]);
+        mem.mons.get_mut(&MON).unwrap().fields[13..17].copy_from_slice(&[53, 337, 76, 126]);
         mem.set_byte(0x0202_44e9, 1);
         mem.put32(0x0202_2fec, 0x100);
         mem.put16(0x0203_8bca, 0x483);

@@ -533,8 +533,26 @@ impl Rom {
                         .sum::<u32>(),
                 );
                 let generation = if ultimate {
-                    if flags & 3 != 0 && self.valid_species(species).is_ok() {
-                        Some(crate::ultimate::trainer_template(self, species, b[p])?)
+                    if let Ok(mon_species) = self.valid_species(species) {
+                        if flags & 3 != 0 {
+                            Some(crate::ultimate::trainer_template(self, species, b[p])?)
+                        } else {
+                            // The native ordinary constructor passes fixed PID 0
+                            // and fixed IV 0 to CreateMon, then skips the
+                            // enhanced training routine for party flags 0.
+                            let ability = mon_species.abilities[0] as u16;
+                            Some(TrainerMonGeneration {
+                                context: "ultimate_plain",
+                                ev_increment: None,
+                                gender: pokemon::gender(mon_species.gender_ratio, 0),
+                                nature: 0,
+                                ability_id: ability,
+                                ability_options: vec![ability],
+                                ivs: Some([0; 6]),
+                                evs: Some([0; 6]),
+                                personality_parameter: 0,
+                            })
+                        }
                     } else {
                         None
                     }

@@ -29,11 +29,19 @@ executes the ROM's player Speed and role classifiers and party-summary sort,
 then supplies the selected difficulty and either the opened save's current
 party or a manually entered party. The page shows the resulting six IVs and
 EVs for each enhanced-template Pokémon, including both possible values when
-the constructor uses a random bit. The default opponent level is the ROM
-record's base level and can be overridden per Pokémon. The preview assumes an
-ordinary single or double trainer battle. Script substitutions, facility
-rules, and actual dynamic-level selection are outside this constructor, so
-the preview does not claim to predict those parts of a live encounter.
+the constructor uses a random bit. The ordinary-party preview now resolves
+levels from the ROM's constructor branches at `0x09F04C76–0x09F04C9C` and
+`0x09F04E48–0x09F04E58`: a raw level of zero uses the player's highest party
+level, and Lunatic raises lower raw levels above one. With no save, fixed-level
+Standard/Challenge entries need only the ROM; other entries accept the player's
+highest level as one number. Their level-up moves are read for the resolved
+level. Untemplated ordinary parties use the native `CreateMon` call at
+`0x09F04CB4` with fixed personality and IV zero, retaining zero EVs; their
+nature, ability slot and gender therefore follow that personality and the
+ROM species data. The preview assumes an ordinary
+single or double trainer battle and excludes scripted substitutions, facility
+constructors and the separate flag-`0x268` forced-level-50 path. Enhanced IV/EV
+simulation still accepts a manual level override for special scenarios.
 
 Charizard `6` has two Mega edges and an item-702 edge to species `252`.
 Item `702` is named 许愿星块 and describes battle Dynamax; species `252` has
@@ -50,8 +58,12 @@ do not by themselves prove that the full Dynamax battle mechanic is usable.
 模式队伍表；切换难度保留源队伍并说明已知约束。剧情脚本可改用其他训练家
 编号。现在可按具体情景执行当前 ROM 的原生对手努力值例程，同行信息优先取当前
 存档，也可手动设置；六项努力值和个体值按所选难度显示。若原生随机分支产生两种
-结果，页面会并列标出。默认等级取 ROM 表中的基础等级，可逐只指定模拟等级。
-剧情脚本换队、设施规则和实际动态等级仍需以实战或对应脚本为准。
+结果，页面会并列标出。普通训练家队伍预览现会按本 ROM 的等级分支计算实战等级，
+并按该等级读取升级招式。标准／挑战模式中等级固定的普通队伍只需打开 ROM；
+原始等级为零或疯子模式的等级追赶需要玩家同行最高等级，可以从存档读取，也可
+手填一个数字。没有强化模板的普通队伍保留原生创建流程赋予的固定性格、特性槽位、
+性别及零个体值、零努力值。
+强化模板仍可逐只指定模拟等级。强制 50 级标记、剧情换队和设施生成器不在此预览内。
 喷火龙 `6` 除两条 Mega 关系外，还有携带 `702`“许愿星块”指向 `252`
 的关系；`252` 的立绘是超极巨化外观，但进化表和立绘尚不足以证明完整的
 极巨化战斗机制可用。

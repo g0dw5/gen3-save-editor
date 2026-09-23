@@ -249,6 +249,8 @@ export const en = {
     "EVs are generated from difficulty and player-party data. Template allocation parameter: {n}; it is not a fixed EV value for all six stats.",
   ultimateTemplateEvidence:
     "This byte selects a native training template, not the original Emerald 0–255 IV-quality scale.",
+  ultimatePlainEvidence:
+    "Ordinary party flags 0 use the ROM constructor's fixed personality and zero IV/EV values; this raw field is not an IV-quality setting.",
   transformation: "Battle transformation",
   battleCommandTrigger: "Native battle transformation command",
   evoExtra_region: "In {region}",
@@ -327,6 +329,19 @@ export const en = {
   trainerDifficultyPartySource:
     "The four modes read this trainer's same ROM party record. This view shows its base members, moves and template; event scripts and live battle generation can still change the result.",
   trainerEvScenario: "Battle scenario for exact EV calculation",
+  trainerRomOnlyPreview:
+    "This ordinary party has no enhanced template. Its ROM roster, level-up moves and untrained IVs/EVs can be previewed without a save.",
+  trainerPlayerMaxLevel: "Player's highest party level",
+  trainerMaxLevelNeeded:
+    "Enter the player's highest party level to resolve this battle level.",
+  trainerLevelSource_rom: "ROM level in an ordinary trainer battle.",
+  trainerLevelSource_player_max: "Uses the player's highest party level.",
+  trainerLevelSource_lunatic_scaled:
+    "Raised to the player's highest party level in Lunatic mode.",
+  trainerLevelSource_needs_player_max:
+    "The battle level depends on the player's highest party level.",
+  trainerLevelSource_unsupported_raw:
+    "This raw level needs separate battle-context verification.",
   trainerEvCurrentParty: "Current save party",
   trainerEvManualParty: "Set party manually",
   trainerEvManualHelp:
@@ -919,6 +934,8 @@ export const zh: Record<Key, string> = {
     "努力值由难度、玩家队伍和战斗场景生成。模板分配参数为 {n}，不能当作固定的六项努力值。",
   ultimateTemplateEvidence:
     "此字节是本作培养模板的索引，不是原版绿宝石 0～255 的个体值质量。",
+  ultimatePlainEvidence:
+    "普通队伍标记 0 使用 ROM 创建流程的固定性格与零个体值／努力值；该原始字段不是个体值质量。",
   transformation: "战斗形态",
   battleCommandTrigger: "战斗中使用本作的形态转换指令",
   evoExtra_region: "位于{region}",
@@ -995,6 +1012,15 @@ export const zh: Record<Key, string> = {
   trainerDifficultyPartySource:
     "四档难度读取此训练家的同一份 ROM 队伍记录。这里展示基础成员、招式与培养模板；剧情脚本和实战生成仍可能改变结果。",
   trainerEvScenario: "精确计算努力值的对战情景",
+  trainerRomOnlyPreview:
+    "这支普通队伍没有强化培养模板。只打开 ROM 就能预览其成员、升级招式以及未培养的个体值和努力值。",
+  trainerPlayerMaxLevel: "玩家同行最高等级",
+  trainerMaxLevelNeeded: "填写玩家同行最高等级后，才能确定这场战斗的等级。",
+  trainerLevelSource_rom: "普通训练家战沿用 ROM 表中的等级。",
+  trainerLevelSource_player_max: "等级取玩家同行最高等级。",
+  trainerLevelSource_lunatic_scaled: "疯子模式下提升到玩家同行最高等级。",
+  trainerLevelSource_needs_player_max: "实战等级取决于玩家同行最高等级。",
+  trainerLevelSource_unsupported_raw: "这个原始等级仍需结合战斗场景核对。",
   trainerEvCurrentParty: "使用当前存档队伍",
   trainerEvManualParty: "手动设定队伍",
   trainerEvManualHelp:

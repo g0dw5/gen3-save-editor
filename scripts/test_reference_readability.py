@@ -36,6 +36,21 @@ def main():
         command = req['command']
         if command == 'state': data = {'catalog': catalog, 'save': None}
         elif command == 'world': data = world
+        elif command == 'trainer_battle_preview':
+            scenario = req['payload']
+            trainer = next(t for t in world['trainers'] if t['id'] == scenario['trainer_id'])
+            maximum = scenario['player_max_level']
+            mons = []
+            for mon in trainer['party']:
+                scaled = scenario['difficulty'] == 4 and mon['level'] > 1
+                level = max(mon['level'], maximum) if scaled and maximum else (None if scaled else mon['level'])
+                mons.append(dict(species=mon['species'], base_level=mon['level'], level=level,
+                                 level_source='lunatic_scaled' if scaled and maximum and maximum > mon['level'] else
+                                 ('needs_player_max' if level is None else 'rom'),
+                                 moves=mon['moves'] if level is not None else None,
+                                 ivs=[0]*6, evs=[0]*6))
+            data = dict(trainer_id=trainer['id'], difficulty=scenario['difficulty'],
+                        player_max_level=maximum, mons=mons)
         elif command in ('sprite', 'trainer_sprite'): data = {'url': ''}
         elif command == 'species':
             data = {'species': species(req['payload']['id']), 'learnset': [], 'encounters': [],
@@ -92,10 +107,18 @@ def main():
         dialog = page.get_by_role('dialog', name='ROM reference')
         dialog.locator('.reference-tabs').get_by_role('button', name='Trainers', exact=True).click()
         modes = dialog.get_by_role('group', name='Difficulty · whole trainer reference')
+        modes.get_by_role('button', name='Standard', exact=True).click()
+        expect(dialog.locator('.trainer-mon-card').first).to_contain_text('Lv. 50')
+        expect(dialog.locator('.trainer-mode-note')).to_contain_text('without a save')
+        expect(dialog.locator('.trainer-ev-manual-row')).to_have_count(0)
         modes.get_by_role('button', name='Lunatic', exact=True).click()
         expect(dialog.locator('.trainer-mode-note')).to_contain_text('1530')
         dialog.locator('.reference-rows button').filter(has_text='Second trainer').click()
         expect(dialog.locator('.trainer-mode-note')).to_contain_text('Lunatic')
+        expect(dialog.locator('.trainer-mon-card').first).to_contain_text("Enter the player's highest party level")
+        dialog.get_by_label("Player's highest party level").fill('70')
+        expect(dialog.locator('.trainer-mon-card').first).to_contain_text('Lv. 70')
+        expect(dialog.locator('.trainer-stat-table').first).to_contain_text('0')
         expect(dialog.locator('.reference-rows button').filter(has_text='Second trainer')).to_have_class('selected')
         if os.environ.get('GEN3_UI_SHOTS'):
             output = Path(os.environ['GEN3_UI_SHOTS'])
