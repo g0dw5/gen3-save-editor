@@ -23,8 +23,17 @@ party and battle context, so the reference page labels them as dynamic.
 The trainer view has one selector for the four difficulty settings. Each trainer
 header has one party pointer rather than four mode-specific party tables, so
 the selector retains the source roster and describes known generation limits.
-Event scripts can substitute a trainer ID; exact battle EVs and levels are not
-yet predicted.
+For an explicit scenario, the trainer view now executes the loaded ROM's Thumb
+opponent EV constructor (`0x09F042BC`) in a bounded ARMv4T sandbox. It first
+executes the ROM's player Speed and role classifiers and party-summary sort,
+then supplies the selected difficulty and either the opened save's current
+party or a manually entered party. The page shows the resulting six IVs and
+EVs for each enhanced-template Pokémon, including both possible values when
+the constructor uses a random bit. The default opponent level is the ROM
+record's base level and can be overridden per Pokémon. The preview assumes an
+ordinary single or double trainer battle. Script substitutions, facility
+rules, and actual dynamic-level selection are outside this constructor, so
+the preview does not claim to predict those parts of a live encounter.
 
 Charizard `6` has two Mega edges and an item-702 edge to species `252`.
 Item `702` is named 许愿星块 and describes battle Dynamax; species `252` has
@@ -39,7 +48,10 @@ do not by themselves prove that the full Dynamax battle mechanic is usable.
 显示 ROM 培养模板；实战努力值、等级可能随难度和战斗状态改变，不冒充固定值。
 训练家页提供四档难度选择。同一训练家头只有一份队伍指针，没有四套并列的
 模式队伍表；切换难度保留源队伍并说明已知约束。剧情脚本可改用其他训练家
-编号，实战努力值和等级尚未做精确预测。
+编号。现在可按具体情景执行当前 ROM 的原生对手努力值例程，同行信息优先取当前
+存档，也可手动设置；六项努力值和个体值按所选难度显示。若原生随机分支产生两种
+结果，页面会并列标出。默认等级取 ROM 表中的基础等级，可逐只指定模拟等级。
+剧情脚本换队、设施规则和实际动态等级仍需以实战或对应脚本为准。
 喷火龙 `6` 除两条 Mega 关系外，还有携带 `702`“许愿星块”指向 `252`
 的关系；`252` 的立绘是超极巨化外观，但进化表和立绘尚不足以证明完整的
 极巨化战斗机制可用。
@@ -113,13 +125,13 @@ locations and retain the ROM's native generation routines. See
   and withdrawal. Fishing tiles for four seeds matched the ROM's own routine.
 - A real progressed Ultimate Emerald user save was unavailable for these
   checks; tests used a disposable game-generated battery save. Mobile
-  emulators, every story-dependent location and difficulty-dependent trainer
-  party generation have not been fully simulated. Treat displayed trainer
-  templates as source data, not a complete battle forecast.
+  emulators and every story-dependent trainer or facility override have not
+  been fully simulated. Trainer EV previews execute the ROM's native constructor
+  for the stated inputs, not a complete battle forecast.
 
 四个版本均通过精确 ROM 回归。究绿的 675 组个体与原生取值和能力计算核对，
 合计 10,125 项字段、675 组能力一致；模拟器重新载入、正常存盘并二次读取了
 编辑过的临时存档。金手指按最终编码在 mGBA 验证启停、遇怪、孵蛋、捕获、
 闪光、传送及电脑存取流程。四个钓点种子与原生函数一致。当前没有用户
-实际长期游玩的究绿存档用于验证；手机模拟器、全剧情地图与各难度训练家
-实战队伍尚未穷尽，训练家模板不能替代完整战斗预测。
+实际长期游玩的究绿存档用于验证；手机模拟器、全剧情地图与特殊设施的
+实战队伍尚未穷尽。努力值预览严格对应页面给定的情景，不等于完整对战预测。

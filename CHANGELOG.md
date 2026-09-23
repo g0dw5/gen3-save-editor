@@ -10,6 +10,12 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Calculate Ultimate Emerald trainer IVs and EVs by executing the loaded ROM's
+  bounded native constructor for the selected difficulty and player party.
+  Use the opened save party or a manually entered battle scenario; display
+  possible random outcomes and allow per-opponent level input.
+- 究绿训练家按所选难度和玩家同行执行当前 ROM 的原生个体值／努力值例程，
+  可使用已打开存档的队伍或手动设置对战情景，显示随机分支并可逐只指定模拟等级。
 - List every supported ROM from the registered adapters on the start screen.
   Cheats now belong only to the opened ROM; their panel cannot import another
   ROM and is no longer linked from ROM reference. Add a shared four-mode

@@ -1512,6 +1512,55 @@ summary {
   font-size: 12px;
   color: var(--muted);
 }
+.trainer-ev-scenario {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.trainer-ev-source {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 8px 0;
+  font-size: 12px;
+}
+.trainer-ev-source label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.trainer-ev-manual-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 6px;
+  margin: 8px 0;
+}
+.trainer-ev-manual-row label,
+.trainer-ev-level {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.trainer-ev-manual-row input,
+.trainer-ev-manual-row select,
+.trainer-ev-level input,
+.trainer-ev-manual-row > input {
+  min-width: 0;
+  max-width: 135px;
+  padding: 5px;
+}
+.trainer-ev-manual-row > input {
+  width: 160px;
+  max-width: 100%;
+}
+.trainer-ev-manual-row input[type="number"] {
+  width: 70px;
+}
+.trainer-ev-level {
+  margin-top: 6px;
+}
 .trainer-filters label {
   display: grid;
   gap: 4px;

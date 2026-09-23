@@ -1,7 +1,45 @@
+import { useEffect, useMemo, useState } from "react";
+import { api } from "./api";
 import { Sprite, Types } from "./components";
 import { statKeys, useI18n } from "./i18n";
 import { hiddenPower } from "./hiddenPower";
-import type { Catalog, Opponent, Snapshot, TrainerDifficulty } from "./types";
+import type {
+  Catalog,
+  Opponent,
+  Snapshot,
+  TrainerDifficulty,
+  TrainerEvPreview,
+} from "./types";
+
+type BattleMon = {
+  species: number;
+  held_item: number;
+  ability_slot: number;
+  nature: number;
+  speed: number;
+  current_hp: number;
+};
+type ManualMon = BattleMon & { speciesText: string };
+const newManualMon = (): ManualMon => ({
+  species: 0,
+  speciesText: "",
+  held_item: 0,
+  ability_slot: 0,
+  nature: 0,
+  speed: 0,
+  current_hp: 1,
+});
+
+function speciesId(value: string, catalog: Catalog): number {
+  const number = Number(value.match(/#(\d+)/)?.[1] ?? value);
+  if (
+    Number.isInteger(number) &&
+    number > 0 &&
+    catalog.species.some((s) => s.id === number)
+  )
+    return number;
+  return catalog.species.find((s) => s.name === value)?.id ?? 0;
+}
 
 export function TrainerParty({
   trainer,
@@ -20,13 +58,94 @@ export function TrainerParty({
 }) {
   const { t } = useI18n();
   const party = save?.pokemon.filter((p) => p.location.kind === "party") ?? [];
+  const [manual, setManual] = useState<ManualMon[]>([newManualMon()]);
+  const [source, setSource] = useState<"save" | "manual">("save");
+  const [levels, setLevels] = useState<number[]>([]);
+  const [preview, setPreview] = useState<TrainerEvPreview | null>(null);
+  const [previewError, setPreviewError] = useState("");
+  const [loading, setLoading] = useState(false);
+  useEffect(() => setLevels([]), [trainer.id]);
+  const savedParty = useMemo<BattleMon[]>(
+    () =>
+      (save?.pokemon ?? [])
+        .filter((p) => p.location.kind === "party" && !p.pokemon.egg)
+        .sort((a, b) => a.location.slot - b.location.slot)
+        .map(({ pokemon: p }) => ({
+          species: p.species,
+          held_item: p.held_item,
+          ability_slot: p.ability_slot,
+          nature: p.effective_nature ?? p.nature,
+          speed: p.stats[3],
+          current_hp: p.current_hp ?? 0,
+        })),
+    [save],
+  );
+  const useSave = source === "save" && savedParty.length > 0;
+  const playerParty = useSave
+    ? savedParty
+    : manual.map((m) => ({
+        species: speciesId(m.speciesText, catalog),
+        held_item: m.held_item,
+        ability_slot: m.ability_slot,
+        nature: m.nature,
+        speed: m.speed,
+        current_hp: m.current_hp,
+      }));
+  const scenario =
+    playerParty.length > 0 &&
+    playerParty.every(
+      (p) => p.species > 0 && p.speed > 0 && p.nature >= 0 && p.nature < 25,
+    );
+  const scenarioKey = JSON.stringify({
+    trainer_id: trainer.id,
+    difficulty,
+    player_party: playerParty,
+    opponent_levels: trainer.party.map((p, i) => levels[i] || p.level),
+  });
+  useEffect(() => {
+    if (difficulty === null || !scenario) {
+      setPreview(null);
+      setLoading(false);
+      setPreviewError("");
+      return;
+    }
+    let alive = true;
+    setLoading(true);
+    setPreview(null);
+    setPreviewError("");
+    const timer = window.setTimeout(() => {
+      api<TrainerEvPreview>("trainer_ev_preview", JSON.parse(scenarioKey))
+        .then((result) => {
+          if (alive) setPreview(result);
+        })
+        .catch((error) => {
+          if (alive) {
+            setPreview(null);
+            setPreviewError(
+              `${error?.code ?? "error"}: ${error?.detail ?? error}`,
+            );
+          }
+        })
+        .finally(() => {
+          if (alive) setLoading(false);
+        });
+    }, 180);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, [difficulty, scenario, scenarioKey]);
+  const editManual = (index: number, change: Partial<ManualMon>) =>
+    setManual((old) =>
+      old.map((m, i) => (i === index ? { ...m, ...change } : m)),
+    );
   const highestLevel = party.length
     ? Math.max(...party.map((p) => p.pokemon.level))
     : null;
   return (
     <div className="trainer-party">
       {difficulty !== null && (
-        <div className="trainer-mode-note" role="status">
+        <div className="trainer-mode-note">
           <strong>
             {t("trainerPartyInMode").replace(
               "{mode}",
@@ -35,6 +154,164 @@ export function TrainerParty({
           </strong>
           <p>{t(`trainerDifficultyHelp_${difficulty}`)}</p>
           <p>{t("trainerDifficultyPartySource")}</p>
+          <div className="trainer-ev-scenario">
+            <strong>{t("trainerEvScenario")}</strong>
+            {savedParty.length > 0 && (
+              <div className="trainer-ev-source">
+                <label>
+                  <input
+                    type="radio"
+                    checked={useSave}
+                    onChange={() => setSource("save")}
+                  />
+                  {t("trainerEvCurrentParty")}
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    checked={!useSave}
+                    onChange={() => setSource("manual")}
+                  />
+                  {t("trainerEvManualParty")}
+                </label>
+              </div>
+            )}
+            {useSave ? (
+              <p className="small">
+                {savedParty
+                  .map(
+                    (m) =>
+                      catalog.species.find((s) => s.id === m.species)?.name ??
+                      `#${m.species}`,
+                  )
+                  .join(" · ")}
+              </p>
+            ) : (
+              <>
+                <p className="small muted">{t("trainerEvManualHelp")}</p>
+                {manual.map((m, i) => (
+                  <div className="trainer-ev-manual-row" key={i}>
+                    <input
+                      list="trainer-ev-species"
+                      aria-label={`${t("pokemon")} ${i + 1}`}
+                      placeholder={t("pokemon")}
+                      value={m.speciesText}
+                      onChange={(e) =>
+                        editManual(i, { speciesText: e.target.value })
+                      }
+                    />
+                    <label>
+                      {t("speed")}
+                      <input
+                        type="number"
+                        min="1"
+                        max="9999"
+                        value={m.speed || ""}
+                        onChange={(e) =>
+                          editManual(i, { speed: Number(e.target.value) })
+                        }
+                      />
+                    </label>
+                    <label>
+                      {t("nature")}
+                      <select
+                        value={m.nature}
+                        onChange={(e) =>
+                          editManual(i, { nature: Number(e.target.value) })
+                        }
+                      >
+                        {catalog.natures.map((n) => (
+                          <option value={n.id} key={n.id}>
+                            {n.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      {t("held_item")}
+                      <select
+                        value={m.held_item}
+                        onChange={(e) =>
+                          editManual(i, { held_item: Number(e.target.value) })
+                        }
+                      >
+                        <option value="0">{t("noHeldItem")}</option>
+                        {catalog.items
+                          .filter((item) => item.id && item.name)
+                          .map((item) => (
+                            <option value={item.id} key={item.id}>
+                              {item.name}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    <label>
+                      {t("trainerEvAbilitySlot")}
+                      <select
+                        value={m.ability_slot}
+                        onChange={(e) =>
+                          editManual(i, {
+                            ability_slot: Number(e.target.value),
+                          })
+                        }
+                      >
+                        <option value="0">1</option>
+                        <option value="1">2</option>
+                        <option value="2">3</option>
+                      </select>
+                    </label>
+                    <label>
+                      {t("trainerEvCurrentHp")}
+                      <input
+                        type="number"
+                        min="0"
+                        max="9999"
+                        value={m.current_hp}
+                        onChange={(e) =>
+                          editManual(i, { current_hp: Number(e.target.value) })
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      disabled={manual.length === 1}
+                      onClick={() =>
+                        setManual((old) => old.filter((_, j) => j !== i))
+                      }
+                    >
+                      −
+                    </button>
+                  </div>
+                ))}
+                <datalist id="trainer-ev-species">
+                  {catalog.species
+                    .filter((s) => s.id && s.name)
+                    .map((s) => (
+                      <option value={`${s.name} (#${s.id})`} key={s.id} />
+                    ))}
+                </datalist>
+                <button
+                  type="button"
+                  disabled={manual.length >= 6}
+                  onClick={() => setManual((old) => [...old, newManualMon()])}
+                >
+                  {t("trainerEvAddMon")}
+                </button>
+              </>
+            )}
+            {!scenario && (
+              <p className="small muted">{t("trainerEvNeedsParty")}</p>
+            )}
+            {loading && (
+              <p className="small muted">{t("trainerEvCalculating")}</p>
+            )}
+            {previewError && (
+              <p className="small" role="alert">
+                {previewError}
+              </p>
+            )}
+            {preview && <p className="small">{t("trainerEvComputed")}</p>}
+          </div>
         </div>
       )}
       <p className="small muted">{t("trainerGenerationHelp")}</p>
@@ -42,8 +319,15 @@ export function TrainerParty({
         const species = catalog.species.find((s) => s.id === p.species);
         const g = p.generation;
         const template = g?.context === "ultimate_template";
+        const simulated =
+          template &&
+          preview?.trainer_id === trainer.id &&
+          preview.difficulty === difficulty
+            ? preview.mons[i]
+            : null;
         const hpRules = catalog.profile.hidden_power;
-        const hp = hiddenPower(hpRules, g?.ivs);
+        const hp = hiddenPower(hpRules, simulated?.ivs ?? g?.ivs);
+        const hpAlternate = hiddenPower(hpRules, simulated?.alternate_ivs);
         const dynamic = p.level_rule === "party_max";
         const level = dynamic ? highestLevel : p.level;
         const gender = g?.gender;
@@ -79,6 +363,24 @@ export function TrainerParty({
                 {species && <Types catalog={catalog} values={species.types} />}
                 {p.level_rule === "difficulty" && (
                   <p className="small muted">{t("ultimateTrainerLevel")}</p>
+                )}
+                {template && (
+                  <label className="trainer-ev-level">
+                    {t("trainerEvLevel")}
+                    <input
+                      type="number"
+                      min="1"
+                      max={catalog.profile.max_level ?? 100}
+                      value={levels[i] || p.level || ""}
+                      onChange={(e) =>
+                        setLevels((old) => {
+                          const next = [...old];
+                          next[i] = Number(e.target.value);
+                          return next;
+                        })
+                      }
+                    />
+                  </label>
                 )}
                 {dynamic && (
                   <div className="small muted">
@@ -145,7 +447,7 @@ export function TrainerParty({
                             {" "}
                             ·{" "}
                             {hp
-                              ? `${catalog.type_names[hp.type]} · ${t("power")} ${hp.power}`
+                              ? `${catalog.type_names[hp.type]} · ${t("power")} ${hp.power}${hpAlternate && (hpAlternate.type !== hp.type || hpAlternate.power !== hp.power) ? ` / ${catalog.type_names[hpAlternate.type]} · ${t("power")} ${hpAlternate.power}` : ""}`
                               : t("hiddenPowerUnknown")}
                           </>
                         )}
@@ -166,17 +468,39 @@ export function TrainerParty({
                 <tr>
                   <th>{t("ivs")}</th>
                   {statKeys.map((key, s) => (
-                    <td key={key}>{g?.ivs?.[s] ?? "?"}</td>
+                    <td key={key}>
+                      {simulated?.ivs?.[s] ??
+                        (template ? "?" : (g?.ivs?.[s] ?? "?"))}
+                      {simulated?.alternate_ivs &&
+                      simulated.alternate_ivs[s] !== simulated.ivs?.[s]
+                        ? ` / ${simulated.alternate_ivs[s]}`
+                        : ""}
+                    </td>
                   ))}
                 </tr>
                 <tr>
                   <th>{t("evs")}</th>
                   {statKeys.map((key, s) => (
-                    <td key={key}>{g?.evs?.[s] ?? "?"}</td>
+                    <td key={key}>
+                      {simulated?.evs?.[s] ??
+                        (template ? "?" : (g?.evs?.[s] ?? "?"))}
+                      {simulated?.alternate_evs &&
+                      simulated.alternate_evs[s] !== simulated.evs?.[s]
+                        ? ` / ${simulated.alternate_evs[s]}`
+                        : ""}
+                    </td>
                   ))}
                 </tr>
               </tbody>
             </table>
+            {simulated?.evs && (
+              <p className="small muted">
+                {t("trainerEvTotal")}:{" "}
+                {simulated.evs.reduce((a, b) => a + b, 0)}
+                {(simulated.alternate_evs || simulated.alternate_ivs) &&
+                  ` · ${t("trainerEvAlternate")}`}
+              </p>
+            )}
             {template && (
               <p className="small muted">
                 {t("ultimateTrainerEvs").replace("{n}", String(g.ev_increment))}

@@ -160,6 +160,13 @@ impl App {
                 let r = &self.session()?.rom;
                 Ok(serde_json::to_value(r.world()?)?)
             }
+            "trainer_ev_preview" => {
+                let request: crate::ultimate_ev::TrainerEvRequest = serde_json::from_value(p)?;
+                Ok(serde_json::to_value(crate::ultimate_ev::preview(
+                    &self.session()?.rom,
+                    &request,
+                )?)?)
+            }
             "contest_check" => {
                 #[derive(Deserialize)]
                 #[serde(deny_unknown_fields)]

@@ -19,8 +19,7 @@ export const en = {
   cheatsCategory_catching: "Capture",
   cheatsCategory_breeding: "Hatching and daycare",
 
-  cheat_context_mismatch:
-    "The opened ROM changed. Reopen its cheat panel.",
+  cheat_context_mismatch: "The opened ROM changed. Reopen its cheat panel.",
   cheatsTitle: "Cheats",
   cheatsOpenPrompt: "Could not load cheats for the opened ROM",
   cheatsReadOnly:
@@ -327,6 +326,22 @@ export const en = {
   trainerBaseLevel: "ROM Lv.",
   trainerDifficultyPartySource:
     "The four modes read this trainer's same ROM party record. This view shows its base members, moves and template; event scripts and live battle generation can still change the result.",
+  trainerEvScenario: "Battle scenario for exact EV calculation",
+  trainerEvCurrentParty: "Current save party",
+  trainerEvManualParty: "Set party manually",
+  trainerEvManualHelp:
+    "Set each Pokémon's ROM species, pre-battle Speed, nature, held item, ability slot and current HP. The game's routine handles item adjustments.",
+  trainerEvAddMon: "Add party Pokémon",
+  trainerEvNeedsParty: "Enter a valid Pokémon and Speed to calculate EVs.",
+  trainerEvCalculating: "Calculating with the loaded ROM…",
+  trainerEvComputed:
+    "IVs and EVs below are calculated by this ROM's opponent-generation routine for this scenario.",
+  trainerEvLevel: "Simulated battle level",
+  trainerEvTotal: "Total EVs",
+  trainerEvAlternate:
+    "Two native random outcomes; differing cells show both values",
+  trainerEvAbilitySlot: "Ability slot",
+  trainerEvCurrentHp: "Current HP",
   trainerDifficultyHelp_1:
     "Casual removes opponent IV/EV training. The raw enhancement template below is reference data, not a preview of final stats.",
   trainerDifficultyHelp_2:
@@ -979,6 +994,21 @@ export const zh: Record<Key, string> = {
   trainerBaseLevel: "表中 Lv.",
   trainerDifficultyPartySource:
     "四档难度读取此训练家的同一份 ROM 队伍记录。这里展示基础成员、招式与培养模板；剧情脚本和实战生成仍可能改变结果。",
+  trainerEvScenario: "精确计算努力值的对战情景",
+  trainerEvCurrentParty: "使用当前存档队伍",
+  trainerEvManualParty: "手动设定队伍",
+  trainerEvManualHelp:
+    "填写宝可梦、本来速度、性格、道具、特性槽位和当前 HP；道具对速度的修正由 ROM 例程计算。",
+  trainerEvAddMon: "添加同行宝可梦",
+  trainerEvNeedsParty: "填写有效宝可梦和速度后开始计算。",
+  trainerEvCalculating: "正在按当前 ROM 计算…",
+  trainerEvComputed:
+    "下方个体值和努力值由当前 ROM 的对手生成例程按此情景算出。",
+  trainerEvLevel: "模拟对战等级",
+  trainerEvTotal: "努力值合计",
+  trainerEvAlternate: "原生随机分支有两种结果；不同的格子同时显示两个值",
+  trainerEvAbilitySlot: "特性槽位",
+  trainerEvCurrentHp: "当前 HP",
   trainerDifficultyHelp_1:
     "养生模式不启用对手的个体／努力培养。下方强化模板仅供查表，不是实战能力值预览。",
   trainerDifficultyHelp_2:

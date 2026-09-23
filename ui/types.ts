@@ -348,6 +348,19 @@ export interface Opponent {
   offset: number;
 }
 export type TrainerDifficulty = 1 | 2 | 3 | 4;
+export interface TrainerEvPreview {
+  trainer_id: number;
+  difficulty: TrainerDifficulty;
+  player_count: number;
+  mons: {
+    species: number;
+    level: number;
+    ivs: number[] | null;
+    alternate_ivs: number[] | null;
+    evs: number[] | null;
+    alternate_evs: number[] | null;
+  }[];
+}
 export interface World {
   map_events: MapEventReport[];
   map_groups: { kind: string; map_ids: string[] }[];
