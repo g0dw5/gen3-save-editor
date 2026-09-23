@@ -18,6 +18,7 @@ pub enum BattleFormRules {
 pub enum BattleFormKind {
     Mega,
     Primal,
+    Gigantamax,
     Transformation,
 }
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -131,7 +132,9 @@ impl Rom {
                 out.push(BattleForm {
                     source,
                     target,
-                    kind: if method == 250 || (method == 251 && parameter == 702) {
+                    kind: if method == 251 && parameter == 702 {
+                        BattleFormKind::Gigantamax
+                    } else if method == 250 {
                         BattleFormKind::Transformation
                     } else if matches!(method, 0xfffd | 253) {
                         BattleFormKind::Primal

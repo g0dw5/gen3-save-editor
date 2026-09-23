@@ -36,6 +36,7 @@ import type {
   RefWindow,
   SpeciesDetail,
   Template,
+  TrainerDifficulty,
   World,
   Snapshot,
   FishingReport,
@@ -46,9 +47,10 @@ interface Props {
   catalog: Catalog;
   world: World | null;
   save: Snapshot | null;
+  trainerDifficulty: TrainerDifficulty;
+  onTrainerDifficulty: (value: TrainerDifficulty) => void;
   loadWorld: () => void;
   onClose: () => void;
-  onCheats: () => void;
   onTemplate: (template: Template) => void;
   onError: (error: unknown) => void;
 }
@@ -58,9 +60,10 @@ export function ReferenceWindow({
   catalog,
   world,
   save,
+  trainerDifficulty,
+  onTrainerDifficulty,
   loadWorld,
   onClose,
-  onCheats,
   onTemplate,
   onError,
 }: Props) {
@@ -260,7 +263,6 @@ export function ReferenceWindow({
   return (
     <Floating title={t("references")} onClose={onClose} initial={info.id} wide>
       <div className="reference-tabs">
-        <button onClick={onCheats}>{t("cheatsTitle")}</button>
         {(
           [
             "species",
@@ -308,6 +310,24 @@ export function ReferenceWindow({
           </label>
           {tab === "trainers" && (
             <div className="trainer-filters">
+              {catalog.profile.id === "ultimate-emerald-55" && (
+                <fieldset className="trainer-difficulty">
+                  <legend>{t("trainerDifficulty")}</legend>
+                  <div role="group" aria-label={t("trainerDifficulty")}>
+                    {([1, 2, 3, 4] as TrainerDifficulty[]).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        className={trainerDifficulty === mode ? "active" : ""}
+                        aria-pressed={trainerDifficulty === mode}
+                        onClick={() => onTrainerDifficulty(mode)}
+                      >
+                        {t(`trainerDifficulty_${mode}`)}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
               {(["role", "location"] as TrainerFacet[]).map(
                 renderTrainerFilter,
               )}
@@ -375,7 +395,7 @@ export function ReferenceWindow({
                         (p) => p.level_rule === "party_max",
                       )
                         ? t("dynamicLevel")
-                        : `Lv. ${Math.min(...(row as Opponent).party.map((p) => p.level))}–${Math.max(...(row as Opponent).party.map((p) => p.level))}`}
+                        : `${catalog.profile.id === "ultimate-emerald-55" ? `${t("trainerBaseLevel")} ` : "Lv. "}${Math.min(...(row as Opponent).party.map((p) => p.level))}–${Math.max(...(row as Opponent).party.map((p) => p.level))}`}
                     </small>
                   )}
                 </span>
@@ -906,6 +926,11 @@ export function ReferenceWindow({
                 trainer={current as Opponent}
                 catalog={catalog}
                 save={save}
+                difficulty={
+                  catalog.profile.id === "ultimate-emerald-55"
+                    ? trainerDifficulty
+                    : null
+                }
                 onSpecies={goSpecies}
                 onAbility={(id) => {
                   setTab("abilities");

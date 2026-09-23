@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- List every supported ROM from the registered adapters on the start screen.
+  Cheats now belong only to the opened ROM; their panel cannot import another
+  ROM and is no longer linked from ROM reference. Add a shared four-mode
+  Ultimate trainer difficulty selector with explicit source-party and generated
+  stat boundaries. Label Charizard's item-702 form as Gigantamax appearance.
+- 首页从适配器自动列出全部受支持 ROM；金手指仅对应当前打开的 ROM，不再在
+  窗口内另选 ROM，也不从 ROM 资料跳转。究绿训练家资料增加四档通用难度选择，
+  区分 ROM 基础队伍与实战生成数值；喷火龙携带 702 对应的形态标为超极巨化外观。
 - Add an exact-fingerprint Ultimate Emerald 5.5 adapter to the shared ROM reference
   and save editor. Read expanded species, moves, abilities, learning sources,
   evolutions, battle transformations, trainers and maps from the supplied ROM.

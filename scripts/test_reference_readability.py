@@ -5,6 +5,7 @@ Requires Vite, Playwright and Chrome. Never loads a ROM or user save.
 import copy
 import json
 import os
+from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 from test_reference_navigation import CATALOG, WORLD, species
 
@@ -78,6 +79,34 @@ def main():
             expect(cards.nth(1)).to_contain_text('Randomly selected' if locale == 'en' else '随机选择')
             expect(cards.nth(1).get_by_role('button', name='Ability 2 ↗', exact=True)).to_be_visible()
             page.close()
+        catalog['profile']['id'] = 'ultimate-emerald-55'
+        other = copy.deepcopy(world['trainers'][0])
+        other.update(id=2, name='Second trainer')
+        world['trainers'].append(other)
+        page = browser.new_page(viewport={'width': 1400, 'height': 1000})
+        page.add_init_script("localStorage.setItem('gen3.locale', 'en')")
+        page.on('pageerror', lambda e: errors.append(str(e)))
+        page.route('**/api', respond)
+        page.goto(os.environ.get('GEN3_UI_URL', 'http://127.0.0.1:5173'))
+        page.get_by_role('button', name='ROM reference', exact=True).click()
+        dialog = page.get_by_role('dialog', name='ROM reference')
+        dialog.locator('.reference-tabs').get_by_role('button', name='Trainers', exact=True).click()
+        modes = dialog.get_by_role('group', name='Difficulty · whole trainer reference')
+        modes.get_by_role('button', name='Lunatic', exact=True).click()
+        expect(dialog.locator('.trainer-mode-note')).to_contain_text('1530')
+        dialog.locator('.reference-rows button').filter(has_text='Second trainer').click()
+        expect(dialog.locator('.trainer-mode-note')).to_contain_text('Lunatic')
+        expect(dialog.locator('.reference-rows button').filter(has_text='Second trainer')).to_have_class('selected')
+        if os.environ.get('GEN3_UI_SHOTS'):
+            output = Path(os.environ['GEN3_UI_SHOTS'])
+            output.mkdir(parents=True, exist_ok=True)
+            page.screenshot(path=str(output / 'trainer-difficulty.png'))
+        dialog.get_by_role('button', name='Close', exact=True).click()
+        page.get_by_role('button', name='ROM reference', exact=True).click()
+        dialog = page.get_by_role('dialog', name='ROM reference')
+        dialog.locator('.reference-tabs').get_by_role('button', name='Trainers', exact=True).click()
+        expect(dialog.get_by_role('group', name='Difficulty · whole trainer reference').get_by_role('button', name='Lunatic')).to_have_attribute('aria-pressed', 'true')
+        page.close()
         browser.close()
     assert not errors, errors
     print('Passed: bilingual evolution conditions, Fairy, move description/evidence, percentages, fixed power, pocket names and deduplicated trainer ability choices.')

@@ -245,7 +245,7 @@ export interface SpeciesDetail {
   battle_forms?: {
     source: number;
     target: number;
-    kind: "mega" | "primal" | "transformation";
+    kind: "mega" | "primal" | "gigantamax" | "transformation";
     trigger: {
       kind: "held_item" | "known_move" | "battle_command";
       id: number;
@@ -347,6 +347,7 @@ export interface Opponent {
   }[];
   offset: number;
 }
+export type TrainerDifficulty = 1 | 2 | 3 | 4;
 export interface World {
   map_events: MapEventReport[];
   map_groups: { kind: string; map_ids: string[] }[];

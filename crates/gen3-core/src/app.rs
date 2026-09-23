@@ -21,7 +21,6 @@ pub struct Request {
 #[derive(Default)]
 pub struct App {
     pub session: Option<Session>,
-    pub cheat_rom: Option<crate::cheats::CheatRom>,
     pub(crate) editor_cheat_cache: Option<(std::sync::Arc<Vec<u8>>, crate::cheats::CheatRom)>,
 }
 fn required(v: &Value, key: &str) -> Result<String> {
@@ -55,36 +54,27 @@ impl App {
     pub fn dispatch(&mut self, input: Request) -> Result<Value> {
         let p = input.payload;
         match input.command.as_str() {
-            "open_cheat_rom" => {
-                let (data, _) = read_file(&p)?;
-                let rom = crate::cheats::CheatRom::open(&data)?;
-                let catalog = rom.catalog();
-                self.cheat_rom = Some(rom);
-                Ok(serde_json::to_value(catalog)?)
-            }
             "cheats" | "cheat_code" => {
                 let md5 = required(&p, "expected_rom_md5")?;
-                // Editor and cheat-only contexts are independent, but never fall back to a different ROM.
-                let rom = if let Some(r) = self.cheat_rom.as_ref().filter(|r| r.matches(&md5)) {
-                    r.clone()
-                } else if let Some(s) = self.session.as_ref().filter(|s| s.rom.profile.md5 == md5) {
-                    if let Some((_, cached)) = self
-                        .editor_cheat_cache
-                        .as_ref()
-                        .filter(|(data, _)| std::sync::Arc::ptr_eq(data, &s.rom.data))
-                    {
-                        cached.clone()
+                let rom =
+                    if let Some(s) = self.session.as_ref().filter(|s| s.rom.profile.md5 == md5) {
+                        if let Some((_, cached)) = self
+                            .editor_cheat_cache
+                            .as_ref()
+                            .filter(|(data, _)| std::sync::Arc::ptr_eq(data, &s.rom.data))
+                        {
+                            cached.clone()
+                        } else {
+                            let rom = crate::cheats::CheatRom::open(&s.rom.data)?;
+                            self.editor_cheat_cache = Some((s.rom.data.clone(), rom.clone()));
+                            rom
+                        }
                     } else {
-                        let rom = crate::cheats::CheatRom::open(&s.rom.data)?;
-                        self.editor_cheat_cache = Some((s.rom.data.clone(), rom.clone()));
-                        rom
-                    }
-                } else {
-                    return Err(err(
-                        "cheat_context_mismatch",
-                        "load the matching ROM before requesting cheats",
-                    ));
-                };
+                        return Err(err(
+                            "cheat_context_mismatch",
+                            "load the matching ROM before requesting cheats",
+                        ));
+                    };
                 if input.command == "cheats" {
                     Ok(serde_json::to_value(rom.catalog())?)
                 } else {
@@ -108,12 +98,22 @@ impl App {
                 Ok(serde_json::to_value(s.snapshot()?)?)
             }
             "state" => {
+                let profiles: Vec<_> = crate::profile::PROFILES
+                    .iter()
+                    .map(|profile| {
+                        json!({
+                            "id": profile.id,
+                            "label": profile.label,
+                            "md5": profile.md5,
+                        })
+                    })
+                    .collect();
                 if let Some(s) = &self.session {
                     Ok(
-                        json!({"catalog":s.rom.catalog()?,"save":if s.save.is_some(){Some(s.snapshot()?)}else{None}}),
+                        json!({"catalog":s.rom.catalog()?,"save":if s.save.is_some(){Some(s.snapshot()?)}else{None},"profiles":profiles}),
                     )
                 } else {
-                    Ok(json!({"catalog":null,"save":null}))
+                    Ok(json!({"catalog":null,"save":null,"profiles":profiles}))
                 }
             }
             "action" => {

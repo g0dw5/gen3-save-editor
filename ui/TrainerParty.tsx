@@ -1,18 +1,20 @@
 import { Sprite, Types } from "./components";
 import { statKeys, useI18n } from "./i18n";
 import { hiddenPower } from "./hiddenPower";
-import type { Catalog, Opponent, Snapshot } from "./types";
+import type { Catalog, Opponent, Snapshot, TrainerDifficulty } from "./types";
 
 export function TrainerParty({
   trainer,
   catalog,
   save,
+  difficulty,
   onSpecies,
   onAbility,
 }: {
   trainer: Opponent;
   catalog: Catalog;
   save: Snapshot | null;
+  difficulty: TrainerDifficulty | null;
   onSpecies: (id: number) => void;
   onAbility: (id: number) => void;
 }) {
@@ -23,6 +25,18 @@ export function TrainerParty({
     : null;
   return (
     <div className="trainer-party">
+      {difficulty !== null && (
+        <div className="trainer-mode-note" role="status">
+          <strong>
+            {t("trainerPartyInMode").replace(
+              "{mode}",
+              t(`trainerDifficulty_${difficulty}`),
+            )}
+          </strong>
+          <p>{t(`trainerDifficultyHelp_${difficulty}`)}</p>
+          <p>{t("trainerDifficultyPartySource")}</p>
+        </div>
+      )}
       <p className="small muted">{t("trainerGenerationHelp")}</p>
       {trainer.party.map((p, i) => {
         const species = catalog.species.find((s) => s.id === p.species);
@@ -55,7 +69,11 @@ export function TrainerParty({
                     {t("gender")} · {gender ? t(gender) : t("unresolved")}
                   </span>
                   <strong>
-                    {level === null ? t("dynamicLevel") : `Lv. ${level}`}
+                    {level === null
+                      ? t("dynamicLevel")
+                      : p.level_rule === "difficulty"
+                        ? `${t("trainerBaseLevel")} ${level}`
+                        : `Lv. ${level}`}
                   </strong>
                 </div>
                 {species && <Types catalog={catalog} values={species.types} />}

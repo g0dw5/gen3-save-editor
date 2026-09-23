@@ -54,6 +54,7 @@ import {
   type Snapshot,
   type Template,
   type Trainer,
+  type TrainerDifficulty,
   type World,
 } from "./types";
 
@@ -69,6 +70,9 @@ export default function App() {
     [locale],
   );
   const [catalog, setCatalog] = useState<Catalog | null>(null);
+  const [supportedProfiles, setSupportedProfiles] = useState<
+    Pick<Catalog["profile"], "id" | "label" | "md5">[]
+  >([]);
   const canEdit = catalog?.profile.capabilities?.save_edit !== false;
   const [save, setSave] = useState<Snapshot | null>(null);
   const [world, setWorld] = useState<World | null>(null);
@@ -78,6 +82,7 @@ export default function App() {
   const [revision, setRevision] = useState(0);
   const [page, setPage] = useState("pokemon");
   const [cheatsOpen, setCheatsOpen] = useState(false);
+  const [trainerDifficulty, setTrainerDifficulty] = useState<TrainerDifficulty>(2);
   const [windows, setWindows] = useState<RefWindow[]>([]);
   const nextWindow = useRef(0);
   const [free, setFree] = useState(false);
@@ -112,10 +117,15 @@ export default function App() {
     setFormDirty(false);
   }, []);
   useEffect(() => {
-    api<{ catalog: Catalog | null; save: Snapshot | null }>("state")
+    api<{
+      catalog: Catalog | null;
+      save: Snapshot | null;
+      profiles?: Pick<Catalog["profile"], "id" | "label" | "md5">[];
+    }>("state")
       .then((r) => {
         setCatalog(r.catalog);
         setSave(r.save);
+        setSupportedProfiles(r.profiles ?? []);
       })
       .catch((e) => {
         if (native) onError(e);
@@ -235,6 +245,8 @@ export default function App() {
         setSave(null);
         setWorld(null);
         setWindows([]);
+        setCheatsOpen(false);
+        setTrainerDifficulty(2);
         setFree(false);
       } else refresh(await api<Snapshot>("open_save", file));
       setSelected("p:0");
@@ -544,7 +556,7 @@ export default function App() {
               <FolderOpen size={15} />
               {t("openSave")}
             </button>
-            <button onClick={() => setCheatsOpen(true)}>
+            <button onClick={() => setCheatsOpen(true)} disabled={!catalog}>
               <Code2 size={15} />
               {t("cheatsTitle")}
             </button>
@@ -614,16 +626,11 @@ export default function App() {
             </button>
             <div className="supported-list">
               <strong>{t("supported")}</strong>
-              <div>
-                5.0EX+BW <code>0d9b129f7dd76895f79bb47ad7dec2fe</code>
-              </div>
-              <div>
-                5.0EX+DP <code>cb2940215f4dafb1bef133c3af379f44</code>
-              </div>
-              <div>
-                {t("rocketVersion")}{" "}
-                <code>59c658a1081f542086de1060bb65f0b3</code>
-              </div>
+              {supportedProfiles.map((profile) => (
+                <div key={profile.id}>
+                  {profile.label} <code>{profile.md5}</code>
+                </div>
+              ))}
             </div>
           </main>
         ) : (
@@ -968,9 +975,9 @@ export default function App() {
             )}
           </span>
         </footer>
-        {cheatsOpen && (
+        {cheatsOpen && catalog && (
           <CheatWindow
-            editorMd5={catalog?.profile.md5}
+            romMd5={catalog.profile.md5}
             onClose={() => setCheatsOpen(false)}
           />
         )}
@@ -982,8 +989,9 @@ export default function App() {
               catalog={catalog}
               world={world}
               save={save}
+              trainerDifficulty={trainerDifficulty}
+              onTrainerDifficulty={setTrainerDifficulty}
               loadWorld={loadWorld}
-              onCheats={() => setCheatsOpen(true)}
               onClose={() =>
                 setWindows((old) => old.filter((w) => w.id !== info.id))
               }

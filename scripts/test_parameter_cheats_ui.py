@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 from test_cheats_ui import recipe, text, UE
+from test_reference_navigation import CATALOG
+import copy
 
 
 def main():
@@ -15,6 +17,8 @@ def main():
         dict(id="1-1", group=1, number=1, region=10, name="测试城", code="01 01", landings=[]),
         dict(id="2-0", group=2, number=0, region=20, name="测试洞窟", code="02 00", landings=[dict(id=1,x=5,y=6)])])
     catalog = dict(rom=dict(md5=UE,label="Synthetic ROM",editor_supported=True),entries=entries,options=options)
+    editor = copy.deepcopy(CATALOG)
+    editor["profile"].update(id="ultimate-emerald-55", md5=UE, label="Synthetic ROM")
     requests, pending, errors = [], [], []
     mode = dict(delay=False)
 
@@ -27,8 +31,10 @@ def main():
     def respond(route):
         req = route.request.post_data_json
         requests.append(req)
-        if req["command"] == "state": data=dict(catalog=None,save=None)
-        elif req["command"] == "open_cheat_rom": data=catalog
+        if req["command"] == "state": data=dict(catalog=editor,save=None)
+        elif req["command"] == "cheats":
+            assert req["payload"]["expected_rom_md5"] == UE
+            data=catalog
         elif req["command"] == "cheat_code":
             if mode["delay"]:
                 pending.append((route,result(req["payload"])))
@@ -47,9 +53,7 @@ def main():
             page.goto(os.environ.get("GEN3_UI_URL","http://127.0.0.1:5173"))
             page.get_by_role("button",name="金手指" if locale=="zh" else "Cheats",exact=True).click()
             dialog=page.get_by_role("dialog")
-            with page.expect_file_chooser() as fc:
-                dialog.get_by_role("button",name="选择金手指 ROM" if locale=="zh" else "Choose cheat ROM").click()
-            fc.value.set_files(dict(name="fixture.gba",mimeType="application/octet-stream",buffer=b"fixture"))
+            expect(dialog).to_contain_text("Synthetic ROM")
             copy_button=dialog.locator(".cheats-code button").first
             expect(copy_button).to_be_disabled()
             combo=dialog.get_by_role("combobox")

@@ -16,24 +16,21 @@ size. No emulator connection, save or ROM writes are performed.
 | Dark Phantom / 漆黑的魅影 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | Same seven features, independently tested / 同上七项，独立验证 |
 | Team Rocket / 西班牙火箭队 2.1 中文 | `59c658a1081f542086de1060bb65f0b3` | Those seven plus compatible daycare eggs / 上述七项及兼容寄养组合必定产蛋 |
 
-Ultimate Emerald is supported in both the editor and cheat window. Opening another
-ROM in this window does not replace the editor session. With an editor ROM already
-open, the cheat window initially displays that ROM's availability. Changing the
-editor ROM resets the displayed cheat context. Reopening the window starts from
-the editor ROM (or the no-ROM prompt), not a hidden last-selected cheat ROM.
+The main toolbar opens one exact-fingerprint ROM for ROM reference, save editing
+and cheats. The cheat window always reads that open ROM; changing the ROM resets
+the displayed cheat context.
 
-究极绿宝石可在主编辑器打开，也可单独在金手指窗口选择。
-窗口初始展示编辑器 ROM 的支持状态，允许另外选择仅用于金手指的 ROM。编辑器
-切换 ROM 后，金手指展示同步重置；关闭再打开窗口不隐式恢复另选的 ROM。
+主界面先打开一份完整指纹匹配的 ROM，再向下查看 ROM 资料、修改存档或生成
+金手指。金手指窗口始终对应当前 ROM；切换 ROM 会清除旧代码。
 
 ## Usage / 使用
 
-1. Open **Cheats** from the toolbar or ROM reference; choose the matching ROM.
+1. Open the matching ROM from the main toolbar, then open **Cheats**.
 2. Search/select a recipe and read its scope, protocol and enable/disable steps.
 3. Copy the complete set or export a text guide. Enable every line shown for the selected recipe.
 4. Apply the set in your emulator, not in this editor.
 
-1. 顶栏或 ROM 资料中打开“金手指”，选择对应 ROM。
+1. 从主界面打开对应 ROM，再从顶栏打开“金手指”。
 2. 搜索／选择功能，阅读影响范围、代码格式与启停步骤。
 3. 复制整组或导出代码与说明；当前去窥屏条目必须同时启用两条。
 4. 到模拟器中添加；修改器不会自动连接模拟器。
@@ -200,15 +197,15 @@ and the encoder owns protocol arithmetic. The UI never invents addresses or
 encodes instructions. Parameterized recipes use typed core validation and
 runtime names/rules from that ROM; unknown request fields are rejected.
 
-- `open_cheat_rom {path | bytes}` validates a ROM without changing `App::session`.
+- `open_rom {path | bytes}` establishes the shared ROM context for all panels.
 - `cheats {expected_rom_md5}` reads the catalog of a loaded matching identity.
 - `cheat_code {expected_rom_md5, cheat_id, format}` checks exact identity/recipe/format.
 - Unknown fingerprints, stale identities, unsupported recipes and protocols fail.
 - Generation is deterministic and does not enter edit history or serialize a save.
 
 UI content is discarded on ROM changes, including copy state; obsolete async
-responses cannot populate a closed/replaced window. Failed imports clear visible
-old codes. Static documentation/configuration is not an extracted ROM catalog;
+responses cannot populate a closed/replaced window. Static documentation and
+configuration are not an extracted ROM catalog;
 no ROM, save, game artwork or private simulation dump is shipped.
 
 ## Tests / 测试

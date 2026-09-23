@@ -678,10 +678,16 @@ mod tests {
         let mut app = App::default();
         let ue_path = std::env::var("GEN3_ROM_ULTIMATE").expect("GEN3_ROM_ULTIMATE");
         let original = std::fs::read(&ue_path).unwrap();
-        let catalog = dispatch(&mut app, "open_cheat_rom", json!({"path": ue_path})).unwrap();
+        dispatch(&mut app, "open_rom", json!({"path": ue_path})).unwrap();
+        let catalog = dispatch(
+            &mut app,
+            "cheats",
+            json!({"expected_rom_md5": ULTIMATE_MD5}),
+        )
+        .unwrap();
         assert_eq!(catalog["entries"].as_array().unwrap().len(), 8);
         assert_eq!(catalog["rom"]["editor_supported"], true);
-        assert!(app.session.is_none());
+        assert!(app.session.is_some());
         let request = json!({"expected_rom_md5": ULTIMATE_MD5, "cheat_id": NO_PEEK, "format": "gameshark_v1_v2"});
         assert_eq!(
             dispatch(&mut app, "cheat_code", request.clone()).unwrap()["lines"],
@@ -735,14 +741,11 @@ mod tests {
                 assert_eq!(code["rom_md5"], profile.md5);
                 assert!(!code["lines"].as_array().unwrap().is_empty());
             }
-            dispatch(&mut app, "open_cheat_rom", json!({"path": ue_path})).unwrap();
-            dispatch(&mut app, "cheat_code", request.clone()).unwrap();
             assert!(std::sync::Arc::ptr_eq(
                 &baseline,
                 &app.session.as_ref().unwrap().rom.data
             ));
             assert!(app.session.as_ref().unwrap().save.is_none());
-            dispatch(&mut app, "open_cheat_rom", json!({"path": path})).unwrap();
             assert_eq!(
                 dispatch(&mut app, "cheat_code", request.clone())
                     .unwrap_err()

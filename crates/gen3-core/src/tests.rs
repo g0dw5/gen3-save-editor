@@ -11,6 +11,37 @@ use crate::{
 use std::sync::OnceLock;
 
 #[test]
+fn start_state_lists_every_supported_rom_without_loading_game_data() {
+    use crate::app::{App, Request};
+    let mut app = App::default();
+    let state = app
+        .dispatch(Request {
+            command: "state".into(),
+            payload: serde_json::Value::Null,
+        })
+        .unwrap();
+    assert!(state["catalog"].is_null());
+    let profiles = state["profiles"].as_array().unwrap();
+    assert_eq!(profiles.len(), profile::PROFILES.len());
+    for expected in profile::PROFILES {
+        assert!(profiles.iter().any(|actual| {
+            actual["id"] == expected.id
+                && actual["label"] == expected.label
+                && actual["md5"] == expected.md5
+        }));
+    }
+    assert_eq!(
+        app.dispatch(Request {
+            command: "open_cheat_rom".into(),
+            payload: serde_json::Value::Null,
+        })
+        .unwrap_err()
+        .code,
+        "command"
+    );
+}
+
+#[test]
 fn contest_api_rejects_stale_rom_and_malformed_values() {
     use crate::app::{App, Request};
     let mut app = App {
@@ -2682,6 +2713,12 @@ fn local_ultimate_adapter_regression() {
     );
     assert_eq!(r.species(25).unwrap().abilities, [9, 9, 31]);
     assert_eq!(catalog.type_names[23], "妖精");
+    assert!(catalog.battle_forms.iter().any(|form| {
+        form.source == 6
+            && form.target == 252
+            && form.kind == crate::forms::BattleFormKind::Gigantamax
+            && form.trigger == crate::forms::BattleTrigger::HeldItem(702)
+    }));
     assert!(catalog.editor_rules.hyper_training);
     assert!(!catalog.editor_rules.pokemon_checksum);
     assert_eq!(

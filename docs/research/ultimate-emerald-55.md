@@ -20,12 +20,29 @@ branches. Battle-only transformations are shown separately from permanent
 evolution. Trainer enhanced-party entries expose the ROM's template for IV,
 nature and ability; actual EVs and levels may change with difficulty, player
 party and battle context, so the reference page labels them as dynamic.
+The trainer view has one selector for the four difficulty settings. Each trainer
+header has one party pointer rather than four mode-specific party tables, so
+the selector retains the source roster and describes known generation limits.
+Event scripts can substitute a trainer ID; exact battle EVs and levels are not
+yet predicted.
+
+Charizard `6` has two Mega edges and an item-702 edge to species `252`.
+Item `702` is named 许愿星块 and describes battle Dynamax; species `252` has
+a distinct Gigantamax-style front sprite despite sharing the name 喷火龙.
+The UI labels this edge as a Gigantamax appearance. This table and artwork
+do not by themselves prove that the full Dynamax battle mechanic is usable.
 
 名称、数值、图片、地图和各类条目在打开 ROM 后读取。适配层只记录地址和已核实
 的格式。资料包括 1,199 个非零编号槽位、938 个招式槽位、800 个道具槽位、
 922 张地图头和 1,336 条非空训练家记录。编号 `412` 在 ROM 内为空。
 伊布 `133` 有独立的十条进化表；战斗变身与永久进化分开展示。强化训练家
 显示 ROM 培养模板；实战努力值、等级可能随难度和战斗状态改变，不冒充固定值。
+训练家页提供四档难度选择。同一训练家头只有一份队伍指针，没有四套并列的
+模式队伍表；切换难度保留源队伍并说明已知约束。剧情脚本可改用其他训练家
+编号，实战努力值和等级尚未做精确预测。
+喷火龙 `6` 除两条 Mega 关系外，还有携带 `702`“许愿星块”指向 `252`
+的关系；`252` 的立绘是超极巨化外观，但进化表和立绘尚不足以证明完整的
+极巨化战斗机制可用。
 
 The full image scan found eight map headers in group 36 whose secondary
 tileset points to bytes without the expected compressed header, plus species

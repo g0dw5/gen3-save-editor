@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Copy, Download, FolderOpen, Search, ShieldCheck } from "lucide-react";
-import { api, chooseFile, download } from "./api";
+import { Copy, Download, Search, ShieldCheck } from "lucide-react";
+import { api, download } from "./api";
 import { SearchSelect } from "./SearchSelect";
 import { Floating } from "./components";
 import { useI18n } from "./i18n";
@@ -49,10 +49,10 @@ interface Code {
   parameters?: Parameters | null;
 }
 export function CheatWindow({
-  editorMd5,
+  romMd5,
   onClose,
 }: {
-  editorMd5?: string;
+  romMd5: string;
   onClose: () => void;
 }) {
   const { t, locale } = useI18n();
@@ -61,7 +61,7 @@ export function CheatWindow({
   const [parameters, setParameters] = useState<Parameters | null>(null);
   const [search, setSearch] = useState("");
   const [code, setCode] = useState<Code | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(true);
   const [error, setError] = useState<{ code: string; detail: string } | null>(
     null,
   );
@@ -69,7 +69,6 @@ export function CheatWindow({
   const [compact, setCompact] = useState(false);
   const generation = useRef(0);
   const copyGeneration = useRef(0);
-  const loading = useRef(false);
   const txt = (value: Text) => value[locale];
   const fail = (e: unknown) => {
     const error = e as { code?: string; detail?: string };
@@ -84,27 +83,24 @@ export function CheatWindow({
     setCode(null);
     setError(null);
     setCopied(false);
-    loading.current = false;
-    setBusy(!!editorMd5);
-    if (editorMd5) {
-      api<CheatCatalog>("cheats", { expected_rom_md5: editorMd5 })
-        .then((data) => {
-          if (token !== generation.current) return;
-          setCatalog(data);
-          setSelected(data.entries[0]?.id || "");
-          setParameters(null);
-        })
-        .catch((e) => {
-          if (token === generation.current) fail(e);
-        })
-        .finally(() => {
-          if (token === generation.current) setBusy(false);
-        });
-    }
+    setBusy(true);
+    api<CheatCatalog>("cheats", { expected_rom_md5: romMd5 })
+      .then((data) => {
+        if (token !== generation.current) return;
+        setCatalog(data);
+        setSelected(data.entries[0]?.id || "");
+        setParameters(null);
+      })
+      .catch((e) => {
+        if (token === generation.current) fail(e);
+      })
+      .finally(() => {
+        if (token === generation.current) setBusy(false);
+      });
     return () => {
       ++generation.current;
     };
-  }, [editorMd5]);
+  }, [romMd5]);
   useEffect(() => {
     let active = true;
     ++copyGeneration.current;
@@ -134,34 +130,6 @@ export function CheatWindow({
       ++copyGeneration.current;
     };
   }, [catalog, selected, parameters]);
-  const open = async () => {
-    if (loading.current) return;
-    loading.current = true;
-    const token = ++generation.current;
-    setBusy(true);
-    setError(null);
-    setCopied(false);
-    try {
-      const file = await chooseFile("rom");
-      if (!file || token !== generation.current) return;
-      // Never leave another ROM's copyable code visible during import or a failed import.
-      setCatalog(null);
-      setCode(null);
-      const data = await api<CheatCatalog>("open_cheat_rom", file);
-      if (token !== generation.current) return;
-      setCatalog(data);
-      setSelected(data.entries[0]?.id || "");
-      setParameters(null);
-      setSearch("");
-    } catch (e) {
-      if (token === generation.current) fail(e);
-    } finally {
-      if (token === generation.current) {
-        setBusy(false);
-        loading.current = false;
-      }
-    }
-  };
   const entry = catalog?.entries.find((item) => item.id === selected);
   const ready =
     !busy &&
@@ -214,19 +182,8 @@ export function CheatWindow({
           <div>
             <strong>{catalog?.rom.label || t("cheatsOpenPrompt")}</strong>
             <p>{t("cheatsReadOnly")}</p>
-            {catalog && (
-              <>
-                <code>MD5 · {catalog.rom.md5}</code>
-                {!catalog.rom.editor_supported && (
-                  <p className="cheats-scope">{t("cheatsOnlySupport")}</p>
-                )}
-              </>
-            )}
+            {catalog && <code>MD5 · {catalog.rom.md5}</code>}
           </div>
-          <button onClick={() => void open()} disabled={busy}>
-            <FolderOpen size={15} />
-            {t("cheatsOpenRom")}
-          </button>
         </div>
         {error && (
           <div className="cheats-error" role="alert">
@@ -244,7 +201,6 @@ export function CheatWindow({
         ) : !catalog ? (
           <div className="cheats-empty">
             <h3>{t("cheatsOpenPrompt")}</h3>
-            <p>{t("cheatsSupported")}</p>
           </div>
         ) : !catalog.entries.length ? (
           <div className="cheats-empty">

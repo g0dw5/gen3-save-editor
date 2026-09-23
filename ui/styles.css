@@ -1474,6 +1474,44 @@ summary {
   padding: 0 10px 12px;
   flex-shrink: 0;
 }
+.trainer-difficulty {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  margin: 0 0 6px;
+  padding: 0 0 10px;
+  min-width: 0;
+}
+.trainer-difficulty legend {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 0 0 6px;
+}
+.trainer-difficulty > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+.trainer-difficulty button {
+  justify-content: center;
+  min-width: 0;
+  font-size: 11px;
+  padding: 5px 3px;
+}
+.trainer-mode-note {
+  background: var(--soft);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+.trainer-mode-note strong {
+  display: block;
+  margin-bottom: 5px;
+}
+.trainer-mode-note p {
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
 .trainer-filters label {
   display: grid;
   gap: 4px;
@@ -2165,7 +2203,7 @@ summary {
   margin-top: 12px;
 }
 
-/* Cheat-only ROM context is independent of the save editor. */
+/* Cheats use the ROM already opened in the main editor session. */
 .cheats {
   display: flex;
   flex-direction: column;

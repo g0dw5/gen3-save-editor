@@ -20,19 +20,14 @@ export const en = {
   cheatsCategory_breeding: "Hatching and daycare",
 
   cheat_context_mismatch:
-    "The cheat ROM context changed. Select the matching ROM again.",
+    "The opened ROM changed. Reopen its cheat panel.",
   cheatsTitle: "Cheats",
-  cheatsOpenPrompt: "Open a ROM to view verified cheats",
+  cheatsOpenPrompt: "Could not load cheats for the opened ROM",
   cheatsReadOnly:
     "Read-only · no save required · does not activate codes or write files",
-  cheatsOnlySupport:
-    "This ROM has cheat-only support, not ROM reference or save editing support.",
-  cheatsOpenRom: "Choose cheat ROM",
-  cheatsSupported:
-    "Verified catalogs: Dark Phantom BW/DP, Team Rocket 2.1 Chinese and Ultimate Emerald 5.5. Available features differ by ROM; exact MD5 match required.",
   cheatsNone: "No verified cheats for this ROM yet",
   cheatsNoneHelp:
-    "The ROM is recognized, but no recipes have been released for it. Codes from other versions are never substituted. You can select another supported ROM here without changing the editor session.",
+    "No recipes are available for the opened ROM. Open another supported ROM from the main toolbar to view its own codes.",
   cheatsSearch: "Search cheats",
   cheatsVerified: "Verified · see test scope",
   cheatsNoResults: "No matching cheats",
@@ -153,6 +148,7 @@ export const en = {
   effectiveNature: "Effective nature",
   mega: "Mega",
   primal: "Primal transformation",
+  gigantamax: "Gigantamax appearance",
   unsupported_feature: "This feature is not enabled for this ROM.",
 
   fishingSpots: "Save-specific fishing spots",
@@ -322,6 +318,23 @@ export const en = {
   status_128: "Badly poisoned",
 
   trainerFacet_role: "Role",
+  trainerDifficulty: "Difficulty · whole trainer reference",
+  trainerDifficulty_1: "Casual",
+  trainerDifficulty_2: "Standard",
+  trainerDifficulty_3: "Challenge",
+  trainerDifficulty_4: "Lunatic",
+  trainerPartyInMode: "Party · {mode}",
+  trainerBaseLevel: "ROM Lv.",
+  trainerDifficultyPartySource:
+    "The four modes read this trainer's same ROM party record. This view shows its base members, moves and template; event scripts and live battle generation can still change the result.",
+  trainerDifficultyHelp_1:
+    "Casual removes opponent IV/EV training. The raw enhancement template below is reference data, not a preview of final stats.",
+  trainerDifficultyHelp_2:
+    "Standard allows up to 508 total opponent EVs. Level caps and battle context can change generated values.",
+  trainerDifficultyHelp_3:
+    "Challenge strengthens all opponents, with up to 508 total EVs. The exact spread and level depend on battle context.",
+  trainerDifficultyHelp_4:
+    "Lunatic allows up to 1530 total EVs, plus battle bonuses. The exact spread and level depend on battle context.",
   trainerFacet_location: "Location",
   trainerFacet_battle: "Battle format",
   trainerFacet_level: "Level rule",
@@ -673,18 +686,13 @@ export const zh: Record<Key, string> = {
   cheatsCategory_catching: "捕捉",
   cheatsCategory_breeding: "孵化与寄养",
 
-  cheat_context_mismatch: "金手指对应的 ROM 已改变，请重新选择匹配的 ROM。",
+  cheat_context_mismatch: "当前打开的 ROM 已改变，请重新打开它的金手指页面。",
   cheatsTitle: "金手指",
-  cheatsOpenPrompt: "打开 ROM，查看经过验证的金手指",
+  cheatsOpenPrompt: "无法载入当前 ROM 的金手指",
   cheatsReadOnly: "只读工具 · 无需存档 · 不会启用代码或写入文件",
-  cheatsOnlySupport:
-    "此 ROM 目前仅支持金手指，不代表已支持 ROM 资料或存档编辑。",
-  cheatsOpenRom: "选择金手指 ROM",
-  cheatsSupported:
-    "支持漆黑的魅影 BW/DP、西班牙火箭队 2.1 汉化版与究极绿宝石 5.5；各版本功能不同，必须匹配完整 MD5。",
   cheatsNone: "此 ROM 暂无已验证的金手指",
   cheatsNoneHelp:
-    "已识别当前版本，但尚未发布适用于它的代码。这里不会套用其他版本或网上的通用代码。可另选其他支持的 ROM 查看已验证条目；当前编辑器会话保持独立。",
+    "当前 ROM 暂无可用代码。需要查看其他版本时，请从主界面打开对应 ROM。",
   cheatsSearch: "搜索金手指",
   cheatsVerified: "已验证 · 查看范围",
   cheatsNoResults: "没有匹配的金手指",
@@ -797,6 +805,7 @@ export const zh: Record<Key, string> = {
   effectiveNature: "实际生效性格",
   mega: "Mega 进化",
   primal: "原始回归",
+  gigantamax: "超极巨化外观",
   unsupported_feature: "此 ROM 尚未开放此功能。",
 
   fishingSpots: "当前存档钓点",
@@ -961,6 +970,23 @@ export const zh: Record<Key, string> = {
   status_128: "剧毒",
 
   trainerFacet_role: "身份",
+  trainerDifficulty: "难度 · 全部训练家资料",
+  trainerDifficulty_1: "养生",
+  trainerDifficulty_2: "标准",
+  trainerDifficulty_3: "挑战",
+  trainerDifficulty_4: "疯子",
+  trainerPartyInMode: "队伍 · {mode}",
+  trainerBaseLevel: "表中 Lv.",
+  trainerDifficultyPartySource:
+    "四档难度读取此训练家的同一份 ROM 队伍记录。这里展示基础成员、招式与培养模板；剧情脚本和实战生成仍可能改变结果。",
+  trainerDifficultyHelp_1:
+    "养生模式不启用对手的个体／努力培养。下方强化模板仅供查表，不是实战能力值预览。",
+  trainerDifficultyHelp_2:
+    "标准模式的对手努力值总和上限为 508；等级上限和战斗条件会影响实际生成结果。",
+  trainerDifficultyHelp_3:
+    "挑战模式强化所有对手，努力值总和上限仍为 508；具体分配和等级随战斗条件变化。",
+  trainerDifficultyHelp_4:
+    "疯子模式的对手努力值总和最高为 1530，并有额外战斗加成；具体分配和等级随战斗条件变化。",
   trainerFacet_location: "地点",
   trainerFacet_battle: "对战形式",
   trainerFacet_level: "等级规则",
