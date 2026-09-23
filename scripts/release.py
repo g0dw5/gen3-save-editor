@@ -17,7 +17,19 @@ DOCS = {
     "LICENSE": "LICENSE",
     "THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",
     "ui/data/README.md": "OFFICIAL_STATS_NOTICE.md",
-    "docs/windows-build.md": "windows-build.md",
+    "docs/ARCHITECTURE.md": "docs/ARCHITECTURE.md",
+    "docs/IMPLEMENTATION.md": "docs/IMPLEMENTATION.md",
+    "docs/cheats.md": "docs/cheats.md",
+    "docs/multi-rom-adapters.md": "docs/multi-rom-adapters.md",
+    "docs/research/contest-condition.md": "docs/research/contest-condition.md",
+    "docs/research/encounter-time-selection.md": "docs/research/encounter-time-selection.md",
+    "docs/research/map-events.md": "docs/research/map-events.md",
+    "docs/research/map-palettes.md": "docs/research/map-palettes.md",
+    "docs/research/pokemon-appearance.md": "docs/research/pokemon-appearance.md",
+    "docs/research/runtime-data-and-evolution-tree.md": "docs/research/runtime-data-and-evolution-tree.md",
+    "docs/research/search-and-origins.md": "docs/research/search-and-origins.md",
+    "docs/research/ultimate-emerald-55.md": "docs/research/ultimate-emerald-55.md",
+    "docs/windows-build.md": "docs/windows-build.md",
 }
 
 

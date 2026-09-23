@@ -40,6 +40,9 @@
       "../../CHANGELOG.md": "CHANGELOG.md",
       "../../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",
       "../../ui/data/README.md": "OFFICIAL_STATS_NOTICE.md"
+    },
+    "macOS": {
+      "signingIdentity": "-"
     }
   },
   "mainBinaryName": "Gen3RomHackEditor"
