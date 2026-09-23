@@ -80,7 +80,8 @@ def stage(bundle, output, platform):
         "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT,
                                          text=True).strip(),
         "platform": platform,
-        "signing": "unsigned / not notarized",
+        "signing": ("ad hoc signed / not notarized" if platform == "macos-arm64"
+                    else "unsigned"),
         "runtime_tested_by_this_workflow": False,
         "files": {f.name: hashlib.sha256(f.read_bytes()).hexdigest()
                   for f in sorted(output.iterdir())},

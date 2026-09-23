@@ -65,6 +65,7 @@ class ReleaseChecks(unittest.TestCase):
         self.assertFalse(any(f.suffix == ".gba" for f in output.iterdir()))
         info = json.loads((output / "build-info-windows-x64.json").read_text())
         self.assertEqual(info["commit"], "test-sha")
+        self.assertEqual(info["signing"], "unsigned")
         self.assertEqual(len(info["files"]), 2)
         with self.assertRaisesRegex(ValueError, "empty staging"):
             release.stage(self.root, output, "windows-x64")
