@@ -1288,6 +1288,21 @@ summary {
 .rom-patch h3 {
   margin-top: 0;
 }
+.rom-patch-pending {
+  display: grid;
+  gap: 5px;
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+.rom-patch-change {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+}
+.rom-patch-change button {
+  padding: 3px 7px;
+}
 @media (max-width: 1150px) {
   .app-header {
     gap: 12px;

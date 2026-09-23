@@ -1356,6 +1356,45 @@ fn rom_patch_is_bounded_reproducible_and_keeps_the_baseline() {
 }
 
 #[test]
+#[ignore = "requires GEN3_ROM_BW, GEN3_ROM_DP, GEN3_ROM_ROCKET and GEN3_ROM_ULTIMATE"]
+fn rom_patch_combines_gyarados_speed_and_ability_on_exact_roms() {
+    use crate::rom::RomEdit;
+    for name in ["BW", "DP", "ROCKET", "ULTIMATE"] {
+        let path = std::env::var(format!("GEN3_ROM_{name}")).unwrap();
+        let r = Rom::open(std::fs::read(path).unwrap()).unwrap();
+        let before = r.species(130).unwrap();
+        assert!(before.name.contains("暴鲤龙"), "{name}: {}", before.name);
+        let speed = if before.stats[3] == 255 { 254 } else { 255 };
+        let ability = if before.abilities[0] == 2 { 1 } else { 2 };
+        let edits = [
+            RomEdit {
+                table: "species".into(),
+                id: 130,
+                field: "speed".into(),
+                value: speed,
+            },
+            RomEdit {
+                table: "species".into(),
+                id: 130,
+                field: "ability1".into(),
+                value: ability as u32,
+            },
+        ];
+        let (patched, manifest) = r.patch(&edits).unwrap();
+        let mut derived = r.clone();
+        derived.data = std::sync::Arc::new(patched);
+        let after = derived.species(130).unwrap();
+        assert_eq!(
+            (after.stats[3], after.abilities[0]),
+            (speed as u8, ability),
+            "{name}"
+        );
+        assert_eq!(r.species(130).unwrap().stats[3], before.stats[3], "{name}");
+        assert_eq!(manifest.edits.len(), 2, "{name}");
+    }
+}
+
+#[test]
 fn trainer_map_index_follows_branches_and_keeps_evidence() {
     let mut r = rom();
     let b = std::sync::Arc::make_mut(&mut r.data);
@@ -2556,6 +2595,12 @@ fn rom_patch_uses_each_profiles_scalar_widths_and_offsets() {
             crate::rom::RomEdit {
                 table: "species".into(),
                 id: 1,
+                field: "speed".into(),
+                value: 120,
+            },
+            crate::rom::RomEdit {
+                table: "species".into(),
+                id: 1,
                 field: "ability2".into(),
                 value: if expanded { 267 } else { 2 },
             },
@@ -2570,6 +2615,7 @@ fn rom_patch_uses_each_profiles_scalar_widths_and_offsets() {
         let mut expected = (*r.data).clone();
         let species = r.profile.base_stats.offset + r.profile.base_stats.stride;
         let mv = r.profile.moves.offset + r.profile.moves.stride;
+        expected[species + 3] = 120;
         if expanded {
             put16(&mut expected, species + 26, 267);
             put16(&mut expected, mv + 2, 500);
@@ -2582,6 +2628,16 @@ fn rom_patch_uses_each_profiles_scalar_widths_and_offsets() {
             expected[mv + 1] = 200;
         }
         assert_eq!(patched, expected);
+        let mut patched_rom = r.clone();
+        patched_rom.data = std::sync::Arc::new(patched);
+        let species = patched_rom.species(1).unwrap();
+        assert_eq!(species.stats[3], 120, "{}", profile.id);
+        assert_eq!(
+            species.abilities[1],
+            if expanded { 267 } else { 2 },
+            "{}",
+            profile.id
+        );
     }
 }
 

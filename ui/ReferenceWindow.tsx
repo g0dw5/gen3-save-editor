@@ -436,6 +436,7 @@ export function ReferenceWindow({
           )}
           {romEdit && (
             <RomPatch
+              key={`${catalog.profile.md5}:${tab}:${selected}`}
               catalog={catalog}
               table={tab}
               id={+selected}
@@ -979,24 +980,24 @@ function RomPatch({
   const [field, setField] = useState(fields[0]);
   const species = catalog.species.find((s) => s.id === id);
   const stats = ["hp", "attack", "defense", "speed", "sp_attack", "sp_defense"];
-  const original =
+  const originalFor = (name: string) =>
     table === "species" && species
-      ? stats.includes(field)
-        ? species.stats[stats.indexOf(field)]
-        : field === "ability1"
+      ? stats.includes(name)
+        ? species.stats[stats.indexOf(name)]
+        : name === "ability1"
           ? species.abilities[0]
-          : field === "ability2"
+          : name === "ability2"
             ? species.abilities[1]
-            : Number(
-                (species as unknown as Record<string, unknown>)[field] ?? 0,
-              )
+            : Number((species as unknown as Record<string, unknown>)[name] ?? 0)
       : table === "moves"
         ? Number(
-            (catalog.moves[id] as unknown as Record<string, unknown>)?.[
-              field
-            ] ?? 0,
+            (
+              catalog.moves.find((move) => move.id === id) as unknown as
+                Record<string, unknown> | undefined
+            )?.[name] ?? 0,
           )
-        : (catalog.items[id]?.price ?? 0);
+        : (catalog.items.find((item) => item.id === id)?.price ?? 0);
+  const original = originalFor(field);
   const namedOptions = field.startsWith("ability")
     ? catalog.abilities.map((ability) => ({
         value: ability.id,
@@ -1008,17 +1009,30 @@ function RomPatch({
           label: t(`growth_${value}`),
         }))
       : null;
-  const [value, setValue] = useState(original);
-  useEffect(() => setValue(original), [original, field, id, table]);
+  const [drafts, setDrafts] = useState<Record<string, number>>({});
+  const displayValue = (name: string, number: number) =>
+    name.startsWith("ability")
+      ? (catalog.abilities.find((ability) => ability.id === number)?.name ??
+        String(number))
+      : name === "growth"
+        ? t(`growth_${number}`)
+        : String(number);
+  const value = drafts[field] ?? original;
+  const pending = fields.filter((name) => Object.hasOwn(drafts, name));
+  const changeValue = (next: number) =>
+    setDrafts((previous) => {
+      const updated = { ...previous };
+      if (next === original) delete updated[field];
+      else updated[field] = next;
+      return updated;
+    });
   const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    setField(fields[0]);
-  }, [table, id]);
   return (
     <form
       className="rom-patch"
       onSubmit={async (e) => {
         e.preventDefault();
+        if (!pending.length) return;
         setBusy(true);
         try {
           const path = native
@@ -1027,7 +1041,15 @@ function RomPatch({
           if (native && !path) return;
           const result = await api<{ bytes?: string; manifest: unknown }>(
             "patch_rom",
-            { edits: [{ table, id, field, value }], ...(path ? { path } : {}) },
+            {
+              edits: pending.map((name) => ({
+                table,
+                id,
+                field: name,
+                value: drafts[name],
+              })),
+              ...(path ? { path } : {}),
+            },
           );
           if (result.bytes)
             download(
@@ -1078,19 +1100,47 @@ function RomPatch({
             label={t("value")}
             value={value}
             options={namedOptions}
-            onChange={(value) => setValue(Number(value))}
+            onChange={(value) => changeValue(Number(value))}
             searchable={field.startsWith("ability")}
           />
         ) : (
           <NumberField
             label={t("value")}
             value={value}
-            max={65535}
-            onChange={setValue}
+            max={field === "power" || table === "items" ? 65535 : 255}
+            onChange={changeValue}
           />
         )}
       </div>
-      <button disabled={busy} type="submit">
+      {pending.length > 0 && (
+        <div className="rom-patch-pending" aria-label={t("romEditPending")}>
+          <strong>{t("romEditPending")}</strong>
+          {pending.map((name) => (
+            <div className="rom-patch-change" key={name}>
+              <span>{t(name)}</span>
+              <span>
+                {displayValue(name, originalFor(name))} →{" "}
+                {displayValue(name, drafts[name])}
+              </span>
+              <button
+                type="button"
+                disabled={busy}
+                aria-label={`${t("romEditRemove")} ${t(name)}`}
+                onClick={() =>
+                  setDrafts((previous) => {
+                    const updated = { ...previous };
+                    delete updated[name];
+                    return updated;
+                  })
+                }
+              >
+                {t("romEditRemove")}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <button disabled={busy || pending.length === 0} type="submit">
         {t(busy ? "working" : "exportRom")}
       </button>
     </form>

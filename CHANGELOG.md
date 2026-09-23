@@ -10,6 +10,11 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Stage multiple scalar edits on one ROM table entry and export them in one
+  derived ROM. Correct original-value lookup by entry ID; verify simultaneous
+  Gyarados Speed and ability changes across supported ROM layouts.
+- 同一 ROM 表项可暂存多个字段改动并一次导出；原值按条目编号读取，跨版本验证
+  暴鲤龙速度种族值与特性可同时修改。
 - Calculate Ultimate Emerald trainer IVs and EVs by executing the loaded ROM's
   bounded native constructor for the selected difficulty and player party.
   Use the opened save party or a manually entered battle scenario; display
