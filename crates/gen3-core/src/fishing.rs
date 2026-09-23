@@ -174,6 +174,7 @@ mod tests {
             header: 0,
             map_type: 0,
             events: None,
+            invalid_events: false,
             objects: vec![],
             scripts: vec![],
         };

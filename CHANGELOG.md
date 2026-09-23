@@ -8,7 +8,33 @@ bilingual file.
 首次公开发布版本为 **0.1.5**，不追记此前的开发版本。0.1.6、0.1.7 按工程提交补记，
 不代表这些构建的对外发布日期。每次发布包均附带本中英文日志。
 
-## 0.2.2 — Unreleased / 未发布
+## 0.3.0 — Unreleased / 未发布
+
+- Add an exact-fingerprint Ultimate Emerald 5.5 adapter to the shared ROM reference
+  and save editor. Read expanded species, moves, abilities, learning sources,
+  evolutions, battle transformations, trainers and maps from the supplied ROM.
+  Read enhanced trainer templates without presenting difficulty-dependent EVs as
+  fixed values. Unreviewed official-species mappings remain unconfirmed.
+- 究极绿宝石 5.5 按完整指纹接入共用 ROM 资料和存档修改界面，实时读取扩展宝可梦、
+  招式、特性、学习来源、进化、战斗变身、训练家和地图。强化队伍展示 ROM 培养模板，
+  不将受难度影响的努力值误报为固定值；官方参照映射未经审核时不冒充已确认。
+- Preserve Ultimate's plain Pokémon records, disabled native checksum fields,
+  mint nature, hidden ability and Hyper Training bits. Support expanded inventory
+  in sector extensions and its shifted Pokédex bits; retain ordinary editor
+  transactions, storage transfers, preview, undo/redo and safe export.
+- 适配究绿明文个体、原生停用的校验字段、薄荷性格、隐藏特性与极限训练标记，支持
+  扇区扩展背包和不同的图鉴位布局，沿用编辑事务、盒子转移、预览、撤销重做与导出。
+- Add portable PC, walking-encounter suppression, guaranteed wild capture, faster
+  hatching, species/level encounters, shiny wild encounters and map teleport for
+  Ultimate, alongside its existing all-mode no-peeking code. Encounter/shiny hooks
+  are isolated from other ROMs and retain native generation constraints.
+- 究绿在全模式去窥屏之外新增随身电脑、暂停走路遇敌、野生必捕、快速孵蛋、指定遇怪
+  与等级、野生闪光、地图传送；遇怪与闪光使用独立适配，保留原生个体生成约束。
+- Version-specific verification and known boundaries:
+  [Ultimate Emerald 5.5](docs/research/ultimate-emerald-55.md).
+- 本次未制作发布安装包；具体验证范围见上述适配说明。
+
+## 0.2.2 — Development builds / 开发构建
 
 - Add a seven-line portable Pokémon PC cheat for Dark Phantom BW/DP and Team
   Rocket: SELECT opens the native storage menu while walking. Preserve native

@@ -62,11 +62,13 @@ export function EvolutionTree({
             {sourceLink(form.source)}
             <span>
               {t(form.kind)} ·{" "}
-              {(form.trigger.kind === "held_item"
-                ? catalog.items
-                : catalog.moves
-              ).find((entry) => entry.id === form.trigger.id)?.name ??
-                t("unresolved")}
+              {form.trigger.kind === "battle_command"
+                ? t("battleCommandTrigger")
+                : ((form.trigger.kind === "held_item"
+                    ? catalog.items
+                    : catalog.moves
+                  ).find((entry) => entry.id === form.trigger.id)?.name ??
+                  t("unresolved"))}
             </span>
           </div>
         ))}

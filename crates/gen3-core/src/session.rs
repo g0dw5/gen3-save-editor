@@ -377,7 +377,17 @@ pub fn atomic_write(
         fs::rename(&tmp, path)?;
         #[cfg(unix)]
         {
-            fs::File::open(dir)?.sync_all()?;
+            // Some cloud-backed directories reject fsync after rename even
+            // though the validated file has already replaced its destination.
+            // Keep reporting all other errors; never claim the write failed
+            // only because directory syncing is unsupported by that mount.
+            if let Err(e) = fs::File::open(dir)?.sync_all() {
+                let unsupported = e.kind() == std::io::ErrorKind::Unsupported
+                    || cfg!(target_os = "macos") && e.raw_os_error() == Some(45);
+                if !unsupported {
+                    return Err(e.into());
+                }
+            }
         }
         Ok(())
     })();

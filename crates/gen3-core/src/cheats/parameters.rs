@@ -12,6 +12,7 @@ pub(super) fn supported(md5: &str) -> bool {
         crate::profile::BW.md5,
         crate::profile::DP.md5,
         crate::profile::ROCKET.md5,
+        ULTIMATE_MD5,
     ]
     .contains(&md5)
 }
@@ -223,7 +224,7 @@ pub(super) fn generate(rom: &CheatRom, request: &GenerateRequest) -> Result<Vec<
         (ENCOUNTER, Some(Parameters::Encounter { species, level }))
             if (1..=100).contains(level) && options.species.iter().any(|s| s.id == *species) =>
         {
-            Ok(encounter(rocket, *species, *level))
+            Ok(encounter_for(&rom.md5, *species, *level))
         }
         (TELEPORT, Some(Parameters::Teleport { map_id, warp_id })) => {
             let m = options
@@ -233,10 +234,70 @@ pub(super) fn generate(rom: &CheatRom, request: &GenerateRequest) -> Result<Vec<
                 .ok_or_else(|| err("cheat_parameters", "select a referenced ROM landing"))?;
             Ok(teleport(rocket, m.group, m.number, *warp_id))
         }
-        (SHINY, None) => Ok(shiny(rocket)),
+        (SHINY, None) => Ok(shiny_for(&rom.md5)),
         _ => Err(err(
             "cheat_parameters",
             "missing, invalid or unexpected cheat parameters",
         )),
     }
+}
+
+/// Encode a native Thumb BL. The free-space routines stay inside its ±4 MiB range.
+fn ultimate_hook(site: u32, before: [u16; 2], target: u32, code: &[u16]) -> Vec<RomHalfword> {
+    let delta = target as i32 - site as i32 - 4;
+    assert!(delta % 2 == 0 && (-0x400000..0x400000).contains(&delta));
+    let branch = [
+        0xf000 | ((delta >> 12) as u16 & 0x7ff),
+        0xf800 | ((delta >> 1) as u16 & 0x7ff),
+    ];
+    let mut result: Vec<_> = code
+        .iter()
+        .enumerate()
+        .map(|(i, after)| RomHalfword {
+            offset: target + i as u32 * 2,
+            before: 0xffff,
+            after: *after,
+        })
+        .collect();
+    result.extend((0..2).map(|i| RomHalfword {
+        offset: site + i as u32 * 2,
+        before: before[i],
+        after: branch[i],
+    }));
+    result
+}
+pub(super) fn encounter_for(md5: &str, species: u16, level: u8) -> Vec<RomHalfword> {
+    if md5 != ULTIMATE_MD5 {
+        return encounter(md5 == crate::profile::ROCKET.md5, species, level);
+    }
+    ultimate_hook(
+        0x1f06100,
+        [0x2296, 0x0004],
+        0x1fff080,
+        &[
+            0x2400 | species >> 8,
+            0x0224,
+            0x3400 | species & 255,
+            0x2100 | level as u16,
+            0x2296,
+            0x4770,
+        ],
+    )
+}
+pub(super) fn shiny_for(md5: &str) -> Vec<RomHalfword> {
+    if md5 != ULTIMATE_MD5 {
+        return shiny(md5 == crate::profile::ROCKET.md5);
+    }
+    // Assembled from docs/research/ultimate-shiny-wild-hook.s. Only the ordinary
+    // wild constructor's call frame matches; breeding and other callers pass through.
+    ultimate_hook(
+        0x1f00742,
+        [0xf000, 0xfb20],
+        0x1fff000,
+        &[
+            0xb50e, 0x4b0a, 0xf000, 0xf810, 0x990d, 0x4a09, 0x4291, 0xd108, 0x2107, 0x4008, 0x4659,
+            0x0c0a, 0x4050, 0x0409, 0x0c09, 0x4048, 0x4060, 0xbc0e, 0xbc08, 0x4718, 0x4718, 0x46c0,
+            0xf5cd, 0x0806, 0x6155, 0x09f0,
+        ],
+    )
 }

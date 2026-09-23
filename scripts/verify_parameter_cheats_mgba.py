@@ -21,6 +21,7 @@ ENTRIES = {
                    warp=0xBA484, destination=0x20332A0, header=0x20382D8),
 }
 ENTRIES["DP"] = ENTRIES["BW"]
+ENTRIES["ULTIMATE"] = ENTRIES["BW"]
 ENCOUNTER = "specified-wild-encounter"
 SHINY = "shiny-wild-encounters"
 TELEPORT = "teleport-to-map"
@@ -55,12 +56,12 @@ class ParameterProbe(Probe):
     def seed(self, seed, leader=25, pid=24):
         self.put(self.p["rng"], seed)
         self.put(0x203000A, 0x12345678)
-        self.write(self.p["party"], mon(self.rocket, species=leader, pid=pid))
+        self.write(self.p["party"], self.mon(self.rocket, species=leader, pid=pid))
         self.put(self.p["count"], 1, 1)
 
     def record(self):
         raw = self.read(self.p["enemy"], 100)
-        data = unpack(raw)  # Independently checks decrypted native checksum.
+        data = self.unpack(raw)  # Independently checks decrypted native checksum.
         pid, ot = struct.unpack_from("<II", raw)
         return raw, data, pid, (pid >> 16) ^ (pid & 65535) ^ (ot >> 16) ^ (ot & 65535) < 8
 
@@ -97,7 +98,7 @@ class ParameterProbe(Probe):
         carriers = {}
         self.init()
         for s in self.catalog["options"]["species"]:
-            self.write(self.p["party"], mon(self.rocket, species=s["id"]))
+            self.write(self.p["party"], self.mon(self.rocket, species=s["id"]))
             ability = self.call(self.entry["ability"], self.p["party"])
             if ability in (28, 56):
                 carriers.setdefault(ability, s["id"])
@@ -123,7 +124,10 @@ class ParameterProbe(Probe):
                         assert self.call(self.entry["gender"], 25, pid) == (0 if lead_gender == 254 else 254)
                     output.append(pid)
                 # Nature is selected before the patched constructor on both paths.
-                assert output[0] % 25 == output[1] % 25, (ability, seed, output)
+                # Ultimate's Cute Charm path explicitly requests nature 30
+                # (unconstrained); Synchronize still constrains native nature.
+                if self.p['md5'] != "17ce9785b33319b3dbda9a5d37c57ec1" or ability == 28:
+                    assert output[0] % 25 == output[1] % 25, (ability, seed, output)
         return dict(species_level_shiny_cases=cases, nonwild_exact_comparisons=32,
                     lead_ability_cases=256, native_ability_carriers=carriers)
 
@@ -160,6 +164,10 @@ class ParameterProbe(Probe):
             (SHINY, None, [(0x95A90, 14), (0x95B7E, 14), (0x1F00000, 72), (0x1F00080, 72)] if self.rocket else [(0x67EB4, 14), (0x67FA2, 14), (0x311200, 72), (0x311280, 72)]),
             (TELEPORT, dict(kind="teleport", map_id=self.catalog["options"]["maps"][0]["id"], warp_id=0), []),
         ):
+            if self.ultimate and key == ENCOUNTER:
+                allowed = [(0x1F06100, 4), (0x1FFF080, 12)]
+            if self.ultimate and key == SHINY:
+                allowed = [(0x1F00742, 4), (0x1FFF000, 52)]
             if key == TELEPORT:
                 m = next(m for m in self.catalog["options"]["maps"] if m["landings"])
                 parameters = dict(kind="teleport", map_id=m["id"], warp_id=m["landings"][0]["id"])

@@ -85,7 +85,7 @@ fn contest_fields_are_independent_bytes_across_codecs_and_pid_orders() {
             )
             .unwrap();
             let a = pokemon::checked_unpack_with(&after, profile.save.pokemon_codec).unwrap();
-            let b = pokemon::unpack(&before).unwrap();
+            let b = pokemon::unpack_with(&before, profile.save.pokemon_codec).unwrap();
             assert_eq!(&a[..30], &b[..30]);
             assert_eq!(&a[30..36], &condition);
             assert_eq!(&a[36..], &b[36..]);
@@ -310,7 +310,11 @@ fn save_bytes(r: &Rom) -> Vec<u8> {
             put16(&mut b, o + 0xff4, id as u16);
             put32(&mut b, o + 0xff8, 0x08012025);
             put32(&mut b, o + 0xffc, if bank == 0 { 10 } else { 9 });
-            let sum = sector_checksum(&b[o..o + layout.sizes[id]]);
+            let sum = if layout.sector_checksum == profile::SectorChecksum::NativeConstantOne {
+                1
+            } else {
+                sector_checksum(&b[o..o + layout.sizes[id]])
+            };
             put16(&mut b, o + 0xff6, sum);
         }
     }
@@ -610,7 +614,12 @@ fn expected_box_write(save: &Save, output: &mut [u8], index: usize, raw: &[u8]) 
     }
     for section in 5..=13 {
         let start = save.sections[section];
-        let checksum = sector_checksum(&output[start..start + save.layout.sizes[section]]);
+        let checksum = if save.layout.sector_checksum == profile::SectorChecksum::NativeConstantOne
+        {
+            1
+        } else {
+            sector_checksum(&output[start..start + save.layout.sizes[section]])
+        };
         put16(output, start + 0xff6, checksum);
     }
 }
@@ -1349,6 +1358,7 @@ fn trainer_map_index_follows_branches_and_keeps_evidence() {
         header: 0,
         layout: 0,
         events: None,
+        invalid_events: false,
         objects: vec![],
         scripts: vec![0x23000, 0x23100],
     };
@@ -1412,6 +1422,7 @@ fn trainer_scripts_cross_menus_music_and_native_calls() {
         header: 0,
         layout: 0,
         events: None,
+        invalid_events: false,
         objects: vec![],
         scripts: vec![0x23000],
     };
@@ -1448,7 +1459,7 @@ fn trainer_generation_uses_quality_and_cumulative_names() {
     let second = t.party[1].generation.as_ref().unwrap();
     assert_eq!(first.ivs, Some([31; 6]));
     assert_eq!(second.ivs, Some([30; 6]));
-    assert_eq!(first.evs, [0; 6]);
+    assert_eq!(first.evs, Some([0; 6]));
     assert_eq!(first.gender, "female"); // The trainer is male.
     assert_eq!(first.nature, ((30 * 256 + 0x88) % 25) as u8);
     assert_eq!(second.nature, ((60 * 256 + 0x88) % 25) as u8);
@@ -1481,6 +1492,7 @@ fn trainer_scripts_skip_music_arguments() {
         header: 0,
         layout: 0,
         events: None,
+        invalid_events: false,
         objects: vec![],
         scripts: vec![0x23000],
     };
@@ -1727,6 +1739,7 @@ fn item_event_layers_keep_coordinates_and_hidden_flags() {
         map_type: 0,
         header: 0,
         layout: 0,
+        invalid_events: false,
         events: Some(ev),
         scripts: vec![script],
         objects: vec![],
@@ -1821,14 +1834,26 @@ fn adapter_rom(p: profile::Profile) -> Rom {
             }
         }
     }
+    let expanded = p.formats.species == crate::adapter::SpeciesFormat::Expanded36;
     for id in 1..4 {
-        let o = p.base_stats.offset + id * 36;
+        let o = p.base_stats.offset + id * p.base_stats.stride;
         b[o..o + 6].copy_from_slice(&[45, 49, 49, 45, 65, 65]);
-        b[o + 18] = 127;
-        b[o + 20] = 70;
-        put16(&mut b, o + 24, 1);
-        put16(&mut b, o + 26, 2);
-        put16(&mut b, o + 28, 267); // Must not truncate to u8.
+        let tail = if expanded { 2 } else { 0 };
+        b[o + 16 + tail] = 127;
+        b[o + 18 + tail] = 70;
+        if let Some(table) = p.species_abilities {
+            for (slot, ability) in [1, 2, 267].iter().enumerate() {
+                put16(
+                    &mut b,
+                    table.offset + id * table.stride + slot * 2,
+                    *ability,
+                );
+            }
+        } else {
+            put16(&mut b, o + 24, 1);
+            put16(&mut b, o + 26, 2);
+            put16(&mut b, o + 28, 267);
+        }
         put32(&mut b, p.learnsets + id * 4, 0x08020000);
         if let Some(table) = p.teaching.shared_lists {
             put32(&mut b, table + id * 4, 0x08020100);
@@ -1837,8 +1862,15 @@ fn adapter_rom(p: profile::Profile) -> Rom {
     put16(&mut b, 0x20000, 1);
     put16(&mut b, 0x20002, 1);
     put16(&mut b, 0x20004, 0xffff);
+    if p.formats.learnsets == crate::adapter::LearnsetFormat::Move16Level8 {
+        b[0x20000..0x20006].copy_from_slice(&[1, 0, 1, 0, 0, 255]);
+        for index in 0..5 {
+            put32(&mut b, 0x1f08268 + index * 4, 0x08021001 + index as u32 * 2);
+            put16(&mut b, 0x21000 + index * 2, 0x2301 + index as u16);
+        }
+    }
     for id in 1..3 {
-        b[p.moves.offset + id * 20 + 6] = 35;
+        b[p.moves.offset + id * p.moves.stride + if expanded { 6 } else { 4 }] = 35;
     }
     r.data = std::sync::Arc::new(b);
     r.profile = p;
@@ -1852,7 +1884,7 @@ fn adapter_matrix_bit_ownership_all_pid_orders() {
         let rocket = profile.save.pokemon_codec == crate::adapter::PokemonCodec::Rocket21;
         for pid in 0..24 {
             let mut raw = pokemon::create(&r, 1, 0x12345678, "ASH", 50, pid).unwrap();
-            let mut c = pokemon::unpack(&raw).unwrap();
+            let mut c = pokemon::unpack_with(&raw, profile.save.pokemon_codec).unwrap();
             if rocket {
                 // Independent literal masks: sentinel bits belong to unrelated fields.
                 c[6] |= 0x80;
@@ -1865,7 +1897,7 @@ fn adapter_matrix_bit_ownership_all_pid_orders() {
                 raw[26] = 0xb0;
                 raw[27] = 0x57;
             }
-            pokemon::pack(&mut raw, &c);
+            pokemon::pack_with(&mut raw, &c, profile.save.pokemon_codec);
             let unchanged = pokemon::edit(&raw, &PokemonPatch::default(), &r, Policy::Free)
                 .unwrap()
                 .0;
@@ -1893,7 +1925,7 @@ fn adapter_matrix_bit_ownership_all_pid_orders() {
             assert_eq!(after.ot_name, "ASH");
             assert_eq!(&edited[..28], &raw[..28]);
             assert!(after.checksum_ok);
-            let canonical = pokemon::unpack(&edited).unwrap();
+            let canonical = pokemon::unpack_with(&edited, profile.save.pokemon_codec).unwrap();
             let mut expected = c;
             if rocket {
                 expected[4..7].copy_from_slice(&[0x47, 0x94, 0x83]); // 234567 + preserved bit 23.
@@ -1906,8 +1938,12 @@ fn adapter_matrix_bit_ownership_all_pid_orders() {
                 put32(&mut expected, 4, 234567);
                 expected[8] = 0x1b;
                 expected[9] = 201;
-                let origins = (u16(&expected, 38).unwrap() & !0x7800) | (12 << 11);
-                put16(&mut expected, 38, origins);
+                if profile.save.pokemon_codec == crate::adapter::PokemonCodec::Ultimate55 {
+                    expected[39] = (expected[39] & !0x7c) | (12 << 2);
+                } else {
+                    let origins = (u16(&expected, 38).unwrap() & !0x7800) | (12 << 11);
+                    put16(&mut expected, 38, origins);
+                }
                 expected[43] |= 0x80;
             }
             for i in 0..4 {
@@ -2266,7 +2302,7 @@ fn bad_egg_and_checksum_rejection_follow_each_codec() {
         let r = adapter_rom(profile);
         let raw = pokemon::create(&r, 1, 1, "TEST", 10, 11).unwrap();
         let mut bad = raw.clone();
-        let flag = if profile.save.pokemon_codec == crate::adapter::PokemonCodec::Gen3 {
+        let flag = if profile.save.pokemon_codec != crate::adapter::PokemonCodec::Rocket21 {
             (19, 1)
         } else {
             (18, 8)
@@ -2275,6 +2311,10 @@ fn bad_egg_and_checksum_rejection_follow_each_codec() {
         assert!(pokemon::checked_unpack_with(&bad, profile.save.pokemon_codec).is_err());
         bad = raw;
         bad[32] ^= 1;
+        if profile.save.pokemon_codec == crate::adapter::PokemonCodec::Ultimate55 {
+            assert!(pokemon::checked_unpack_with(&bad, profile.save.pokemon_codec).is_ok());
+            continue;
+        }
         assert_eq!(
             pokemon::checked_unpack_with(&bad, profile.save.pokemon_codec)
                 .unwrap_err()
@@ -2402,7 +2442,11 @@ fn adapter_inventory_crosses_logical_sectors_without_touching_other_bytes() {
         for pocket in r.profile.save.pockets {
             for index in 0..pocket.count {
                 let mut save = Save::open(original.clone(), r.profile.save).unwrap();
-                let before = save.logical(1..=4);
+                let before = if pocket.block == crate::save::PocketBlock::SectorExtensions {
+                    save.extensions()
+                } else {
+                    save.logical(1..=4)
+                };
                 save.edit_bag(pocket.id, index, 1, 17, &r, Policy::Free)
                     .unwrap();
                 let reopened = Save::open(save.data.clone(), r.profile.save).unwrap();
@@ -2423,7 +2467,11 @@ fn adapter_inventory_crosses_logical_sectors_without_touching_other_bytes() {
                     17 ^ if pocket.encrypted { 0x4321 } else { 0 },
                 );
                 assert_eq!(
-                    reopened.logical(1..=4),
+                    if pocket.block == crate::save::PocketBlock::SectorExtensions {
+                        reopened.extensions()
+                    } else {
+                        reopened.logical(1..=4)
+                    },
                     expected,
                     "{} {} {index}",
                     profile.id,
@@ -2495,7 +2543,11 @@ fn rom_patch_uses_each_profiles_scalar_widths_and_offsets() {
             put16(&mut expected, species + 26, 267);
             put16(&mut expected, mv + 2, 500);
         } else {
-            expected[species + 23] = 2;
+            if let Some(table) = profile.species_abilities {
+                put16(&mut expected, table.offset + table.stride + 2, 2);
+            } else {
+                expected[species + 23] = 2;
+            }
             expected[mv + 1] = 200;
         }
         assert_eq!(patched, expected);
@@ -2611,5 +2663,73 @@ fn nature_product_width_matches_each_native_engine() {
         // Unmodified attack is 609. The BW/DP engine truncates 609*110 to u16.
         assert_eq!(modified[1], if p.nature_product_u16 { 14 } else { 669 });
         assert_eq!(modified[2], 609);
+    }
+}
+
+#[test]
+#[ignore = "requires GEN3_ROM_ULTIMATE; native probes stay in GEN3_ULTIMATE_PROBES"]
+fn local_ultimate_adapter_regression() {
+    let r = Rom::open(std::fs::read(std::env::var("GEN3_ROM_ULTIMATE").unwrap()).unwrap()).unwrap();
+    let catalog = r.catalog().unwrap();
+    assert_eq!(catalog.profile.md5, crate::ultimate::PROFILE.md5);
+    assert_eq!(
+        (
+            catalog.species.len(),
+            catalog.moves.len(),
+            catalog.items.len()
+        ),
+        (1199, 938, 800)
+    );
+    assert_eq!(r.species(25).unwrap().abilities, [9, 9, 31]);
+    assert_eq!(catalog.type_names[23], "妖精");
+    assert!(catalog.editor_rules.hyper_training);
+    assert!(!catalog.editor_rules.pokemon_checksum);
+    assert_eq!(
+        catalog
+            .editor_rules
+            .ball_options
+            .iter()
+            .find(|b| b.value == 0)
+            .unwrap()
+            .item,
+        4
+    );
+    let world = r.world().unwrap();
+    assert_eq!(world.maps.len(), 922);
+    assert_eq!(world.trainers.len(), 1336);
+    for id in 1..1200 {
+        r.level_moves(id).unwrap();
+    }
+    let mut probes = Vec::new();
+    for species in [1, 25, 150, 201, 303, 328, 902, 1000, 1199] {
+        for nature in 0..25 {
+            let before =
+                pokemon::create(&r, species, 0xdeadbeef, "TEST", 50, 0xbad00000 + 23).unwrap();
+            for hyper_trained in [
+                [false; 6],
+                [true; 6],
+                [true, false, true, false, true, false],
+            ] {
+                let (after, _) = pokemon::edit(
+                    &before,
+                    &PokemonPatch {
+                        nature_override: Some(nature),
+                        ivs: Some([1, 2, 3, 4, 5, 6]),
+                        evs: Some([252, 0, 0, 0, 252, 6]),
+                        ability_slot: Some(2),
+                        hyper_trained: Some(hyper_trained),
+                        ..Default::default()
+                    },
+                    &r,
+                    Policy::Free,
+                )
+                .unwrap();
+                let pokemon = pokemon::decode(&after, &r).unwrap();
+                probes.push(serde_json::json!({"before":before,"after":after,"pokemon":pokemon}));
+            }
+        }
+    }
+    if let Ok(path) = std::env::var("GEN3_ULTIMATE_PROBES") {
+        std::fs::write(path, serde_json::to_vec(&probes).unwrap()).unwrap();
     }
 }

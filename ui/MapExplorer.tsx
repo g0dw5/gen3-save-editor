@@ -184,6 +184,9 @@ export function MapExplorer({
           )}
         </div>
       )}
+      {map.invalid_events && (
+        <p className="warning-text">{t("mapEventUnavailable")}</p>
+      )}
       <div className="map-tools">
         <label className="map-search">
           <Search size={15} />

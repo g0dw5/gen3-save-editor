@@ -1,6 +1,6 @@
 """Opt-in common-cheat regression against exact private ROMs and mGBA 0.10.5.
 
-Requires GEN3_BIN, GEN3_ROM_BW/DP/ROCKET, MGBA_SOURCE, MGBA_BUILD; optional
+Requires GEN3_BIN, GEN3_ROM_BW/DP/ROCKET/ULTIMATE, MGBA_SOURCE, MGBA_BUILD; optional
 MGBA_LIBRARY and CC. No saves are loaded. Uses disposable synthetic RAM and
 complete native functions, not mocks. Output is a JSON verification report.
 """
@@ -40,6 +40,7 @@ PROFILES = {
                             CATCH: (0x80BB4, 0xD948, 0x46C0), HATCH: (0x9EB36, 0xD13B, 0x46C0),
                             BREED: (0x9EB1C, 0x4284, 0x2C00)}),
 }
+PROFILES["ULTIMATE"] = dict(BW, md5="17ce9785b33319b3dbda9a5d37c57ec1", wild=0xE17D50)
 ORDERS = ("GAEM", "GAME", "GEAM", "GEMA", "GMAE", "GMEA",
           "AGEM", "AGME", "AEGM", "AEMG", "AMGE", "AMEG",
           "EGAM", "EGMA", "EAGM", "EAMG", "EMGA", "EMAG",
@@ -89,6 +90,7 @@ class Probe:
         self.c.readmem.restype = ctypes.c_uint
         self.p = PROFILES[name]
         self.rocket = name == "ROCKET"
+        self.ultimate = name == "ULTIMATE"
         self.data = path.read_bytes()
         assert hashlib.md5(self.data).hexdigest() == self.p["md5"]
         cli = os.environ["GEN3_BIN"]
@@ -97,6 +99,16 @@ class Probe:
         catalog = json.loads(subprocess.check_output([cli, "cheats", str(path)]))
         assert set(self.codes).issubset({e["id"] for e in catalog["entries"]})
         assert self.c.start(str(path).encode())
+
+    def mon(self, rocket, **kwargs):
+        raw = mon(rocket, **kwargs)
+        return raw[:32] + unpack(raw) + raw[80:] if self.ultimate else raw
+
+    def unpack(self, raw):
+        return raw[32:80] if self.ultimate else unpack(raw)
+
+    def pack(self, raw, q):
+        return raw[:32] + bytes(q) + raw[80:] if self.ultimate else pack(raw, q)
 
     def read(self, a, n):
         b = ctypes.create_string_buffer(n)
@@ -178,7 +190,7 @@ class Probe:
             for cycles in (0, 1, 2, 5, 255):
                 for egg, bad in ((True, False), (False, False), (True, True)):
                     self.init()
-                    raw = mon(r, egg=egg, cycles=cycles, pid=pid, bad=bad)
+                    raw = self.mon(r, egg=egg, cycles=cycles, pid=pid, bad=bad)
                     self.write(p["party"], raw)
                     self.put(p["count"], 1, 1)
                     before = self.read(p["party"], 100)
@@ -186,9 +198,9 @@ class Probe:
                     assert self.read(p["party"], 100) == before  # No regular checkpoint yet.
                     ids = self.enable(HATCH)
                     result = self.call(p["hatch"])
-                    expected = bytearray(unpack(raw))
+                    expected = bytearray(self.unpack(raw))
                     expected[8 if r else 9] = max(0, cycles - 1) if egg and not bad else cycles
-                    assert self.read(p["party"], 100) == pack(raw, expected), (pid, cycles, egg, bad)
+                    assert self.read(p["party"], 100) == self.pack(raw, expected), (pid, cycles, egg, bad)
                     assert result == int(egg and not bad and cycles == 0)
                     self.c.togglecode(ids[0], 0)
                     after = self.read(p["party"], 100)
@@ -200,7 +212,7 @@ class Probe:
         carrier = None
         for species in range(1, 420):
             self.init()
-            self.write(p["party"], mon(r, species=species))
+            self.write(p["party"], self.mon(r, species=species))
             self.put(p["count"], 1, 1)
             if self.call(p["cycles"]) == 2:
                 carrier = species
@@ -208,15 +220,15 @@ class Probe:
         assert carrier
         for cycles in (1, 2, 5):
             self.init()
-            raw = mon(r, egg=True, cycles=cycles)
-            helper = mon(r, species=carrier)
+            raw = self.mon(r, egg=True, cycles=cycles)
+            helper = self.mon(r, species=carrier)
             self.write(p["party"], raw + helper)
             self.put(p["count"], 2, 1)
             self.enable(HATCH)
             assert self.call(p["hatch"]) == 0
-            q = bytearray(unpack(raw))
+            q = bytearray(self.unpack(raw))
             q[8 if r else 9] = max(0, cycles - 2)
-            assert self.read(p["party"], 200) == pack(raw, q) + helper
+            assert self.read(p["party"], 200) == self.pack(raw, q) + helper
         return dict(permutation_boundary_skip_restore_cases=cases, ability_carrier_species=carrier, ability_cases=3)
 
     def catch(self):
@@ -231,7 +243,7 @@ class Probe:
                         self.init()
                         self.write(p["party"], mon(r))
                         self.put(p["count"], 1, 1)
-                        raw = mon(r, species=150, pid=seed)
+                        raw = self.mon(r, species=150, pid=seed)
                         self.write(p["enemy"], raw)
                         self.put(0x2024C42 if r else 0x202406C, 0x03020100)
                         self.put(p["rng"], seed)
@@ -252,14 +264,17 @@ class Probe:
                         after = self.read(p["enemy"], 100)
                         if flags == 0 and on:
                             assert script == scripts[0]
-                            assert self.call(p["get"], p["enemy"], 38) == ball
-                            q = bytearray(unpack(raw))
+                            assert self.call(p["get"], p["enemy"], 38) == ({4:0,3:1,2:3}[ball] if self.ultimate else ball)
+                            q = bytearray(self.unpack(raw))
                             if r:
                                 q[9] = (q[9] & 0xE0) | ball
+                            elif p['md5'] == '17ce9785b33319b3dbda9a5d37c57ec1':
+                                # Independently observed native ball item -> stored index.
+                                q[39] = (q[39] & ~0x7c) | ({4:0,3:1,2:3}[ball] << 2)
                             else:
                                 value = struct.unpack_from("<H", q, 38)[0]
                                 struct.pack_into("<H", q, 38, (value & ~0x7800) | (ball << 11))
-                            assert after == pack(raw, q), (ball, seed)
+                            assert after == self.pack(raw, q), (ball, seed)
                         elif flags == 8:
                             assert script == scripts[2] and after == raw
                         pair.append((script, after))
@@ -279,7 +294,7 @@ class Probe:
             hits = 0
             for seed in range(32):
                 self.init()
-                self.write(p["party"], mon(self.rocket))
+                self.write(p["party"], self.mon(self.rocket))
                 self.put(p["count"], 1, 1)
                 self.put(p["rng"], seed)
                 self.write(0x202A004, rec[:2])

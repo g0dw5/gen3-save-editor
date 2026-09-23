@@ -125,7 +125,7 @@ export function PokemonOrigin({
           label={t("met_level")}
           value={p.met_level}
           min={kind === "hatched" ? 0 : 1}
-          max={127}
+          max={catalog.editor_rules?.met_level_max ?? 127}
           disabled={kind === "hatched" && !free}
           onChange={(v) => change("met_level", v)}
         />
@@ -169,7 +169,12 @@ export function PokemonOrigin({
         label={t("origin_game")}
         value={p.origin_game}
         onChange={(v) => change("origin_game", +v)}
-        options={options(games, p.origin_game)}
+        options={options(
+          games.filter(
+            (g) => +g.value <= (catalog.editor_rules?.origin_game_max ?? 15),
+          ),
+          p.origin_game,
+        )}
       />
       <SelectField
         searchable
@@ -177,13 +182,18 @@ export function PokemonOrigin({
         value={p.ball}
         onChange={(v) => change("ball", +v)}
         options={options(
-          catalog.items
-            .filter(
-              (i) =>
-                catalog.editor_rules?.balls.includes(i.id) ??
-                (i.id >= 1 && i.id <= 12),
-            )
-            .map((i) => itemOption(catalog, i)),
+          catalog.editor_rules?.ball_options
+            ? catalog.editor_rules.ball_options.map(({ value, item }) => ({
+                ...itemOption(catalog, catalog.items[item]),
+                value,
+              }))
+            : catalog.items
+                .filter(
+                  (i) =>
+                    catalog.editor_rules?.balls.includes(i.id) ??
+                    (i.id >= 1 && i.id <= 12),
+                )
+                .map((i) => itemOption(catalog, i)),
           p.ball,
         )}
       />
@@ -410,7 +420,13 @@ export function PokemonAdvanced({
           <span>{t("checksumState")}</span>
           <input
             disabled
-            value={t(p.checksum_ok ? "checksumValid" : "checksumInvalid")}
+            value={t(
+              catalog.editor_rules?.pokemon_checksum === false
+                ? "checksumDisabledByGame"
+                : p.checksum_ok
+                  ? "checksumValid"
+                  : "checksumInvalid",
+            )}
           />
         </label>
       </details>

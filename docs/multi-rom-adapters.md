@@ -4,24 +4,28 @@ Updated in place for **0.2.0**, 2026-09-19. Dark Phantom BW/DP and Team Rocket
 2.1 Chinese use the same editing workspace. ROM reference windows are read-only;
 there is no separate Rocket inspection-only Pokémon page.
 
+Ultimate Emerald 5.5 joins the same workspace in 0.3.0. Its independent
+[adapter record](research/ultimate-emerald-55.md) documents exact-ROM evidence
+and remaining dynamic-gameplay limits.
+
 ## Coverage / 覆盖范围
 
-| Feature | Dark Phantom BW / DP | Team Rocket 2.1 Chinese |
-| --- | --- | --- |
-| Exact MD5 and length check | Required | Required |
-| Pokémon, party, all boxes, drag/copy/swap, create/import/export | Read/write | Read/write |
-| Player, money, coins, box names, inventory, Pokédex | Read/write | Read/write |
-| Undo/redo, changes, atomic export, conflict detection | Shared | Shared |
-| Inventory | PC + five bag pockets | PC + eight bag pockets |
-| Level / experience | 1–100, growth formula | 1–150, native experience table |
-| Nature / abilities | PID nature, two slots | Optional nature override, three slots |
-| Level-up / machines / tutors / egg moves | Parsed | Parsed |
-| Maps, encounters, trainers, item/NPC layers | Parsed | Parsed: 1,363 maps, 2,558 trainers |
-| Individual artwork | Unown, Spinda, shiny | Also female artwork/palettes |
-| Hidden Power | IV type; power 30–70 | IV type; power 60 |
-| Mega / primal | Not enabled | Source/target/trigger references; separate from evolution |
-| Feebas seeded fishing tiles | Verified BW/DP rule | No rule enabled without evidence |
-| Z / Dynamax / Tera save fields | None | No invented persistent fields or ordinary Z move slots |
+| Feature | Dark Phantom BW / DP | Team Rocket 2.1 Chinese | Ultimate Emerald 5.5 |
+| --- | --- | --- | --- |
+| Exact MD5 and length check | Required | Required | Required |
+| Pokémon, party, all boxes, drag/copy/swap, create/import/export | Read/write | Read/write | Read/write |
+| Player, money, coins, box names, inventory, Pokédex | Read/write | Read/write | Read/write |
+| Undo/redo, changes, atomic export, conflict detection | Shared | Shared | Shared |
+| Inventory | PC + five bag pockets | PC + eight bag pockets | PC + five expanded bag pockets in sector tails |
+| Level / experience | 1–100, ROM table | 1–150, ROM table | 1–100, ROM table |
+| Nature / abilities | PID nature, two slots | Optional nature override, three slots | Mint override, hidden ability, Hyper Training |
+| Level-up / machines / tutors / egg moves | Parsed | Parsed | Parsed, including separate Eevee evolution table |
+| Maps, encounters, trainers, item/NPC layers | Parsed | Parsed: 1,363 maps, 2,558 trainers | Parsed: 922 map headers, 1,336 trainer records; some ROM graphics/event pointers are invalid |
+| Individual artwork | Unown, Spinda, shiny | Also female artwork/palettes | Native front artwork; one invalid ROM sprite pointer |
+| Hidden Power | IV type; power 30–70 | IV type; power 60 | IV type; power 60 |
+| Mega / primal | Not enabled | Source/target/trigger references; separate from evolution | Permanent and battle transitions separated |
+| Feebas seeded fishing tiles | Verified native rule | No rule enabled without evidence | Verified native rule |
+| Z / Dynamax / Tera save fields | None | No invented persistent fields or ordinary Z move slots | No invented persistent battle-form fields |
 
 中文：所有常规编辑操作共用同一套 UI、事务和导出流程。版本差异由字段格式、
 表配置及明确的游戏规则提供；没有遗留临时只读页面。地图与训练家资料、图片、
@@ -32,7 +36,8 @@ there is no separate Rocket inspection-only Pokémon page.
 1. Identity and table locations: MD5, size, offsets, bounds and strides.
 2. Independent ROM formats: species, moves, learnsets, trainers, event opcodes
    and object graphics IDs. A future hybrid can reuse individual readers.
-3. Pokémon codec: shared encryption/permutation/checksum shell, with bit ownership
+3. Pokémon codec: shared format selection for native encryption/permutation or
+   Ultimate's plain records, with bit ownership
    for ball, PP bonuses, experience, nature, ribbons, ability and header flags.
 4. Save layout: sector payloads, party/storage, logical multi-sector inventory,
    pocket categories and encrypted quantities, dex block and mirrors.
@@ -68,10 +73,10 @@ Generated fixtures run without copyrighted data: all 24 PID permutations,
 bit ownership, ribbon/ability separation, every inventory slot, all 420 box slots
 across physical sector rotations and both banks, transaction rollback, undo/redo,
 export/conflict handling, independent ROM patch widths and profile composition.
-Browser tests cover BW → Rocket → DP, editable controls, stale request isolation,
+Browser tests cover BW → Rocket → DP → Ultimate, editable controls, stale request isolation,
 drag races, tab retention, field search, origins, Hidden Power and navigation.
 
-Local tests open all three exact ROMs. Rocket additionally renders every map,
+Local tests open all four exact ROMs. Rocket additionally renders every map,
 every species front sprite, all trainer portraits and referenced static NPC
 sprites; reads all learnsets; and checks disposable save edits/reopening.
 Native ARM probes validate decoded fields/setters/stats, all four trainer party
@@ -79,6 +84,9 @@ formats, 955 dex bits, 6,786 compatibility queries, 5,576 palette selections and
 4,096 Hidden Power vectors and 1,910 encounter-header selections. A disposable
 edited save also completed a VBA-M load/save/reopen round trip with all decoded
 Pokémon, inventory and dex values preserved. Tests never overwrite a supplied save.
+Ultimate's plain Pokémon format and sector-extension inventory have separate
+native getter/stat and mGBA battery save/reload checks. See its adapter record
+for the tested cases and the malformed ROM graphic entries.
 
 ```sh
 GEN3_ROM_BW='/path/BW.gba' GEN3_ROM_DP='/path/DP.gba' \

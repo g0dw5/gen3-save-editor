@@ -1,4 +1,4 @@
-"""Compare fishing coordinates against both exact ROMs' original Thumb code.
+"""Compare fishing coordinates against supported exact ROMs' original Thumb code.
 
 Requires Unicorn, GEN3_ROM_BW, GEN3_ROM_DP and GEN3_CLI. Uses generated, rotated
 save banks with different seeds; no user save, copyrighted fixture or ROM edit.
@@ -20,7 +20,7 @@ from verify_encounter_selection import PROFILES
 SIZES = [3884, 3968, 3968, 3968, 3848] + [3968] * 8 + [2000]
 
 
-def save_bytes(seed):
+def save_bytes(seed, ultimate=False):
     data = bytearray(0x20000)
     for bank in range(2):
         main = bytearray(sum(SIZES[1:5]))
@@ -34,7 +34,7 @@ def save_bytes(seed):
             total = sum(struct.unpack_from('<I', data, o)[0]
                         for o in range(start, start + SIZES[section], 4)) & 0xffffffff
             checksum = ((total >> 16) + (total & 0xffff)) & 0xffff
-            struct.pack_into('<HHII', data, start + 0xff4, section, checksum, 0x08012025, 10 + bank)
+            struct.pack_into('<HHII', data, start + 0xff4, section, 1 if ultimate else checksum, 0x08012025, 10 + bank)
     return bytes(data)
 
 
@@ -86,7 +86,7 @@ class NativeFishing:
 
 def main():
     cli = os.environ['GEN3_CLI']
-    for env, md5 in PROFILES.items():
+    for env, md5 in {**PROFILES, "GEN3_ROM_ULTIMATE": "17ce9785b33319b3dbda9a5d37c57ec1"}.items():
         path = Path(os.environ[env]); rom = path.read_bytes()
         assert hashlib.md5(rom).hexdigest() == md5
         world = json.loads(subprocess.check_output([cli, 'world', str(path)]))
@@ -97,7 +97,7 @@ def main():
         with tempfile.TemporaryDirectory() as tmp:
             save = Path(tmp) / 'generated.sav'
             for seed in [0, 1, 0x1234, 0xffff]:
-                before = save_bytes(seed); save.write_bytes(before)
+                before = save_bytes(seed, env == "GEN3_ROM_ULTIMATE"); save.write_bytes(before)
                 report = json.loads(subprocess.check_output([cli, 'fishing-spots', str(path), str(save)]))
                 assert save.read_bytes() == before
                 assert report['seed'] == seed  # Newer bank, despite physical sector rotation.

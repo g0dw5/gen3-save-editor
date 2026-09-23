@@ -48,7 +48,7 @@ export function suggestedReference(
           normalized(row.name) === normalized(base.name) &&
           (form.kind === "mega"
             ? row.form.startsWith("超级")
-            : row.form.includes("原始")),
+            : form.kind === "primal" && row.form.includes("原始")),
       );
     });
     const unique = [

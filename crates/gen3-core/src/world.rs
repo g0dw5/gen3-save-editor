@@ -16,6 +16,7 @@ pub struct Map {
     pub header: usize,
     pub layout: usize,
     pub events: Option<usize>,
+    pub invalid_events: bool,
     pub scripts: Vec<usize>,
     pub objects: Vec<MapObject>,
 }
@@ -63,12 +64,14 @@ pub struct TrainerMon {
 /// This excludes later battle effects and script/native party overrides.
 #[derive(Clone, Serialize)]
 pub struct TrainerMonGeneration {
+    pub context: &'static str,
+    pub ev_increment: Option<u8>,
     pub gender: &'static str,
     pub nature: u8,
     pub ability_id: u16,
     pub ability_options: Vec<u16>,
     pub ivs: Option<[u8; 6]>,
-    pub evs: [u8; 6],
+    pub evs: Option<[u8; 6]>,
     pub personality_parameter: u8,
 }
 #[derive(Clone, Serialize)]
@@ -255,7 +258,24 @@ impl Rom {
                 if width == 0 || height == 0 || width > 1024 || height > 1024 {
                     return Err(err("map_layout", format!("{group}-{number}")));
                 }
-                let events = pointer(b, h + 4).ok();
+                let mut events = pointer(b, h + 4).ok();
+                let invalid_events = events.is_some_and(|ev| {
+                    [(0, 4, 24), (1, 8, 8), (2, 12, 16), (3, 16, 12)]
+                        .into_iter()
+                        .any(|(count, ptr, stride)| {
+                            bytes(b, ev + count, 1).ok().is_none_or(|n| {
+                                n[0] > 0
+                                    && pointer(b, ev + ptr)
+                                        .and_then(|p| {
+                                            bytes(b, p, n[0] as usize * stride).map(|_| ())
+                                        })
+                                        .is_err()
+                            })
+                        })
+                });
+                if invalid_events {
+                    events = None;
+                }
                 let mut roots = BTreeSet::new();
                 let mut objects = Vec::new();
                 if let Some(ev) = events {
@@ -330,6 +350,7 @@ impl Rom {
                     header: h,
                     layout,
                     events,
+                    invalid_events,
                     scripts: roots.into_iter().collect(),
                     objects,
                 });
@@ -455,8 +476,10 @@ impl Rom {
         self.profile
             .capabilities
             .require(self.profile.capabilities.world, "world")?;
-        // The old table at 0x1132660 has no base references. The active table is
-        // referenced by code at 0x3587c, 0x6e624 (+4), and 0x13094c (+16).
+        let ultimate = matches!(
+            self.profile.formats.trainers,
+            crate::adapter::TrainerFormat::Ultimate55
+        );
         let b = &self.data;
         let mut out = Vec::new();
         let expanded = matches!(
@@ -464,6 +487,14 @@ impl Rom {
             crate::adapter::TrainerFormat::ExpandedEvs
         );
         for id in 1..self.profile.trainers.count {
+            if self
+                .profile
+                .trainer_exclusions
+                .iter()
+                .any(|(first, last)| (*first as usize..=*last as usize).contains(&id))
+            {
+                continue;
+            }
             let o = self.profile.trainers.offset + id * self.profile.trainers.stride;
             let row = bytes(b, o, 40)?;
             let flags = row[0];
@@ -501,63 +532,77 @@ impl Rom {
                         .map(|c| *c as u32)
                         .sum::<u32>(),
                 );
-                let generation = self.species(species).ok().and_then(|s| {
-                    let names = self.profile.species;
-                    let raw = bytes(
-                        b,
-                        names.offset + species as usize * names.stride,
-                        names.stride,
-                    )
-                    .ok()?;
-                    name_sum = name_sum.wrapping_add(
-                        raw.iter()
-                            .take_while(|c| **c != 0xff)
-                            .map(|c| *c as u32)
-                            .sum::<u32>(),
-                    );
-                    let parameter = if expanded { 0 } else { b[p + 3] };
-                    let pid =
-                        trainer_personality(name_sum, parameter, row[2] & 128 != 0, row[24] == 1);
-                    let fixed_iv = ((quality as u32 * 31 / 255) & 255) as u8;
-                    let slot = if s.abilities[1] == 0 {
-                        0
+                let generation = if ultimate {
+                    if flags & 3 != 0 && self.valid_species(species).is_ok() {
+                        Some(crate::ultimate::trainer_template(self, species, b[p])?)
                     } else {
-                        (pid & 1) as usize
-                    };
-                    let custom = expanded && flags & 1 != 0;
-                    let ev_offset = if flags & 2 != 0 { 8 } else { 6 };
-                    Some(TrainerMonGeneration {
-                        gender: if custom && !matches!(s.gender_ratio, 0 | 254 | 255) {
-                            "random"
+                        None
+                    }
+                } else {
+                    self.species(species).ok().and_then(|s| {
+                        let names = self.profile.species;
+                        let raw = bytes(
+                            b,
+                            names.offset + species as usize * names.stride,
+                            names.stride,
+                        )
+                        .ok()?;
+                        name_sum = name_sum.wrapping_add(
+                            raw.iter()
+                                .take_while(|c| **c != 0xff)
+                                .map(|c| *c as u32)
+                                .sum::<u32>(),
+                        );
+                        let parameter = if expanded { 0 } else { b[p + 3] };
+                        let pid = trainer_personality(
+                            name_sum,
+                            parameter,
+                            row[2] & 128 != 0,
+                            row[24] == 1,
+                        );
+                        let fixed_iv = ((quality as u32 * 31 / 255) & 255) as u8;
+                        let slot = if s.abilities[1] == 0 {
+                            0
                         } else {
-                            pokemon::gender(s.gender_ratio, pid)
-                        },
-                        nature: if custom {
-                            b[p + ev_offset + 6]
-                        } else {
-                            (pid % 25) as u8
-                        },
-                        ability_id: s.abilities[slot] as u16,
-                        ability_options: if custom {
-                            s.abilities[..2]
-                                .iter()
-                                .copied()
-                                .filter(|v| *v != 0)
-                                .collect::<BTreeSet<_>>()
-                                .into_iter()
-                                .collect()
-                        } else {
-                            vec![s.abilities[slot]]
-                        },
-                        ivs: (fixed_iv <= 31).then_some([fixed_iv; 6]),
-                        evs: if custom {
-                            b[p + ev_offset..p + ev_offset + 6].try_into().unwrap()
-                        } else {
-                            [0; 6]
-                        },
-                        personality_parameter: parameter,
+                            (pid & 1) as usize
+                        };
+                        let custom = expanded && flags & 1 != 0;
+                        let ev_offset = if flags & 2 != 0 { 8 } else { 6 };
+                        Some(TrainerMonGeneration {
+                            context: "ordinary",
+                            ev_increment: None,
+                            gender: if custom && !matches!(s.gender_ratio, 0 | 254 | 255) {
+                                "random"
+                            } else {
+                                pokemon::gender(s.gender_ratio, pid)
+                            },
+                            nature: if custom {
+                                b[p + ev_offset + 6]
+                            } else {
+                                (pid % 25) as u8
+                            },
+                            ability_id: s.abilities[slot] as u16,
+                            ability_options: if custom {
+                                s.abilities[..2]
+                                    .iter()
+                                    .copied()
+                                    .filter(|v| *v != 0)
+                                    .collect::<BTreeSet<_>>()
+                                    .into_iter()
+                                    .collect()
+                            } else {
+                                vec![s.abilities[slot]]
+                            },
+                            ivs: (fixed_iv <= 31).then_some([fixed_iv; 6]),
+                            evs: Some(if custom {
+                                b[p + ev_offset..p + ev_offset + 6].try_into().unwrap()
+                            } else {
+                                [0; 6]
+                            }),
+                            personality_parameter: parameter,
+                        })
                     })
-                });
+                };
                 if self.valid_species(species).is_err() {
                     diagnostics.push(format!("party[{i}].species={species}"));
                 }
@@ -578,7 +623,8 @@ impl Rom {
                 }
                 let mut moves = Vec::new();
                 if flags & 1 != 0 {
-                    let start = (if flags & 2 != 0 { 8 } else { 6 }) + if expanded { 8 } else { 0 };
+                    let start = (if ultimate || flags & 2 != 0 { 8 } else { 6 })
+                        + if expanded { 8 } else { 0 };
                     for j in 0..4 {
                         let mv = u16(b, p + start + j * 2)?;
                         if self.move_info(mv).is_err() {
@@ -601,7 +647,9 @@ impl Rom {
                     species,
                     level: lv,
                     iv_quality: quality,
-                    level_rule: if !expanded && (lv == 0 || lv > 100) {
+                    level_rule: if ultimate {
+                        "difficulty"
+                    } else if !expanded && (lv == 0 || lv > 100) {
                         "party_max"
                     } else {
                         "fixed"

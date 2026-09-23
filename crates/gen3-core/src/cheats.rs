@@ -1,7 +1,7 @@
 //! Read-only, exact-ROM cheat recipes. No save, emulator or file writes.
 //!
 //! Bindings contain verified engine instructions, never extracted game catalogs.
-//! A cheat-only identity is deliberately separate from a full editor Profile.
+//! Cheat state is deliberately separate from an open editor Profile/session.
 use crate::{binary, err, profile::PROFILES, Result};
 use serde::{Deserialize, Serialize};
 mod parameters;
@@ -172,10 +172,40 @@ const ROCKET: &[Binding] = &[
 ];
 fn bindings(md5: &str) -> &'static [Binding] {
     match md5 {
-        ULTIMATE_MD5 => &[Binding {
-            id: NO_PEEK,
-            patches: &NO_PEEK_PATCHES,
-        }],
+        ULTIMATE_MD5 => &[
+            Binding {
+                id: NO_PEEK,
+                patches: &NO_PEEK_PATCHES,
+            },
+            Binding {
+                id: PORTABLE_PC,
+                patches: &storage::ULTIMATE,
+            },
+            Binding {
+                id: NO_ENCOUNTERS,
+                patches: &[RomHalfword {
+                    offset: 0xb52a2,
+                    before: 0xd100,
+                    after: 0x46c0,
+                }],
+            },
+            Binding {
+                id: GUARANTEED_CATCH,
+                patches: &[RomHalfword {
+                    offset: 0x56566,
+                    before: 0xd92f,
+                    after: 0x46c0,
+                }],
+            },
+            Binding {
+                id: FAST_HATCH,
+                patches: &[RomHalfword {
+                    offset: 0x70b46,
+                    before: 0xd13b,
+                    after: 0x46c0,
+                }],
+            },
+        ],
         m if m == crate::profile::BW.md5 || m == crate::profile::DP.md5 => DARK_PHANTOM,
         m if m == crate::profile::ROCKET.md5 => ROCKET,
         _ => &[],
@@ -188,9 +218,9 @@ impl CheatRom {
         let mut rom = Self::identify(&md5, data.len())?;
         if parameters::supported(&rom.md5) {
             let rocket = md5 == crate::profile::ROCKET.md5;
-            for p in parameters::encounter(rocket, 1, 1)
+            for p in parameters::encounter_for(&md5, 1, 1)
                 .into_iter()
-                .chain(parameters::shiny(rocket))
+                .chain(parameters::shiny_for(&md5))
                 .chain(parameters::teleport(rocket, 0, 0, 0))
             {
                 if binary::u16(data, p.offset as usize)? != p.before {
@@ -210,14 +240,6 @@ impl CheatRom {
         Ok(rom)
     }
     fn identify(md5: &str, size: usize) -> Result<Self> {
-        if md5 == ULTIMATE_MD5 && size == 32 * 1024 * 1024 {
-            return Ok(Self {
-                md5: md5.into(),
-                label: "究极绿宝石 5.5 · Ultimate Emerald 5.5".into(),
-                editor_supported: false,
-                options: Options::default(),
-            });
-        }
         if let Some(p) = PROFILES.iter().find(|p| p.md5 == md5 && p.size == size) {
             return Ok(Self {
                 md5: md5.into(),
@@ -332,14 +354,14 @@ fn recipe(id: &'static str) -> Recipe {
             text("野生战斗投球必定捕获", "Guaranteed wild-battle capture"),
             text("在能正常投球的野生战斗中，让捕捉判定走游戏原有的成功分支。仍记录实际使用的球，不把球改成大师球。", "Use the game's native success path when a ball can normally be thrown in a wild battle. The actual ball used is recorded; it is not replaced with a Master Ball."),
             text("保留训练家挡球和教程分支，不解锁禁用背包、禁用捕捉或剧情限制。仍消耗正常投出的球。已捕获个体和图鉴登记会随正常保存留下，关闭代码不会撤销。", "Trainer ball-blocking and tutorial branches remain. Does not unlock banned bags, blocked captures or story restrictions. Balls are still consumed normally. Caught Pokémon and dex registrations persist when saved; disabling does not undo them."),
-            text("mGBA 完整执行原生投球指令，对照不同随机种子、野生／训练家／教程分支及用球记录，核对成功脚本与个体校验。不是对所有剧情捕捉限制的穷举。", "mGBA executes the complete native ball-throw command with different seeds and wild/trainer/tutorial cases, checking success scripts, ball records and individual checksums. Not exhaustive coverage of all story capture restrictions."),
+            text("mGBA 完整执行原生投球指令，对照不同随机种子、野生／训练家／教程分支及用球记录，按各 ROM 的原生规则核对个体。不是对所有剧情捕捉限制的穷举。", "mGBA executes the complete native ball-throw command with different seeds and wild/trainer/tutorial cases, checking success scripts, ball records and Pokémon using each ROM's native rules. Not exhaustive coverage of all story capture restrictions."),
         ),
         FAST_HATCH => (
             "breeding",
             text("加快同行蛋孵化", "Faster party-egg hatching"),
             text("每次有效行走步数检查都扣减蛋的孵化周期，不再等到原来的周期检查点；继续使用本作原有的特性加速和孵化流程。", "Reduce egg cycles at each eligible walking-step check instead of waiting for the usual cycle boundary. The ROM's ability bonuses and normal hatching flow remain."),
             text("只处理同行中有效的蛋，跳过坏蛋，盒子里的蛋不变。剩余周期仍需走完，降为 0 后下一次检查触发正常孵化，不是直接把蛋标记成已孵化。已经减少的周期不会因停用而回退。", "Only valid party eggs are processed; Bad Eggs and boxed eggs are untouched. Remaining cycles still count down, then the next check triggers normal hatching. This does not simply clear the egg flag. Progress already made is not rolled back when disabled."),
-            text("mGBA 执行原生孵蛋入口，检查全部 24 种加密排列、周期边界、普通同行／坏蛋跳过、特性加速及关闭恢复；无关个体字段逐字节比较。", "mGBA native hatching-entry tests cover all 24 encrypted permutations, cycle boundaries, non-egg/Bad Egg skips, ability bonuses and disable/restore. Unrelated individual fields are compared byte for byte."),
+            text("mGBA 执行原生孵蛋入口，检查个体记录、周期边界、普通同行／坏蛋跳过、特性加速及关闭恢复；无关字段逐字节比较。", "mGBA native hatching-entry tests cover Pokémon records, cycle boundaries, non-egg/Bad Egg skips, ability bonuses and disable/restore. Unrelated fields are compared byte for byte."),
         ),
         DAYCARE_EGG => (
             "breeding",
@@ -380,7 +402,7 @@ fn parameter_recipe(id: &'static str) -> Recipe {
             text("选择当前 ROM 的宝可梦和等级，在下一场普通野生遭遇中生成。可与闪光代码一起使用。", "Choose a Pokémon and level from this ROM for the next ordinary wild encounter. Can be combined with the shiny recipe."), Some("encounter"),
             text("改变普通野生生成入口，不覆盖单独生成的游走、定点、礼物、蛋和训练家。不会主动触发战斗；走路遇敌暂停时，请先关闭暂停。列表不提供临时战斗形态。", "Changes the ordinary wild constructor, not separate roamer, static, gift, egg or trainer constructors. Does not trigger a battle; disable paused walking encounters first. Temporary battle forms are excluded.")),
         SHINY => (text("普通野生遭遇必定闪光", "Shiny ordinary wild encounters"),
-            text("仅在普通野生生成链中构造闪光 PID，继续执行本作原生性格、性别筛选和个体加密。", "Construct a shiny PID only in the ordinary wild generation chain, retaining native nature/gender selection and Pokémon encryption."), None,
+            text("仅在普通野生生成链中构造闪光 PID，继续执行本作原生性格、性别筛选和个体保存。", "Construct a shiny PID only in the ordinary wild generation chain, retaining native nature/gender selection and Pokémon record handling."), None,
             text("只影响新生成的普通野生个体，保留同步和迷人之躯；不把已有宝可梦、礼物、蛋或训练家的宝可梦变闪。完整代码组较长，必须一次性全部启用，不能只复制前几行。", "Only newly generated ordinary wild Pokémon; Synchronize and Cute Charm remain. Existing Pokémon, gifts, eggs and trainer Pokémon are not made shiny. Enable the entire long code set together, never just its first few lines.")),
         TELEPORT => (text("传送到指定地图", "Teleport to a chosen map"),
             text("按区域和地图选择目的地，查看十进制地图编号和十六进制组／图编码。下一次经原生传送入口切图时替换目的地。", "Choose a region and map, with decimal map IDs and hexadecimal group/map codes. Redirect the next transition using the native warp setter."), Some("teleport"),
@@ -403,7 +425,7 @@ fn parameter_recipe(id: &'static str) -> Recipe {
     } else {
         text("重启后进入新的普通野生战斗。指定遇怪与闪光可叠加；更换目标前先停用旧的整组代码。", "Restart and enter a new ordinary wild battle. Species/level and shiny recipes can be combined. Disable the previous complete set before changing the target.")
     };
-    result.verification[0] = text("mGBA 原生函数夹具验证生成、校验和与代码启停；地图落点来自当前 ROM 的门／洞口记录，未承诺所有地图剧情可达。", "mGBA native-function fixtures verify generation, checksums and code toggling. Landings come from this ROM's warp records; not all maps are claimed story-reachable.");
+    result.verification[0] = text("mGBA 原生函数夹具验证生成、个体记录与代码启停；地图落点来自当前 ROM 的门／洞口记录，未承诺所有地图剧情可达。", "mGBA native-function fixtures verify generation, Pokémon records and code toggling. Landings come from this ROM's warp records; not all maps are claimed story-reachable.");
     result
 }
 
@@ -464,7 +486,7 @@ mod tests {
     fn exact_identity_and_cross_rom_isolation() {
         assert!(CheatRom::open(&[0; 192]).is_err());
         assert!(CheatRom::identify(ULTIMATE_MD5, 1024).is_err());
-        for p in PROFILES {
+        for p in PROFILES.into_iter().filter(|p| p.md5 != ULTIMATE_MD5) {
             let rom = CheatRom::identify(p.md5, p.size).unwrap();
             assert_eq!(
                 rom.catalog().entries.len(),
@@ -487,10 +509,7 @@ mod tests {
         }
         let mut request = request();
         request.cheat_id = PORTABLE_PC.into();
-        assert_eq!(
-            ultimate().generate(&request).unwrap_err().code,
-            "unsupported_feature"
-        );
+        assert_eq!(ultimate().generate(&request).unwrap().lines.len(), 7);
         request.cheat_id = "unknown".into();
         assert!(ultimate().generate(&request).is_err());
     }
@@ -535,7 +554,12 @@ mod tests {
                 assert_eq!(code.rom_md5, p.md5);
                 assert_eq!(code.lines.len(), binding.patches.len());
                 assert_eq!(code.lines, rom.generate(&request).unwrap().lines);
-                request.expected_rom_md5 = ULTIMATE_MD5.into();
+                request.expected_rom_md5 = if p.md5 == ULTIMATE_MD5 {
+                    crate::profile::BW.md5
+                } else {
+                    ULTIMATE_MD5
+                }
+                .into();
                 assert_eq!(
                     rom.generate(&request).unwrap_err().code,
                     "cheat_context_mismatch"
@@ -585,7 +609,10 @@ mod tests {
                 species: 400,
                 level: 100,
             });
-            assert_eq!(rom.generate(&r).unwrap().lines.len(), 4);
+            assert_eq!(
+                rom.generate(&r).unwrap().lines.len(),
+                if p.md5 == ULTIMATE_MD5 { 8 } else { 4 }
+            );
             r.cheat_id = TELEPORT.into();
             assert!(rom.generate(&r).is_err());
             for (map_id, warp_id, valid) in [("1-2", 0, true), ("1-2", 1, false), ("2-1", 0, false)]
@@ -599,14 +626,17 @@ mod tests {
             r.cheat_id = SHINY.into();
             assert!(rom.generate(&r).is_err());
             r.parameters = None;
-            assert_eq!(rom.generate(&r).unwrap().lines.len(), 86);
+            assert_eq!(
+                rom.generate(&r).unwrap().lines.len(),
+                if p.md5 == ULTIMATE_MD5 { 28 } else { 86 }
+            );
             let rocket = p.md5 == crate::profile::ROCKET.md5;
             let mut offsets = std::collections::HashSet::new();
             for patch in bindings(p.md5)
                 .iter()
                 .flat_map(|b| b.patches.iter().copied())
-                .chain(parameters::encounter(rocket, 400, 100))
-                .chain(parameters::shiny(rocket))
+                .chain(parameters::encounter_for(p.md5, 400, 100))
+                .chain(parameters::shiny_for(p.md5))
                 .chain(parameters::teleport(rocket, 1, 2, 0))
             {
                 assert!(offsets.insert(patch.offset));
@@ -649,8 +679,8 @@ mod tests {
         let ue_path = std::env::var("GEN3_ROM_ULTIMATE").expect("GEN3_ROM_ULTIMATE");
         let original = std::fs::read(&ue_path).unwrap();
         let catalog = dispatch(&mut app, "open_cheat_rom", json!({"path": ue_path})).unwrap();
-        assert_eq!(catalog["entries"].as_array().unwrap().len(), 1);
-        assert_eq!(catalog["rom"]["editor_supported"], false);
+        assert_eq!(catalog["entries"].as_array().unwrap().len(), 8);
+        assert_eq!(catalog["rom"]["editor_supported"], true);
         assert!(app.session.is_none());
         let request = json!({"expected_rom_md5": ULTIMATE_MD5, "cheat_id": NO_PEEK, "format": "gameshark_v1_v2"});
         assert_eq!(

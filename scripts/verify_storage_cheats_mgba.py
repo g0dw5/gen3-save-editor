@@ -1,6 +1,6 @@
 """Exact-ROM portable-PC tests using final encrypted codes in mGBA.
 
-Required: GEN3_BIN, GEN3_ROM_BW/DP/ROCKET, MGBA_SOURCE, MGBA_BUILD.
+Required: GEN3_BIN, GEN3_ROM_BW/DP/ROCKET/ULTIMATE, MGBA_SOURCE, MGBA_BUILD.
 Optional full-frame tests require GEN3_STORAGE_STATE_<name> and
 GEN3_STORAGE_SAVE_<name>: raw mGBA states at a freely walkable outdoor tile
 (with space below) and matching battery saves. Inputs are read into memory,
@@ -33,7 +33,7 @@ class StorageProbe(Probe):
         self.entry = 0x1F9B8C if self.rocket else 0x1AD520
         self.compare = 0x1F9BD4 if self.rocket else 0x1AD568
         self.literal = 0x1F9C44 if self.rocket else 0x1AD5D8
-        self.script = 0x1F00100 if self.rocket else 0x311300
+        self.script = 0x1FFF100 if self.ultimate else 0x1F00100 if self.rocket else 0x311300
         self.header = 0x20382D8 if self.rocket else 0x2037318
         self.storage_pointer = 0x3005254 if self.rocket else 0x3005D94
 
@@ -130,7 +130,7 @@ class StorageProbe(Probe):
         party = [self.read(self.p["party"] + 100 * i, 80) for i in range(count)]
         boxes = [self.read(self.boxes() + 4 + 80 * i, 80) for i in range(420)]
         for raw in party + [r for r in boxes if any(r)]:
-            unpack(raw)  # Independent encrypted-record checksum validation.
+            self.unpack(raw)  # Native codec: plaintext or checked encrypted record.
         return party, boxes
 
     def gameplay(self, state, save, output):
@@ -173,7 +173,7 @@ class StorageProbe(Probe):
         # Normal in-game save through START. The private BW/DP fixture has eight
         # menu rows; Rocket's earlier-progress fixture has six (Save at index 3).
         # The test never invokes a raw save routine.
-        self.press(8, *([128] * (3 if self.rocket else 5)), 1, 1, 1)
+        self.press(8, *([128] * int(os.environ.get("GEN3_STORAGE_SAVE_ROW_" + self.name, 3 if self.rocket else 5))), 1, 1, 1)
         self.c.frames(360, 0)
         exported = output / f"{self.name}-saved-test.sav"
         assert self.c.export_battery(str(exported).encode())
@@ -220,7 +220,7 @@ class StorageProbe(Probe):
         self.c.frames(160, 0)
         assert self.read(self.sb1(), 4) != location[:4]  # Player controls resumed.
         return dict(organize_open_exit=True, exact_deposit_withdraw=True, exact_slot_move=True,
-                    encrypted_checksums=True, save_reset_reload=True,
+                    native_records_preserved=True, save_reset_reload=True,
                     reopen_cancel_cycles=3, registration_preserved=True,
                     exit_walk=True)
 

@@ -41,10 +41,24 @@ export function evolutionLabel(
       catalog.met_locations.find((region) => region.id === value)?.name ??
       t("unresolved"),
   };
-  return t(`evo_${kind}`).replace(
+  const base = t(`evo_${kind}`).replace(
     /\{(\w+)\}/g,
     (_, key: string) => values[key] ?? t("unknown"),
   );
+  const extra = (evolution.requirements ?? []).map(({ kind, value }) => {
+    const region =
+      catalog.met_locations.find((r) => r.id === value)?.name ??
+      t("unresolved");
+    if (kind === "region" || kind === "outside_region")
+      return t(`evoExtra_${kind}`).replace("{region}", region);
+    if (kind === "map")
+      return t("evoExtra_map").replace(
+        "{map}",
+        `${value >>> 8}-${value & 255}`,
+      );
+    return t(`evoExtra_${kind}`);
+  });
+  return [base, ...extra].join(" · ");
 }
 
 export function itemPocketLabel(

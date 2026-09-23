@@ -27,6 +27,7 @@ export function TrainerParty({
       {trainer.party.map((p, i) => {
         const species = catalog.species.find((s) => s.id === p.species);
         const g = p.generation;
+        const template = g?.context === "ultimate_template";
         const hpRules = catalog.profile.hidden_power;
         const hp = hiddenPower(hpRules, g?.ivs);
         const dynamic = p.level_rule === "party_max";
@@ -37,6 +38,9 @@ export function TrainerParty({
         ];
         return (
           <article className="trainer-mon-card" key={i}>
+            {template && (
+              <p className="small muted">{t("ultimateTrainerTemplate")}</p>
+            )}
             <div className="trainer-mon-heading">
               <Sprite catalog={catalog} species={p.species} />
               <div>
@@ -55,6 +59,9 @@ export function TrainerParty({
                   </strong>
                 </div>
                 {species && <Types catalog={catalog} values={species.types} />}
+                {p.level_rule === "difficulty" && (
+                  <p className="small muted">{t("ultimateTrainerLevel")}</p>
+                )}
                 {dynamic && (
                   <div className="small muted">
                     {t(
@@ -147,15 +154,22 @@ export function TrainerParty({
                 <tr>
                   <th>{t("evs")}</th>
                   {statKeys.map((key, s) => (
-                    <td key={key}>{g?.evs[s] ?? "?"}</td>
+                    <td key={key}>{g?.evs?.[s] ?? "?"}</td>
                   ))}
                 </tr>
               </tbody>
             </table>
+            {template && (
+              <p className="small muted">
+                {t("ultimateTrainerEvs").replace("{n}", String(g.ev_increment))}
+              </p>
+            )}
             {g && !g.ivs && <p className="small muted">{t("randomIVs")}</p>}
             <details className="trainer-evidence">
               <summary>{t("rawParameters")}</summary>
-              <p className="small muted">{t("ivQualityHelp")}</p>
+              <p className="small muted">
+                {t(template ? "ultimateTemplateEvidence" : "ivQualityHelp")}
+              </p>
               <pre>
                 {JSON.stringify(
                   {

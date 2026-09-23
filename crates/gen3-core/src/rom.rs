@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-fn evolution_condition(method: u16, expanded: bool) -> &'static str {
+pub(crate) fn evolution_condition(method: u16, expanded: bool) -> &'static str {
     match method {
         1 => "friendship",
         2 => "friendship_day",
@@ -111,9 +111,15 @@ pub struct Ability {
     pub description: String,
 }
 #[derive(Clone, Debug, Serialize)]
+pub struct EvolutionRequirement {
+    pub kind: &'static str,
+    pub value: u16,
+}
+#[derive(Clone, Debug, Serialize)]
 pub struct Evolution {
     pub method: u16,
     pub condition: &'static str,
+    pub requirements: Vec<EvolutionRequirement>,
     pub parameter: u16,
     pub target: u16,
     pub offset: usize,
@@ -133,8 +139,18 @@ pub struct NamedLocation {
     pub name: String,
 }
 #[derive(Serialize)]
+pub struct BallOption {
+    pub value: u16,
+    pub item: u16,
+}
+#[derive(Serialize)]
 pub struct EditorRules {
     pub balls: Vec<u16>,
+    pub ball_options: Vec<BallOption>,
+    pub hyper_training: bool,
+    pub pokemon_checksum: bool,
+    pub origin_game_max: u8,
+    pub met_level_max: u8,
     pub nature_override: bool,
     pub contest_ranks: [u8; 5],
 }
@@ -266,7 +282,16 @@ impl Rom {
             friendship: b[18 + tail],
             growth: b[19 + tail],
             egg_groups: [b[20 + tail], b[21 + tail]],
-            abilities: if expanded {
+            abilities: if let Some(table) = self.profile.species_abilities {
+                (0..table.stride / 2)
+                    .map(|slot| {
+                        u16(
+                            &self.data,
+                            table.offset + id as usize * table.stride + slot * 2,
+                        )
+                    })
+                    .collect::<Result<_>>()?
+            } else if expanded {
                 vec![u16(b, 24)?, u16(b, 26)?, u16(b, 28)?]
             } else {
                 vec![b[22] as u16, b[23] as u16]
@@ -376,6 +401,7 @@ impl Rom {
         })
     }
     pub fn catalog(&self) -> Result<Catalog> {
+        let ultimate = self.profile.save.pokemon_codec == crate::adapter::PokemonCodec::Ultimate55;
         Ok(Catalog {
             natures: (0..25).map(|id| self.nature(id)).collect::<Result<_>>()?,
             type_names: (0..self.profile.type_names.count)
@@ -390,6 +416,31 @@ impl Rom {
             battle_forms: self.all_battle_forms()?,
             profile: self.profile,
             editor_rules: EditorRules {
+                ball_options: (0..=self.profile.save.pokemon_codec.fields().ball.max() as u16)
+                    .map(|value| {
+                        let item = if ultimate {
+                            crate::ultimate::ball_item(self, value)?
+                        } else {
+                            value
+                        };
+                        Ok(BallOption { value, item })
+                    })
+                    .collect::<Result<Vec<_>>>()?
+                    .into_iter()
+                    .filter(|b| {
+                        self.item(b.item).is_ok_and(|i| {
+                            self.profile
+                                .save
+                                .pockets
+                                .iter()
+                                .any(|p| p.id == "balls" && p.category == i.pocket)
+                        })
+                    })
+                    .collect(),
+                hyper_training: ultimate,
+                pokemon_checksum: !ultimate,
+                origin_game_max: self.profile.save.pokemon_codec.fields().origin_game.max() as u8,
+                met_level_max: self.profile.save.pokemon_codec.fields().met_level.max() as u8,
                 balls: (1..=self.profile.save.pokemon_codec.fields().ball.max() as u16)
                     .filter(|id| {
                         self.item(*id).is_ok_and(|i| {
@@ -401,13 +452,14 @@ impl Rom {
                         })
                     })
                     .collect(),
-                nature_override: self
-                    .profile
-                    .save
-                    .pokemon_codec
-                    .fields()
-                    .nature_override
-                    .is_some(),
+                nature_override: ultimate
+                    || self
+                        .profile
+                        .save
+                        .pokemon_codec
+                        .fields()
+                        .nature_override
+                        .is_some(),
                 contest_ranks: if self.profile.save.pokemon_codec
                     == crate::adapter::PokemonCodec::Rocket21
                 {
@@ -439,19 +491,47 @@ impl Rom {
     pub fn evolutions(&self, id: u16) -> Result<Vec<Evolution>> {
         self.species(id)?;
         let mut result = Vec::new();
-        for i in 0..self.profile.evolutions.stride / 8 {
-            let o = self.profile.evolutions.offset
-                + id as usize * self.profile.evolutions.stride
-                + i * 8;
-            let method = u16(&self.data, o)?;
+        let table = self
+            .profile
+            .evolution_overrides
+            .iter()
+            .find(|(species, _)| *species == id)
+            .map(|(_, table)| *table)
+            .unwrap_or(crate::profile::Table {
+                offset: self.profile.evolutions.offset
+                    + id as usize * self.profile.evolutions.stride,
+                count: self.profile.evolutions.stride / 8,
+                stride: 8,
+            });
+        for i in 0..table.count {
+            let o = table.offset + i * table.stride;
+            let method =
+                if self.profile.formats.evolutions == crate::adapter::EvolutionFormat::Ultimate55 {
+                    self.data[o] as u16
+                } else {
+                    u16(&self.data, o)?
+                };
             if method != 0 && !crate::forms::is_battle_method(self.profile.battle_forms, method) {
                 result.push(Evolution {
                     method,
-                    condition: evolution_condition(
-                        method,
-                        self.profile.formats.evolutions
-                            == crate::adapter::EvolutionFormat::Expanded,
-                    ),
+                    requirements: if self.profile.formats.evolutions
+                        == crate::adapter::EvolutionFormat::Ultimate55
+                    {
+                        crate::ultimate::evolution_requirements(&self.data, o)?
+                    } else {
+                        Vec::new()
+                    },
+                    condition: if self.profile.formats.evolutions
+                        == crate::adapter::EvolutionFormat::Ultimate55
+                    {
+                        crate::ultimate::evolution_condition(method)
+                    } else {
+                        evolution_condition(
+                            method,
+                            self.profile.formats.evolutions
+                                == crate::adapter::EvolutionFormat::Expanded,
+                        )
+                    },
                     parameter: u16(&self.data, o + 2)?,
                     target: u16(&self.data, o + 4)?,
                     offset: o,
@@ -463,27 +543,36 @@ impl Rom {
     pub fn level_moves(&self, id: u16) -> Result<Vec<LearnSource>> {
         self.species(id)?;
         let mut out = Vec::new();
-        let expanded =
-            self.profile.formats.learnsets == crate::adapter::LearnsetFormat::MoveLevel16;
+        use crate::adapter::LearnsetFormat;
+        let format = self.profile.formats.learnsets;
+        let (stride, bias) = match format {
+            LearnsetFormat::Packed9Bit => (2, 1),
+            LearnsetFormat::MoveLevel16 => (4, 0),
+            LearnsetFormat::Move16Level8 => (3, 0),
+        };
         let p = pointer(
             &self.data,
-            self.profile.learnsets + (id as usize + usize::from(!expanded)) * 4,
+            self.profile.learnsets + (id as usize + bias) * 4,
         )?;
         for i in 0..128 {
-            let o = p + i * if expanded { 4 } else { 2 };
+            let o = p + i * stride;
             let v = u16(&self.data, o)?;
-            if v == 0xffff {
+            let (mv, lv) = match format {
+                LearnsetFormat::Packed9Bit => (v & 511, v >> 9),
+                LearnsetFormat::MoveLevel16 => (v, u16(&self.data, o + 2)?),
+                LearnsetFormat::Move16Level8 => (v, bytes(&self.data, o + 2, 1)?[0] as u16),
+            };
+            if v == 0xffff || (format == LearnsetFormat::Move16Level8 && mv == 0 && lv == 255) {
                 return Ok(out);
             }
-            let mv = if expanded { v } else { v & 511 };
-            let lv = if expanded {
-                u16(&self.data, o + 2)?
-            } else {
-                v >> 9
-            };
             if mv == 0
                 || mv as usize >= self.profile.moves.count
-                || lv > if expanded { 255 } else { 100 }
+                || lv
+                    > if format == LearnsetFormat::Packed9Bit {
+                        100
+                    } else {
+                        255
+                    }
             {
                 return Err(err("learnset", format!("species {id}, {o:#x}")));
             }
@@ -611,6 +700,12 @@ impl Rom {
                 teaching.tutor_count,
             ),
         ] {
+            // Ultimate's native teaching predicate excludes its egg species.
+            if self.profile.formats.evolutions == crate::adapter::EvolutionFormat::Ultimate55
+                && id == 412
+            {
+                continue;
+            }
             for i in 0..count {
                 let o = table + i * 2;
                 let v = u16(&self.data, o)?;
@@ -728,8 +823,16 @@ impl Rom {
                     let expanded =
                         self.profile.formats.species == crate::adapter::SpeciesFormat::Expanded36;
                     let tail = if expanded { 2 } else { 0 };
-                    let ability = if expanded { 24 } else { 22 };
-                    let ability_width = if expanded { 2 } else { 1 };
+                    let ability = self
+                        .profile
+                        .species_abilities
+                        .map(|table| table.offset + edit.id as usize * table.stride - s.offset)
+                        .unwrap_or(if expanded { 24 } else { 22 });
+                    let ability_width = if expanded || self.profile.species_abilities.is_some() {
+                        2
+                    } else {
+                        1
+                    };
                     let (off, width, max) = match edit.field.as_str() {
                         "hp" => (0, 1, 255),
                         "attack" => (1, 1, 255),
@@ -737,8 +840,8 @@ impl Rom {
                         "speed" => (3, 1, 255),
                         "sp_attack" => (4, 1, 255),
                         "sp_defense" => (5, 1, 255),
-                        "type1" => (6, 1, if expanded { 18 } else { 17 }),
-                        "type2" => (7, 1, if expanded { 18 } else { 17 }),
+                        "type1" => (6, 1, self.profile.type_names.count as u32 - 1),
+                        "type2" => (7, 1, self.profile.type_names.count as u32 - 1),
                         "catch_rate" => (8, 1, 255),
                         "gender_ratio" => (16 + tail, 1, 255),
                         "egg_cycles" => (17 + tail, 1, 255),
@@ -754,7 +857,7 @@ impl Rom {
                             ability_width,
                             self.profile.ability_count as u32 - 1,
                         ),
-                        "ability3" if expanded => {
+                        "ability3" if expanded || self.profile.species_abilities.is_some() => {
                             (ability + 4, 2, self.profile.ability_count as u32 - 1)
                         }
                         _ => return Err(err("rom_field", &edit.field)),
@@ -772,7 +875,7 @@ impl Rom {
                             if expanded { 2 } else { 1 },
                             if expanded { 65535 } else { 255 },
                         ),
-                        "type" => (2 + tail, 1, if expanded { 18 } else { 17 }),
+                        "type" => (2 + tail, 1, self.profile.type_names.count as u32 - 1),
                         "accuracy" => (3 + tail, 1, 100),
                         "pp" => (4 + tail, 1, 99),
                         "chance" => (5 + tail, 1, 100),

@@ -22,13 +22,20 @@ def main():
     rocket['editor_rules'] = dict(balls=[1,2,3,4], nature_override=True, contest_ranks=[1,1,4,4,4])
     dp = copy.deepcopy(catalog)
     dp['profile'].update(id='dp', md5='dp', label='DP test')
+    ultimate = copy.deepcopy(catalog)
+    ultimate['profile'].update(id='ultimate-emerald-55', md5='ultimate', label='Ultimate test',
+                               capabilities={**legacy, 'battle_forms': True})
+    ultimate['editor_rules'] = dict(balls=[0,1,2,3], ball_options=[dict(value=0,item=1)],
+                                   nature_override=True, hyper_training=True,
+                                   pokemon_checksum=False, met_level_max=255,
+                                   origin_game_max=3, contest_ranks=[4]*5)
     save = dict(trainer={'name': 'TEST'}, pokemon=[pokemon(1, {'kind': 'party', 'slot': 0})],
                 boxes=[{'index': i, 'name': f'Box {i+1}', 'count': 0} for i in range(14)],
                 bag=[{'pocket': 'pc', 'slot': 0, 'item': 1, 'quantity': 1}], dex=[],
                 dirty=False, can_undo=False, can_redo=False, changes=[], backup_valid=True, active_slot=0, counter=1)
     requests, errors, worlds = [], [], []
     current = [catalog]
-    targets = [rocket, dp]
+    targets = [rocket, dp, ultimate]
 
     def reply(route, data):
         route.fulfill(content_type='application/json', body=json.dumps({'ok': True, 'data': data}))
@@ -125,9 +132,24 @@ def main():
         page.wait_for_timeout(100)
         assert len(worlds) == 1 and requests.count('world') == 3
         reply(worlds.pop(), WORLD)
+        page.get_by_role('button', name='Close', exact=True).last.click()
+        open_file('Open ROM', 'ultimate.gba')
+        open_file('Open save', 'test.sav')
+        expect(page.locator('.readonly-pokemon')).to_have_count(0)
+        page.locator('[data-location="p:0"]').click()
+        page.locator('.editor-tabs').get_by_role('button', name='Stats', exact=True).click()
+        expect(page.locator('.stat-table tbody tr').first.locator('input[type=checkbox]')).to_be_visible()
+        page.locator('.stat-table tbody tr').first.locator('input[type=checkbox]').check()
+        page.locator('.editor-submit button[type=submit]').click()
+        assert save['pokemon'][0]['pokemon']['hyper_trained'][0]
+        page.get_by_role('button', name='ROM reference', exact=True).first.click()
+        page.locator('.reference-tabs').get_by_role('button', name='Maps', exact=True).click()
+        page.wait_for_timeout(100)
+        assert len(worlds) == 1 and requests.count('world') == 4
+        reply(worlds.pop(), WORLD)
         assert not errors, errors
         browser.close()
-    print('Passed: BW → Rocket → DP, shared editing, item controls, dex, form references and stale world isolation.')
+    print('Passed: BW → Rocket → DP → Ultimate, shared editing, item controls, dex, form references and stale world isolation.')
 
 
 if __name__ == '__main__':

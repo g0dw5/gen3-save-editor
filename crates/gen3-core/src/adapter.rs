@@ -7,6 +7,7 @@ use serde::Serialize;
 pub enum PokemonCodec {
     Gen3,
     Rocket21,
+    Ultimate55,
 }
 
 /// A field owns only these bits, never the rest of its containing word.
@@ -49,6 +50,8 @@ pub struct PokemonFields {
     pub pp_ups: Field,
     pub friendship: Field,
     pub ball: Field,
+    pub met_level: Field,
+    pub origin_game: Field,
     pub ability: Field,
     pub nature_override: Option<Field>,
     pub default_ball: u8,
@@ -67,6 +70,8 @@ impl PokemonCodec {
                 pp_ups: Field::new(8, 0, 8),
                 friendship: Field::new(9, 0, 8),
                 ball: Field::new(38, 11, 4),
+                met_level: Field::new(38, 0, 7),
+                origin_game: Field::new(38, 7, 4),
                 ability: Field::new(40, 31, 1),
                 nature_override: None,
                 default_ball: 4,
@@ -82,6 +87,8 @@ impl PokemonCodec {
                 pp_ups: Field::new(7, 0, 8),
                 friendship: Field::new(8, 0, 8),
                 ball: Field::new(9, 0, 5),
+                met_level: Field::new(38, 0, 7),
+                origin_game: Field::new(38, 7, 4),
                 ability: Field::new(47, 0, 2),
                 nature_override: Some(Field::new(9, 5, 5)),
                 default_ball: 1,
@@ -92,6 +99,13 @@ impl PokemonCodec {
                 markings: Field::new(26, 0, 4),
                 ot_name: 19,
             },
+            Self::Ultimate55 => PokemonFields {
+                ball: Field::new(39, 2, 5),
+                met_level: Field::new(38, 0, 8),
+                origin_game: Field::new(39, 0, 2),
+                default_ball: 0,
+                ..Self::Gen3.fields()
+            },
         }
     }
 }
@@ -99,7 +113,7 @@ impl PokemonCodec {
 impl PokemonCodec {
     fn ribbon_fields(self) -> Vec<(Field, u8)> {
         match self {
-            Self::Gen3 => vec![(Field::new(44, 0, 32), 0)],
+            Self::Gen3 | Self::Ultimate55 => vec![(Field::new(44, 0, 32), 0)],
             Self::Rocket21 => vec![
                 (Field::new(43, 7, 1), 0),
                 (Field::new(44, 0, 1), 3),
@@ -153,11 +167,13 @@ pub enum MoveFormat {
 pub enum LearnsetFormat {
     Packed9Bit,
     MoveLevel16,
+    Move16Level8,
 }
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum EvolutionFormat {
     Gen3,
+    Ultimate55,
     Expanded,
 }
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -168,6 +184,7 @@ pub enum ScriptFormat {
 #[derive(Clone, Copy, Debug, Serialize)]
 pub enum TrainerFormat {
     DarkPhantom,
+    Ultimate55,
     ExpandedEvs,
 }
 #[derive(Clone, Copy, Debug, Serialize)]

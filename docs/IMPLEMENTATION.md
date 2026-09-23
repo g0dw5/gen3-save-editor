@@ -1,5 +1,9 @@
 # Dark Phantom implementation and verification
 
+This page records the original Dark Phantom baseline. Later adapters and
+cross-ROM regression rules are documented in [multi-ROM adapters](multi-rom-adapters.md);
+Ultimate Emerald 5.5 has its own [verification record](research/ultimate-emerald-55.md).
+
 This records observed behavior. ROMs and saves remain local. Public tests use
 generated binary fixtures. This is a development preview, not a completed
 compatibility certification.

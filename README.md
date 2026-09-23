@@ -8,7 +8,7 @@ A local desktop editor for user-supplied Gen III Pokémon ROM hacks and battery
 saves. Rust owns parsing and transactions; React provides a bilingual workspace;
 Tauri supplies native file dialogs. ROM data and artwork are read at runtime.
 
-**Development preview.** BW, DP and Team Rocket 2.1 Chinese share the editing
+**Development preview.** BW, DP, Team Rocket 2.1 Chinese and Ultimate Emerald 5.5 share the editing
 workspace. Core regression tests
 run against generated fixtures and optionally your exact ROMs. See
 [verification and remaining work](docs/IMPLEMENTATION.md) before using a build.
@@ -19,8 +19,9 @@ Use **Cheats** in the toolbar (also accessible from ROM reference). No save is
 required. Select a ROM inside the cheat window; this does not replace the editor's
 ROM or save. The first verified recipe disables AI input peeking in all modes of
 Ultimate Emerald 5.5, exact MD5 `17ce9785b33319b3dbda9a5d37c57ec1`.
-This is **cheat-only support**, not a full Ultimate Emerald editor adapter.
-Dark Phantom BW/DP and Team Rocket include walking-encounter suppression, guaranteed
+Ultimate Emerald also supports ROM reference and save editing; see its
+[adapter notes and verification boundaries](docs/research/ultimate-emerald-55.md).
+All four ROMs include a portable Pokémon PC, walking-encounter suppression, guaranteed
 wild capture, faster egg hatching, species/level selection, shiny wild encounters
 and map teleport with a Region → Map selector and ROM-derived landing tiles.
 Team Rocket also has guaranteed daycare eggs
@@ -35,6 +36,7 @@ See [usage, formats, limitations and developer tests](docs/cheats.md).
 | Dark Phantom 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | 33,554,188 |
 | Dark Phantom 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | 33,554,188 |
 | Team Rocket 2.1 Chinese | `59c658a1081f542086de1060bb65f0b3` | 33,554,432 |
+| Ultimate Emerald 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | 33,554,432 |
 
 Use a 128 KiB `.sav`/`.srm` battery save. Emulator save states are not supported.
 Renaming a ROM cannot change its compatibility. Derived ROMs have different
@@ -42,7 +44,7 @@ fingerprints and do not become supported stock releases automatically.
 
 ## Workspace
 
-The same editor supports all three exact ROMs. Rocket adds its packed nature,
+The same editor supports all four exact ROMs. Rocket adds its packed nature,
 third ability, nine inventory pockets, level cap, graphics and expanded ROM tables
 through reusable adapter components. ROM reference windows remain read-only.
 See [coverage, verification and extension rules](docs/multi-rom-adapters.md).
@@ -70,7 +72,7 @@ See [coverage, verification and extension rules](docs/multi-rom-adapters.md).
   [runtime-data audit](docs/research/runtime-data-and-evolution-tree.md).
 - Edit player identity, money, coins, bags, box names and Pokédex flags. Inspect
   before/after changes, undo/redo, then export. Existing output is backed up.
-- Free editing permits game-rule exceptions. Binary bounds, checksums and supported
+- Free editing permits game-rule exceptions. Binary bounds, native checksum rules and supported
   IDs remain enforced. Missing learning evidence is “unverified”, not “illegal”.
 - Change Chinese/English at any time. ROM names retain their original language.
 

@@ -80,7 +80,7 @@ export const en = {
   noOfficialReference: "No confirmed reference",
   referenceSource: "52Poké Wiki",
   generation: "Generation {n}",
-  referenceMatched: "Matched by name / verified form relation",
+  referenceMatched: "Automatic name suggestion · not reviewed",
   referenceChosen: "Manually selected comparison",
   referenceUnmatched:
     "No unique official match. Choose a reference to compare; custom forms may have no official counterpart.",
@@ -246,7 +246,28 @@ export const en = {
   ribbonRank: "ribbon rank",
   reservedRibbonBits: "Reserved ribbon bits (preserved)",
   checksumState: "Checksum",
+  ultimateTrainerTemplate:
+    "Enhanced-team template from the ROM. Nature, ability and IVs below describe this template; the game selects adjustments by difficulty and battle context.",
+  ultimateTrainerLevel:
+    "ROM base level; difficulty, level caps and player party can change the actual battle level.",
+  ultimateTrainerEvs:
+    "EVs are generated from difficulty and player-party data. Template allocation parameter: {n}; it is not a fixed EV value for all six stats.",
+  ultimateTemplateEvidence:
+    "This byte selects a native training template, not the original Emerald 0–255 IV-quality scale.",
+  transformation: "Battle transformation",
+  battleCommandTrigger: "Native battle transformation command",
+  evoExtra_region: "In {region}",
+  evoExtra_outside_region: "Outside {region}",
+  evoExtra_map: "On map {map}",
+  evoExtra_weather: "Requires the weather specified by the ROM",
+  evoExtra_hour_boundary: "At the native dawn/dusk time boundary",
   checksumValid: "Valid",
+  checksumDisabledByGame: "Not used by this ROM",
+  hyperTrained: "Hyper Trained",
+  hyperTrainingHelp:
+    "Uses an effective IV of 31 for stats. Original IVs, breeding and Hidden Power are preserved.",
+  mapEventUnavailable:
+    "This map has an invalid event table in the ROM. NPC and item layers are unavailable.",
   checksumInvalid: "Invalid",
   status_sleep: "Asleep: turns remaining",
   battlePortrait: "Battle portrait",
@@ -707,7 +728,7 @@ export const zh: Record<Key, string> = {
   referenceConfiguredDirect: "游戏映射表 · 已确认对应",
   referenceConfiguredComparison: "游戏映射表 · 仅作数值参照",
   referenceConfiguredNone: "游戏映射表已标注：无官方对应条目。",
-  referenceMatched: "按名称／已验证形态关系匹配",
+  referenceMatched: "按名称自动建议 · 未经审核",
   referenceChosen: "手动选择的对照条目",
   referenceUnmatched:
     "尚无唯一的官方对应条目，可手动选择参照；自创形态可能没有官方对应形态。",
@@ -864,7 +885,27 @@ export const zh: Record<Key, string> = {
   ribbonRank: "缎带等级",
   reservedRibbonBits: "保留位（原样保留）",
   checksumState: "校验状态",
+  ultimateTrainerTemplate:
+    "ROM 中的强化队伍培养模板。下方性格、特性、个体值是模板设定；实际应用由难度及战斗场景决定。",
+  ultimateTrainerLevel:
+    "此处为表中基础等级；实际对战等级可能随难度、等级上限和玩家队伍调整。",
+  ultimateTrainerEvs:
+    "努力值由难度、玩家队伍和战斗场景生成。模板分配参数为 {n}，不能当作固定的六项努力值。",
+  ultimateTemplateEvidence:
+    "此字节是本作培养模板的索引，不是原版绿宝石 0～255 的个体值质量。",
+  transformation: "战斗形态",
+  battleCommandTrigger: "战斗中使用本作的形态转换指令",
+  evoExtra_region: "位于{region}",
+  evoExtra_outside_region: "不在{region}",
+  evoExtra_map: "位于地图 {map}",
+  evoExtra_weather: "需满足 ROM 指定的天气条件",
+  evoExtra_hour_boundary: "需满足本作的黎明／黄昏时段条件",
   checksumValid: "正常",
+  checksumDisabledByGame: "此 ROM 不使用校验和",
+  hyperTrained: "锻炼了",
+  hyperTrainingHelp:
+    "计算能力时按 31 个体值处理；原始个体值、孵蛋遗传和觉醒力量保持不变。",
+  mapEventUnavailable: "ROM 中此地图的事件表无效，无法显示 NPC 和道具图层。",
   checksumInvalid: "异常",
   status_sleep: "睡眠：剩余回合",
   battlePortrait: "对战立绘",

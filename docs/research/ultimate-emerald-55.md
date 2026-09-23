@@ -1,0 +1,105 @@
+# Ultimate Emerald 5.5 / 究极绿宝石 5.5 适配记录
+
+Supported input: **究极绿宝石 V5.5-失落之古遗**, 33,554,432 bytes, MD5
+`17ce9785b33319b3dbda9a5d37c57ec1`. The adapter is tied to this exact
+fingerprint; another Ultimate Emerald patch needs separate verification.
+
+支持的输入为 **究极绿宝石 V5.5-失落之古遗**，大小 33,554,432 字节，MD5 如上。
+其他究绿版本需单独核对地址与规则，文件名相同也不会通过校验。
+
+## ROM reference / ROM 资料
+
+Names, stats, abilities, moves, items, evolution entries, learnsets, encounter
+tables, maps, trainer records and graphics are read from the supplied ROM at
+runtime. The adapter contains addresses and verified format rules, not a copy
+of those tables. Its catalog exposes 1,199 nonzero-numbered species slots, 938 move
+slots, 800 item slots, 922 map headers and 1,336 nonempty trainer records.
+One species slot (`412`) is an empty ROM entry. Eevee (`133`) uses a separate
+ten-entry evolution table; the usual five-entry table would omit several
+branches. Battle-only transformations are shown separately from permanent
+evolution. Trainer enhanced-party entries expose the ROM's template for IV,
+nature and ability; actual EVs and levels may change with difficulty, player
+party and battle context, so the reference page labels them as dynamic.
+
+名称、数值、图片、地图和各类条目在打开 ROM 后读取。适配层只记录地址和已核实
+的格式。资料包括 1,199 个非零编号槽位、938 个招式槽位、800 个道具槽位、
+922 张地图头和 1,336 条非空训练家记录。编号 `412` 在 ROM 内为空。
+伊布 `133` 有独立的十条进化表；战斗变身与永久进化分开展示。强化训练家
+显示 ROM 培养模板；实战努力值、等级可能随难度和战斗状态改变，不冒充固定值。
+
+The full image scan found eight map headers in group 36 whose secondary
+tileset points to bytes without the expected compressed header, plus species
+slot `1199` with an invalid front-image pointer. One object sprite (`62`) has
+fewer image bytes than its declared dimensions. Their ROM entries remain
+listed; those images cannot currently be rendered reliably. The map reference
+also flags two ROM headers with malformed event pointers instead of treating
+their event bytes as valid NPCs or pickups. These are input-ROM findings; the
+editor does not replace the missing artwork with bundled assets.
+
+全量渲染检查发现第 36 地图组有八张图的第二图块集指向非标准压缩数据，
+以及编号 `1199` 的正面图片指针无有效压缩头。NPC 图片编号 `62` 的图像字节
+少于声明尺寸。条目仍可查，相关图片当前
+不能可靠绘制。另有两张地图的事件指针不完整，页面会提示该地图的 NPC／
+拾取标记不可确认，而不会把随机字节当成事件。
+
+## Save editing / 存档修改
+
+The game uses 128 KiB battery saves with Emerald-style sector rotation, but
+the Pokémon payload is stored in plain canonical order. Its native Pokémon
+checksum field and sector checksum fields are not used as in stock Emerald.
+This adapter preserves the unused Pokémon word, writes the game's constant
+sector marker, and still validates record bounds, supported IDs and save
+layout. It reads the hidden-ability bit, mint nature and six independent Hyper
+Training flags. It preserves original IVs when changing effective trained
+stats. Inventory pockets stored across sector extension tails and the game's
+shifted Pokédex bits are handled by the shared editor transactions.
+
+本作同样使用 128 KiB 电池存档和轮转扇区，但个体记录明文顺序保存，原版的
+个体校验和及扇区校验和已不按原版规则使用。修改器保留未使用的校验字，写入
+本作扇区标记，并继续核对结构、编号和边界。隐藏特性、薄荷性格、六项极限
+训练标记分别解析；极限训练只影响计算用个体值，不覆盖原始个体值。扩展扇区
+里的背包和偏移后的图鉴位也纳入共用事务、撤销、导出流程。
+
+## Cheats / 金手指
+
+The existing two-line all-mode AI no-peek set remains. Seven additional
+recipes are enabled for this exact ROM: portable Pokémon PC, paused walking
+encounters, guaranteed wild capture, faster party egg hatching, specified
+wild species/level, ordinary wild shiny encounters, and map teleport. Each
+recipe validates its original instruction bytes before encoding GameShark
+Advance V1/V2 lines. The encounter and shiny hooks use Ultimate-specific code
+locations and retain the ROM's native generation routines. See
+[formats and instructions](../cheats.md).
+
+原有两行全模式去窥屏继续保留。新增随身电脑、暂停走路遇敌、野生必捕、
+同行蛋快速孵化、指定遇怪／等级、野生闪光和地图传送。生成前会核对原指令；
+指定遇怪与闪光使用本作独立的挂钩，保留原生个体生成流程。
+
+## Verification and boundaries / 验证及边界
+
+- Exact BW, DP, Rocket and Ultimate ROM regression tests pass, including
+  catalog loading, evolution and cheat-context isolation. Ordinary core tests
+  pass independently of private ROM files.
+- 675 synthetic Pokémon across nine species, 25 natures and three training
+  patterns were compared with the unmodified ROM's native getters and stat
+  routine: 10,125 getter comparisons and 675 stat comparisons agreed. A
+  generated save edited at the last box slot, last pocket slots and final
+  Pokédex bit was loaded, saved and reopened by a fresh mGBA core.
+- Final encoded cheat groups were decoded and toggled in mGBA. Common recipes
+  exercised native catch, egg and walking branches; parameterized recipes
+  exercised 384 wild species/level/shiny combinations, 32 nonwild controls,
+  256 lead-ability cases and five complete map transitions. The portable PC
+  was tested through deposit, box movement, normal save, fresh-core reload
+  and withdrawal. Fishing tiles for four seeds matched the ROM's own routine.
+- A real progressed Ultimate Emerald user save was unavailable for these
+  checks; tests used a disposable game-generated battery save. Mobile
+  emulators, every story-dependent location and difficulty-dependent trainer
+  party generation have not been fully simulated. Treat displayed trainer
+  templates as source data, not a complete battle forecast.
+
+四个版本均通过精确 ROM 回归。究绿的 675 组个体与原生取值和能力计算核对，
+合计 10,125 项字段、675 组能力一致；模拟器重新载入、正常存盘并二次读取了
+编辑过的临时存档。金手指按最终编码在 mGBA 验证启停、遇怪、孵蛋、捕获、
+闪光、传送及电脑存取流程。四个钓点种子与原生函数一致。当前没有用户
+实际长期游玩的究绿存档用于验证；手机模拟器、全剧情地图与各难度训练家
+实战队伍尚未穷尽，训练家模板不能替代完整战斗预测。

@@ -64,8 +64,14 @@ pub struct TrainerPatch {
     pub coins: Option<u16>,
     pub registered_item: Option<u16>,
 }
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
+pub enum PocketBlock {
+    Main,
+    SectorExtensions,
+}
+#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 pub struct Pocket {
+    pub block: PocketBlock,
     pub id: &'static str,
     pub offset: usize,
     pub count: usize,
@@ -74,6 +80,7 @@ pub struct Pocket {
 }
 pub const POCKETS: [Pocket; 6] = [
     Pocket {
+        block: PocketBlock::Main,
         id: "pc",
         offset: 0x498,
         count: 50,
@@ -81,6 +88,7 @@ pub const POCKETS: [Pocket; 6] = [
         category: 0,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "items",
         offset: 0x560,
         count: 30,
@@ -88,6 +96,7 @@ pub const POCKETS: [Pocket; 6] = [
         category: 1,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "key_items",
         offset: 0x5d8,
         count: 30,
@@ -95,6 +104,7 @@ pub const POCKETS: [Pocket; 6] = [
         category: 4,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "balls",
         offset: 0x650,
         count: 16,
@@ -102,6 +112,7 @@ pub const POCKETS: [Pocket; 6] = [
         category: 2,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "tmhm",
         offset: 0x690,
         count: 64,
@@ -109,6 +120,7 @@ pub const POCKETS: [Pocket; 6] = [
         category: 3,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "berries",
         offset: 0x790,
         count: 46,
@@ -119,6 +131,7 @@ pub const POCKETS: [Pocket; 6] = [
 // Native bag initializer at 0x10e8d0 maps all eight categories independently.
 pub const ROCKET_POCKETS: [Pocket; 9] = [
     Pocket {
+        block: PocketBlock::Main,
         id: "pc",
         offset: 0x498,
         count: 10,
@@ -126,6 +139,7 @@ pub const ROCKET_POCKETS: [Pocket; 9] = [
         category: 0,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "items",
         offset: 0x4c0,
         count: 255,
@@ -133,6 +147,7 @@ pub const ROCKET_POCKETS: [Pocket; 9] = [
         category: 1,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "medicine",
         offset: 0xf04,
         count: 67,
@@ -140,6 +155,7 @@ pub const ROCKET_POCKETS: [Pocket; 9] = [
         category: 2,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "balls",
         offset: 0x9bc,
         count: 16,
@@ -147,6 +163,7 @@ pub const ROCKET_POCKETS: [Pocket; 9] = [
         category: 3,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "battle_items",
         offset: 0x1010,
         count: 130,
@@ -154,6 +171,7 @@ pub const ROCKET_POCKETS: [Pocket; 9] = [
         category: 4,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "berries",
         offset: 0xdf4,
         count: 68,
@@ -161,6 +179,7 @@ pub const ROCKET_POCKETS: [Pocket; 9] = [
         category: 5,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "special_items",
         offset: 0x1218,
         count: 102,
@@ -168,6 +187,7 @@ pub const ROCKET_POCKETS: [Pocket; 9] = [
         category: 6,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "tmhm",
         offset: 0x9fc,
         count: 254,
@@ -175,6 +195,7 @@ pub const ROCKET_POCKETS: [Pocket; 9] = [
         category: 7,
     },
     Pocket {
+        block: PocketBlock::Main,
         id: "key_items",
         offset: 0x8bc,
         count: 64,
@@ -210,6 +231,12 @@ pub fn sector_checksum(b: &[u8]) -> u16 {
         .fold(0u32, |a, c| a.wrapping_add(u32::from_le_bytes(*c)));
     ((sum >> 16) + (sum & 65535)) as u16
 }
+fn layout_checksum(b: &[u8], layout: SaveLayout) -> u16 {
+    match layout.sector_checksum {
+        crate::profile::SectorChecksum::Sum => sector_checksum(b),
+        crate::profile::SectorChecksum::NativeConstantOne => 1,
+    }
+}
 fn slot(data: &[u8], base: usize, layout: SaveLayout) -> Result<([usize; 14], u32)> {
     let mut refs = BTreeMap::new();
     let mut counter = None;
@@ -223,7 +250,7 @@ fn slot(data: &[u8], base: usize, layout: SaveLayout) -> Result<([usize; 14], u3
         if refs.insert(id, o).is_some() {
             return Err(err("save_duplicate_sector", id));
         }
-        if sector_checksum(&b[..layout.sizes[id]]) != u16(b, 0xff6)? {
+        if layout_checksum(&b[..layout.sizes[id]], layout) != u16(b, 0xff6)? {
             return Err(err("save_checksum", id));
         }
         let n = u32(b, 0xffc)?;
@@ -235,6 +262,38 @@ fn slot(data: &[u8], base: usize, layout: SaveLayout) -> Result<([usize; 14], u3
     Ok((std::array::from_fn(|id| refs[&id]), counter.unwrap()))
 }
 impl Save {
+    /// Ultimate's native save hook appends one RAM block through the spare tails
+    /// of all fourteen logical sectors, stopping before the footer at 0xFF0.
+    pub(crate) fn extensions(&self) -> Vec<u8> {
+        if self.layout.sector_checksum != crate::profile::SectorChecksum::NativeConstantOne {
+            return Vec::new();
+        }
+        (0..14)
+            .flat_map(|id| {
+                self.data[self.sections[id] + self.layout.sizes[id]..self.sections[id] + 0xff0]
+                    .iter()
+                    .copied()
+            })
+            .collect()
+    }
+    fn write_extensions(&mut self, data: &[u8]) -> Result<()> {
+        if self.layout.sector_checksum != crate::profile::SectorChecksum::NativeConstantOne {
+            return Err(err("unsupported_feature", "sector extensions"));
+        }
+        let total: usize = self.layout.sizes.iter().map(|n| 0xff0 - n).sum();
+        if data.len() != total {
+            return Err(err("block_size", data.len()));
+        }
+        let mut pos = 0;
+        for id in 0..14 {
+            let n = 0xff0 - self.layout.sizes[id];
+            let off = self.sections[id] + self.layout.sizes[id];
+            self.data[off..off + n].copy_from_slice(&data[pos..pos + n]);
+            pos += n;
+            self.fix(id);
+        }
+        Ok(())
+    }
     pub fn open(data: Vec<u8>, layout: SaveLayout) -> Result<Self> {
         if data.len() != 0x20000 {
             return Err(err(
@@ -293,7 +352,7 @@ impl Save {
     }
     fn fix(&mut self, id: usize) {
         let o = self.sections[id];
-        let sum = sector_checksum(&self.data[o..o + self.layout.sizes[id]]);
+        let sum = layout_checksum(&self.data[o..o + self.layout.sizes[id]], self.layout);
         put16(&mut self.data, o + 0xff6, sum);
     }
     pub fn party_count(&self) -> usize {
@@ -663,12 +722,17 @@ impl Save {
     }
     pub fn bag(&self) -> Result<Vec<BagEntry>> {
         let main = self.logical(1..=4);
+        let extra = self.extensions();
         let key = u32(&self.data, self.sections[0] + self.layout.key)? as u16;
         let mut out = Vec::new();
         for p in self.layout.pockets {
+            let data = match p.block {
+                PocketBlock::Main => &main,
+                PocketBlock::SectorExtensions => &extra,
+            };
             for i in 0..p.count {
                 let o = p.offset + i * 4;
-                let id = u16(&main, o)?;
+                let id = u16(data, o)?;
                 out.push(BagEntry {
                     pocket: p.id.into(),
                     slot: i,
@@ -676,7 +740,7 @@ impl Save {
                     quantity: if id == 0 {
                         0
                     } else {
-                        u16(&main, o + 2)? ^ if p.encrypted { key } else { 0 }
+                        u16(data, o + 2)? ^ if p.encrypted { key } else { 0 }
                     },
                 });
             }
@@ -729,10 +793,17 @@ impl Save {
             0
         };
         let o = p.offset + index * 4;
-        let mut main = self.logical(1..=4);
+        let block = p.block;
+        let mut main = match block {
+            PocketBlock::Main => self.logical(1..=4),
+            PocketBlock::SectorExtensions => self.extensions(),
+        };
         put16(&mut main, o, id);
         put16(&mut main, o + 2, if id == 0 { key } else { quantity ^ key });
-        self.write_logical(1..=4, &main)
+        match block {
+            PocketBlock::Main => self.write_logical(1..=4, &main),
+            PocketBlock::SectorExtensions => self.write_extensions(&main),
+        }
     }
     pub fn boxes(&self, rom: &Rom) -> Result<Vec<BoxInfo>> {
         let b = self.logical(5..=13);
@@ -742,9 +813,10 @@ impl Save {
             let count = (0..self.layout.slots)
                 .filter(|j| {
                     u16(
-                        &pokemon::unpack(
+                        &pokemon::unpack_with(
                             &b[4 + (i * self.layout.slots + j) * 80
                                 ..4 + (i * self.layout.slots + j + 1) * 80],
+                            self.layout.pokemon_codec,
                         )
                         .unwrap(),
                         0,
@@ -821,7 +893,7 @@ impl Save {
         };
         Ok((1..=layout.count)
             .map(|n| {
-                let i = (n - 1) as usize;
+                let i = (n - 1 + layout.bit_bias as u16) as usize;
                 DexFlag {
                     number: n,
                     owned: block[layout.owned + i / 8] & (1 << (i % 8)) != 0,
@@ -838,7 +910,7 @@ impl Save {
         if !(1..=layout.count).contains(&n) {
             return Err(err("range", "dex number"));
         }
-        let i = (n - 1) as usize;
+        let i = (n - 1 + layout.bit_bias as u16) as usize;
         let mask = 1u8 << (i % 8);
         let a = self.sections[0];
         let mut main = self.logical(1..=4);

@@ -360,6 +360,9 @@ export function PokemonEditor({
                     <th></th>
                     <th>{t("ivs")}</th>
                     <th>{t("evs")}</th>
+                    {catalog.editor_rules?.hyper_training && (
+                      <th>{t("hyperTrained")}</th>
+                    )}
                     <th>{t("calculated")}</th>
                   </tr>
                 </thead>
@@ -411,11 +414,33 @@ export function PokemonEditor({
                           }
                         />
                       </td>
+                      {catalog.editor_rules?.hyper_training && (
+                        <td>
+                          <input
+                            type="checkbox"
+                            aria-label={`${t(key)} ${t("hyperTrained")}`}
+                            checked={merged.hyper_trained?.[i] ?? false}
+                            onChange={(e) =>
+                              change(
+                                "hyper_trained",
+                                Array.from({ length: 6 }, (_, j) =>
+                                  j === i
+                                    ? e.target.checked
+                                    : (merged.hyper_trained?.[j] ?? false),
+                                ),
+                              )
+                            }
+                          />
+                        </td>
+                      )}
                       <td className="calculated-stat">{p.stats[i]}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              {catalog.editor_rules?.hyper_training && (
+                <p className="small muted">{t("hyperTrainingHelp")}</p>
+              )}
               <HiddenPowerSummary catalog={catalog} ivs={merged.ivs} />
               <div
                 className={`ev-total ${merged.evs.reduce((a, b) => a + b, 0) > 510 ? "warning-text" : ""}`}

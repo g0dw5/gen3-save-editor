@@ -67,6 +67,11 @@ export interface Catalog {
   battle_forms?: NonNullable<SpeciesDetail["battle_forms"]>;
   editor_rules?: {
     balls: number[];
+    ball_options?: { value: number; item: number }[];
+    hyper_training?: boolean;
+    pokemon_checksum?: boolean;
+    origin_game_max?: number;
+    met_level_max?: number;
     nature_override: boolean;
     contest_ranks: number[];
   };
@@ -142,6 +147,7 @@ export interface Pokemon {
   current_hp: number | null;
   status: number | null;
   checksum_ok: boolean;
+  hyper_trained?: boolean[];
 }
 export interface StoredPokemon {
   location: Location;
@@ -239,14 +245,18 @@ export interface SpeciesDetail {
   battle_forms?: {
     source: number;
     target: number;
-    kind: "mega" | "primal";
-    trigger: { kind: "held_item" | "known_move"; id: number };
+    kind: "mega" | "primal" | "transformation";
+    trigger: {
+      kind: "held_item" | "known_move" | "battle_command";
+      id: number;
+    };
     offset: number;
   }[];
   origins: OriginOptions;
   species: Species;
   evolutions: {
     condition?: string;
+    requirements?: { kind: string; value: number }[];
     method: number;
     parameter: number;
     target: number;
@@ -290,6 +300,7 @@ export interface MapEventReport {
   stopped_at: number[];
 }
 export interface GameMap {
+  invalid_events?: boolean;
   id: string;
   group: number;
   number: number;
@@ -317,13 +328,15 @@ export interface Opponent {
     species: number;
     level: number;
     iv_quality: number;
-    level_rule: "fixed" | "party_max";
+    level_rule: "fixed" | "party_max" | "difficulty";
     generation: {
+      context?: "ordinary" | "ultimate_template";
+      ev_increment?: number | null;
       gender: string;
       nature: number;
       ability_id: number;
       ivs: number[] | null;
-      evs: number[];
+      evs: number[] | null;
       personality_parameter: number;
       ability_options?: number[];
     } | null;

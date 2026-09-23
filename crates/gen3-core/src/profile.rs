@@ -35,6 +35,9 @@ pub struct Profile {
     pub formats: crate::adapter::RomFormats,
     pub capabilities: crate::adapter::Capabilities,
     pub ability_count: u16,
+    pub species_abilities: Option<Table>,
+    /// Excluded overwritten slots are not trainer records.
+    pub trainer_exclusions: &'static [(u16, u16)],
     pub max_level: u8,
     pub experience_table: Option<Table>,
     pub battle_forms: Option<crate::forms::BattleFormRules>,
@@ -64,6 +67,7 @@ pub struct Profile {
     pub contest: Option<crate::contest::ContestRules>,
     pub items: Table,
     pub evolutions: Table,
+    pub evolution_overrides: &'static [(u16, Table)],
     pub learnsets: usize,
     pub eggs: usize,
     pub teaching: TeachingRules,
@@ -168,6 +172,7 @@ pub struct MapGroup {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct SaveLayout {
+    pub sector_checksum: SectorChecksum,
     pub pokemon_codec: crate::adapter::PokemonCodec,
     pub pockets: &'static [crate::save::Pocket],
     pub dex: Option<DexLayout>,
@@ -180,8 +185,14 @@ pub struct SaveLayout {
     pub money: usize,
     pub coins: usize,
 }
+#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
+pub enum SectorChecksum {
+    Sum,
+    NativeConstantOne,
+}
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct DexLayout {
+    pub bit_bias: u8,
     /// False: SaveBlock2; true: logical SaveBlock1 (sections 1–4).
     pub main_block: bool,
     pub count: u16,
@@ -190,9 +201,11 @@ pub struct DexLayout {
     pub seen_mirrors: &'static [usize],
 }
 pub const EMERALD: SaveLayout = SaveLayout {
+    sector_checksum: SectorChecksum::Sum,
     pokemon_codec: crate::adapter::PokemonCodec::Gen3,
     pockets: &crate::save::POCKETS,
     dex: Some(DexLayout {
+        bit_bias: 0,
         main_block: false,
         count: 416,
         owned: 0x28,
@@ -222,6 +235,8 @@ pub const BW: Profile = Profile {
     formats: crate::adapter::RomFormats::GEN3,
     capabilities: crate::adapter::Capabilities::DARK_PHANTOM,
     ability_count: 151,
+    species_abilities: None,
+    trainer_exclusions: &[],
     max_level: 100,
     experience_table: Some(Table {
         offset: 0x31f72c,
@@ -293,6 +308,7 @@ pub const BW: Profile = Profile {
         count: 377,
         stride: 44,
     },
+    evolution_overrides: &[],
     evolutions: Table {
         offset: 0x32531c,
         count: 412,
@@ -425,6 +441,8 @@ pub const ROCKET: Profile = Profile {
     formats: crate::adapter::RomFormats::ROCKET21,
     capabilities: crate::adapter::Capabilities::ROCKET21,
     ability_count: 269,
+    species_abilities: None,
+    trainer_exclusions: &[],
     max_level: 150,
     experience_table: Some(Table {
         offset: 0x5b3484,
@@ -481,6 +499,7 @@ pub const ROCKET: Profile = Profile {
         count: 923,
         stride: 44,
     },
+    evolution_overrides: &[],
     evolutions: Table {
         offset: 0x5f96d4,
         count: 1395,
@@ -587,6 +606,7 @@ pub const ROCKET: Profile = Profile {
         ],
         pockets: &crate::save::ROCKET_POCKETS,
         dex: Some(DexLayout {
+            bit_bias: 0,
             main_block: true,
             count: 955,
             owned: 0x2f5c,
@@ -596,7 +616,7 @@ pub const ROCKET: Profile = Profile {
         ..EMERALD
     },
 };
-pub const PROFILES: [Profile; 3] = [BW, DP, ROCKET];
+pub const PROFILES: [Profile; 4] = [BW, DP, ROCKET, crate::ultimate::PROFILE];
 pub fn identify(data: &[u8]) -> Result<Profile> {
     let md5 = hash(data);
     PROFILES

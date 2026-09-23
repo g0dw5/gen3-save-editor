@@ -4,6 +4,7 @@
 use super::{text, Format, Recipe, RomHalfword, PORTABLE_PC};
 
 pub(super) const DARK_PHANTOM: [RomHalfword; 7] = patches(0x1ad568, 0x1ad5d8, 0x082736b3, 0x311300);
+pub(super) const ULTIMATE: [RomHalfword; 7] = patches(0x1ad568, 0x1ad5d8, 0x082736b3, 0x1fff100);
 pub(super) const ROCKET: [RomHalfword; 7] = patches(0x1f9bd4, 0x1f9c44, 0x082e04f7, 0x1f00100);
 
 const fn patches(
@@ -76,7 +77,7 @@ pub(super) fn recipe() -> Recipe {
             text("电脑菜单内不要只关部分代码。正常整理后保存会保留变更，停用代码不会撤销存取。只支持本页完整 MD5；手机模拟器尚未实测。", "Do not disable individual lines inside the PC. Normal saves retain storage changes; disabling does not undo transfers. Requires this exact MD5; mobile emulators are untested."),
         ],
         verification: vec![
-            text("逐 ROM 使用最终 7 行代码在 mGBA 验证原地打开、存入、盒内移动、正常保存、全新模拟器核心读档及取回；个体记录与校验和一致。另核对整组启停恢复、16 项原生设施限制及退出后行走。", "Per-ROM mGBA tests of the final 7-line set cover opening in place, deposit, box-slot movement, normal saving, a fresh-core battery reload and withdrawal with identical records and valid checksums. Also checks full-set restoration, 16 native facility cases and walking after exit."),
+            text("逐 ROM 使用最终 7 行代码在 mGBA 验证原地打开、存入、盒内移动、正常保存、全新模拟器核心读档及取回；个体记录一致，并按各 ROM 的原生规则检查完整性。另核对整组启停恢复、16 项原生设施限制及退出后行走。", "Per-ROM mGBA tests of the final 7-line set cover opening in place, deposit, box-slot movement, normal saving, a fresh-core battery reload and withdrawal with identical records and integrity checks appropriate to each native ROM. Also checks full-set restoration, 16 native facility cases and walking after exit."),
             text("沿用本作原生个体与电脑读写，不直接覆盖队伍、盒子、PID 或存档校验字段。未宣称覆盖全部剧情、设施或长期手机游玩。", "Uses the ROM's own Pokémon/storage routines rather than overwriting party, boxes, PID or save checksums. This is not exhaustive story/facility or long-term mobile coverage."),
         ],
         formats: vec![Format::GamesharkV1V2],

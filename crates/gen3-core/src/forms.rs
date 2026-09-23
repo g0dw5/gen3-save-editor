@@ -11,18 +11,21 @@ use serde::Serialize;
 #[serde(rename_all = "snake_case")]
 pub enum BattleFormRules {
     ExpansionEvolutionMethods,
+    UltimateEvolutionMethods,
 }
 #[derive(Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum BattleFormKind {
     Mega,
     Primal,
+    Transformation,
 }
 #[derive(Debug, Serialize, PartialEq, Eq)]
 #[serde(tag = "kind", content = "id", rename_all = "snake_case")]
 pub enum BattleTrigger {
     HeldItem(u16),
     KnownMove(u16),
+    BattleCommand(u16),
 }
 #[derive(Debug, Serialize)]
 pub struct BattleForm {
@@ -33,7 +36,11 @@ pub struct BattleForm {
     pub offset: usize,
 }
 pub(crate) fn is_battle_method(rules: Option<BattleFormRules>, method: u16) -> bool {
-    rules.is_some() && matches!(method, 0xfffd..=0xffff)
+    match rules {
+        Some(BattleFormRules::ExpansionEvolutionMethods) => matches!(method, 0xfffd..=0xffff),
+        Some(BattleFormRules::UltimateEvolutionMethods) => matches!(method & 255, 250..=255),
+        None => false,
+    }
 }
 impl Rom {
     /// Persistent item/move transitions. Battle-, time- and item-use triggers
@@ -92,7 +99,7 @@ impl Rom {
             .collect())
     }
     pub(crate) fn all_battle_forms(&self) -> Result<Vec<BattleForm>> {
-        let Some(BattleFormRules::ExpansionEvolutionMethods) = self.profile.battle_forms else {
+        let Some(rules) = self.profile.battle_forms else {
             return Ok(Vec::new());
         };
         let table = self.profile.evolutions;
@@ -101,13 +108,20 @@ impl Rom {
             for row in 0..table.stride / 8 {
                 let offset = table.offset + source as usize * table.stride + row * 8;
                 let method = u16(&self.data, offset)?;
+                if matches!(rules, BattleFormRules::UltimateEvolutionMethods)
+                    && matches!(method & 255, 254 | 255)
+                {
+                    continue;
+                }
                 if !is_battle_method(self.profile.battle_forms, method) {
                     continue;
                 }
                 let target = u16(&self.data, offset + 4)?;
                 self.valid_species(target)?;
                 let parameter = u16(&self.data, offset + 2)?;
-                let trigger = if method == 0xfffe {
+                let trigger = if method == 250 {
+                    BattleTrigger::BattleCommand(method)
+                } else if matches!(method, 0xfffe | 252) {
                     self.move_info(parameter)?;
                     BattleTrigger::KnownMove(parameter)
                 } else {
@@ -117,7 +131,9 @@ impl Rom {
                 out.push(BattleForm {
                     source,
                     target,
-                    kind: if method == 0xfffd {
+                    kind: if method == 250 || (method == 251 && parameter == 702) {
+                        BattleFormKind::Transformation
+                    } else if matches!(method, 0xfffd | 253) {
                         BattleFormKind::Primal
                     } else {
                         BattleFormKind::Mega
