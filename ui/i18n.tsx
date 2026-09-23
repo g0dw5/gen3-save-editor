@@ -643,14 +643,8 @@ export const en = {
   bytesChanged: "Changed bytes",
   warnings: "Rule findings",
   showDiff: "Change details",
-  romEdit: "Edit ROM table",
-  romEditHelp:
-    "Change multiple fields on this entry, then export them together. The supplied ROM remains the baseline.",
-  romEditPending: "Changes to export",
-  romEditRemove: "Remove",
   field: "Field",
   value: "Value",
-  exportRom: "Export derived ROM",
   price: "Price",
   power: "Power",
   accuracy: "Accuracy",
@@ -676,6 +670,7 @@ export const en = {
   save_no_valid_slot: "No complete save slot passed validation.",
   save_conflict:
     "The source save changed outside the editor. Reload it before exporting.",
+  rom_write: "ROM files are read-only. Choose a save or Pokémon export path.",
   pokemon_checksum:
     "A Pokémon record is damaged. Restore it from a known-good backup; do not just replace its checksum.",
   pokemon_bad_egg:
@@ -1314,13 +1309,8 @@ export const zh: Record<Key, string> = {
   bytesChanged: "变更字节",
   warnings: "规则提示",
   showDiff: "修改详情",
-  romEdit: "编辑 ROM 表项",
-  romEditHelp: "可修改当前条目的多个字段并一起导出；原 ROM 保持不变。",
-  romEditPending: "待导出的修改",
-  romEditRemove: "移除",
   field: "字段",
   value: "数值",
-  exportRom: "导出派生 ROM",
   price: "价格",
   power: "威力",
   accuracy: "命中",
@@ -1345,6 +1335,7 @@ export const zh: Record<Key, string> = {
   save_size: "请选择 128 KiB 电池存档，不支持模拟器即时存档。",
   save_no_valid_slot: "没有找到完整且校验正确的存档槽。",
   save_conflict: "源存档已被外部程序修改，请重新载入后再导出。",
+  rom_write: "ROM 文件只读，请选择存档或宝可梦导出路径。",
   pokemon_checksum:
     "宝可梦数据损坏，请从已知正确的备份恢复，不要仅重算校验和。",
   pokemon_bad_egg: "宝可梦已被标记为坏蛋，请从已知正确的备份恢复后再修改。",

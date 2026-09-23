@@ -111,7 +111,7 @@ def main():
             dialog.evaluate("e=>e.style.width='490px'")
             assert dialog.locator(".cheats-detail").evaluate("e=>e.scrollWidth<=e.clientWidth")
         assert not errors,errors
-        assert not any(r["command"] in ("action","export_save","patch_rom") for r in requests)
+        assert not any(r["command"] in ("action","export_save") for r in requests)
         browser.close()
     print("parameter cheat UI: bilingual ROM-name search, bounded levels, stale responses, two-level maps/codes, disabled landings, export and narrow layout passed")
 

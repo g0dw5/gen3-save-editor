@@ -39,6 +39,15 @@ fn start_state_lists_every_supported_rom_without_loading_game_data() {
         .code,
         "command"
     );
+    assert_eq!(
+        app.dispatch(Request {
+            command: "patch_rom".into(),
+            payload: serde_json::Value::Null,
+        })
+        .unwrap_err()
+        .code,
+        "command"
+    );
 }
 
 #[test]
@@ -577,6 +586,42 @@ fn policy_never_bypasses_structure_and_preserves_free_values() {
             Policy::Free
         )
         .is_err());
+}
+
+#[test]
+fn save_roundtrip_keeps_speed_ivs_evs_and_ability_in_one_edit() {
+    let mut session = session();
+    session
+        .apply(
+            Action::Pokemon {
+                location: party(),
+                patch: PokemonPatch {
+                    ivs: Some([10, 10, 10, 31, 10, 10]),
+                    evs: Some([0, 0, 0, 252, 0, 0]),
+                    ability_slot: Some(1),
+                    ..Default::default()
+                },
+            },
+            Policy::Standard,
+        )
+        .unwrap();
+    let bytes = session.save_ref().unwrap().data.clone();
+    let exported = Save::open(bytes, session.rom.profile.save).unwrap();
+    exported.validate(&session.rom).unwrap();
+    let pokemon = exported.pokemon(party(), &session.rom).unwrap().unwrap();
+    assert_eq!(pokemon.ivs[3], 31);
+    assert_eq!(pokemon.evs[3], 252);
+    assert_eq!(pokemon.ability_slot, 1);
+}
+
+#[test]
+fn save_export_rejects_a_rom_path_without_writing() {
+    let mut session = session();
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("game.GBA");
+    std::fs::write(&path, b"untouched ROM placeholder").unwrap();
+    assert_eq!(session.export(&path).unwrap_err().code, "rom_write");
+    assert_eq!(std::fs::read(&path).unwrap(), b"untouched ROM placeholder");
 }
 #[test]
 fn transfer_invariants_and_import_profile() {
@@ -1315,86 +1360,6 @@ fn free_editing_cannot_create_dangling_mail_links() {
 }
 
 #[test]
-fn rom_patch_is_bounded_reproducible_and_keeps_the_baseline() {
-    use crate::rom::RomEdit;
-    let r = rom();
-    let baseline = hash(&r.data);
-    let edit = RomEdit {
-        table: "species".into(),
-        id: 1,
-        field: "attack".into(),
-        value: 120,
-    };
-    let (out, manifest) = r.patch(std::slice::from_ref(&edit)).unwrap();
-    let changed: Vec<_> = r
-        .data
-        .iter()
-        .zip(&out)
-        .enumerate()
-        .filter(|(_, (a, b))| a != b)
-        .map(|(i, _)| i)
-        .collect();
-    assert_eq!(changed, vec![r.profile.base_stats.offset + 28 + 1]);
-    assert_eq!(manifest.base_md5, baseline);
-    assert_eq!(manifest.output_md5, hash(&out));
-    assert_eq!(manifest.output_sha256, sha256(&out));
-    assert_eq!(hash(&r.data), baseline);
-    let (again, _) = r.patch(std::slice::from_ref(&edit)).unwrap();
-    assert_eq!(out, again);
-    assert!(r
-        .patch(&[RomEdit {
-            value: 256,
-            ..edit.clone()
-        }])
-        .is_err());
-    assert!(r
-        .patch(&[RomEdit {
-            field: "offset".into(),
-            ..edit
-        }])
-        .is_err());
-}
-
-#[test]
-#[ignore = "requires GEN3_ROM_BW, GEN3_ROM_DP, GEN3_ROM_ROCKET and GEN3_ROM_ULTIMATE"]
-fn rom_patch_combines_gyarados_speed_and_ability_on_exact_roms() {
-    use crate::rom::RomEdit;
-    for name in ["BW", "DP", "ROCKET", "ULTIMATE"] {
-        let path = std::env::var(format!("GEN3_ROM_{name}")).unwrap();
-        let r = Rom::open(std::fs::read(path).unwrap()).unwrap();
-        let before = r.species(130).unwrap();
-        assert!(before.name.contains("暴鲤龙"), "{name}: {}", before.name);
-        let speed = if before.stats[3] == 255 { 254 } else { 255 };
-        let ability = if before.abilities[0] == 2 { 1 } else { 2 };
-        let edits = [
-            RomEdit {
-                table: "species".into(),
-                id: 130,
-                field: "speed".into(),
-                value: speed,
-            },
-            RomEdit {
-                table: "species".into(),
-                id: 130,
-                field: "ability1".into(),
-                value: ability as u32,
-            },
-        ];
-        let (patched, manifest) = r.patch(&edits).unwrap();
-        let mut derived = r.clone();
-        derived.data = std::sync::Arc::new(patched);
-        let after = derived.species(130).unwrap();
-        assert_eq!(
-            (after.stats[3], after.abilities[0]),
-            (speed as u8, ability),
-            "{name}"
-        );
-        assert_eq!(r.species(130).unwrap().stats[3], before.stats[3], "{name}");
-        assert_eq!(manifest.edits.len(), 2, "{name}");
-    }
-}
-
-#[test]
 fn trainer_map_index_follows_branches_and_keeps_evidence() {
     let mut r = rom();
     let b = std::sync::Arc::make_mut(&mut r.data);
@@ -2027,11 +1992,71 @@ fn adapter_matrix_bit_ownership_all_pid_orders() {
 }
 
 #[test]
+fn speed_ivs_evs_and_ability_survive_each_save_codec() {
+    for profile in profile::PROFILES {
+        let rom = adapter_rom(profile);
+        let slot = if profile.save.pokemon_codec == crate::adapter::PokemonCodec::Rocket21 {
+            2
+        } else {
+            1
+        };
+        for pid in 0..24 {
+            let raw = pokemon::create(&rom, 1, 0x12345678, "ASH", 50, pid).unwrap();
+            let (edited, _) = pokemon::edit(
+                &raw,
+                &PokemonPatch {
+                    ivs: Some([10, 10, 10, 31, 10, 10]),
+                    evs: Some([0, 0, 0, 252, 0, 0]),
+                    ability_slot: Some(slot),
+                    ..Default::default()
+                },
+                &rom,
+                Policy::Free,
+            )
+            .unwrap();
+            let after = pokemon::decode(&edited, &rom).unwrap();
+            assert_eq!(after.ivs[3], 31, "{} PID {pid}", profile.id);
+            assert_eq!(after.evs[3], 252, "{} PID {pid}", profile.id);
+            assert_eq!(after.ability_slot, slot, "{} PID {pid}", profile.id);
+        }
+    }
+}
+
+#[test]
+#[ignore = "requires GEN3_ROM_BW, GEN3_ROM_DP, GEN3_ROM_ROCKET and GEN3_ROM_ULTIMATE"]
+fn gyarados_save_fields_roundtrip_with_exact_roms() {
+    for name in ["BW", "DP", "ROCKET", "ULTIMATE"] {
+        let path = std::env::var(format!("GEN3_ROM_{name}")).unwrap();
+        let rom = Rom::open(std::fs::read(path).unwrap()).unwrap();
+        let species = rom.species(130).unwrap();
+        assert!(species.name.contains("暴鲤龙"));
+        let slot = if species.abilities.len() > 2 { 2 } else { 1 };
+        let raw = pokemon::create(&rom, 130, 0x12345678, "TEST", 50, 12345).unwrap();
+        let (edited, _) = pokemon::edit(
+            &raw,
+            &PokemonPatch {
+                ivs: Some([10, 10, 10, 31, 10, 10]),
+                evs: Some([0, 0, 0, 252, 0, 0]),
+                ability_slot: Some(slot),
+                ..Default::default()
+            },
+            &rom,
+            Policy::Standard,
+        )
+        .unwrap();
+        let after = pokemon::decode(&edited, &rom).unwrap();
+        assert_eq!(after.ivs[3], 31, "{name}");
+        assert_eq!(after.evs[3], 252, "{name}");
+        assert_eq!(after.ability_slot, slot, "{name}");
+        assert_eq!(after.ability_id, species.abilities[slot as usize], "{name}");
+    }
+}
+
+#[test]
 fn adapter_capabilities_reject_writes_without_mutation() {
     let mut disabled = profile::ROCKET;
     disabled.capabilities = crate::adapter::Capabilities {
         save_edit: false,
-        rom_edit: false,
         world: false,
         dex: false,
         complete_learnsets: false,
@@ -2087,7 +2112,6 @@ fn adapter_capabilities_reject_writes_without_mutation() {
         10
     );
     assert_eq!(r.world().err().unwrap().code, "unsupported_feature");
-    assert_eq!(r.patch(&[]).err().unwrap().code, "unsupported_feature");
     let mut app = crate::app::App {
         session: Some(s),
         ..Default::default()
@@ -2583,61 +2607,6 @@ fn rocket_ribbons_preserve_ivs_egg_ability_and_reserved_bits() {
             }
             assert_eq!(canonical, expected);
         }
-    }
-}
-
-#[test]
-fn rom_patch_uses_each_profiles_scalar_widths_and_offsets() {
-    for profile in profile::PROFILES {
-        let r = adapter_rom(profile);
-        let expanded = profile.save.pokemon_codec == crate::adapter::PokemonCodec::Rocket21;
-        let edits = [
-            crate::rom::RomEdit {
-                table: "species".into(),
-                id: 1,
-                field: "speed".into(),
-                value: 120,
-            },
-            crate::rom::RomEdit {
-                table: "species".into(),
-                id: 1,
-                field: "ability2".into(),
-                value: if expanded { 267 } else { 2 },
-            },
-            crate::rom::RomEdit {
-                table: "moves".into(),
-                id: 1,
-                field: "power".into(),
-                value: if expanded { 500 } else { 200 },
-            },
-        ];
-        let (patched, _) = r.patch(&edits).unwrap();
-        let mut expected = (*r.data).clone();
-        let species = r.profile.base_stats.offset + r.profile.base_stats.stride;
-        let mv = r.profile.moves.offset + r.profile.moves.stride;
-        expected[species + 3] = 120;
-        if expanded {
-            put16(&mut expected, species + 26, 267);
-            put16(&mut expected, mv + 2, 500);
-        } else {
-            if let Some(table) = profile.species_abilities {
-                put16(&mut expected, table.offset + table.stride + 2, 2);
-            } else {
-                expected[species + 23] = 2;
-            }
-            expected[mv + 1] = 200;
-        }
-        assert_eq!(patched, expected);
-        let mut patched_rom = r.clone();
-        patched_rom.data = std::sync::Arc::new(patched);
-        let species = patched_rom.species(1).unwrap();
-        assert_eq!(species.stats[3], 120, "{}", profile.id);
-        assert_eq!(
-            species.abilities[1],
-            if expanded { 267 } else { 2 },
-            "{}",
-            profile.id
-        );
     }
 }
 

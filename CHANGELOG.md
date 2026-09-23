@@ -10,11 +10,13 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
-- Stage multiple scalar edits on one ROM table entry and export them in one
-  derived ROM. Correct original-value lookup by entry ID; verify simultaneous
-  Gyarados Speed and ability changes across supported ROM layouts.
-- 同一 ROM 表项可暂存多个字段改动并一次导出；原值按条目编号读取，跨版本验证
-  暴鲤龙速度种族值与特性可同时修改。
+- Remove ROM writing from the app, CLI and core. ROM reference remains read-only;
+  only save data can be edited and exported. Reject `.gba` export paths. Verify
+  combined Speed IV/EV and ability edits survive one save transaction on all
+  supported ROMs.
+- 移除应用、命令行和核心中的 ROM 写入功能；ROM 资料保持只读，只修改、导出存档。
+  禁止以 `.gba` 路径导出。逐一验证四款受支持 ROM 的暴鲤龙：速度个体值／努力值
+  与特性可在同一存档事务中保存。
 - Calculate Ultimate Emerald trainer IVs and EVs by executing the loaded ROM's
   bounded native constructor for the selected difficulty and player party.
   Use the opened save party or a manually entered battle scenario; display

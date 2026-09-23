@@ -5,7 +5,7 @@ use crate::{
     text::Codec,
     Result,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::{
     collections::{BTreeSet, HashSet},
     sync::Arc,
@@ -194,24 +194,6 @@ pub struct OriginOptions {
     pub can_hatch: bool,
     pub hatch_regions: Vec<u8>,
 }
-#[derive(Clone, Deserialize, Serialize)]
-pub struct RomEdit {
-    pub table: String,
-    pub id: u16,
-    pub field: String,
-    pub value: u32,
-}
-#[derive(Serialize)]
-pub struct PatchManifest {
-    pub schema: u8,
-    pub profile: String,
-    pub base_md5: String,
-    pub output_md5: String,
-    pub base_sha256: String,
-    pub output_sha256: String,
-    pub edits: Vec<RomEdit>,
-}
-
 impl Rom {
     pub fn is_mail(&self, id: u16) -> bool {
         id != 0 && (self.profile.mail_items[0]..=self.profile.mail_items[1]).contains(&id)
@@ -809,107 +791,5 @@ impl Rom {
                 Vec::new()
             },
         })
-    }
-    /// Only fixed-width scalar fields are writable. No arbitrary offset escape hatch.
-    pub fn patch(&self, edits: &[RomEdit]) -> Result<(Vec<u8>, PatchManifest)> {
-        self.profile
-            .capabilities
-            .require(self.profile.capabilities.rom_edit, "rom_edit")?;
-        let mut data = (*self.data).clone();
-        for edit in edits {
-            let (base, field, width, max) = match edit.table.as_str() {
-                "species" => {
-                    let s = self.valid_species(edit.id)?;
-                    let expanded =
-                        self.profile.formats.species == crate::adapter::SpeciesFormat::Expanded36;
-                    let tail = if expanded { 2 } else { 0 };
-                    let ability = self
-                        .profile
-                        .species_abilities
-                        .map(|table| table.offset + edit.id as usize * table.stride - s.offset)
-                        .unwrap_or(if expanded { 24 } else { 22 });
-                    let ability_width = if expanded || self.profile.species_abilities.is_some() {
-                        2
-                    } else {
-                        1
-                    };
-                    let (off, width, max) = match edit.field.as_str() {
-                        "hp" => (0, 1, 255),
-                        "attack" => (1, 1, 255),
-                        "defense" => (2, 1, 255),
-                        "speed" => (3, 1, 255),
-                        "sp_attack" => (4, 1, 255),
-                        "sp_defense" => (5, 1, 255),
-                        "type1" => (6, 1, self.profile.type_names.count as u32 - 1),
-                        "type2" => (7, 1, self.profile.type_names.count as u32 - 1),
-                        "catch_rate" => (8, 1, 255),
-                        "gender_ratio" => (16 + tail, 1, 255),
-                        "egg_cycles" => (17 + tail, 1, 255),
-                        "friendship" => (18 + tail, 1, 255),
-                        "growth" => (19 + tail, 1, 5),
-                        "ability1" => (
-                            ability,
-                            ability_width,
-                            self.profile.ability_count as u32 - 1,
-                        ),
-                        "ability2" => (
-                            ability + ability_width,
-                            ability_width,
-                            self.profile.ability_count as u32 - 1,
-                        ),
-                        "ability3" if expanded || self.profile.species_abilities.is_some() => {
-                            (ability + 4, 2, self.profile.ability_count as u32 - 1)
-                        }
-                        _ => return Err(err("rom_field", &edit.field)),
-                    };
-                    (s.offset, off, width, max)
-                }
-                "moves" => {
-                    let m = self.move_info(edit.id)?;
-                    let expanded =
-                        self.profile.formats.moves == crate::adapter::MoveFormat::Expanded20;
-                    let tail = if expanded { 2 } else { 0 };
-                    let (off, width, max) = match edit.field.as_str() {
-                        "power" => (
-                            if expanded { 2 } else { 1 },
-                            if expanded { 2 } else { 1 },
-                            if expanded { 65535 } else { 255 },
-                        ),
-                        "type" => (2 + tail, 1, self.profile.type_names.count as u32 - 1),
-                        "accuracy" => (3 + tail, 1, 100),
-                        "pp" => (4 + tail, 1, 99),
-                        "chance" => (5 + tail, 1, 100),
-                        _ => return Err(err("rom_field", &edit.field)),
-                    };
-                    (m.offset, off, width, max)
-                }
-                "items" => {
-                    let i = self.item(edit.id)?;
-                    if edit.field != "price" {
-                        return Err(err("rom_field", &edit.field));
-                    }
-                    (i.offset, 16, 2, 65535)
-                }
-                _ => return Err(err("rom_table", &edit.table)),
-            };
-            if edit.value > max {
-                return Err(err("range", &edit.field));
-            }
-            if width == 1 {
-                data[base + field] = edit.value as u8;
-            } else {
-                put16(&mut data, base + field, edit.value as u16);
-            }
-        }
-        let manifest = PatchManifest {
-            schema: 1,
-            profile: self.profile.id.into(),
-            base_md5: hash(&self.data),
-            output_md5: hash(&data),
-            base_sha256: sha256(&self.data),
-            output_sha256: sha256(&data),
-            edits: edits.to_vec(),
-        };
-        Ok((data, manifest))
     }
 }

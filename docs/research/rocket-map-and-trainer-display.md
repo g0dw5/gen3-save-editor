@@ -77,8 +77,7 @@ in collapsed developer evidence. Inventory categories resolve through profile
 pockets; fishing rod names use profile item IDs (BW/DP 262–264; Rocket 866–868).
 Story encounter variants get readable labels while preserving raw selector data
 in developer evidence. Fairy type, percentages and Rocket's fixed 60-power
-Hidden Power are displayed correctly. The optional ROM patch form uses named
-ability and growth-curve choices instead of raw enum numbers.
+Hidden Power are displayed correctly. ROM reference is read-only.
 
 中文：进化显示“达到 90 级时升级进化”“使用某道具”等条件；招式显示 ROM 自带
 效果说明，不臆造统一效果编号字典。普通资料不再显示 AI 位标志、剧情变量编号、

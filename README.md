@@ -39,8 +39,8 @@ See [usage, formats, limitations and developer tests](docs/cheats.md).
 | Ultimate Emerald 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | 33,554,432 |
 
 Use a 128 KiB `.sav`/`.srm` battery save. Emulator save states are not supported.
-Renaming a ROM cannot change its compatibility. Derived ROMs have different
-fingerprints and do not become supported stock releases automatically.
+Renaming a ROM cannot change its compatibility. The ROM is read-only; edits
+and exports apply only to save files.
 
 ## Workspace
 
@@ -76,9 +76,8 @@ See [coverage, verification and extension rules](docs/multi-rom-adapters.md).
   IDs remain enforced. Missing learning evidence is “unverified”, not “illegal”.
 - Change Chinese/English at any time. ROM names retain their original language.
 
-ROM scalar editing exports a separate derived ROM and fingerprinted manifest.
-It currently supports selected species stats, move parameters and item prices.
-It is not a map, script or executable-code editor.
+ROMs are read-only. Pokémon IVs, EVs and ability selection are edited in the SAV;
+species base stats are global ROM data and cannot be changed for one Pokémon in a SAV.
 
 ## Development
 

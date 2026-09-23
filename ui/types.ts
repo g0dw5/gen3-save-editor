@@ -78,7 +78,6 @@ export interface Catalog {
   profile: {
     capabilities?: {
       save_edit: boolean;
-      rom_edit: boolean;
       world: boolean;
       dex: boolean;
       complete_learnsets: boolean;

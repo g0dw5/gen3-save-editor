@@ -161,7 +161,7 @@ def main():
         page.get_by_role("button", name="Cheats", exact=True).click()
         expect(page.get_by_role("dialog", name="Cheats", exact=True)).to_contain_text("No verified cheats for this ROM yet")
         assert not errors, errors
-        assert not any(r["command"] in ("action", "open_save", "open_rom", "open_cheat_rom", "export_save", "patch_rom") for r in requests)
+        assert not any(r["command"] in ("action", "open_save", "open_rom", "open_cheat_rom", "export_save") for r in requests)
         browser.close()
     print("cheat UI: opened-ROM scope, multiple recipes, selection races, bilingual copy/export, errors, stale responses and narrow panel passed")
 

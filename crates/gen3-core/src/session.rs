@@ -335,6 +335,13 @@ pub fn atomic_write(
     validate: impl Fn(&[u8]) -> Result<()>,
 ) -> Result<Option<PathBuf>> {
     validate(data)?;
+    if path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("gba"))
+    {
+        return Err(err("rom_write", path.display()));
+    }
     if fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink()) {
         return Err(err("symlink_target", path.display()));
     }

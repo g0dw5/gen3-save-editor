@@ -2,7 +2,7 @@
 use crate::{
     err,
     pokemon::Policy,
-    rom::{Rom, RomEdit},
+    rom::Rom,
     save::Location,
     session::{atomic_write, Action, PokemonFile, Session},
     Result,
@@ -264,26 +264,6 @@ impl App {
                     Policy::Free,
                 )?;
                 Ok(serde_json::to_value(s.snapshot()?)?)
-            }
-            "patch_rom" => {
-                let edits: Vec<RomEdit> = serde_json::from_value(p["edits"].clone())?;
-                let r = &self.session()?.rom;
-                let (bytes, manifest) = r.patch(&edits)?;
-                if let Some(path) = p["path"].as_str() {
-                    let path = PathBuf::from(path);
-                    if path.exists() && crate::binary::hash(&fs::read(&path)?) == r.profile.md5 {
-                        return Err(err("rom_overwrite", "choose a separate file"));
-                    }
-                    atomic_write(&path, &bytes, |_| Ok(()))?;
-                    atomic_write(
-                        &path.with_extension("patch.json"),
-                        &serde_json::to_vec_pretty(&manifest)?,
-                        |_| Ok(()),
-                    )?;
-                    Ok(json!({"manifest":manifest}))
-                } else {
-                    Ok(json!({"manifest":manifest,"bytes":STANDARD.encode(bytes)}))
-                }
             }
             _ => Err(err("command", input.command)),
         }

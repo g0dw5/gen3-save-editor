@@ -27,6 +27,10 @@ def pokemon(identifier, location):
 
 def main():
     catalog = copy.deepcopy(CATALOG)
+    for entry in catalog['species']:
+        entry['abilities'] = [1, 2]
+    catalog['abilities'] = [{'id': i, 'name': name, 'description': ''}
+                            for i, name in [(0, 'None'), (1, 'First Ability'), (2, 'Second Ability')]]
     catalog['moves'] = [{'id': 0, 'name': '', 'power': 0, 'category': 0, 'move_type': 0, 'pp': 0}]
     catalog['items'] = [{'id': 0, 'name': '', 'tm_move': None}]
     save = {
@@ -99,6 +103,16 @@ def main():
         expect(apply).to_be_disabled()
         assert actions==[{'type':'pokemon','location':{'kind':'party','slot':0},'patch':{'ivs':[19,1,1,1,1,1]}}],actions
         expect(tabs.get_by_role('button',name='Stats')).to_have_attribute('aria-pressed','true')
+        # A SAV edit can stage speed IV/EV and ability across tabs as one action.
+        page.get_by_label('Speed IVs').fill('31')
+        page.get_by_label('Speed EVs').fill('252')
+        tabs.get_by_role('button',name='Overview',exact=True).click()
+        page.get_by_role('combobox',name='Ability').fill('Second Ability')
+        page.locator('.select-popup').get_by_role('option',name='2 · Second Ability').click()
+        apply.click()
+        assert actions[-1]['patch']=={
+            'ivs':[19,1,1,31,1,1], 'evs':[0,0,0,252,0,0], 'ability_slot':1,
+        },actions[-1]
         # Exercise the real scroll container at desktop, minimum and mobile widths.
         tabs.get_by_role('button',name='Advanced',exact=True).click()
         for width,height in [(1440,940),(900,640),(390,844)]:
@@ -121,7 +135,7 @@ def main():
             page.locator('.pokemon-editor').screenshot(path=preview)
         assert not errors,errors
         browser.close()
-    print('Passed: retained tabs, empty-slot/hide recovery, draft guard/isolation, correct apply target, fixed header/footer at three sizes.')
+    print('Passed: retained tabs, draft isolation, combined speed IV/EV and ability save edit, fixed header/footer at three sizes.')
 
 
 if __name__=='__main__':main()

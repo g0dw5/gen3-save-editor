@@ -1,14 +1,8 @@
 import { speciesDisplayName } from "./speciesDisplay";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Search, ArrowUpRight, FileCode2 } from "lucide-react";
-import { api, download, fromBase64, native, outputPath } from "./api";
-import {
-  Floating,
-  NumberField,
-  SelectField,
-  Sprite,
-  Types,
-} from "./components";
+import { Search, ArrowUpRight } from "lucide-react";
+import { api } from "./api";
+import { Floating, Sprite, Types } from "./components";
 import { MapExplorer } from "./MapExplorer";
 import { TrainerArt } from "./TrainerArt";
 import { TrainerParty } from "./TrainerParty";
@@ -118,7 +112,6 @@ export function ReferenceWindow({
       active = false;
     };
   }, [save, catalog.profile.md5, catalog.profile.feebas, onError]);
-  const [romEdit, setRomEdit] = useState(false);
   const detailPane = useRef<HTMLDivElement>(null);
   const treeScroll = useRef<number | null>(null);
   useLayoutEffect(() => {
@@ -286,7 +279,6 @@ export function ReferenceWindow({
               onClick={() => {
                 setTab(key);
                 setSearch("");
-                setRomEdit(false);
               }}
             >
               {t(key)}
@@ -366,7 +358,6 @@ export function ReferenceWindow({
                 className={selected === row.id ? "selected" : ""}
                 onClick={() => {
                   setSelected(row.id);
-                  setRomEdit(false);
                 }}
               >
                 <span className="id">{row.id}</span>
@@ -417,31 +408,11 @@ export function ReferenceWindow({
             <span className="eyebrow">
               {t("readOnly")} · {catalog.profile.label}
             </span>
-            {catalog.profile.capabilities?.rom_edit !== false &&
-              ["species", "moves", "items"].includes(tab) && (
-                <button
-                  className="icon-button"
-                  title={t("romEdit")}
-                  aria-label={t("romEdit")}
-                  onClick={() => setRomEdit((v) => !v)}
-                >
-                  <FileCode2 size={17} />
-                </button>
-              )}
           </div>
           {current && (tab !== "trainers" || filtered.length > 0) && (
             <h2>
               {current.name} <small>#{current.id}</small>
             </h2>
-          )}
-          {romEdit && (
-            <RomPatch
-              key={`${catalog.profile.md5}:${tab}:${selected}`}
-              catalog={catalog}
-              table={tab}
-              id={+selected}
-              onError={onError}
-            />
           )}
           {tab === "species" &&
             (detail && detail.species.id === speciesId ? (
@@ -944,205 +915,5 @@ export function ReferenceWindow({
         </div>
       </div>
     </Floating>
-  );
-}
-
-function RomPatch({
-  catalog,
-  table,
-  id,
-  onError,
-}: {
-  catalog: Catalog;
-  table: string;
-  id: number;
-  onError: (e: unknown) => void;
-}) {
-  const { t } = useI18n();
-  const fields =
-    table === "species"
-      ? [
-          "hp",
-          "attack",
-          "defense",
-          "speed",
-          "sp_attack",
-          "sp_defense",
-          "catch_rate",
-          "friendship",
-          "growth",
-          "ability1",
-          "ability2",
-        ]
-      : table === "moves"
-        ? ["power", "accuracy", "pp", "chance"]
-        : ["price"];
-  const [field, setField] = useState(fields[0]);
-  const species = catalog.species.find((s) => s.id === id);
-  const stats = ["hp", "attack", "defense", "speed", "sp_attack", "sp_defense"];
-  const originalFor = (name: string) =>
-    table === "species" && species
-      ? stats.includes(name)
-        ? species.stats[stats.indexOf(name)]
-        : name === "ability1"
-          ? species.abilities[0]
-          : name === "ability2"
-            ? species.abilities[1]
-            : Number((species as unknown as Record<string, unknown>)[name] ?? 0)
-      : table === "moves"
-        ? Number(
-            (
-              catalog.moves.find((move) => move.id === id) as unknown as
-                Record<string, unknown> | undefined
-            )?.[name] ?? 0,
-          )
-        : (catalog.items.find((item) => item.id === id)?.price ?? 0);
-  const original = originalFor(field);
-  const namedOptions = field.startsWith("ability")
-    ? catalog.abilities.map((ability) => ({
-        value: ability.id,
-        label: ability.name || t("none"),
-      }))
-    : field === "growth"
-      ? Array.from({ length: 6 }, (_, value) => ({
-          value,
-          label: t(`growth_${value}`),
-        }))
-      : null;
-  const [drafts, setDrafts] = useState<Record<string, number>>({});
-  const displayValue = (name: string, number: number) =>
-    name.startsWith("ability")
-      ? (catalog.abilities.find((ability) => ability.id === number)?.name ??
-        String(number))
-      : name === "growth"
-        ? t(`growth_${number}`)
-        : String(number);
-  const value = drafts[field] ?? original;
-  const pending = fields.filter((name) => Object.hasOwn(drafts, name));
-  const changeValue = (next: number) =>
-    setDrafts((previous) => {
-      const updated = { ...previous };
-      if (next === original) delete updated[field];
-      else updated[field] = next;
-      return updated;
-    });
-  const [busy, setBusy] = useState(false);
-  return (
-    <form
-      className="rom-patch"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        if (!pending.length) return;
-        setBusy(true);
-        try {
-          const path = native
-            ? await outputPath(`${catalog.profile.id}-edited.gba`, "gba")
-            : undefined;
-          if (native && !path) return;
-          const result = await api<{ bytes?: string; manifest: unknown }>(
-            "patch_rom",
-            {
-              edits: pending.map((name) => ({
-                table,
-                id,
-                field: name,
-                value: drafts[name],
-              })),
-              ...(path ? { path } : {}),
-            },
-          );
-          if (result.bytes)
-            download(
-              `${catalog.profile.id}-edited.gba`,
-              fromBase64(result.bytes),
-            );
-          if (!native)
-            download(
-              `${catalog.profile.id}.patch.json`,
-              JSON.stringify(result.manifest, null, 2),
-              "application/json",
-            );
-        } catch (e) {
-          onError(e);
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      <h3>{t("romEdit")}</h3>
-      <p className="small muted">{t("romEditHelp")}</p>
-      <div className="field-grid">
-        {namedOptions ? (
-          <SelectField
-            label={t("before")}
-            value={original}
-            options={namedOptions}
-            onChange={() => {}}
-            disabled
-          />
-        ) : (
-          <NumberField
-            label={t("before")}
-            value={original}
-            onChange={() => {}}
-            disabled
-            max={65535}
-          />
-        )}
-        <SelectField
-          label={t("field")}
-          value={field}
-          onChange={setField}
-          options={fields.map((f) => ({ value: f, label: t(f) }))}
-        />
-        {namedOptions ? (
-          <SelectField
-            label={t("value")}
-            value={value}
-            options={namedOptions}
-            onChange={(value) => changeValue(Number(value))}
-            searchable={field.startsWith("ability")}
-          />
-        ) : (
-          <NumberField
-            label={t("value")}
-            value={value}
-            max={field === "power" || table === "items" ? 65535 : 255}
-            onChange={changeValue}
-          />
-        )}
-      </div>
-      {pending.length > 0 && (
-        <div className="rom-patch-pending" aria-label={t("romEditPending")}>
-          <strong>{t("romEditPending")}</strong>
-          {pending.map((name) => (
-            <div className="rom-patch-change" key={name}>
-              <span>{t(name)}</span>
-              <span>
-                {displayValue(name, originalFor(name))} →{" "}
-                {displayValue(name, drafts[name])}
-              </span>
-              <button
-                type="button"
-                disabled={busy}
-                aria-label={`${t("romEditRemove")} ${t(name)}`}
-                onClick={() =>
-                  setDrafts((previous) => {
-                    const updated = { ...previous };
-                    delete updated[name];
-                    return updated;
-                  })
-                }
-              >
-                {t("romEditRemove")}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      <button disabled={busy || pending.length === 0} type="submit">
-        {t(busy ? "working" : "exportRom")}
-      </button>
-    </form>
   );
 }

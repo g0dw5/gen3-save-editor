@@ -67,7 +67,7 @@ Native special routines are not claimed as fully interpreted reward scripts.
 
 Public fixtures cover all codecs and all 24 permutations, ribbon bit ownership,
 all bag slots, all box slots with physical sector rotations, form triggers,
-transaction rollback and bounded ROM patches. Native probes execute the actual
+transaction rollback and save edit boundaries. Native probes execute the actual
 ROM getters/setters/stat routines and compare the edited bytes. Additional probes
 cover all 955 dex bits, four trainer party formats, every palette choice at two
 PID/gender extremes, machine/tutor queries and 4,096 Hidden Power inputs. Level

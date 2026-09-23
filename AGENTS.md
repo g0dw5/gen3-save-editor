@@ -35,6 +35,11 @@ and direct save edits performed by an agent.
 
 ## ROM data and behavior
 
+The released editor and developer CLI treat ROM files as read-only input.
+Do not add ROM patching, derived-ROM export, or commands that write ROM bytes.
+Edits and exports target save files only. A species base stat is ROM-wide and
+cannot be changed for one Pokémon through a save edit.
+
 User preference recorded on 2026-09-19. Apply across every supported ROM and
 future adapter, including reference displays, calculations and save editing.
 

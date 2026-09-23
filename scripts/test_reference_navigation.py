@@ -76,6 +76,7 @@ if __name__ == "__main__":
         page.goto(os.environ.get("GEN3_UI_URL", "http://127.0.0.1:5173"))
         page.get_by_role("button", name="ROM reference", exact=True).click()
         dialog = page.get_by_role("dialog")
+        expect(dialog.get_by_role("button", name="Edit ROM table")).to_have_count(0)
         expect(dialog.locator(".dex-hero")).to_be_visible()
         tabs = dialog.locator(".reference-tabs")
         for _ in range(3):

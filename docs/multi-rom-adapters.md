@@ -72,7 +72,7 @@ Mega／Z 的使用条件仍受战斗状态影响，不能把预览关系当成�
 Generated fixtures run without copyrighted data: all 24 PID permutations,
 bit ownership, ribbon/ability separation, every inventory slot, all 420 box slots
 across physical sector rotations and both banks, transaction rollback, undo/redo,
-export/conflict handling, independent ROM patch widths and profile composition.
+save export/conflict handling and profile composition. ROM access is read-only.
 Browser tests cover BW → Rocket → DP → Ultimate, editable controls, stale request isolation,
 drag races, tab retention, field search, origins, Hidden Power and navigation.
 

@@ -14,7 +14,7 @@ def main():
     catalog = copy.deepcopy(CATALOG)
     catalog['items'] = [{'id': 0, 'name': '', 'tm_move': None}, {'id':1, 'name':'Test item', 'tm_move':None}]
     catalog['moves'] = [{'id': 0, 'name': '', 'pp': 0}]
-    legacy = dict(save_edit=True, rom_edit=True, world=True, dex=True,
+    legacy = dict(save_edit=True, world=True, dex=True,
                   complete_learnsets=True, individual_sprites=True, battle_forms=False)
     catalog['profile']['capabilities'] = legacy
     rocket = copy.deepcopy(catalog)

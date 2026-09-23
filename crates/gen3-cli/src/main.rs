@@ -21,7 +21,7 @@ fn run() -> Result<()> {
         println!("{}", serde_json::to_string_pretty(&v).unwrap());
     };
     if command == "help" {
-        println!("gen3 profiles\ngen3 identify ROM\ngen3 cheats ROM\ngen3 cheat-code ROM CHEAT_ID gameshark_v1_v2 [PARAMETERS.json]\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]\ngen3 patch-rom ROM EDITS.json OUTPUT.gba");
+        println!("gen3 profiles\ngen3 identify ROM\ngen3 cheats ROM\ngen3 cheat-code ROM CHEAT_ID gameshark_v1_v2 [PARAMETERS.json]\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]");
         return Ok(());
     }
     if command == "profiles" {
@@ -127,28 +127,6 @@ fn run() -> Result<()> {
             print(
                 serde_json::json!({"changes":snapshot.changes,"backup":backup,"dry_run":a.iter().any(|a|a=="--dry-run")}),
             );
-        }
-        "patch-rom" => {
-            let edits: Vec<gen3_core::rom::RomEdit> = serde_json::from_slice(&fs::read(arg(2)?)?)?;
-            let (output, manifest) = rom.patch(&edits)?;
-            let path = Path::new(arg(3)?);
-            if path == Path::new(arg(1)?) {
-                return Err(err("rom_overwrite", "choose a separate output"));
-            }
-            gen3_core::session::atomic_write(path, &output, |b| {
-                if binary::hash(b) == manifest.output_md5 {
-                    Ok(())
-                } else {
-                    Err(err("write_verify", "ROM"))
-                }
-            })?;
-            let meta = path.with_extension("patch.json");
-            gen3_core::session::atomic_write(
-                &meta,
-                &serde_json::to_vec_pretty(&manifest)?,
-                |_| Ok(()),
-            )?;
-            print(serde_json::to_value(manifest)?);
         }
         _ => return Err(err("arguments", command)),
     }

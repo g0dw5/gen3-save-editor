@@ -221,7 +221,6 @@ impl RomFormats {
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct Capabilities {
     pub save_edit: bool,
-    pub rom_edit: bool,
     pub world: bool,
     pub dex: bool,
     pub complete_learnsets: bool,
@@ -231,7 +230,6 @@ pub struct Capabilities {
 impl Capabilities {
     pub const DARK_PHANTOM: Self = Self {
         save_edit: true,
-        rom_edit: true,
         world: true,
         dex: true,
         complete_learnsets: true,
