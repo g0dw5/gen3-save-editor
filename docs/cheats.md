@@ -11,7 +11,7 @@ size. No emulator connection, save or ROM writes are performed.
 
 | ROM | MD5 | Recipes / 条目 |
 | --- | --- | --- |
-| Ultimate Emerald / 究极绿宝石 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | Portable PC, walking suppression, capture, hatching, species/level, shiny, teleport, all-mode no peeking / 随身电脑、暂停走路遇敌、必捕、孵蛋、指定遇怪、闪光、传送、全模式去窥屏 |
+| Ultimate Emerald / 究极绿宝石 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | Portable PC, walking suppression, capture, hatching, species/level, shiny, teleport, all-mode no peeking, accuracy correction / 随身电脑、暂停走路遇敌、必捕、孵蛋、指定遇怪、闪光、传送、全模式去窥屏、修正命中加成方向 |
 | Dark Phantom / 漆黑的魅影 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | Portable PC; pause walking encounters; guaranteed wild capture; faster hatching; species/level; shiny; map teleport / 随身电脑、暂停走路遇敌、必定捕获、加快孵蛋、指定遇怪、闪光、地图传送 |
 | Dark Phantom / 漆黑的魅影 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | Same seven features, independently tested / 同上七项，独立验证 |
 | Team Rocket / 西班牙火箭队 2.1 中文 | `59c658a1081f542086de1060bb65f0b3` | Those seven plus compatible daycare eggs / 上述七项及兼容寄养组合必定产蛋 |
@@ -167,6 +167,28 @@ Examples of the parameter file (IDs must exist in that exact ROM's catalog):
 入口、临时形态和多余字段；无需参数的条目不接受附带参数。
 
 ### Ultimate Emerald / 究极绿宝石
+
+The accuracy-correction recipe reverses the two mistaken target-side branches
+without changing the difficulty variable, the +20% multiplier or other battle
+rules. In Casual, a player's ordinary attack gains the bonus; in Lunatic, an
+opponent's ordinary attack gains it in trainer battles. Standard and Challenge
+remain unchanged. Enable both lines as one GameShark Advance V1/V2 set:
+
+```text
+63C417D3 41A376D9
+ADA6DF4E C0A3F156
+```
+
+命中修正只交换两处判定阵营的分支，不改难度变量、原有相对 +20% 的倍率或其他
+战斗规则。养生改为玩家普通攻击获得加成；疯子改为训练师对手的普通攻击获得
+加成；标准和挑战不变。两行须作为同一组 GameShark Advance V1/V2 代码启用。
+先在战斗外保存并备份，重启后从游戏内存档进入新战斗；停用整组后重启。
+手机模拟器尚未实测。
+
+The separate all-mode no-peeking recipe is compatible with this correction;
+they patch different instructions. Its existing behavior is described below.
+
+全模式去窥屏是另一组金手指，与命中修正使用不同指令位置，可以分别启用。
 
 This selects the native non-peeking branch, including the combined flag's related
 switching behavior. Existing non-peeking prediction/scoring/switching remain.

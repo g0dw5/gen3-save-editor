@@ -10,6 +10,11 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add an exact-ROM Ultimate Emerald cheat correcting the reversed Casual/Lunatic
+  accuracy-bonus side. Keep the original +20% multiplier and other difficulty
+  rules; verify encoded GameShark codes in mGBA and the native accuracy branches.
+- 究极绿宝石新增精确 ROM 绑定的命中修正金手指，纠正养生／疯子模式加成阵营写反的
+  问题，保留原有相对 +20% 倍率及其他难度规则；验证 mGBA 加密码与原生分支。
 - Remove ROM writing from the app, CLI and core. ROM reference remains read-only;
   only save data can be edited and exported. Reject `.gba` export paths. Verify
   combined Speed IV/EV and ability edits survive one save transaction on all

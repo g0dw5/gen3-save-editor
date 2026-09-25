@@ -74,6 +74,36 @@ int main(int argc, char **argv) {
         }
         free(original);
         puts("{\"changed_rom_bytes\":2,\"toggle_reset_checks\":24}");
+    } else if (!strcmp(argv[2], "accuracy")) {
+        assert(argc == 5);
+        unsigned char *original = malloc(0x2000000);
+        assert(original);
+        for (unsigned i = 0; i < 0x2000000; ++i) original[i] = core->rawRead8(core, 0x8000000 + i, -1);
+        struct mCheatSet *set = device->createSet(device, "accuracy correction");
+        assert(mCheatAddLine(set, argv[3], GBA_CHEAT_GAMESHARK));
+        assert(mCheatAddLine(set, argv[4], GBA_CHEAT_GAMESHARK));
+        mCheatAddSet(device, set);
+        set->enabled = true;
+        mCheatRefresh(device, set);
+        assert(mCheatPatchListSize(&set->romPatches) == 2);
+        unsigned changed = 0;
+        for (unsigned i = 0; i < 0x2000000; ++i) {
+            unsigned now = core->rawRead8(core, 0x8000000 + i, -1);
+            if (now != original[i]) {
+                assert((i == 0x1d48cbd && now == 0xd4) || (i == 0x1d48ccd && now == 0xd5));
+                ++changed;
+            }
+        }
+        assert(changed == 2);
+        for (int cycle = 0; cycle < 24; ++cycle) {
+            set->enabled = cycle % 2;
+            mCheatRefresh(device, set);
+            core->reset(core);
+            assert(core->busRead16(core, 0x09d48cbc) == (cycle % 2 ? 0xd405 : 0xd505));
+            assert(core->busRead16(core, 0x09d48ccc) == (cycle % 2 ? 0xd50a : 0xd40a));
+        }
+        free(original);
+        puts("{\"changed_rom_bytes\":2,\"toggle_reset_checks\":24}");
     } else {
         assert(!strcmp(argv[2], "old-sudowoodo"));
         assert(core->busRead16(core, 0x08067b86) == 0x1c31);

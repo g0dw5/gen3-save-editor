@@ -106,16 +106,19 @@ shifted Pokédex bits are handled by the shared editor transactions.
 
 ## Cheats / 金手指
 
-The existing two-line all-mode AI no-peek set remains. Seven additional
-recipes are enabled for this exact ROM: portable Pokémon PC, paused walking
-encounters, guaranteed wild capture, faster party egg hatching, specified
+The existing two-line all-mode AI no-peek set remains. A two-line accuracy
+correction swaps the mistaken Casual/Lunatic bonus side without changing the
+multiplier. Seven other recipes are enabled for this exact ROM: portable
+Pokémon PC, paused walking encounters, guaranteed wild capture, faster party
+egg hatching, specified
 wild species/level, ordinary wild shiny encounters, and map teleport. Each
 recipe validates its original instruction bytes before encoding GameShark
 Advance V1/V2 lines. The encounter and shiny hooks use Ultimate-specific code
 locations and retain the ROM's native generation routines. See
 [formats and instructions](../cheats.md).
 
-原有两行全模式去窥屏继续保留。新增随身电脑、暂停走路遇敌、野生必捕、
+原有两行全模式去窥屏继续保留。两行命中修正代码交换养生／疯子加成写反的阵营，
+保留原倍率。另新增随身电脑、暂停走路遇敌、野生必捕、
 同行蛋快速孵化、指定遇怪／等级、野生闪光和地图传送。生成前会核对原指令；
 指定遇怪与闪光使用本作独立的挂钩，保留原生个体生成流程。
 

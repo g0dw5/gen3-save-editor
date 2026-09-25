@@ -141,6 +141,45 @@ mobile sessions. Facilities have native branch coverage only. An already chosen
 turn's flag can survive loading an old mid-battle state; use an in-game save and
 start a new battle after enabling. Other difficulty bonuses remain unchanged.
 
+## Ultimate Emerald accuracy direction / 究绿命中加成方向
+
+Exact ROM: `17ce9785b33319b3dbda9a5d37c57ec1`. The ordinary accuracy
+routine receives attacker and target IDs at `09D48D50–09D48D58`. Its difficulty
+checks at `09D48CBC` and `09D48CCC` use the **target** side, but the original
+conditions are reversed relative to the menu: Lunatic boosts player attacks
+against trainers, while Casual boosts opponent attacks. Two Thumb conditional
+branch halfwords correct the sides without changing the 20% multiplier or the
+Lunatic trainer-battle gate:
+
+| File offset | CPU address | Original | Enabled |
+| --- | --- | --- | --- |
+| `01D48CBC` | `09D48CBC` | `D505` (BPL) | `D405` (BMI) |
+| `01D48CCC` | `09D48CCC` | `D40A` (BMI) | `D50A` (BPL) |
+
+GameShark Advance V1/V2, both lines together:
+
+```text
+63C417D3 41A376D9
+ADA6DF4E C0A3F156
+```
+
+A Unicorn native-instruction matrix (`scripts/verify_accuracy_cheat.py`)
+checked original and patched branches for all four difficulties, trainer/wild
+battles and target IDs 0–3, plus base
+thresholds 50/90/100 (70 cases). At base 80, patched Casual player attacks
+yield 96 and opponent attacks 80; patched Lunatic trainer opponent attacks
+yield 96 and player attacks 80; Lunatic wild attacks remain 80. Independent
+mGBA 0.10.5 decoding of the final CLI output changed exactly the two expected
+ROM bytes in memory; 24 disable/enable/reset cycles restored or applied both
+halfwords. Source ROM and save files were not modified. These are controlled
+branch/decoder tests, not a full mobile-emulator playthrough; always-hit and
+other special accuracy paths are outside this two-branch correction.
+
+原生矩阵核对四档难度、训练师／野生战以及 0–3 号目标，共 70 组。修正后，基础阈值
+80 在养生玩家出招和疯子训练师对手出招时均变为 96，反方向保持 80。mGBA 对最终
+加密码进行独立解码，内存 ROM 仅两字节改变，24 次启停／重置均恢复正确；源 ROM
+与存档未写入。手机模拟器和整场实战尚未覆盖。
+
 ## Historical Sudowoodo code / 旧胡说树代码复核
 
 The rejected historical pair was `0146DCEA 3E32A31D` plus `83007E28 00B9`.

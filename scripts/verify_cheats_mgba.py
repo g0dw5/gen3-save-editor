@@ -23,6 +23,7 @@ def main():
     assert hashlib.md5(originals[bw]).hexdigest() == "0d9b129f7dd76895f79bb47ad7dec2fe"
     cli = os.environ["GEN3_BIN"]
     generated = json.loads(subprocess.check_output([cli, "cheat-code", str(ultimate), "disable-input-peeking", "gameshark_v1_v2"]))
+    accuracy = json.loads(subprocess.check_output([cli, "cheat-code", str(ultimate), "fix-difficulty-accuracy", "gameshark_v1_v2"]))
     species = json.loads(subprocess.check_output([cli, "species", str(bw), "185"]))
     with tempfile.TemporaryDirectory(prefix="gen3-cheat-probe-") as temp:
         binary = str(Path(temp) / "probe")
@@ -33,6 +34,8 @@ def main():
         result = {
             "ultimate_generated_codes": generated,
             "ultimate_mgba": json.loads(subprocess.check_output([binary, str(ultimate), "ultimate", *generated["lines"]])),
+            "accuracy_generated_codes": accuracy,
+            "accuracy_mgba": json.loads(subprocess.check_output([binary, str(ultimate), "accuracy", *accuracy["lines"]])),
             "old_sudowoodo_mgba": json.loads(subprocess.check_output([binary, str(bw), "old-sudowoodo"])),
             "bw_species_185": species["species"]["name"],
             "scope": "Native instruction / decoder probe; not an ordinary overworld encounter or mobile emulator replay.",

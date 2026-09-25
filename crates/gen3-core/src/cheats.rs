@@ -11,6 +11,7 @@ use parameters::{ENCOUNTER, SHINY, TELEPORT};
 
 pub const ULTIMATE_MD5: &str = "17ce9785b33319b3dbda9a5d37c57ec1";
 pub const NO_PEEK: &str = "disable-input-peeking";
+pub const FIX_ACCURACY: &str = "fix-difficulty-accuracy";
 pub const NO_ENCOUNTERS: &str = "disable-walking-encounters";
 pub const GUARANTEED_CATCH: &str = "guaranteed-wild-catch";
 pub const FAST_HATCH: &str = "faster-egg-hatching";
@@ -95,6 +96,21 @@ const NO_PEEK_PATCHES: [RomHalfword; 2] = [
         after: 0xe020,
     },
 ];
+// The original checks the target's side with opposite branch conditions:
+// Lunatic boosts attacks targeting the opponent, and Casual boosts attacks
+// targeting the player. Reverse only those two conditions.
+const FIX_ACCURACY_PATCHES: [RomHalfword; 2] = [
+    RomHalfword {
+        offset: 0x1d48cbc,
+        before: 0xd505,
+        after: 0xd405,
+    },
+    RomHalfword {
+        offset: 0x1d48ccc,
+        before: 0xd40a,
+        after: 0xd50a,
+    },
+];
 
 /// Semantics and bindings are separate: similar engines still require an explicit
 /// binding and independent verification for each exact fingerprint.
@@ -176,6 +192,10 @@ fn bindings(md5: &str) -> &'static [Binding] {
             Binding {
                 id: NO_PEEK,
                 patches: &NO_PEEK_PATCHES,
+            },
+            Binding {
+                id: FIX_ACCURACY,
+                patches: &FIX_ACCURACY_PATCHES,
             },
             Binding {
                 id: PORTABLE_PC,
@@ -341,6 +361,9 @@ fn recipe(id: &'static str) -> Recipe {
     if id == NO_PEEK {
         return no_peek();
     }
+    if id == FIX_ACCURACY {
+        return fix_accuracy();
+    }
     let (category, title, summary, limitation, evidence) = match id {
         NO_ENCOUNTERS => (
             "encounters",
@@ -459,6 +482,31 @@ fn no_peek() -> Recipe {
     }
 }
 
+fn fix_accuracy() -> Recipe {
+    Recipe {
+        id: FIX_ACCURACY,
+        category: "battle",
+        parameters: None,
+        title: text("修正养生／疯子命中加成方向", "Correct Casual/Lunatic accuracy bonus direction"),
+        summary: text("交换两档难度的命中加成目标：养生让玩家出招更准，疯子让对手出招更准。加成仍是原 ROM 的相对 +20%。", "Correct the bonus side in both modes: Casual boosts the player's accuracy, and Lunatic boosts the opponent's. The original ROM's relative +20% remains."),
+        scope: text("究极绿宝石 5.5 · GameShark Advance V1/V2 · 两行整组启用", "Ultimate Emerald 5.5 · GameShark Advance V1/V2 · enable both lines together"),
+        steps: vec![
+            text("在战斗外保存并备份电池存档。", "Save outside battle and back up the battery save."),
+            text("将两行代码作为同一组 GameShark Advance V1/V2 金手指启用，不要选 CodeBreaker 或 Action Replay V3。", "Enable both lines as one GameShark Advance V1/V2 set, not CodeBreaker or Action Replay V3."),
+            text("重启游戏，从游戏内存档进入新战斗。关闭时停用整组并重启。", "Restart, load the in-game save and enter a new battle. Disable the complete set and restart to restore the original behavior."),
+        ],
+        limitations: vec![
+            text("只改普通命中计算的两处阵营判断；不改招式基础命中、命中／闪避等级、必中招式或其他难度规则。疯子的加成仍限定在原有的训练师战条件内。", "Changes only two side checks in the ordinary accuracy path. Move accuracy, accuracy/evasion stages, always-hit moves and other difficulty rules remain unchanged. The Lunatic bonus retains the original trainer-battle gate."),
+            text("仅适用于本页完整 MD5 对应的未修改 ROM。手机模拟器尚未实测；不要与其他改命中例程的金手指混用。", "Only for the unmodified ROM with this exact MD5. Mobile emulators remain untested. Do not combine with other cheats modifying the same accuracy routine."),
+        ],
+        verification: vec![
+            text("原生命中分支矩阵覆盖四档难度、玩家／对手目标及训练师／野生战；80 命中阈值在养生玩家出招和疯子对手出招时变为 96，其余方向保持 80。", "Native accuracy-branch matrix covers four difficulties, both target sides and trainer/wild battles. A base-80 threshold becomes 96 for Casual player attacks and Lunatic opponent attacks; other directions stay at 80."),
+            text("mGBA 0.10.5 验证加密码导入后只替换原 ROM 内存中的两条分支指令，停用／重启恢复；不写源 ROM 或存档。", "mGBA 0.10.5 confirms encrypted codes replace only two in-memory branch instructions and disabling/reset restores them; source ROM and saves are not written."),
+        ],
+        formats: vec![Format::GamesharkV1V2],
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -478,6 +526,10 @@ mod tests {
         let code = ultimate().generate(&request()).unwrap();
         assert_eq!(code.lines, ["270AABF9 EF4D3B91", "05EFAF30 6F13BEC4"]);
         assert_eq!(code.compact_lines, ["270AABF9EF4D3B91", "05EFAF306F13BEC4"]);
+        let mut accuracy = request();
+        accuracy.cheat_id = FIX_ACCURACY.into();
+        let code = ultimate().generate(&accuracy).unwrap();
+        assert_eq!(code.lines, ["63C417D3 41A376D9", "ADA6DF4E C0A3F156"]);
         assert!(encode_rom_halfword(1, 0).is_err());
         assert!(encode_rom_halfword(0x2000000, 0).is_err());
         assert!(encode_rom_halfword(0x1fffffe, 0xffff).is_ok());
@@ -685,13 +737,23 @@ mod tests {
             json!({"expected_rom_md5": ULTIMATE_MD5}),
         )
         .unwrap();
-        assert_eq!(catalog["entries"].as_array().unwrap().len(), 8);
+        assert_eq!(catalog["entries"].as_array().unwrap().len(), 9);
         assert_eq!(catalog["rom"]["editor_supported"], true);
         assert!(app.session.is_some());
         let request = json!({"expected_rom_md5": ULTIMATE_MD5, "cheat_id": NO_PEEK, "format": "gameshark_v1_v2"});
         assert_eq!(
             dispatch(&mut app, "cheat_code", request.clone()).unwrap()["lines"],
             json!(["270AABF9 EF4D3B91", "05EFAF30 6F13BEC4"])
+        );
+        assert_eq!(
+            dispatch(
+                &mut app,
+                "cheat_code",
+                json!({"expected_rom_md5": ULTIMATE_MD5,
+                "cheat_id": FIX_ACCURACY, "format": "gameshark_v1_v2"})
+            )
+            .unwrap()["lines"],
+            json!(["63C417D3 41A376D9", "ADA6DF4E C0A3F156"])
         );
         let mut modified = original.clone();
         modified[0x1d492cf] = 0xe0;
