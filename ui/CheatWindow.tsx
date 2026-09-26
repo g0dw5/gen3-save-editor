@@ -6,7 +6,9 @@ import { Floating } from "./components";
 import { useI18n } from "./i18n";
 
 type Text = { zh: string; en: string };
-type Format = "gameshark_v1_v2";
+type Format = "gameshark_v1_v2" | "codebreaker";
+const formatLabel = (format: Format) =>
+  format === "codebreaker" ? "CodeBreaker" : "GameShark Advance V1/V2";
 type Parameters =
   | { kind: "encounter"; species: number; level: number }
   | { kind: "teleport"; map_id: string; warp_id: number };
@@ -138,6 +140,7 @@ export function CheatWindow({
     entry &&
     code.rom_md5 === catalog.rom.md5 &&
     code.cheat_id === entry.id &&
+    code.format === entry.formats[0] &&
     sameParameters(code.parameters, entry.parameters ? parameters : null) &&
     (!entry.parameters || parameters?.kind === entry.parameters);
   const lines = ready
@@ -162,7 +165,7 @@ export function CheatWindow({
       ...(code.parameters
         ? [parameterDescription(code.parameters, catalog.options)]
         : []),
-      "GameShark Advance V1/V2",
+      formatLabel(code.format),
       txt(entry.scope),
       lines,
       ...entry.steps.map((s, i) => `${i + 1}. ${txt(s)}`),
@@ -280,19 +283,21 @@ export function CheatWindow({
                   />
                 )}
                 <section className="cheats-code">
-                  <strong>GameShark Advance V1/V2</strong>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={compact}
-                      onChange={(e) => {
-                        setCompact(e.target.checked);
-                        ++copyGeneration.current;
-                        setCopied(false);
-                      }}
-                    />
-                    {t("cheatsVba")}
-                  </label>
+                  <strong>{formatLabel(entry.formats[0])}</strong>
+                  {entry.formats[0] === "gameshark_v1_v2" && (
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={compact}
+                        onChange={(e) => {
+                          setCompact(e.target.checked);
+                          ++copyGeneration.current;
+                          setCopied(false);
+                        }}
+                      />
+                      {t("cheatsVba")}
+                    </label>
+                  )}
                   {ready && (
                     <p className="cheats-count">
                       {t("cheatsLineCount").replace(

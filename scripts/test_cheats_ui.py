@@ -22,13 +22,18 @@ second_lines = ["00000000 00000000"]  # Synthetic fixture; never used in an emul
 emergency = dict(recipe, id="emergency-battle-heal", category="battle",
                  title=text("战斗紧急整队恢复", "Emergency battle-party recovery"))
 emergency_lines = [f"{i:08X} {i:08X}" for i in range(174)]  # UI-only fixture.
-cheats = dict(rom=dict(md5=UE, label="Ultimate Emerald 5.5", editor_supported=True), entries=[recipe, second, emergency])
+protect = dict(recipe, id="persistent-player-protect", category="battle", formats=["codebreaker"],
+               title=text("己方持续守住", "Persistent player-side Protect"))
+protect_lines = ["A3005D04 0000", "2202433C 0001", "A3005D04 0000", "2202435C 0001"]
+cheats = dict(rom=dict(md5=UE, label="Ultimate Emerald 5.5", editor_supported=True), entries=[recipe, second, emergency, protect])
 code = dict(rom_md5=UE, cheat_id=recipe["id"], format="gameshark_v1_v2", lines=LINES,
             compact_lines=[s.replace(" ", "") for s in LINES])
 
 second_code = dict(code, cheat_id=second["id"], lines=second_lines, compact_lines=["0000000000000000"])
 emergency_code = dict(code, cheat_id=emergency["id"], lines=emergency_lines,
                       compact_lines=[s.replace(" ", "") for s in emergency_lines])
+protect_code = dict(code, cheat_id=protect["id"], format="codebreaker", lines=protect_lines,
+                    compact_lines=protect_lines)
 
 def main():
     requests, errors = [], []
@@ -58,13 +63,15 @@ def main():
                 return
             data = dict(cheats, entries=[] if mode["empty"] else cheats["entries"])
         elif command == "cheat_code":
-            assert payload["expected_rom_md5"] == UE and payload["format"] == "gameshark_v1_v2"
-            assert payload["cheat_id"] in (recipe["id"], second["id"], emergency["id"])
+            assert payload["expected_rom_md5"] == UE
+            assert payload["cheat_id"] in (recipe["id"], second["id"], emergency["id"], protect["id"])
+            assert payload["format"] == ("codebreaker" if payload["cheat_id"] == protect["id"] else "gameshark_v1_v2")
             if mode["delay"]:
                 pending.append(route)
                 return
             data = (code if payload["cheat_id"] == recipe["id"] else
-                    emergency_code if payload["cheat_id"] == emergency["id"] else second_code)
+                    emergency_code if payload["cheat_id"] == emergency["id"] else
+                    protect_code if payload["cheat_id"] == protect["id"] else second_code)
         else:
             raise AssertionError(req)
         route.fulfill(json={"ok": True, "data": data})
@@ -109,7 +116,7 @@ def main():
             search.fill("no-such-cheat")
             expect(dialog.locator(".cheats-list button")).to_have_count(0)
             search.fill("")
-            expect(dialog.locator(".cheats-list button")).to_have_count(3)
+            expect(dialog.locator(".cheats-list button")).to_have_count(4)
             dialog.get_by_role("checkbox").uncheck()
             dialog.locator(".cheats-list button").filter(has_text=emergency["title"][locale]).click()
             expect(dialog.locator("pre")).to_have_text("\n".join(emergency_lines))
@@ -122,6 +129,13 @@ def main():
             expect(dialog.locator(".cheats-code")).to_contain_text("1 行代码" if locale == "zh" else "1 code line")
             copy_button.click()
             assert page.evaluate("navigator.clipboard.readText()") == second_lines[0]
+            dialog.locator(".cheats-list button").filter(has_text=protect["title"][locale]).click()
+            expect(dialog.locator("pre")).to_have_text("\n".join(protect_lines))
+            expect(dialog.locator(".cheats-code strong")).to_have_text("CodeBreaker")
+            expect(dialog.get_by_role("checkbox")).to_have_count(0)
+            with page.expect_download() as dl:
+                dialog.get_by_role("button", name="导出代码与说明" if locale == "zh" else "Export codes and guide").click()
+            assert "CodeBreaker" in open(dl.value.path()).read()
             # A delayed request for another recipe must not overwrite the current selection.
             dialog.locator(".cheats-list button").filter(has_text=recipe["title"][locale]).click()
             expect(dialog.locator("pre")).to_have_text("\n".join(LINES))

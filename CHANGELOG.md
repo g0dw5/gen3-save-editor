@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add exact-ROM persistent player-side Protect for all four supported ROMs.
+  Four CodeBreaker lines OR the native Protect bit for both player-side battler
+  slots only while a battle callback exists. mGBA single-battle comparisons
+  confirmed blocked Protect-affected attacks and preservation of other turn
+  flags; complete doubles, facilities and mobile emulators remain unverified.
+- 四款受支持 ROM 新增精确指纹绑定的「己方持续守住」。四行 CodeBreaker 仅在战斗
+  中为己方两个场上位置按位加入原生守住标记，保留其他临时状态。mGBA 单打对照
+  验证了可守住攻击被拦截；双打完整流程、设施和手机模拟器仍待验证。
+
 - Add exact-ROM emergency battle-party recovery to Dark Phantom BW/DP, Team
   Rocket 2.1 Chinese and Ultimate Emerald 5.5.
   At the player's command menu, L+R+SELECT invokes the ROM's native whole-party

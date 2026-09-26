@@ -11,10 +11,10 @@ size. No emulator connection, save or ROM writes are performed.
 
 | ROM | MD5 | Recipes / 条目 |
 | --- | --- | --- |
-| Ultimate Emerald / 究极绿宝石 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | Portable PC, walking suppression, capture, hatching, species/level, shiny, teleport, all-mode no peeking, accuracy correction, emergency battle-party recovery / 随身电脑、暂停走路遇敌、必捕、孵蛋、指定遇怪、闪光、传送、全模式去窥屏、修正命中加成方向、战斗紧急整队恢复 |
-| Dark Phantom / 漆黑的魅影 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | Portable PC; pause walking encounters; guaranteed wild capture; faster hatching; species/level; shiny; map teleport; emergency battle-party recovery / 随身电脑、暂停走路遇敌、必定捕获、加快孵蛋、指定遇怪、闪光、地图传送、战斗紧急整队恢复 |
-| Dark Phantom / 漆黑的魅影 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | Same eight features, independently tested / 同上八项，独立验证 |
-| Team Rocket / 西班牙火箭队 2.1 中文 | `59c658a1081f542086de1060bb65f0b3` | Those eight plus compatible daycare eggs / 上述八项及兼容寄养组合必定产蛋 |
+| Ultimate Emerald / 究极绿宝石 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | Portable PC, walking suppression, capture, hatching, species/level, shiny, teleport, all-mode no peeking, accuracy correction, emergency battle-party recovery, persistent player-side Protect / 随身电脑、暂停走路遇敌、必捕、孵蛋、指定遇怪、闪光、传送、全模式去窥屏、修正命中加成方向、战斗紧急整队恢复、己方持续守住 |
+| Dark Phantom / 漆黑的魅影 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | Portable PC; pause walking encounters; guaranteed wild capture; faster hatching; species/level; shiny; map teleport; emergency battle-party recovery; persistent Protect / 随身电脑、暂停走路遇敌、必定捕获、加快孵蛋、指定遇怪、闪光、地图传送、战斗紧急整队恢复、己方持续守住 |
+| Dark Phantom / 漆黑的魅影 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | Same nine features, independently tested / 同上九项，独立验证 |
+| Team Rocket / 西班牙火箭队 2.1 中文 | `59c658a1081f542086de1060bb65f0b3` | Those nine plus compatible daycare eggs / 上述九项及兼容寄养组合必定产蛋 |
 
 The main toolbar opens one exact-fingerprint ROM for ROM reference, save editing
 and cheats. The cheat window always reads that open ROM; changing the ROM resets
@@ -35,11 +35,13 @@ the displayed cheat context.
 3. 复制整组或导出代码与说明；当前去窥屏条目必须同时启用两条。
 4. 到模拟器中添加；修改器不会自动连接模拟器。
 
-All current recipes use **GameShark Advance V1/V2**. The default 8+8 layout and the
+Persistent player-side Protect uses **CodeBreaker** (four lines, 8+4 layout).
+All other current recipes use **GameShark Advance V1/V2**. The default 8+8 layout and the
 VBA-M 16-character layout encode the **same** protocol; removing spaces is not
 conversion to CodeBreaker or Action Replay V3. VBA-M 2.2.3's input detection needs
-the compact layout. Back up and save outside battle, enable the full set, restart,
-and load the in-game save. Disable the full set and restart to stop. The new common
+the compact layout. For those GameShark recipes, back up and save outside battle,
+enable the full set, restart, and load the in-game save. Disable the full set and
+restart to stop. The new common
 fixed recipes have one line each; Ultimate's no-peeking and accuracy-correction
 recipes each require two together.
 Portable PC uses seven lines and teleport three. Ultimate species/level uses eight
@@ -48,12 +50,32 @@ For teleport, follow the recipe-specific live enable/disable steps below.
 Emergency battle-party recovery also requires live enable/disable and its own
 in-battle keypress; **do not restart an active battle**.
 
-当前条目为 **GameShark Advance V1/V2**。8+8 与 VBA-M 不带空格的 16 位形式只是
-同一协议的排版，不能当作转换协议。战斗外正常保存并备份后启用整组，重启并从
-游戏内存档继续；停用整组后重启。固定常用功能各一条，究极绿宝石去窥屏必须两条一起。
+己方持续守住使用 **CodeBreaker**（四行、8+4 排版）；其余条目使用
+**GameShark Advance V1/V2**。8+8 与 VBA-M 不带空格的 16 位形式只是
+同一协议的排版，不能当作转换协议。对这些 GameShark 条目，战斗外正常保存并
+备份后启用整组，重启并从游戏内存档继续；停用整组后重启。固定常用功能各一条，
+究极绿宝石去窥屏必须两条一起。
 随身电脑 7 行、传送 3 行；究绿指定遇怪 8 行、闪光 28 行，其他版本分别为 4 行和 86 行。
 必须完整复制；传送按下方专门的即时启停步骤操作。
 战斗紧急整队恢复也需要即时启停和战斗内按键，**不要为它重启正在进行的战斗**。
+
+### Persistent player-side Protect / 己方持续守住
+
+Select **CodeBreaker** in the emulator and enable all four lines generated for
+the open ROM. Each pair first checks whether a battle callback is active, then
+ORs the native Protect bit into one player-side battler's turn state. The OR
+preserves the other bits in that state; this is not a fixed 1-byte overwrite.
+Keep the code enabled for the battle and disable it afterward. It affects only
+moves the ROM treats as Protect-affected; confusion self-damage,
+Protect-piercing moves, weather and other indirect effects retain native
+behavior. Complete doubles, link/partner battles, facilities and mobile
+emulators have not been tested.
+
+在模拟器选择 **CodeBreaker**，完整启用当前 ROM 生成的四行。每两行先检查是否
+正在战斗，再把原生守住位按位加入一个己方场上位置，保留同一字节里的其他临时
+标记。战斗中保持启用，战斗后停用。只有本作认定受守住影响的招式会被拦截；
+混乱自伤、穿透守住的招式、天气和其他间接效果仍按原有规则生效。双打完整流程、联机／伙伴战、
+对战设施及手机模拟器尚未实测。
 
 ### Emergency battle-party recovery / 战斗紧急整队恢复
 
@@ -189,7 +211,7 @@ save and restart to verify instead of relying on a still-active warp override.
 部分动态返回入口不经过这个设置函数。如果模拟器不能即时恢复指令，保留原存档
 并重启验证，不要带着仍生效的传送替换继续过门。
 
-CLI: `gen3 cheat-code ROM CHEAT_ID gameshark_v1_v2 [PARAMETERS.json]`.
+CLI: `gen3 cheat-code ROM CHEAT_ID gameshark_v1_v2|codebreaker [PARAMETERS.json]`.
 Examples of the parameter file (IDs must exist in that exact ROM's catalog):
 
 ```json

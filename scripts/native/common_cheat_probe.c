@@ -90,6 +90,23 @@ int addgroup(const char *lines) {
     sets[count] = set;
     return count++;
 }
+/* CodeBreaker RAM operations are processed every emulator frame, not installed
+ * as ROM patches. Keep this separate from the GameShark ROM-patch assertion. */
+int addgroup_codebreaker(const char *lines) {
+    assert(count < 256);
+    struct mCheatSet *set = device->createSet(device, "CodeBreaker fixture");
+    char *copy = strdup(lines), *cursor = NULL;
+    for (char *line = strtok_r(copy, "\n", &cursor); line; line = strtok_r(NULL, "\n", &cursor)) {
+        if (!mCheatAddLine(set, line, GBA_CHEAT_CODEBREAKER)) { free(copy); return -1; }
+    }
+    free(copy);
+    mCheatAddSet(device, set);
+    set->enabled = true;
+    mCheatRefresh(device, set);
+    assert(mCheatPatchListSize(&set->romPatches) == 0);
+    sets[count] = set;
+    return count++;
+}
 void togglecode(unsigned index, int enabled) {
     assert(index < count);
     sets[index]->enabled = enabled;

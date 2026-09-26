@@ -30,6 +30,8 @@ all added recipes have native mGBA regression tests.
 All four ROMs have exact-fingerprint command-menu emergency party recovery codes:
 press L+R+SELECT to heal and revive without spending an item turn. Each complete
 code group requires an emulator that applies and removes patches live.
+They also support a four-line CodeBreaker recipe for persistent player-side
+Protect, preserving other battle flags and the ROM's native Protect exceptions.
 See [usage, formats, limitations and developer tests](docs/cheats.md).
 
 ## Supported inputs

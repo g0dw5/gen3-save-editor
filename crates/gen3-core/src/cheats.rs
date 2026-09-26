@@ -6,6 +6,7 @@ use crate::{binary, err, profile::PROFILES, Result};
 use serde::{Deserialize, Serialize};
 mod emergency;
 mod parameters;
+mod protect;
 mod storage;
 pub use parameters::{Options, Parameters};
 use parameters::{ENCOUNTER, SHINY, TELEPORT};
@@ -19,6 +20,7 @@ pub const FAST_HATCH: &str = "faster-egg-hatching";
 pub const DAYCARE_EGG: &str = "guaranteed-compatible-daycare-egg";
 pub const PORTABLE_PC: &str = "portable-pokemon-storage";
 pub const EMERGENCY_HEAL: &str = "emergency-battle-heal";
+pub const ALWAYS_PROTECTED: &str = "persistent-player-protect";
 
 #[derive(Clone, Copy, Serialize)]
 pub struct Text {
@@ -59,6 +61,7 @@ pub struct Recipe {
 #[serde(rename_all = "snake_case")]
 pub enum Format {
     GamesharkV1V2,
+    Codebreaker,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -286,6 +289,9 @@ impl CheatRom {
         if emergency::supported(&self.md5) {
             entries.push(emergency::recipe(&self.md5));
         }
+        if protect::supported(&self.md5) {
+            entries.push(protect::recipe(&self.md5));
+        }
         Catalog {
             rom: self.clone(),
             entries,
@@ -300,6 +306,32 @@ impl CheatRom {
             return Err(err(
                 "cheat_context_mismatch",
                 "cheat ROM changed; reopen its catalog",
+            ));
+        }
+        if request.cheat_id == ALWAYS_PROTECTED {
+            if request.format != Format::Codebreaker {
+                return Err(err(
+                    "cheat_format",
+                    "persistent Protect requires CodeBreaker",
+                ));
+            }
+            if request.parameters.is_some() {
+                return Err(err("cheat_parameters", "this recipe has no parameters"));
+            }
+            let lines = protect::lines(&self.md5)?;
+            return Ok(Code {
+                rom_md5: self.md5.clone(),
+                cheat_id: request.cheat_id.clone(),
+                format: request.format,
+                compact_lines: lines.clone(),
+                lines,
+                parameters: None,
+            });
+        }
+        if request.format != Format::GamesharkV1V2 {
+            return Err(err(
+                "cheat_format",
+                "this recipe requires GameShark Advance V1/V2",
             ));
         }
         let patches = if request.cheat_id == EMERGENCY_HEAL && emergency::supported(&self.md5) {
@@ -658,9 +690,9 @@ mod tests {
             assert_eq!(
                 rom.catalog().entries.len(),
                 if p.md5 == crate::profile::ROCKET.md5 {
-                    9
+                    10
                 } else {
-                    8
+                    9
                 }
             );
             let mut request = request();
@@ -683,7 +715,7 @@ mod tests {
     #[test]
     fn rejects_wrong_format_and_unimplemented_parameters() {
         for value in [
-            serde_json::json!({"format":"codebreaker"}),
+            serde_json::json!({"format":"not_a_format"}),
             serde_json::json!({"format":null}),
             serde_json::json!({"format":"gameshark_v1_v2","parameters":{"species":185}}),
         ] {
@@ -695,6 +727,57 @@ mod tests {
                 .unwrap()
                 .extend(value.as_object().unwrap().clone());
             assert!(serde_json::from_value::<GenerateRequest>(v).is_err());
+        }
+        let mut request = request();
+        request.format = Format::Codebreaker;
+        assert_eq!(
+            ultimate().generate(&request).unwrap_err().code,
+            "cheat_format"
+        );
+        request.cheat_id = ALWAYS_PROTECTED.into();
+        request.format = Format::GamesharkV1V2;
+        assert_eq!(
+            ultimate().generate(&request).unwrap_err().code,
+            "cheat_format"
+        );
+    }
+    #[test]
+    fn native_protect_is_exact_rom_and_keeps_other_bits() {
+        for profile in PROFILES {
+            let rom = CheatRom::identify(profile.md5, profile.size).unwrap();
+            let request = GenerateRequest {
+                expected_rom_md5: profile.md5.into(),
+                cheat_id: ALWAYS_PROTECTED.into(),
+                format: Format::Codebreaker,
+                parameters: None,
+            };
+            let code = rom.generate(&request).unwrap();
+            let (callback, protect, stride) = if profile.md5 == crate::profile::ROCKET.md5 {
+                (0x030051b4u32, 0x02024f6cu32, 20)
+            } else {
+                (0x03005d04u32, 0x0202433cu32, 16)
+            };
+            assert_eq!(
+                code.lines,
+                vec![
+                    format!("{:08X} 0000", 0xa0000000 | callback),
+                    format!("{:08X} 0001", 0x20000000 | protect),
+                    format!("{:08X} 0000", 0xa0000000 | callback),
+                    format!("{:08X} 0001", 0x20000000 | (protect + 2 * stride)),
+                ]
+            );
+            assert_eq!(code.compact_lines, code.lines);
+            assert!(rom
+                .catalog()
+                .entries
+                .iter()
+                .any(|e| e.id == ALWAYS_PROTECTED && e.formats == vec![Format::Codebreaker]));
+            let mut wrong = request;
+            wrong.parameters = Some(Parameters::Encounter {
+                species: 1,
+                level: 5,
+            });
+            assert_eq!(rom.generate(&wrong).unwrap_err().code, "cheat_parameters");
         }
     }
     #[test]
@@ -852,7 +935,7 @@ mod tests {
             json!({"expected_rom_md5": ULTIMATE_MD5}),
         )
         .unwrap();
-        assert_eq!(catalog["entries"].as_array().unwrap().len(), 10);
+        assert_eq!(catalog["entries"].as_array().unwrap().len(), 11);
         assert!(catalog["entries"]
             .as_array()
             .unwrap()
@@ -895,9 +978,9 @@ mod tests {
             assert_eq!(
                 catalog["entries"].as_array().unwrap().len(),
                 if profile.md5 == crate::profile::ROCKET.md5 {
-                    9
+                    10
                 } else {
-                    8
+                    9
                 }
             );
             assert_eq!(catalog["rom"]["md5"], profile.md5);
@@ -908,7 +991,7 @@ mod tests {
                     json!({
                         "expected_rom_md5": profile.md5,
                         "cheat_id": entry["id"],
-                        "format": "gameshark_v1_v2",
+                        "format": entry["formats"][0],
                         "parameters": match entry["parameters"].as_str() {
                             Some("encounter") => json!({"kind":"encounter", "species":catalog["options"]["species"][0]["id"], "level":5}),
                             Some("teleport") => {

@@ -1,5 +1,35 @@
 # Cheat verification / 金手指验证
 
+## Native Protect flag / 己方持续守住
+
+Verified 2026-09-26 with the four exact ROM MD5s in [the user guide](../cheats.md).
+The first CodeBreaker line of each pair checks that the battle-main callback
+pointer is nonzero; the second is CodeBreaker's **16-bit OR** operation. This
+sets only bit 0 (`protected`) in each player-side `gProtectStructs` record,
+preserving `endured`, `helpingHand` and other neighboring flags. Unlike an
+unconditional byte assignment, it does not erase those flags.
+
+| ROM | Battle callback | `gProtectStructs` | Stride | CodeBreaker group |
+| --- | ---: | ---: | ---: | --- |
+| Dark Phantom BW/DP; Ultimate Emerald | `03005D04` | `0202433C` | 16 | `A3005D04 0000` / `2202433C 0001` / `A3005D04 0000` / `2202435C 0001` |
+| Team Rocket 2.1 Chinese | `030051B4` | `02024F6C` | 20 | `A30051B4 0000` / `22024F6C 0001` / `A30051B4 0000` / `22024F94 0001` |
+
+`python3 scripts/verify_protect_cheat_mgba.py` imports the final CLI-generated
+groups into mGBA. For each ROM it compares the same single-battle state with
+the group off and on, using harmless player Splash and opponent Tackle where
+needed. Active HP was 239→235 vs 239→239 (BW and DP), 47→44 vs 47→47
+(Rocket), and 235→178 vs 235→235 (Ultimate). It also checks 0x02→0x03 and
+0x04→0x05 OR behavior, untouched opponent-side flags, no write when the
+battle callback is null, and disabled-state no-write behavior. Ultimate's
+double-battle state confirms both player-side slots get the flag while both
+opponent slots do not; the full double-battle damage flow remains untested.
+Input ROMs and states are hashed before/after. The recipe is transient RAM
+state, not a save edit or ROM file modification. Only moves natively affected
+by Protect are covered; different emulator scheduling may change behavior.
+In a longer Ultimate Emerald run, the player's HP did fall from confusion
+self-damage while an opponent's subsequent Tackle left HP unchanged. This is
+the game's normal distinction between self-damage and Protect-affected moves.
+
 ## Cross-ROM emergency battle recovery / 四款 ROM 战斗紧急恢复
 
 Verified 2026-09-26 against the four exact MD5s in [the user guide](../cheats.md).
