@@ -259,8 +259,8 @@ impl CheatRom {
                 }
             }
         }
-        if md5 == ULTIMATE_MD5 {
-            emergency::validate(data)?;
+        if emergency::supported(&md5) {
+            emergency::validate(data, &md5)?;
         }
         Ok(rom)
     }
@@ -283,8 +283,8 @@ impl CheatRom {
         if parameters::supported(&self.md5) {
             entries.extend([ENCOUNTER, SHINY, TELEPORT].map(parameter_recipe));
         }
-        if self.md5 == ULTIMATE_MD5 {
-            entries.push(emergency::recipe());
+        if emergency::supported(&self.md5) {
+            entries.push(emergency::recipe(&self.md5));
         }
         Catalog {
             rom: self.clone(),
@@ -302,11 +302,11 @@ impl CheatRom {
                 "cheat ROM changed; reopen its catalog",
             ));
         }
-        let patches = if self.md5 == ULTIMATE_MD5 && request.cheat_id == EMERGENCY_HEAL {
+        let patches = if request.cheat_id == EMERGENCY_HEAL && emergency::supported(&self.md5) {
             if request.parameters.is_some() {
                 return Err(err("cheat_parameters", "this recipe has no parameters"));
             }
-            emergency::patches()
+            emergency::patches(&self.md5).expect("supported binding")
         } else if [ENCOUNTER, SHINY, TELEPORT].contains(&request.cheat_id.as_str()) {
             parameters::generate(self, request)?
         } else {
@@ -551,59 +551,102 @@ mod tests {
     fn emergency_recovery_is_exact_rom_only_and_has_no_patch_collisions() {
         let mut request = request();
         request.cheat_id = EMERGENCY_HEAL.into();
-        let code = ultimate().generate(&request).unwrap();
-        let patches = emergency::patches();
-        assert_eq!(code.lines.len(), 168);
-        assert_eq!(code.lines.len(), patches.len());
-        assert_eq!(code.lines[0], encode_rom_halfword(0x39f30, 0xf200).unwrap());
-        assert_eq!(code.lines[1], encode_rom_halfword(0x39f32, 0x09ff).unwrap());
-        assert_eq!(
-            code.lines[2],
-            encode_rom_halfword(0x1fff200, 0xf205).unwrap()
-        );
-        assert_eq!(
-            code.lines[3],
-            encode_rom_halfword(0x1fff202, 0x09ff).unwrap()
-        );
-        let mut offsets = std::collections::HashSet::new();
-        for patch in &patches {
-            assert!(offsets.insert(patch.offset));
-            assert_ne!(patch.before, patch.after);
-            assert_eq!(
-                patch.before,
-                if patch.offset == 0x39f30 {
-                    0x5d04
-                } else if patch.offset == 0x39f32 {
-                    0x0300
-                } else {
-                    0xffff
-                }
-            );
-        }
-        for binding in bindings(ULTIMATE_MD5) {
-            for patch in binding.patches {
-                assert!(!offsets.contains(&patch.offset));
-            }
-        }
-        for patch in parameters::encounter_for(ULTIMATE_MD5, 1, 1)
-            .into_iter()
-            .chain(parameters::shiny_for(ULTIMATE_MD5))
-            .chain(parameters::teleport(false, 0, 0, 0))
-        {
-            assert!(!offsets.contains(&patch.offset));
-        }
-        for profile in PROFILES.into_iter().filter(|p| p.md5 != ULTIMATE_MD5) {
+        for profile in PROFILES {
             let rom = CheatRom::identify(profile.md5, profile.size).unwrap();
             request.expected_rom_md5 = profile.md5.into();
+            let code = rom.generate(&request).unwrap();
+            let patches = emergency::patches(profile.md5).unwrap();
+            assert_eq!(code.lines.len(), patches.len());
             assert_eq!(
-                rom.generate(&request).unwrap_err().code,
-                "unsupported_feature"
+                code.lines[0],
+                encode_rom_halfword(
+                    if profile.md5 == crate::profile::ROCKET.md5 {
+                        0x4ee70
+                    } else {
+                        0x39f30
+                    },
+                    0xf200
+                )
+                .unwrap()
             );
-            assert!(!rom
+            assert_eq!(
+                code.lines[1],
+                encode_rom_halfword(
+                    if profile.md5 == crate::profile::ROCKET.md5 {
+                        0x4ee72
+                    } else {
+                        0x39f32
+                    },
+                    0x09ff
+                )
+                .unwrap()
+            );
+            assert_eq!(
+                code.lines[2],
+                encode_rom_halfword(0x1fff200, 0xf205).unwrap()
+            );
+            assert_eq!(
+                code.lines[3],
+                encode_rom_halfword(0x1fff202, 0x09ff).unwrap()
+            );
+            let mut offsets = std::collections::HashSet::new();
+            for patch in &patches {
+                assert!(offsets.insert(patch.offset));
+                assert_ne!(patch.before, patch.after);
+                let callback = if profile.md5 == crate::profile::ROCKET.md5 {
+                    0x4ee70
+                } else {
+                    0x39f30
+                };
+                let expected = if patch.offset == callback {
+                    if profile.md5 == crate::profile::ROCKET.md5 {
+                        0x51b4
+                    } else {
+                        0x5d04
+                    }
+                } else if patch.offset == callback + 2 {
+                    0x0300
+                } else if profile.md5 == crate::profile::BW.md5
+                    || profile.md5 == crate::profile::DP.md5
+                {
+                    0
+                } else {
+                    0xffff
+                };
+                assert_eq!(patch.before, expected);
+            }
+            for binding in bindings(profile.md5) {
+                for patch in binding.patches {
+                    assert!(!offsets.contains(&patch.offset));
+                }
+            }
+            for patch in parameters::encounter_for(profile.md5, 1, 1)
+                .into_iter()
+                .chain(parameters::shiny_for(profile.md5))
+                .chain(parameters::teleport(
+                    profile.md5 == crate::profile::ROCKET.md5,
+                    0,
+                    0,
+                    0,
+                ))
+            {
+                assert!(!offsets.contains(&patch.offset));
+            }
+            assert!(rom
                 .catalog()
                 .entries
                 .iter()
                 .any(|entry| entry.id == EMERGENCY_HEAL));
+            let invalid = GenerateRequest {
+                expected_rom_md5: profile.md5.into(),
+                cheat_id: EMERGENCY_HEAL.into(),
+                format: Format::GamesharkV1V2,
+                parameters: Some(Parameters::Encounter {
+                    species: 1,
+                    level: 5,
+                }),
+            };
+            assert_eq!(rom.generate(&invalid).unwrap_err().code, "cheat_parameters");
         }
     }
     #[test]
@@ -615,9 +658,9 @@ mod tests {
             assert_eq!(
                 rom.catalog().entries.len(),
                 if p.md5 == crate::profile::ROCKET.md5 {
-                    8
+                    9
                 } else {
-                    7
+                    8
                 }
             );
             let mut request = request();
@@ -852,9 +895,9 @@ mod tests {
             assert_eq!(
                 catalog["entries"].as_array().unwrap().len(),
                 if profile.md5 == crate::profile::ROCKET.md5 {
-                    8
+                    9
                 } else {
-                    7
+                    8
                 }
             );
             assert_eq!(catalog["rom"]["md5"], profile.md5);

@@ -21,7 +21,7 @@ second = dict(recipe, id="faster-egg-hatching", category="breeding",
 second_lines = ["00000000 00000000"]  # Synthetic fixture; never used in an emulator.
 emergency = dict(recipe, id="emergency-battle-heal", category="battle",
                  title=text("战斗紧急整队恢复", "Emergency battle-party recovery"))
-emergency_lines = [f"{i:08X} {i:08X}" for i in range(168)]  # UI-only fixture.
+emergency_lines = [f"{i:08X} {i:08X}" for i in range(174)]  # UI-only fixture.
 cheats = dict(rom=dict(md5=UE, label="Ultimate Emerald 5.5", editor_supported=True), entries=[recipe, second, emergency])
 code = dict(rom_md5=UE, cheat_id=recipe["id"], format="gameshark_v1_v2", lines=LINES,
             compact_lines=[s.replace(" ", "") for s in LINES])
@@ -113,7 +113,7 @@ def main():
             dialog.get_by_role("checkbox").uncheck()
             dialog.locator(".cheats-list button").filter(has_text=emergency["title"][locale]).click()
             expect(dialog.locator("pre")).to_have_text("\n".join(emergency_lines))
-            expect(dialog.locator(".cheats-code")).to_contain_text("168 行代码" if locale == "zh" else "168 code lines")
+            expect(dialog.locator(".cheats-code")).to_contain_text("174 行代码" if locale == "zh" else "174 code lines")
             copy_button.click()
             assert page.evaluate("navigator.clipboard.readText()") == "\n".join(emergency_lines)
             # Switching to a one-line recipe must clear the previous code and copy state.

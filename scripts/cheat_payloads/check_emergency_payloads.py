@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild and compare the authored Ultimate 5.5 emergency cheat payload.
+"""Rebuild and compare both authored emergency cheat payloads.
 
 Requires Clang with its ARM target and LLD. Never reads or writes a ROM or save.
 The checked-in binary is compared byte-for-byte; this script does not update it.
@@ -12,7 +12,7 @@ import tempfile
 
 
 HERE = Path(__file__).resolve().parent
-EXPECTED = HERE.parents[1] / "crates/gen3-core/src/cheats/emergency_ultimate.bin"
+EXPECTED = HERE.parents[1] / "crates/gen3-core/src/cheats"
 
 
 def section(data: bytes, name: bytes) -> bytes:
@@ -37,24 +37,21 @@ def section(data: bytes, name: bytes) -> bytes:
 
 
 def main() -> None:
-    with tempfile.TemporaryDirectory() as directory:
-        output = Path(directory) / "emergency.elf"
-        subprocess.run(
-            [
+    for variant, defines in (("ultimate", []), ("rocket", ["-DGEN3_EMERGENCY_ROCKET"])):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "emergency.elf"
+            subprocess.run([
                 "clang", "--target=armv4t-none-eabi", "-mthumb", "-Oz",
                 "-ffreestanding", "-fno-builtin", "-nostdlib", "-fuse-ld=lld",
-                f"-Wl,-T,{HERE / 'ultimate_emergency.ld'}",
-                str(HERE / "ultimate_emergency.c"), "-o", str(output),
-            ],
-            check=True,
-        )
-        actual = section(output.read_bytes(), b".payload")
-    expected = EXPECTED.read_bytes()
-    if actual != expected:
-        raise SystemExit(
-            f"payload mismatch: built {len(actual)} bytes, checked in {len(expected)} bytes"
-        )
-    print(f"Ultimate emergency payload matches checked-in binary: {len(actual)} bytes")
+                f"-Wl,-T,{HERE / 'emergency.ld'}", *defines,
+                str(HERE / "emergency.c"), "-o", str(output),
+            ], check=True)
+            actual = section(output.read_bytes(), b".payload")
+        path = EXPECTED / f"emergency_{variant}.bin"
+        expected = path.read_bytes()
+        if actual != expected:
+            raise SystemExit(f"{variant} payload mismatch: built {len(actual)} bytes, checked in {len(expected)} bytes")
+        print(f"{variant} emergency payload matches checked-in binary: {len(actual)} bytes")
 
 
 if __name__ == "__main__":

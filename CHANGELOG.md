@@ -10,16 +10,19 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
-- Add an exact-ROM Ultimate Emerald 5.5 emergency battle-party recovery cheat.
+- Add exact-ROM emergency battle-party recovery to Dark Phantom BW/DP, Team
+  Rocket 2.1 Chinese and Ultimate Emerald 5.5.
   At the player's command menu, L+R+SELECT invokes the ROM's native whole-party
   heal without an item turn, then synchronizes active battlers and health bars.
-  The complete 168-line GameShark V1/V2 group was exercised in mGBA single and
-  double battles, including fainted reserves, guard conditions and live removal.
+  The complete GameShark V1/V2 groups were exercised in mGBA single battles for
+  all four ROMs and doubles for Ultimate, including fainted reserves, guard
+  conditions and live removal.
   Authored payload and reproducible build check are included; ROM files remain
   read-only. Mobile emulators and full battle-facility runs remain unverified.
-- 究极绿宝石 5.5 新增按完整 ROM 指纹绑定的战斗紧急整队恢复金手指：己方指令阶段按
+- 漆黑的魅影 BW／DP、西班牙火箭队 2.1 汉化版和究极绿宝石 5.5 均新增按完整 ROM
+  指纹绑定的战斗紧急整队恢复金手指：己方指令阶段按
   L＋R＋SELECT，调用本作原生全队治疗，无需消耗吃药回合，同步场上数据与血条。
-  mGBA 单打、双打验证包含昏厥后备队员、保护条件和即时停用；附可重建的自编指令。
+  mGBA 四款单打、究绿双打验证包含昏厥后备队员、保护条件和即时停用；附可重建的自编指令。
   ROM 文件保持只读，手机模拟器与完整设施流程仍未验证。
 
 - Add an exact-ROM Ultimate Emerald cheat correcting the reversed Casual/Lunatic

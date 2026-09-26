@@ -35,7 +35,7 @@ def main():
         "gameshark_v1_v2",
     ]))["lines"]
     payload = PAYLOAD.read_bytes()
-    assert len(payload) == 328 and len(codes) == 168
+    assert len(payload) == 340 and len(codes) == 174
     assert data[0x39F30:0x39F34] == struct.pack("<I", 0x03005D04)
     assert data[0x1FFF200:0x1FFF204 + len(payload)] == bytes([0xFF]) * (4 + len(payload))
     source = Path(os.environ["MGBA_SOURCE"])

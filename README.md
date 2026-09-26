@@ -27,9 +27,9 @@ and map teleport with a Region → Map selector and ROM-derived landing tiles.
 Team Rocket also has guaranteed daycare eggs
 for compatible parents at the normal checkpoint. Availability is fingerprint-scoped;
 all added recipes have native mGBA regression tests.
-Ultimate Emerald additionally has a command-menu emergency party recovery code:
-press L+R+SELECT to heal and revive without spending an item turn. Its complete
-168-line set requires an emulator that applies and removes patches live.
+All four ROMs have exact-fingerprint command-menu emergency party recovery codes:
+press L+R+SELECT to heal and revive without spending an item turn. Each complete
+code group requires an emulator that applies and removes patches live.
 See [usage, formats, limitations and developer tests](docs/cheats.md).
 
 ## Supported inputs

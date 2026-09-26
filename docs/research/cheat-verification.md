@@ -1,33 +1,49 @@
 # Cheat verification / 金手指验证
 
-## Ultimate 5.5 emergency battle recovery / 究绿战斗紧急恢复
+## Cross-ROM emergency battle recovery / 四款 ROM 战斗紧急恢复
 
-Verified 2026-09-26 against exact MD5 `17ce9785b33319b3dbda9a5d37c57ec1`.
+Verified 2026-09-26 against the four exact MD5s in [the user guide](../cheats.md).
 The authored Thumb wrapper lives in
-[`scripts/cheat_payloads/ultimate_emergency.c`](../../scripts/cheat_payloads/ultimate_emergency.c).
-`python3 scripts/cheat_payloads/check_ultimate_emergency.py` independently
-rebuilds it with Clang/LLD and compares all 328 payload bytes with the checked-in
-binary. The hook changes the battle-main callback's pointer literal at file
-offset `0x39F30` from `0x03005D04` to `0x09FFF200`; the 328-byte wrapper and
-Thumb entry pointer occupy checked-empty space at `0x1FFF200`. The existing
-Ultimate shiny, species and portable-PC stubs use nearby but **non-overlapping**
-locations (`0x1FFF000`, `0x1FFF080`, `0x1FFF100`). No ROM file is patched.
+[`scripts/cheat_payloads/emergency.c`](../../scripts/cheat_payloads/emergency.c).
+`python3 scripts/cheat_payloads/check_emergency_payloads.py` independently
+rebuilds both variants with Clang/LLD and compares all bytes with the checked-in
+binaries (Emerald engine: 340 bytes; Rocket engine: 328 bytes).
+
+| ROM | Hook file offset | Original callback pointer | Empty cave bytes | Lines |
+| --- | ---: | ---: | ---: | ---: |
+| Dark Phantom BW/DP | `0x39F30` | `0x03005D04` | `00` | 174 |
+| Team Rocket 2.1 Chinese | `0x4EE70` | `0x030051B4` | `FF` | 168 |
+| Ultimate Emerald 5.5 | `0x39F30` | `0x03005D04` | `FF` | 174 |
+
+Each hook redirects the battle-main callback's pointer literal to `0x09FFF200`;
+the Thumb entry pointer and wrapper occupy checked-empty space at `0x1FFF200`.
+Existing cheats use non-overlapping offsets, checked per ROM in the Rust tests.
+No ROM file is patched.
 
 原生 `HealPlayerParty` 为全队恢复 HP、PP 和持续性异常。包装函数仅在玩家指令
 阶段、L＋R＋SELECT 新按下且非联机／原野区／多人及伙伴战斗时调用；场上最大 HP 与同行记录
-不一致则跳过。恢复后同步未昏厥的场上己方记录，调用原生 PP 计算及血条更新，
+不一致则跳过。恢复后同步未昏厥的场上己方记录，从本作原生例程取得 PP 并更新血条，
 每帧仍执行原始战斗主函数。未触碰敌方记录，临时战斗状态不清除。
 The multi and in-game-partner bit masks follow Emerald's
 [battle type definitions](https://github.com/pret/pokeemerald/blob/master/include/constants/battle.h);
 the masks are exercised in this ROM's command-loop fixture, but a natural
 partner event has not been replayed.
 
-Reproduction: build `gen3`, then set `GEN3_BIN`, `GEN3_ROM_ULTIMATE`,
+Reproduction: build `gen3`, then set `GEN3_BIN`, `GEN3_ROM_{BW,DP,ROCKET,ULTIMATE}`,
+`MGBA_SOURCE` and `MGBA_BUILD`; run `python3 scripts/verify_emergency_cross_mgba.py`.
+The disposable battle-menu states are recorded under ignored `.local/analysis`.
+The script checks the **final CLI-produced encrypted code groups**, exact
+in-memory ROM diffs, party and active HP/PP/status, unchanged enemy records,
+guard conditions, live disable and unchanged input hashes. Four single-battle
+fixtures restored active HP to 239 (BW), 239 (DP), 47 (Rocket) and 235
+(Ultimate). Rocket's native healthbox updater was separately visually checked
+at 5/47 and 47/47. For Ultimate's deeper double-battle regression, set
+`GEN3_BIN`, `GEN3_ROM_ULTIMATE`,
 `MGBA_SOURCE`, `MGBA_BUILD`, `GEN3_EMERGENCY_STATE_SINGLE` and
 `GEN3_EMERGENCY_STATE_DOUBLE`; run
 `python3 scripts/verify_emergency_cheat_mgba.py`. Both disposable mGBA states
 must be at the player's command menu. The script reads the **final CLI-produced
-168 encrypted lines**, verifies their exact in-memory 32 MiB ROM diff, and
+174 encrypted lines**, verifies their exact in-memory 32 MiB ROM diff, and
 executes a full-frame single/double battle fixture: low active HP and PP,
 persistent status and four fainted reserves. It checks six party HP/status
 records, both active battlers in doubles, unchanged opponent records, unchanged
