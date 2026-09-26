@@ -19,11 +19,16 @@ recipe = dict(id="disable-input-peeking", category="battle", title=text("关闭 
 second = dict(recipe, id="faster-egg-hatching", category="breeding",
               title=text("加快同行蛋孵化", "Faster party-egg hatching"))
 second_lines = ["00000000 00000000"]  # Synthetic fixture; never used in an emulator.
-cheats = dict(rom=dict(md5=UE, label="Ultimate Emerald 5.5", editor_supported=True), entries=[recipe, second])
+emergency = dict(recipe, id="emergency-battle-heal", category="battle",
+                 title=text("战斗紧急整队恢复", "Emergency battle-party recovery"))
+emergency_lines = [f"{i:08X} {i:08X}" for i in range(168)]  # UI-only fixture.
+cheats = dict(rom=dict(md5=UE, label="Ultimate Emerald 5.5", editor_supported=True), entries=[recipe, second, emergency])
 code = dict(rom_md5=UE, cheat_id=recipe["id"], format="gameshark_v1_v2", lines=LINES,
             compact_lines=[s.replace(" ", "") for s in LINES])
 
 second_code = dict(code, cheat_id=second["id"], lines=second_lines, compact_lines=["0000000000000000"])
+emergency_code = dict(code, cheat_id=emergency["id"], lines=emergency_lines,
+                      compact_lines=[s.replace(" ", "") for s in emergency_lines])
 
 def main():
     requests, errors = [], []
@@ -54,11 +59,12 @@ def main():
             data = dict(cheats, entries=[] if mode["empty"] else cheats["entries"])
         elif command == "cheat_code":
             assert payload["expected_rom_md5"] == UE and payload["format"] == "gameshark_v1_v2"
-            assert payload["cheat_id"] in (recipe["id"], second["id"])
+            assert payload["cheat_id"] in (recipe["id"], second["id"], emergency["id"])
             if mode["delay"]:
                 pending.append(route)
                 return
-            data = code if payload["cheat_id"] == recipe["id"] else second_code
+            data = (code if payload["cheat_id"] == recipe["id"] else
+                    emergency_code if payload["cheat_id"] == emergency["id"] else second_code)
         else:
             raise AssertionError(req)
         route.fulfill(json={"ok": True, "data": data})
@@ -103,9 +109,14 @@ def main():
             search.fill("no-such-cheat")
             expect(dialog.locator(".cheats-list button")).to_have_count(0)
             search.fill("")
-            expect(dialog.locator(".cheats-list button")).to_have_count(2)
-            # Switching to a one-line recipe must clear the previous code and copy state.
+            expect(dialog.locator(".cheats-list button")).to_have_count(3)
             dialog.get_by_role("checkbox").uncheck()
+            dialog.locator(".cheats-list button").filter(has_text=emergency["title"][locale]).click()
+            expect(dialog.locator("pre")).to_have_text("\n".join(emergency_lines))
+            expect(dialog.locator(".cheats-code")).to_contain_text("168 行代码" if locale == "zh" else "168 code lines")
+            copy_button.click()
+            assert page.evaluate("navigator.clipboard.readText()") == "\n".join(emergency_lines)
+            # Switching to a one-line recipe must clear the previous code and copy state.
             dialog.locator(".cheats-list button").filter(has_text=second["title"][locale]).click()
             expect(dialog.locator("pre")).to_have_text(second_lines[0])
             expect(dialog.locator(".cheats-code")).to_contain_text("1 行代码" if locale == "zh" else "1 code line")

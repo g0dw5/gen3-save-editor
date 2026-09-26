@@ -11,7 +11,7 @@ size. No emulator connection, save or ROM writes are performed.
 
 | ROM | MD5 | Recipes / 条目 |
 | --- | --- | --- |
-| Ultimate Emerald / 究极绿宝石 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | Portable PC, walking suppression, capture, hatching, species/level, shiny, teleport, all-mode no peeking, accuracy correction / 随身电脑、暂停走路遇敌、必捕、孵蛋、指定遇怪、闪光、传送、全模式去窥屏、修正命中加成方向 |
+| Ultimate Emerald / 究极绿宝石 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | Portable PC, walking suppression, capture, hatching, species/level, shiny, teleport, all-mode no peeking, accuracy correction, emergency battle-party recovery / 随身电脑、暂停走路遇敌、必捕、孵蛋、指定遇怪、闪光、传送、全模式去窥屏、修正命中加成方向、战斗紧急整队恢复 |
 | Dark Phantom / 漆黑的魅影 5.0EX+BW | `0d9b129f7dd76895f79bb47ad7dec2fe` | Portable PC; pause walking encounters; guaranteed wild capture; faster hatching; species/level; shiny; map teleport / 随身电脑、暂停走路遇敌、必定捕获、加快孵蛋、指定遇怪、闪光、地图传送 |
 | Dark Phantom / 漆黑的魅影 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | Same seven features, independently tested / 同上七项，独立验证 |
 | Team Rocket / 西班牙火箭队 2.1 中文 | `59c658a1081f542086de1060bb65f0b3` | Those seven plus compatible daycare eggs / 上述七项及兼容寄养组合必定产蛋 |
@@ -40,16 +40,50 @@ VBA-M 16-character layout encode the **same** protocol; removing spaces is not
 conversion to CodeBreaker or Action Replay V3. VBA-M 2.2.3's input detection needs
 the compact layout. Back up and save outside battle, enable the full set, restart,
 and load the in-game save. Disable the full set and restart to stop. The new common
-fixed recipes have one line each; the Ultimate Emerald recipe requires two together.
+fixed recipes have one line each; Ultimate's no-peeking and accuracy-correction
+recipes each require two together.
 Portable PC uses seven lines and teleport three. Ultimate species/level uses eight
 lines and shiny 28; other ROMs use four and 86 respectively. Copy the entire set.
 For teleport, follow the recipe-specific live enable/disable steps below.
+Emergency battle-party recovery also requires live enable/disable and its own
+in-battle keypress; **do not restart an active battle**.
 
 当前条目为 **GameShark Advance V1/V2**。8+8 与 VBA-M 不带空格的 16 位形式只是
 同一协议的排版，不能当作转换协议。战斗外正常保存并备份后启用整组，重启并从
 游戏内存档继续；停用整组后重启。固定常用功能各一条，究极绿宝石去窥屏必须两条一起。
 随身电脑 7 行、传送 3 行；究绿指定遇怪 8 行、闪光 28 行，其他版本分别为 4 行和 86 行。
 必须完整复制；传送按下方专门的即时启停步骤操作。
+战斗紧急整队恢复也需要即时启停和战斗内按键，**不要为它重启正在进行的战斗**。
+
+### Emergency battle-party recovery / 战斗紧急整队恢复
+
+Ultimate Emerald 5.5 only. Back up the battery save outside battle. When a
+battle is about to be lost, pause the emulator and enable the **entire 168-line**
+GameShark Advance V1/V2 set as one group. At the player's command or move menu,
+briefly press **L+R+SELECT** once. The ROM's own party-heal routine restores the
+six party members' HP, PP and persistent status without an item turn; the code
+also synchronizes non-fainted active battlers and redraws their health bars.
+Disable the entire set immediately after the bars update, finish the battle,
+check the party and save normally. Already-running whiteout cannot be reversed.
+
+仅究极绿宝石 5.5 可用。先在战斗外备份电池存档；濒临败北时暂停模拟器，按
+GameShark Advance V1/V2 **完整启用 168 行**，作为同一组。在己方选择战斗指令或
+招式的界面短按一次 **L＋R＋SELECT**。游戏原生例程立即恢复全队 HP、PP 和持续性
+异常，不占吃药回合；仍在场且未昏厥的己方与血条也同步。看到血条更新就停用整组，
+打完核对队伍，再正常保存。已经进入全队败北结算就来不及。
+
+The trigger is guarded out in link, Safari and multi/partner battles, and when an active form's
+max HP differs from its party record. Temporary battle conditions (for example
+confusion, Substitute and stat stages) are not cleared. This is a long in-memory
+ROM hook: mGBA 0.10.5 single/double battle fixtures and guard cases were tested,
+but mobile emulators and complete battle-facility runs have not been tested. An
+emulator that cannot apply and remove GameShark patches live is unsuitable for
+this rescue workflow. The ROM file itself is never changed.
+
+联机、野生原野区、多人／剧情伙伴战斗和场上形态最大 HP 与同行记录不一致时不触发；混乱、替身、能力等级等
+临时状态不会清除。已经在 mGBA 0.10.5 验证单打、双打与保护条件，但手机模拟器和
+完整设施流程未测。模拟器若不能即时应用、停用 GameShark 补丁，不适合用来临场救急。
+代码只作用于模拟器内存，不修改 ROM 文件。
 
 ### Portable Pokémon PC / 随身电脑
 

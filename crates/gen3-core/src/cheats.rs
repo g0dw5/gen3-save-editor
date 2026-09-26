@@ -4,6 +4,7 @@
 //! Cheat state is deliberately separate from an open editor Profile/session.
 use crate::{binary, err, profile::PROFILES, Result};
 use serde::{Deserialize, Serialize};
+mod emergency;
 mod parameters;
 mod storage;
 pub use parameters::{Options, Parameters};
@@ -17,6 +18,7 @@ pub const GUARANTEED_CATCH: &str = "guaranteed-wild-catch";
 pub const FAST_HATCH: &str = "faster-egg-hatching";
 pub const DAYCARE_EGG: &str = "guaranteed-compatible-daycare-egg";
 pub const PORTABLE_PC: &str = "portable-pokemon-storage";
+pub const EMERGENCY_HEAL: &str = "emergency-battle-heal";
 
 #[derive(Clone, Copy, Serialize)]
 pub struct Text {
@@ -257,6 +259,9 @@ impl CheatRom {
                 }
             }
         }
+        if md5 == ULTIMATE_MD5 {
+            emergency::validate(data)?;
+        }
         Ok(rom)
     }
     fn identify(md5: &str, size: usize) -> Result<Self> {
@@ -278,6 +283,9 @@ impl CheatRom {
         if parameters::supported(&self.md5) {
             entries.extend([ENCOUNTER, SHINY, TELEPORT].map(parameter_recipe));
         }
+        if self.md5 == ULTIMATE_MD5 {
+            entries.push(emergency::recipe());
+        }
         Catalog {
             rom: self.clone(),
             entries,
@@ -294,7 +302,12 @@ impl CheatRom {
                 "cheat ROM changed; reopen its catalog",
             ));
         }
-        let patches = if [ENCOUNTER, SHINY, TELEPORT].contains(&request.cheat_id.as_str()) {
+        let patches = if self.md5 == ULTIMATE_MD5 && request.cheat_id == EMERGENCY_HEAL {
+            if request.parameters.is_some() {
+                return Err(err("cheat_parameters", "this recipe has no parameters"));
+            }
+            emergency::patches()
+        } else if [ENCOUNTER, SHINY, TELEPORT].contains(&request.cheat_id.as_str()) {
             parameters::generate(self, request)?
         } else {
             if request.parameters.is_some() {
@@ -535,6 +548,65 @@ mod tests {
         assert!(encode_rom_halfword(0x1fffffe, 0xffff).is_ok());
     }
     #[test]
+    fn emergency_recovery_is_exact_rom_only_and_has_no_patch_collisions() {
+        let mut request = request();
+        request.cheat_id = EMERGENCY_HEAL.into();
+        let code = ultimate().generate(&request).unwrap();
+        let patches = emergency::patches();
+        assert_eq!(code.lines.len(), 168);
+        assert_eq!(code.lines.len(), patches.len());
+        assert_eq!(code.lines[0], encode_rom_halfword(0x39f30, 0xf200).unwrap());
+        assert_eq!(code.lines[1], encode_rom_halfword(0x39f32, 0x09ff).unwrap());
+        assert_eq!(
+            code.lines[2],
+            encode_rom_halfword(0x1fff200, 0xf205).unwrap()
+        );
+        assert_eq!(
+            code.lines[3],
+            encode_rom_halfword(0x1fff202, 0x09ff).unwrap()
+        );
+        let mut offsets = std::collections::HashSet::new();
+        for patch in &patches {
+            assert!(offsets.insert(patch.offset));
+            assert_ne!(patch.before, patch.after);
+            assert_eq!(
+                patch.before,
+                if patch.offset == 0x39f30 {
+                    0x5d04
+                } else if patch.offset == 0x39f32 {
+                    0x0300
+                } else {
+                    0xffff
+                }
+            );
+        }
+        for binding in bindings(ULTIMATE_MD5) {
+            for patch in binding.patches {
+                assert!(!offsets.contains(&patch.offset));
+            }
+        }
+        for patch in parameters::encounter_for(ULTIMATE_MD5, 1, 1)
+            .into_iter()
+            .chain(parameters::shiny_for(ULTIMATE_MD5))
+            .chain(parameters::teleport(false, 0, 0, 0))
+        {
+            assert!(!offsets.contains(&patch.offset));
+        }
+        for profile in PROFILES.into_iter().filter(|p| p.md5 != ULTIMATE_MD5) {
+            let rom = CheatRom::identify(profile.md5, profile.size).unwrap();
+            request.expected_rom_md5 = profile.md5.into();
+            assert_eq!(
+                rom.generate(&request).unwrap_err().code,
+                "unsupported_feature"
+            );
+            assert!(!rom
+                .catalog()
+                .entries
+                .iter()
+                .any(|entry| entry.id == EMERGENCY_HEAL));
+        }
+    }
+    #[test]
     fn exact_identity_and_cross_rom_isolation() {
         assert!(CheatRom::open(&[0; 192]).is_err());
         assert!(CheatRom::identify(ULTIMATE_MD5, 1024).is_err());
@@ -737,7 +809,12 @@ mod tests {
             json!({"expected_rom_md5": ULTIMATE_MD5}),
         )
         .unwrap();
-        assert_eq!(catalog["entries"].as_array().unwrap().len(), 9);
+        assert_eq!(catalog["entries"].as_array().unwrap().len(), 10);
+        assert!(catalog["entries"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|entry| entry["id"] == EMERGENCY_HEAL));
         assert_eq!(catalog["rom"]["editor_supported"], true);
         assert!(app.session.is_some());
         let request = json!({"expected_rom_md5": ULTIMATE_MD5, "cheat_id": NO_PEEK, "format": "gameshark_v1_v2"});

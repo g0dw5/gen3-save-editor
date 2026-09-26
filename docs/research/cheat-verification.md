@@ -1,5 +1,44 @@
 # Cheat verification / 金手指验证
 
+## Ultimate 5.5 emergency battle recovery / 究绿战斗紧急恢复
+
+Verified 2026-09-26 against exact MD5 `17ce9785b33319b3dbda9a5d37c57ec1`.
+The authored Thumb wrapper lives in
+[`scripts/cheat_payloads/ultimate_emergency.c`](../../scripts/cheat_payloads/ultimate_emergency.c).
+`python3 scripts/cheat_payloads/check_ultimate_emergency.py` independently
+rebuilds it with Clang/LLD and compares all 328 payload bytes with the checked-in
+binary. The hook changes the battle-main callback's pointer literal at file
+offset `0x39F30` from `0x03005D04` to `0x09FFF200`; the 328-byte wrapper and
+Thumb entry pointer occupy checked-empty space at `0x1FFF200`. The existing
+Ultimate shiny, species and portable-PC stubs use nearby but **non-overlapping**
+locations (`0x1FFF000`, `0x1FFF080`, `0x1FFF100`). No ROM file is patched.
+
+原生 `HealPlayerParty` 为全队恢复 HP、PP 和持续性异常。包装函数仅在玩家指令
+阶段、L＋R＋SELECT 新按下且非联机／原野区／多人及伙伴战斗时调用；场上最大 HP 与同行记录
+不一致则跳过。恢复后同步未昏厥的场上己方记录，调用原生 PP 计算及血条更新，
+每帧仍执行原始战斗主函数。未触碰敌方记录，临时战斗状态不清除。
+The multi and in-game-partner bit masks follow Emerald's
+[battle type definitions](https://github.com/pret/pokeemerald/blob/master/include/constants/battle.h);
+the masks are exercised in this ROM's command-loop fixture, but a natural
+partner event has not been replayed.
+
+Reproduction: build `gen3`, then set `GEN3_BIN`, `GEN3_ROM_ULTIMATE`,
+`MGBA_SOURCE`, `MGBA_BUILD`, `GEN3_EMERGENCY_STATE_SINGLE` and
+`GEN3_EMERGENCY_STATE_DOUBLE`; run
+`python3 scripts/verify_emergency_cheat_mgba.py`. Both disposable mGBA states
+must be at the player's command menu. The script reads the **final CLI-produced
+168 encrypted lines**, verifies their exact in-memory 32 MiB ROM diff, and
+executes a full-frame single/double battle fixture: low active HP and PP,
+persistent status and four fainted reserves. It checks six party HP/status
+records, both active battlers in doubles, unchanged opponent records, unchanged
+unrelated party bytes, wrong-phase/no-key/link/Safari/multi/partner/form-mismatch guards and
+complete code disable. In both states restored party HP was
+`235/110/135/170/166/130`; mGBA's state loader independently changes three
+cartridge-header bytes (`0xC4/0xC6/0xC8`), which the script isolates from patch
+restoration. Input ROM and states are hashed before and after. HUD refresh was
+also visually checked on single and double screenshots. This covers controlled
+battle states, not every facility, mobile emulator or long play session.
+
 Verified 2026-09-22. No private saves, ROMs or extracted assets are included here.
 
 ## Common recipes / 常用功能

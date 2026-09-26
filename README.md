@@ -15,9 +15,9 @@ run against generated fixtures and optionally your exact ROMs. See
 
 ## Cheat codes
 
-Use **Cheats** in the toolbar (also accessible from ROM reference). No save is
-required. Select a ROM inside the cheat window; this does not replace the editor's
-ROM or save. The first verified recipe disables AI input peeking in all modes of
+Open an exact-match ROM first, then use **Cheats** in the toolbar; no save is
+required. The cheat window uses the currently open ROM. One verified recipe
+disables AI input peeking in all modes of
 Ultimate Emerald 5.5, exact MD5 `17ce9785b33319b3dbda9a5d37c57ec1`.
 Ultimate Emerald also supports ROM reference and save editing; see its
 [adapter notes and verification boundaries](docs/research/ultimate-emerald-55.md).
@@ -27,6 +27,9 @@ and map teleport with a Region → Map selector and ROM-derived landing tiles.
 Team Rocket also has guaranteed daycare eggs
 for compatible parents at the normal checkpoint. Availability is fingerprint-scoped;
 all added recipes have native mGBA regression tests.
+Ultimate Emerald additionally has a command-menu emergency party recovery code:
+press L+R+SELECT to heal and revive without spending an item turn. Its complete
+168-line set requires an emulator that applies and removes patches live.
 See [usage, formats, limitations and developer tests](docs/cheats.md).
 
 ## Supported inputs
