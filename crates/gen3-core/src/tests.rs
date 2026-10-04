@@ -2064,10 +2064,20 @@ fn adapter_capabilities_reject_writes_without_mutation() {
         battle_forms: true,
     };
     disabled.save.dex = None;
-    let r = adapter_rom(disabled);
+    let r = adapter_rom(profile::ROCKET);
     let mut s = Session::new(r.clone());
     let original = save_bytes(&r);
     s.load(original.clone(), None).unwrap();
+    s.rom.profile = disabled;
+    s.save.as_mut().unwrap().layout.dex = None;
+    let r = s.rom.clone();
+    assert_eq!(
+        Session::new(r.clone())
+            .load(original.clone(), None)
+            .unwrap_err()
+            .code,
+        "unsupported_feature"
+    );
     for policy in [Policy::Standard, Policy::Free] {
         let error = s
             .apply(
@@ -2612,7 +2622,10 @@ fn rocket_ribbons_preserve_ivs_egg_ability_and_reserved_bits() {
 
 #[test]
 fn relation_graph_uses_runtime_tables_and_does_not_expand_legal_ancestry_from_names() {
-    for profile in profile::PROFILES {
+    for profile in profile::PROFILES
+        .into_iter()
+        .filter(|p| p.capabilities.save_edit)
+    {
         let mut r = adapter_rom(profile);
         r.profile.species.count = 5;
         r.profile.evolutions.count = 5;
@@ -2671,7 +2684,10 @@ fn relation_graph_uses_runtime_tables_and_does_not_expand_legal_ancestry_from_na
 
 #[test]
 fn runtime_labels_and_nature_effects_follow_each_rom_without_cached_fallbacks() {
-    for profile in profile::PROFILES {
+    for profile in profile::PROFILES
+        .into_iter()
+        .filter(|p| p.capabilities.save_edit)
+    {
         let mut r = adapter_rom(profile);
         let original = r.nature(15).unwrap();
         assert_eq!(original.name, "NATURE15");

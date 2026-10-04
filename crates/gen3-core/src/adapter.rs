@@ -155,6 +155,8 @@ impl PokemonCodec {
 pub enum SpeciesFormat {
     Gen3,
     Expanded36,
+    /// CFRU keeps the 28-byte Gen III record and uses byte 26 for a hidden ability.
+    Cfru28,
 }
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -175,6 +177,7 @@ pub enum EvolutionFormat {
     Gen3,
     Ultimate55,
     Expanded,
+    Cfru,
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub enum ScriptFormat {

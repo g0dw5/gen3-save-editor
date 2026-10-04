@@ -82,7 +82,8 @@ export default function App() {
   const [revision, setRevision] = useState(0);
   const [page, setPage] = useState("pokemon");
   const [cheatsOpen, setCheatsOpen] = useState(false);
-  const [trainerDifficulty, setTrainerDifficulty] = useState<TrainerDifficulty>(2);
+  const [trainerDifficulty, setTrainerDifficulty] =
+    useState<TrainerDifficulty>(2);
   const [windows, setWindows] = useState<RefWindow[]>([]);
   const nextWindow = useRef(0);
   const [free, setFree] = useState(false);
@@ -537,6 +538,7 @@ export default function App() {
                 <span>
                   <ShieldCheck size={12} />
                   {t("verified")} · {catalog.profile.md5.slice(0, 8)}
+                  {!canEdit ? ` · ${t("readOnly")}` : ""}
                   {save?.dirty ? ` · ${t("unsaved")}` : ""}
                 </span>
               </>
@@ -551,7 +553,7 @@ export default function App() {
             </button>
             <button
               onClick={() => void load("save")}
-              disabled={!catalog || busy}
+              disabled={!catalog || !canEdit || busy}
             >
               <FolderOpen size={15} />
               {t("openSave")}

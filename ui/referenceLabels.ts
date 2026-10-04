@@ -27,19 +27,25 @@ export function evolutionLabel(
   ];
   const kind = evolution.condition ?? common[evolution.method] ?? "unknown";
   const value = evolution.parameter;
+  const auxiliary = evolution.auxiliary ?? 0;
   const values: Record<string, string> = {
     n: String(value),
     item:
       catalog.items.find((item) => item.id === value)?.name ?? t("unknownItem"),
+    held_item:
+      catalog.items.find((item) => item.id === auxiliary)?.name ??
+      t("unknownItem"),
     move:
       catalog.moves.find((move) => move.id === value)?.name ?? t("unknownMove"),
     type: typeNames[value] ?? t("unknown"),
+    held_type: typeNames[auxiliary] ?? t("unknown"),
     species:
       catalog.species.find((species) => species.id === value)?.name ??
       t("unknown"),
     region:
       catalog.met_locations.find((region) => region.id === value)?.name ??
       t("unresolved"),
+    time: `${auxiliary >> 8}:00–${auxiliary & 255}:00`,
   };
   const base = t(`evo_${kind}`).replace(
     /\{(\w+)\}/g,

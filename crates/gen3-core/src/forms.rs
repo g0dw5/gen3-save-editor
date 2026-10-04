@@ -12,6 +12,7 @@ use serde::Serialize;
 pub enum BattleFormRules {
     ExpansionEvolutionMethods,
     UltimateEvolutionMethods,
+    CfruEvolutionMethods,
 }
 #[derive(Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -40,6 +41,7 @@ pub(crate) fn is_battle_method(rules: Option<BattleFormRules>, method: u16) -> b
     match rules {
         Some(BattleFormRules::ExpansionEvolutionMethods) => matches!(method, 0xfffd..=0xffff),
         Some(BattleFormRules::UltimateEvolutionMethods) => matches!(method & 255, 250..=255),
+        Some(BattleFormRules::CfruEvolutionMethods) => matches!(method, 0xfd | 0xfe),
         None => false,
     }
 }
@@ -120,7 +122,14 @@ impl Rom {
                 let target = u16(&self.data, offset + 4)?;
                 self.valid_species(target)?;
                 let parameter = u16(&self.data, offset + 2)?;
-                let trigger = if method == 250 {
+                let trigger = if matches!(rules, BattleFormRules::CfruEvolutionMethods) {
+                    if method == 0xfd || parameter == 0 {
+                        BattleTrigger::BattleCommand(method)
+                    } else {
+                        self.item(parameter)?;
+                        BattleTrigger::HeldItem(parameter)
+                    }
+                } else if method == 250 {
                     BattleTrigger::BattleCommand(method)
                 } else if matches!(method, 0xfffe | 252) {
                     self.move_info(parameter)?;
@@ -132,7 +141,11 @@ impl Rom {
                 out.push(BattleForm {
                     source,
                     target,
-                    kind: if method == 251 && parameter == 702 {
+                    kind: if matches!(rules, BattleFormRules::CfruEvolutionMethods)
+                        && method == 0xfd
+                    {
+                        BattleFormKind::Gigantamax
+                    } else if method == 251 && parameter == 702 {
                         BattleFormKind::Gigantamax
                     } else if method == 250 {
                         BattleFormKind::Transformation

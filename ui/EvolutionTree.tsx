@@ -44,10 +44,7 @@ export function EvolutionTree({
       {graph.evolutions
         .filter((e) => e.target === value)
         .map((edge) => (
-          <div
-            className="evolution-condition"
-            key={`e:${edge.source}:${edge.method}:${edge.parameter}`}
-          >
+          <div className="evolution-condition" key={`e:${edge.offset}`}>
             {sourceLink(edge.source)}
             <span>{evolutionLabel(edge, catalog, catalog.type_names, t)}</span>
           </div>

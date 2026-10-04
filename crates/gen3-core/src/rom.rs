@@ -48,6 +48,50 @@ pub(crate) fn evolution_condition(method: u16, expanded: bool) -> &'static str {
     }
 }
 
+pub(crate) fn cfru_evolution_condition(method: u16) -> &'static str {
+    match method {
+        1 => "friendship",
+        2 => "friendship_day",
+        3 => "friendship_night",
+        4 => "level",
+        5 => "trade",
+        6 => "trade_item",
+        7 => "item",
+        8 => "attack_higher",
+        9 => "attack_equal",
+        10 => "defense_higher",
+        11 | 12 => "personality",
+        13 => "level",
+        14 => "shedinja",
+        15 => "beauty",
+        16 => "rain_or_fog",
+        17 => "move_type",
+        18 => "party_type",
+        19 => "map",
+        20 => "male_level",
+        21 => "female_level",
+        22 => "night_level",
+        23 => "day_level",
+        24 => "held_night",
+        25 => "held_day",
+        26 => "move",
+        27 => "party_species",
+        28 => "time_range",
+        29 => "flag",
+        30 => "critical_hits",
+        31 => "nature_high",
+        32 => "nature_low",
+        33 => "damage_location",
+        34 => "item_location",
+        35 => "level_hold_item",
+        36 => "item_hold_item",
+        37 => "move_male",
+        38 => "move_female",
+        39 => "item_night",
+        _ => "unknown",
+    }
+}
+
 #[derive(Clone)]
 pub struct Rom {
     pub data: Arc<Vec<u8>>,
@@ -121,6 +165,8 @@ pub struct Evolution {
     pub condition: &'static str,
     pub requirements: Vec<EvolutionRequirement>,
     pub parameter: u16,
+    /// CFRU uses the last halfword for compound requirements (item, type, time).
+    pub auxiliary: u16,
     pub target: u16,
     pub offset: usize,
 }
@@ -275,6 +321,8 @@ impl Rom {
                     .collect::<Result<_>>()?
             } else if expanded {
                 vec![u16(b, 24)?, u16(b, 26)?, u16(b, 28)?]
+            } else if self.profile.formats.species == crate::adapter::SpeciesFormat::Cfru28 {
+                vec![b[22] as u16, b[23] as u16, b[26] as u16]
             } else {
                 vec![b[22] as u16, b[23] as u16]
             },
@@ -359,7 +407,11 @@ impl Rom {
         Ok(Ability {
             id,
             name: self.text(n, self.profile.ability_names.stride)?,
-            description: self.ptr_text(d),
+            description: if id < self.profile.ability_description_count {
+                self.ptr_text(d)
+            } else {
+                String::new()
+            },
         })
     }
     pub fn nature_changes(&self, id: u8) -> Result<[i8; 5]> {
@@ -507,6 +559,10 @@ impl Rom {
                         == crate::adapter::EvolutionFormat::Ultimate55
                     {
                         crate::ultimate::evolution_condition(method)
+                    } else if self.profile.formats.evolutions
+                        == crate::adapter::EvolutionFormat::Cfru
+                    {
+                        cfru_evolution_condition(method)
                     } else {
                         evolution_condition(
                             method,
@@ -515,6 +571,13 @@ impl Rom {
                         )
                     },
                     parameter: u16(&self.data, o + 2)?,
+                    auxiliary: if self.profile.formats.evolutions
+                        == crate::adapter::EvolutionFormat::Cfru
+                    {
+                        u16(&self.data, o + 6)?
+                    } else {
+                        0
+                    },
                     target: u16(&self.data, o + 4)?,
                     offset: o,
                 });
@@ -532,10 +595,11 @@ impl Rom {
             LearnsetFormat::MoveLevel16 => (4, 0),
             LearnsetFormat::Move16Level8 => (3, 0),
         };
-        let p = pointer(
-            &self.data,
-            self.profile.learnsets + (id as usize + bias) * 4,
-        )?;
+        let entry = self.profile.learnsets + (id as usize + bias) * 4;
+        if format == LearnsetFormat::Move16Level8 && u32(&self.data, entry)? == 0 {
+            return Ok(out);
+        }
+        let p = pointer(&self.data, entry)?;
         for i in 0..128 {
             let o = p + i * stride;
             let v = u16(&self.data, o)?;

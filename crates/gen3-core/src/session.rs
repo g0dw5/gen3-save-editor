@@ -125,6 +125,10 @@ impl Session {
         }
     }
     pub fn load(&mut self, data: Vec<u8>, source: Option<PathBuf>) -> Result<()> {
+        self.rom
+            .profile
+            .capabilities
+            .require(self.rom.profile.capabilities.save_edit, "save_edit")?;
         let save = Save::open(data.clone(), self.rom.profile.save)?;
         save.validate(&self.rom)?;
         self.original = data;

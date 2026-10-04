@@ -258,6 +258,7 @@ export interface SpeciesDetail {
     requirements?: { kind: string; value: number }[];
     method: number;
     parameter: number;
+    auxiliary?: number;
     target: number;
     offset: number;
   }[];

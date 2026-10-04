@@ -122,6 +122,10 @@ impl Rom {
     /// Static front picture. PID drives persistent individual appearances;
     /// temporary battle transformations are not inferred from a boxed Pokémon.
     pub fn pokemon_sprite(&self, id: u16, shiny: bool, pid: u32) -> Result<Vec<u8>> {
+        self.profile.capabilities.require(
+            self.profile.capabilities.individual_sprites,
+            "individual_sprites",
+        )?;
         let species = self.valid_species(id)?;
         let b = &self.data;
         let rules = self.profile.sprite_rules;

@@ -73,6 +73,7 @@ pub const PROFILE: Profile = Profile {
         ..Capabilities::DARK_PHANTOM
     },
     ability_count: 342,
+    ability_description_count: 342,
     species_abilities: Some(Table {
         offset: 0x17a0000,
         count: 1200,

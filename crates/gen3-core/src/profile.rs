@@ -35,6 +35,8 @@ pub struct Profile {
     pub formats: crate::adapter::RomFormats,
     pub capabilities: crate::adapter::Capabilities,
     pub ability_count: u16,
+    /// A ROM may have more names than verified description pointers.
+    pub ability_description_count: u16,
     pub species_abilities: Option<Table>,
     /// Excluded overwritten slots are not trainer records.
     pub trainer_exclusions: &'static [(u16, u16)],
@@ -235,6 +237,7 @@ pub const BW: Profile = Profile {
     formats: crate::adapter::RomFormats::GEN3,
     capabilities: crate::adapter::Capabilities::DARK_PHANTOM,
     ability_count: 151,
+    ability_description_count: 151,
     species_abilities: None,
     trainer_exclusions: &[],
     max_level: 100,
@@ -441,6 +444,7 @@ pub const ROCKET: Profile = Profile {
     formats: crate::adapter::RomFormats::ROCKET21,
     capabilities: crate::adapter::Capabilities::ROCKET21,
     ability_count: 269,
+    ability_description_count: 269,
     species_abilities: None,
     trainer_exclusions: &[],
     max_level: 150,
@@ -616,7 +620,13 @@ pub const ROCKET: Profile = Profile {
         ..EMERALD
     },
 };
-pub const PROFILES: [Profile; 4] = [BW, DP, ROCKET, crate::ultimate::PROFILE];
+pub const PROFILES: [Profile; 5] = [
+    BW,
+    DP,
+    ROCKET,
+    crate::ultimate::PROFILE,
+    crate::mercury::PROFILE,
+];
 pub fn identify(data: &[u8]) -> Result<Profile> {
     let md5 = hash(data);
     PROFILES

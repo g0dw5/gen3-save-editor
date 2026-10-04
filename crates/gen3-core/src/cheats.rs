@@ -583,7 +583,7 @@ mod tests {
     fn emergency_recovery_is_exact_rom_only_and_has_no_patch_collisions() {
         let mut request = request();
         request.cheat_id = EMERGENCY_HEAL.into();
-        for profile in PROFILES {
+        for profile in PROFILES.into_iter().filter(|p| emergency::supported(p.md5)) {
             let rom = CheatRom::identify(profile.md5, profile.size).unwrap();
             request.expected_rom_md5 = profile.md5.into();
             let code = rom.generate(&request).unwrap();
@@ -685,7 +685,10 @@ mod tests {
     fn exact_identity_and_cross_rom_isolation() {
         assert!(CheatRom::open(&[0; 192]).is_err());
         assert!(CheatRom::identify(ULTIMATE_MD5, 1024).is_err());
-        for p in PROFILES.into_iter().filter(|p| p.md5 != ULTIMATE_MD5) {
+        for p in PROFILES
+            .into_iter()
+            .filter(|p| p.md5 != ULTIMATE_MD5 && !bindings(p.md5).is_empty())
+        {
             let rom = CheatRom::identify(p.md5, p.size).unwrap();
             assert_eq!(
                 rom.catalog().entries.len(),
@@ -743,7 +746,7 @@ mod tests {
     }
     #[test]
     fn native_protect_is_exact_rom_and_keeps_other_bits() {
-        for profile in PROFILES {
+        for profile in PROFILES.into_iter().filter(|p| protect::supported(p.md5)) {
             let rom = CheatRom::identify(profile.md5, profile.size).unwrap();
             let request = GenerateRequest {
                 expected_rom_md5: profile.md5.into(),
@@ -827,7 +830,10 @@ mod tests {
     #[test]
     fn parameter_validation_and_patch_isolation() {
         use parameters::{Landing, MapChoice, SpeciesChoice};
-        for p in PROFILES {
+        for p in PROFILES
+            .into_iter()
+            .filter(|p| parameters::supported(p.md5))
+        {
             let mut rom = CheatRom::identify(p.md5, p.size).unwrap();
             rom.options = Options {
                 species: vec![SpeciesChoice {
