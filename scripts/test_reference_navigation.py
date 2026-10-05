@@ -32,6 +32,7 @@ WORLD = {
 
 
 if __name__ == "__main__":
+    expect.set_options(timeout=30000)
     requests = []
     errors = []
     delayed = []

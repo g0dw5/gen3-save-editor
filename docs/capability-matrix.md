@@ -368,3 +368,17 @@ remain unresolved. No receipt logic is replaced with item holdings or visibility
 五份指纹均保持部分支持。线索来自当前 ROM，被地图表引用不代表游戏中当前可达或
 必定使用；NPC 可见和标记满足不代表领奖／完成。普通 SAV 检查不是模拟器实时状态
 或全部设施情景。独立 HTML 附录有界，未知条件和循环不包装成无法完成。
+
+## Event-clue search increment / 事件线索搜索增量
+
+All five story/dependency rows remain **P**. The shared read-only event page now
+searches current-ROM text/map references and links guarded changes to prerequisite
+tracing, map tiles, exterior chains and return. All 28,322 searchable references
+have current map/root/text evidence; this does not prove game activation, complete
+story coverage or quest completion. Observed values and NPC visibility are
+explicitly separate from receipt/task status. See
+[scope and verification](verification/event-clues-20261006.md).
+
+五份指纹共用事件线索页，支持文字／地图搜索、条件追查、格位／入口和返回；不内置
+任务目录，不把标记值一致当作完成状态。完整剧情依赖、原生事件、动态激活和可达性
+仍有缺口，相关行继续为部分解析。

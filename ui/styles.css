@@ -2557,3 +2557,49 @@ summary {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.event-clues-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.event-clues-panel > p {
+  margin: 10px 14px;
+  flex-shrink: 0;
+}
+.event-map-filter {
+  display: grid;
+  gap: 6px;
+  margin: 8px 10px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+.event-map-filter select {
+  min-width: 0;
+  width: 100%;
+}
+.event-clue-context {
+  display: block;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.event-clue-paging {
+  display: flex;
+  gap: 8px;
+  margin: 10px;
+  flex-shrink: 0;
+}
+.event-clue-effect {
+  padding: 12px;
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.event-clue-text blockquote {
+  margin: 10px 0;
+  padding: 12px;
+  border-left: 3px solid var(--line);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

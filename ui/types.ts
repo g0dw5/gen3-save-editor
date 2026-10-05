@@ -460,6 +460,7 @@ export type RefTab =
   | "abilities"
   | "maps"
   | "trainers"
+  | "events"
   | "collection";
 export interface RefWindow {
   id: number;
@@ -722,5 +723,29 @@ export interface EventDependencyReport {
   };
   total_matches: number;
   next_offset: number | null;
+  partial: boolean;
+}
+
+export interface EventClue {
+  id: string;
+  reference: EventDependencyReport["writers"][number]["reference"];
+  text: { offset: number; text: string }[];
+  visibility: AcquisitionSource["conditions"];
+  effects: {
+    effect: EventDependencyReport["writers"][number]["effect"];
+    conditions: AcquisitionSource["conditions"];
+    observed: boolean | null;
+  }[];
+  effects_truncated: boolean;
+  stopped_at: number[];
+  path_complete: boolean;
+}
+export interface EventClueReport {
+  rom_md5: string;
+  entries: EventClue[];
+  selected: EventClue | null;
+  total_matches: number;
+  next_offset: number | null;
+  coverage: EventDependencyReport["coverage"];
   partial: boolean;
 }

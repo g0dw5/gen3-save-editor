@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { X, GripHorizontal } from "lucide-react";
 import { api } from "./api";
 import { SearchSelect, type SelectProps } from "./SearchSelect";
@@ -172,6 +178,31 @@ export function Floating({
   const [z, setZ] = useState(100 + initial);
   const drag = useRef<{ x: number; y: number } | null>(null);
   const ref = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const keepVisible = () => {
+      const rect = ref.current?.getBoundingClientRect();
+      if (!rect) return;
+      setPosition((previous) => {
+        const x = Math.max(
+          8,
+          Math.min(previous.x, window.innerWidth - rect.width - 8),
+        );
+        const y = Math.max(
+          8,
+          Math.min(previous.y, window.innerHeight - rect.height - 8),
+        );
+        return x === previous.x && y === previous.y ? previous : { x, y };
+      });
+    };
+    keepVisible();
+    const observer = new ResizeObserver(keepVisible);
+    if (ref.current) observer.observe(ref.current);
+    window.addEventListener("resize", keepVisible);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", keepVisible);
+    };
+  }, []);
   return (
     <section
       ref={ref}
@@ -202,14 +233,21 @@ export function Floating({
         }}
         onPointerMove={(e) => {
           if (!drag.current) return;
+          const rect = ref.current!.getBoundingClientRect();
           setPosition({
             x: Math.max(
               8,
-              Math.min(window.innerWidth - 120, e.clientX - drag.current.x),
+              Math.min(
+                window.innerWidth - rect.width - 8,
+                e.clientX - drag.current.x,
+              ),
             ),
             y: Math.max(
               8,
-              Math.min(window.innerHeight - 60, e.clientY - drag.current.y),
+              Math.min(
+                window.innerHeight - rect.height - 8,
+                e.clientY - drag.current.y,
+              ),
             ),
           });
         }}

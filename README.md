@@ -262,3 +262,9 @@ script writers, ROM text context, further guards and tile/entrance/back navigati
 Standalone collection HTML includes a linked, bounded appendix from the same
 current ROM/SAV snapshot. These are partial clues, not a complete quest graph or
 proof of access/completion. See [evidence and limits](docs/verification/event-dependencies-20261006.md).
+
+The read-only **Event clues** reference page searches dialogue contexts and map
+references directly from the loaded ROM, then links guards to prerequisite traces,
+static tiles and exterior entrances. Saved observations are separate from quest
+completion and access. This remains partial story coverage; see
+[event-clue evidence](docs/verification/event-clues-20261006.md).

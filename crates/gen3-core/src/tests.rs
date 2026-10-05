@@ -6792,3 +6792,321 @@ fn collection_export_traces_current_prerequisites_without_save_or_rom_writes() {
         bytes
     );
 }
+
+#[test]
+fn event_clue_search_preserves_references_guards_and_saved_snapshot_boundaries() {
+    use crate::event_dependencies::{Index, SearchRequest};
+    for profile in profile::PROFILES {
+        let (mut rom, mut map) = npc_trade_fixture(profile);
+        let rules = rom.profile.event_state.unwrap().effects.unwrap();
+        let text = Codec::new().encode("HELLO", 6).unwrap();
+        let only = Codec::new().encode("ONLY", 5).unwrap();
+        let b = std::sync::Arc::make_mut(&mut rom.data);
+        for (op, code) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
+            .into_iter()
+            .zip(rules.handlers)
+        {
+            put32(
+                b,
+                rules.commands + op as usize * 4,
+                0x08000001 + code as u32,
+            );
+        }
+        b[0x29000..0x29006].copy_from_slice(&text);
+        b[0x29020..0x29025].copy_from_slice(&only);
+        b[0x26000..0x26002].copy_from_slice(&[0x0f, 0]);
+        put32(b, 0x26002, 0x08029000);
+        b[0x26006..0x2600b].copy_from_slice(&[0x2b, 11, 0, 6, 1]);
+        put32(b, 0x2600b, 0x08026100);
+        b[0x2600f..0x26013].copy_from_slice(&[0x2a, 12, 0, 2]);
+        for i in 0..66 {
+            b[0x26100 + i * 3] = 0x29;
+            put16(b, 0x26101 + i * 3, 12 + i as u16);
+        }
+        b[0x26100 + 66 * 3] = 2;
+        b[0x26200..0x26202].copy_from_slice(&[0x0f, 0]);
+        put32(b, 0x26202, 0x08029020);
+        b[0x26206] = 2;
+        // Seventy actors share a root, yet retain separate map positions/IDs.
+        b[0x25000] = 70;
+        put32(b, 0x25004, 0x08028000);
+        for i in 0..70 {
+            let at = 0x28000 + i * 24;
+            b[at] = i as u8 + 1;
+            put16(b, at + 4, if i == 69 { 99 } else { 1 });
+            put16(b, at + 6, 2);
+            put16(b, at + 20, 20);
+            put32(b, at + 16, 0x08026000);
+        }
+        // A valid-looking but unreferenced root must not become a clue.
+        b[0x26300..0x26307].copy_from_slice(&[0x0f, 0, 0, 0x90, 2, 8, 2]);
+        b[0x26400..0x26402].copy_from_slice(&[0x0f, 0]);
+        put32(b, 0x26402, 0x08029020);
+        b[0x26406] = 2;
+        map.scripts = vec![0x26000, 0x26200, 0x26400];
+        let original = rom.data.clone();
+        let mut save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
+        let before = save.data.clone();
+        let index = Index::build(&rom, std::slice::from_ref(&map)).unwrap();
+        let request = |search: &str, offset| SearchRequest {
+            expected_rom_md5: rom.profile.md5.into(),
+            search: search.into(),
+            map_id: None,
+            offset,
+            selected_id: None,
+        };
+        let first = index.search(&rom, None, request(" hello ", 0)).unwrap();
+        assert_eq!(first.total_matches, 70);
+        assert_eq!(first.entries.len(), 32);
+        assert_eq!(first.next_offset, Some(32));
+        assert!(first.entries[0].effects_truncated);
+        assert!(first.entries[0]
+            .effects
+            .iter()
+            .all(|e| e.observed.is_none()));
+        assert_eq!(first.entries[0].text[0].text, "HELLO");
+        assert_eq!(first.entries[0].reference.x, Some(1));
+        let final_page = index
+            .search(&rom, Some(&save), request("HELLO", 64))
+            .unwrap();
+        assert_eq!(final_page.entries.len(), 6);
+        assert!(final_page.next_offset.is_none());
+        let outside = final_page.entries.last().unwrap();
+        assert_eq!(outside.reference.x, None);
+        assert_eq!(outside.reference.y, None);
+        assert!(outside.reference.entry_unresolved);
+        let selected_id = outside.id.clone();
+        let mut selected_request = request("HELLO", 0);
+        selected_request.selected_id = Some(selected_id.clone());
+        let selection = index.search(&rom, Some(&save), selected_request).unwrap();
+        let selected = selection.selected.unwrap();
+        assert_eq!(selected.id, selected_id);
+        assert_eq!(selected.visibility[0].satisfied, Some(true));
+        let effect = selected
+            .effects
+            .iter()
+            .find(|e| e.effect.value == Some(1))
+            .unwrap();
+        assert_eq!(effect.observed, Some(false));
+        assert!(effect
+            .conditions
+            .iter()
+            .any(|c| c.condition.id == 11 && c.satisfied == Some(false)));
+        assert!(!serde_json::to_value(&selected)
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .contains_key("status"));
+        let text_only = index.search(&rom, None, request("ONLY", 0)).unwrap();
+        assert_eq!(text_only.total_matches, 2);
+        assert_ne!(text_only.entries[0].id, text_only.entries[1].id);
+        assert_eq!(
+            text_only.entries[0].reference.offset,
+            text_only.entries[1].reference.offset
+        );
+        assert_ne!(
+            text_only.entries[0].reference.root,
+            text_only.entries[1].reference.root
+        );
+        assert!(text_only.entries[0].effects.is_empty());
+        assert_eq!(text_only.entries[0].reference.kind, "map_script");
+        assert_eq!(
+            index
+                .search(&rom, None, request("synthetic TRADE room", 0))
+                .unwrap()
+                .total_matches,
+            72
+        );
+        let mut filtered = request("", 0);
+        filtered.map_id = Some("missing-map".into());
+        assert_eq!(index.search(&rom, None, filtered).unwrap().total_matches, 0);
+        assert_eq!(save.data, before);
+        assert_eq!(rom.data, original);
+        // Explicitly change only a synthetic snapshot, and prove per-query invalidation.
+        let layout = rom.profile.event_state.unwrap();
+        let range = layout.flags[0];
+        let logical = range.offset + 11 / 8;
+        let absolute = save.sections[1 + logical / 3968] + logical % 3968;
+        save.data[absolute] |= 1 << (11 % 8);
+        let changed = index
+            .search(&rom, Some(&save), request("HELLO", 0))
+            .unwrap();
+        assert!(changed.entries[0]
+            .effects
+            .iter()
+            .any(|e| e
+                .conditions
+                .iter()
+                .any(|c| c.condition.id == 11 && c.satisfied == Some(true))));
+        let mut oversized = request("", 0);
+        oversized.search = "a".repeat(513);
+        assert_eq!(
+            index.search(&rom, None, oversized).err().unwrap().code,
+            "event_search_arguments"
+        );
+        assert_eq!(
+            index
+                .search(&rom, None, request("HELLO", 71))
+                .err()
+                .unwrap()
+                .code,
+            "event_search_offset"
+        );
+        let mut stale = request("", 0);
+        stale.expected_rom_md5 = "wrong".into();
+        assert_eq!(
+            index.search(&rom, None, stale).err().unwrap().code,
+            "rom_mismatch"
+        );
+        let mut other = rom.clone();
+        std::sync::Arc::make_mut(&mut other.data)[0] ^= 1;
+        assert_eq!(
+            index
+                .search(&other, None, request("", 0))
+                .err()
+                .unwrap()
+                .code,
+            "rom_mismatch"
+        );
+        // Read-only command: fresh SAV overlay, unchanged bytes, reject stale input.
+        let saved_snapshot = save.data.clone();
+        let mut session = Session::new(rom.clone());
+        session.save = Some(save);
+        let mut app = crate::app::App {
+            session: Some(session),
+            event_dependency_cache: Some((rom.data.clone(), index)),
+            ..Default::default()
+        };
+        let dispatch = |payload| crate::app::Request {
+            command: "event_search".into(),
+            payload,
+        };
+        let payload = serde_json::json!({"expected_rom_md5":rom.profile.md5,"search":"HELLO"});
+        let response = app.dispatch(dispatch(payload.clone())).unwrap();
+        assert_eq!(response["total_matches"], 70);
+        assert_eq!(app.dispatch(dispatch(payload)).unwrap(), response);
+        for payload in [
+            serde_json::Value::Null,
+            serde_json::json!({"expected_rom_md5":"stale"}),
+            serde_json::json!({"expected_rom_md5":rom.profile.md5,"offset":null}),
+            serde_json::json!({"expected_rom_md5":rom.profile.md5,"write":true}),
+        ] {
+            assert!(app.dispatch(dispatch(payload)).is_err());
+        }
+        assert_eq!(
+            app.session.as_ref().unwrap().save.as_ref().unwrap().data,
+            saved_snapshot
+        );
+        assert_eq!(app.session.as_ref().unwrap().rom.data, original);
+    }
+}
+
+#[test]
+#[ignore = "requires all five exact private ROMs and GEN3_SAVE_MERCURY12"]
+fn local_event_clue_search_cross_rom_queries() {
+    use crate::app::{App, Request};
+    let mut app = App::default();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let original = std::fs::read(&path).unwrap();
+        let rom = Rom::open(original.clone()).unwrap();
+        let maps = rom.maps().unwrap();
+        app.session = Some(Session::new(rom.clone()));
+        let query = |search: &str, offset, selected: Option<&str>| Request {
+            command: "event_search".into(),
+            payload: serde_json::json!({"expected_rom_md5":rom.profile.md5,"search":search,"offset":offset,"selected_id":selected}),
+        };
+        let first = app.dispatch(query("", 0, None)).unwrap();
+        assert_eq!(first["rom_md5"], rom.profile.md5);
+        assert!(first["total_matches"].as_u64().unwrap() > 0);
+        assert!(std::sync::Arc::ptr_eq(
+            &app.event_dependency_cache.as_ref().unwrap().0,
+            &rom.data
+        ));
+        let total = first["total_matches"].as_u64().unwrap() as usize;
+        let mut checked = 0;
+        let mut ids = std::collections::BTreeSet::new();
+        // Every search row is checked against actual map/event bytes and current
+        // ROM strings. This is reference evidence, not gameplay accessibility.
+        for offset in (0..total).step_by(32) {
+            let page = app.dispatch(query("", offset, None)).unwrap();
+            for entry in page["entries"].as_array().unwrap() {
+                assert!(ids.insert(entry["id"].as_str().unwrap().to_string()));
+                let reference = &entry["reference"];
+                let map = maps
+                    .iter()
+                    .find(|m| m.id == reference["map_id"].as_str().unwrap())
+                    .unwrap();
+                assert_eq!(reference["map_name"], map.name);
+                let root = reference["root"].as_u64().unwrap() as usize;
+                let at = reference["offset"].as_u64().unwrap() as usize;
+                let script_off = match reference["kind"].as_str().unwrap() {
+                    "npc" => Some(16),
+                    "trigger" => Some(12),
+                    "sign" => Some(8),
+                    "map_script" => None,
+                    _ => panic!(),
+                };
+                if let Some(script_off) = script_off {
+                    assert_eq!(pointer(&rom.data, at + script_off).unwrap(), root);
+                } else {
+                    assert!(map.scripts.contains(&root));
+                }
+                if let (Some(x), Some(y)) = (reference["x"].as_i64(), reference["y"].as_i64()) {
+                    assert!(x >= 0 && y >= 0 && x < (map.width as i64) && y < (map.height as i64));
+                }
+                for text in entry["text"].as_array().unwrap() {
+                    assert_eq!(
+                        text["text"],
+                        rom.cstring(text["offset"].as_u64().unwrap() as usize)
+                    );
+                }
+                assert!(entry["effects"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .all(|e| e["observed"].is_null()));
+                assert!(entry.get("status").is_none());
+                checked += 1;
+            }
+        }
+        assert_eq!(checked, total);
+        let sample = first["entries"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|e| !e["text"].as_array().unwrap().is_empty())
+            .unwrap();
+        let phrase = sample["text"][0]["text"]
+            .as_str()
+            .unwrap()
+            .chars()
+            .take(64)
+            .collect::<String>();
+        let found = app
+            .dispatch(query(&phrase, 0, sample["id"].as_str()))
+            .unwrap();
+        assert_eq!(found["selected"]["id"], sample["id"]);
+        if key == "MERCURY12" {
+            let sav_path = std::env::var("GEN3_SAVE_MERCURY12").unwrap();
+            let before = std::fs::read(&sav_path).unwrap();
+            app.session
+                .as_mut()
+                .unwrap()
+                .load(before.clone(), None)
+                .unwrap();
+            let current = app
+                .dispatch(query(&phrase, 0, sample["id"].as_str()))
+                .unwrap();
+            assert_eq!(current["selected"]["text"], found["selected"]["text"]);
+            assert_eq!(
+                app.session.as_ref().unwrap().save.as_ref().unwrap().data,
+                before
+            );
+            assert_eq!(std::fs::read(sav_path).unwrap(), before);
+        }
+        assert_eq!(rom.data.as_ref(), &original);
+        assert_eq!(std::fs::read(path).unwrap(), original);
+        println!("{key}: {total} searchable references, every map/root/text checked; search/detail/cache preservation passed");
+    }
+}

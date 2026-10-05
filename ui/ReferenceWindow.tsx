@@ -11,6 +11,7 @@ import { TrainerArt } from "./TrainerArt";
 import { TrainerParty } from "./TrainerParty";
 import { SpeciesStats } from "./SpeciesStats";
 import { EvolutionTree } from "./EvolutionTree";
+import { EventCluesPanel } from "./EventCluesPanel";
 import {
   emptyTrainerFilters,
   indexTrainers,
@@ -99,27 +100,50 @@ export function ReferenceWindow({
   const [tab, setTab] = useState<RefTab>(info.tab);
   const [selected, setSelected] = useState<number | string>(info.selected ?? 1);
   const [mapFocus, setMapFocus] = useState<MapFocus | undefined>();
+  const [search, setSearch] = useState("");
+  const [eventMap, setEventMap] = useState("");
+  const [eventOffset, setEventOffset] = useState(0);
   const [navigation, setNavigation] = useState<MapNavigation | null>(null);
   const [history, setHistory] = useState<
-    { tab: RefTab; selected: number | string; focus?: MapFocus }[]
+    {
+      tab: RefTab;
+      selected: number | string;
+      focus?: MapFocus;
+      search: string;
+      eventMap: string;
+      eventOffset: number;
+    }[]
   >([]);
-  const lastPage = useRef({ tab, selected, focus: mapFocus });
+  const lastPage = useRef({
+    tab,
+    selected,
+    focus: mapFocus,
+    search,
+    eventMap,
+    eventOffset,
+  });
   const returning = useRef(false);
   useEffect(() => {
     const last = lastPage.current;
     if (last.tab !== tab || last.selected !== selected) {
       if (!returning.current) setHistory((h) => [...h.slice(-39), last]);
       returning.current = false;
-      lastPage.current = { tab, selected, focus: mapFocus };
     }
-  }, [tab, selected, mapFocus]);
+    lastPage.current = {
+      tab,
+      selected,
+      focus: mapFocus,
+      search,
+      eventMap,
+      eventOffset,
+    };
+  }, [tab, selected, mapFocus, search, eventMap, eventOffset]);
   const goMap = (id: string, focus?: MapFocus) => {
     setMapFocus(focus);
     setTab("maps");
     setSelected(id);
     setSearch("");
   };
-  const [search, setSearch] = useState("");
   const [trainerFilters, setTrainerFilters] =
     useState<TrainerFilters>(emptyTrainerFilters);
   const trainerEntries = useMemo(
@@ -177,7 +201,7 @@ export function ReferenceWindow({
     () =>
       (tab === "maps"
         ? (world?.maps ?? [])
-        : tab === "collection"
+        : tab === "collection" || tab === "events"
           ? []
           : tab === "trainers"
             ? (world?.trainers ?? [])
@@ -343,13 +367,14 @@ export function ReferenceWindow({
             "abilities",
             "maps",
             "trainers",
+            "events",
             "collection",
           ] as RefTab[]
         )
           .filter(
             (key) =>
               catalog.profile.capabilities?.world !== false ||
-              !["maps", "trainers"].includes(key),
+              !["maps", "trainers", "events"].includes(key),
           )
           .map((key) => (
             <button
@@ -359,6 +384,7 @@ export function ReferenceWindow({
               onClick={() => {
                 setTab(key);
                 setSearch("");
+                setEventOffset(0);
               }}
             >
               {t(key)}
@@ -377,13 +403,30 @@ export function ReferenceWindow({
           setTab(previous.tab);
           setSelected(previous.selected);
           setMapFocus(previous.focus);
-          setSearch("");
+          setSearch(previous.search);
+          setEventMap(previous.eventMap);
+          setEventOffset(previous.eventOffset);
           setTrainerFilters(emptyTrainerFilters);
         }}
       >
         ← {t("navBack")}
       </button>
-      {tab === "collection" ? (
+      {tab === "events" ? (
+        <EventCluesPanel
+          catalog={catalog}
+          maps={world?.maps ?? []}
+          search={search}
+          onSearch={setSearch}
+          selected={typeof selected === "string" ? selected : ""}
+          onSelect={setSelected}
+          mapId={eventMap}
+          onMapFilter={setEventMap}
+          onMap={goMap}
+          onTarget={goTarget}
+          offset={eventOffset}
+          setOffset={setEventOffset}
+        />
+      ) : tab === "collection" ? (
         <CollectionPanel
           catalog={catalog}
           maps={world?.maps ?? []}
@@ -801,6 +844,18 @@ export function ReferenceWindow({
             )}
             {tab === "maps" && current && (
               <>
+                <button
+                  className="link-button"
+                  onClick={() => {
+                    setEventMap(String(selected));
+                    setEventOffset(0);
+                    setSelected("");
+                    setSearch("");
+                    setTab("events");
+                  }}
+                >
+                  {t("eventCluesOnMap")} ↗
+                </button>
                 <div className="muted">
                   {(current as GameMap).width} × {(current as GameMap).height}
                 </div>

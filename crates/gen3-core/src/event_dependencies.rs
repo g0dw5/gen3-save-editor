@@ -112,6 +112,7 @@ pub struct Index {
     rom_md5: &'static str,
     rom_data: std::sync::Arc<Vec<u8>>,
     scripts: BTreeMap<usize, ScriptEffects>,
+    references: Vec<Reference>,
     writers: BTreeMap<(&'static str, u16), Vec<IndexedEffect>>,
     pub coverage: Coverage,
 }
@@ -167,6 +168,53 @@ pub struct Bundle {
     pub skipped_conditions: usize,
     pub truncated: bool,
     pub partial: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SearchRequest {
+    pub expected_rom_md5: String,
+    #[serde(default)]
+    pub search: String,
+    pub map_id: Option<String>,
+    #[serde(default)]
+    pub offset: usize,
+    pub selected_id: Option<String>,
+}
+#[derive(Serialize)]
+pub struct ClueEffect {
+    pub effect: Effect,
+    pub conditions: Vec<ConditionCheck>,
+    /// Whether this write's known value currently matches, not receipt/completion.
+    pub observed: Option<bool>,
+}
+#[derive(Serialize)]
+pub struct Clue {
+    pub id: String,
+    pub reference: Reference,
+    pub text: Vec<TextReference>,
+    pub visibility: Vec<ConditionCheck>,
+    pub effects: Vec<ClueEffect>,
+    pub effects_truncated: bool,
+    pub stopped_at: Vec<usize>,
+    pub path_complete: bool,
+}
+#[derive(Serialize)]
+pub struct SearchReport {
+    pub rom_md5: String,
+    pub entries: Vec<Clue>,
+    pub selected: Option<Clue>,
+    pub total_matches: usize,
+    pub next_offset: Option<usize>,
+    pub coverage: Coverage,
+    pub partial: bool,
+}
+
+fn reference_id(reference: &Reference) -> String {
+    format!(
+        "{}:{}:{:x}:{:x}",
+        reference.map_id, reference.kind, reference.offset, reference.root
+    )
 }
 
 /// Keep positioned non-reward triggers/signs too; reward markers alone miss them.
@@ -389,7 +437,7 @@ impl Index {
             truncated: roots.len() > 16_384,
         };
         let mut writers: BTreeMap<_, Vec<_>> = BTreeMap::new();
-        for reference in references {
+        for reference in &references {
             let Some(report) = scripts.get(&reference.root) else {
                 continue;
             };
@@ -408,8 +456,129 @@ impl Index {
             rom_md5: rom.profile.md5,
             rom_data: rom.data.clone(),
             scripts,
+            references,
             writers,
             coverage,
+        })
+    }
+    /// Search loaded-ROM context, never a bundled quest catalog. Visibility,
+    /// branch guards and observed writes do not establish quest completion.
+    pub fn search(
+        &self,
+        rom: &Rom,
+        save: Option<&Save>,
+        request: SearchRequest,
+    ) -> Result<SearchReport> {
+        self.check_rom(rom)?;
+        if request.expected_rom_md5 != rom.profile.md5 {
+            return Err(err("rom_mismatch", request.expected_rom_md5));
+        }
+        if request.search.len() > 512
+            || request.map_id.as_ref().is_some_and(|v| v.len() > 32)
+            || request.selected_id.as_ref().is_some_and(|v| v.len() > 128)
+        {
+            return Err(err("event_search_arguments", "query exceeds bounds"));
+        }
+        let search = request.search.trim().to_lowercase();
+        let matches: Vec<_> = self
+            .references
+            .iter()
+            .filter(|reference| {
+                if request
+                    .map_id
+                    .as_ref()
+                    .is_some_and(|id| id != &reference.map_id)
+                {
+                    return false;
+                }
+                let Some(script) = self.scripts.get(&reference.root) else {
+                    return false;
+                };
+                // Empty scripts have no readable clue; do not invent a task for them.
+                if script.text.is_empty() && script.effects.is_empty() {
+                    return false;
+                }
+                search.is_empty()
+                    || reference.map_name.to_lowercase().contains(&search)
+                    || reference.map_id.contains(&search)
+                    || script
+                        .text
+                        .iter()
+                        .any(|t| t.text.to_lowercase().contains(&search))
+            })
+            .collect();
+        if request.offset > matches.len() {
+            return Err(err("event_search_offset", request.offset));
+        }
+        let state = save
+            .zip(rom.profile.event_state)
+            .map(|(s, l)| EventSnapshot::new(s, l));
+        let clue = |reference: &&Reference| {
+            let script = &self.scripts[&reference.root];
+            Clue {
+                id: reference_id(reference),
+                reference: (*reference).clone(),
+                text: script.text.clone(),
+                visibility: reference
+                    .conditions
+                    .iter()
+                    .map(|c| check(state.as_ref(), Some(rom), c))
+                    .collect(),
+                effects: script
+                    .effects
+                    .iter()
+                    .take(64)
+                    .map(|effect| {
+                        let guards: BTreeSet<_> = effect.conditions.iter().cloned().collect();
+                        let observed = effect.value.and_then(|value| {
+                            check(
+                                state.as_ref(),
+                                Some(rom),
+                                &EventCondition {
+                                    kind: effect.kind,
+                                    id: effect.id,
+                                    value: value as u32,
+                                    comparison: 1,
+                                    taken: true,
+                                },
+                            )
+                            .satisfied
+                        });
+                        ClueEffect {
+                            effect: effect.clone(),
+                            conditions: guards
+                                .iter()
+                                .map(|c| check(state.as_ref(), Some(rom), c))
+                                .collect(),
+                            observed,
+                        }
+                    })
+                    .collect(),
+                effects_truncated: script.effects.len() > 64,
+                stopped_at: script.stopped_at.clone(),
+                path_complete: script.complete,
+            }
+        };
+        let selected = request
+            .selected_id
+            .as_ref()
+            .and_then(|id| matches.iter().find(|r| reference_id(r) == *id))
+            .map(clue);
+        let entries: Vec<_> = matches
+            .iter()
+            .skip(request.offset)
+            .take(32)
+            .map(clue)
+            .collect();
+        let next = request.offset + entries.len();
+        Ok(SearchReport {
+            rom_md5: rom.profile.md5.into(),
+            entries,
+            selected,
+            total_matches: matches.len(),
+            next_offset: (next < matches.len()).then_some(next),
+            coverage: self.coverage.clone(),
+            partial: true,
         })
     }
     pub fn query(&self, rom: &Rom, save: Option<&Save>, request: Request) -> Result<Report> {

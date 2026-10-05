@@ -10,6 +10,16 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add ROM-text/map search for referenced event clues with guarded writes,
+  SAV snapshot observations, prerequisite tracing and tile/entrance navigation.
+  Preserve search/filter/selection/page on return; keep floating windows inside
+  the viewport when dragged or resized. Keep visibility, observed
+  values, task completion and access distinct; no bundled quest catalog.
+- 新增事件线索页：按当前 ROM 对话／地图搜索引用，查看脚本条件与保存快照，
+  追查前置线索并定位格位／入口。返回保留搜索、筛选、条目和分页；浮窗拖动和缩放
+  保持在窗口内，防止右侧内容越界。不把 NPC
+  可见或标记值一致解释成任务已完成，不内置任务目录。
+
 - Trace persistent prerequisites to potential referenced NPC/tile/map scripts,
   current-ROM text contexts, guard chains and map entrances. Add fingerprint-bound
   lazy queries and a linked, escaped collection HTML appendix. Verify native

@@ -159,3 +159,11 @@ contain current-ROM references/text, never saved progress; queries overlay the
 current immutable SAV. The same readonly trace drives shared condition details
 and bounded collection-export HTML appendices. No complete story DAG or current
 reachability is inferred from these static potential writers.
+
+`event_search` reuses the lazy current-ROM prerequisite index, retaining separate
+map-root references even for actors sharing roots or map scripts sharing headers.
+It pages current-ROM text/effects with per-query SAV observations. These observations
+are not task status. Shared `EventCluesPanel` uses `ConditionDetails` and existing
+map/entrance navigation; reference history retains its search, filter and page.
+Bounds, unknowns and verification live in `verification/event-clues-20261006.md`.
+No script catalogue, dialogue asset or saved progress is bundled/cached across ROMs.

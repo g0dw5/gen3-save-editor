@@ -54,6 +54,12 @@ def main():
         elif command in ('collection','collection_export'):
             if command=='collection_export': assert payload['expected_rom_md5']=='test' and payload['query']['basis']=='individuals'
             data=plan
+        elif command=='event_search':
+            assert payload['expected_rom_md5']=='test'
+            refs=[dict(id=f'0-1:trigger:{i}',reference=copy.deepcopy(writer['reference']),text=[dict(offset=800,text=f'Reward <script>context</script> line {i}')],visibility=[],effects=[dict(effect=writer['effect'],conditions=writer['conditions'],observed=True if sum(r['command']=='open_save' for r in requests)>1 else None)],effects_truncated=False,stopped_at=[700],path_complete=False) for i in range(35)]
+            refs=[entry for entry in refs if (not payload['map_id'] or entry['reference']['map_id']==payload['map_id']) and (not payload['search'] or payload['search'].lower() in entry['text'][0]['text'].lower())]
+            start=payload['offset'];selected=next((entry for entry in refs if entry['id']==payload['selected_id']),None)
+            data=dict(rom_md5='test',entries=refs[start:start+32],selected=selected,total_matches=len(refs),next_offset=start+32 if start+32<len(refs) else None,coverage=report['coverage'],partial=True)
         elif command=='event_dependencies':
             assert payload['expected_rom_md5']=='test'
             data=copy.deepcopy(report)
@@ -186,6 +192,56 @@ def main():
         if os.environ.get('GEN3_UI_ARTIFACTS'):
             page.locator('.collection-breeding').screenshot(path=str(Path(os.environ['GEN3_UI_ARTIFACTS'])/'breeding-preparation.png'))
         page.get_by_role('button',name='English',exact=True).click()
+        # Event text search -> paged reference -> guard trace -> precise map -> back.
+        page.get_by_role('button',name='Event clues',exact=True).click()
+        events=page.locator('.event-clues-panel')
+        expect(events).to_contain_text('Matching references 35')
+        events.get_by_role('textbox',name='Search ROM dialogue or map name').fill('Reward')
+        events.get_by_role('combobox',name='Filter event clues by map').select_option('0-1')
+        expect(events).to_contain_text('Matching references 35')
+        events.get_by_role('button',name='Next references',exact=True).click()
+        expect(events.locator('.reference-rows button')).to_have_count(3)
+        events.locator('.reference-rows button').last.click()
+        expect(events.locator('.event-clue-text blockquote')).to_have_text('Reward <script>context</script> line 34')
+        expect(events).to_contain_text('Task completion undetermined')
+        assert events.locator('script').count()==0
+        events.get_by_role('button',name='Test cave floor (1, 1) ↗',exact=True).click()
+        expect(page.locator('.map-focus')).to_be_visible()
+        page.get_by_role('button',name='Back to previous reference',exact=False).click()
+        events=page.locator('.event-clues-panel')
+        expect(events.get_by_role('textbox',name='Search ROM dialogue or map name')).to_have_value('Reward')
+        expect(events.get_by_role('combobox',name='Filter event clues by map')).to_have_value('0-1')
+        expect(events.locator('.reference-rows button')).to_have_count(3)
+        expect(events.locator('.event-clue-text blockquote')).to_have_text('Reward <script>context</script> line 34')
+        events.locator('.event-dependencies').first.locator('summary').first.click()
+        expect(events.locator('.event-dependencies').first).to_contain_text('May set this event')
+        before=sum(r['command']=='event_search' for r in requests)
+        with page.expect_file_chooser() as choice:
+            page.get_by_role('button',name='Open save',exact=True).first.click()
+        choice.value.set_files(dict(name='synthetic.sav',mimeType='application/octet-stream',buffer=b'fixture-only'))
+        expect(events).to_contain_text('Known result matches the saved snapshot')
+        expect(events.locator('.condition-details').first).to_contain_text('SAV value set')
+        assert sum(r['command']=='event_search' for r in requests)>before
+        page.get_by_role('button',name='简体中文',exact=True).click()
+        expect(events).to_contain_text('任务完成状态无法确定')
+        expect(events).to_contain_text('可能设置此事件')
+        if os.environ.get('GEN3_UI_ARTIFACTS'):
+            events.screenshot(path=str(Path(os.environ['GEN3_UI_ARTIFACTS'])/'event-clues.png'))
+        page.set_viewport_size(dict(width=720,height=740))
+        page.wait_for_function("(()=>{const r=document.querySelector('.floating').getBoundingClientRect();return r.right<=innerWidth-7 && r.bottom<=innerHeight-7;})()")
+        expect(events.get_by_role('textbox',name='搜索 ROM 对话或地图名称')).to_be_visible()
+        expect(events.get_by_role('button',name='Test cave floor (1, 1) ↗',exact=True)).to_be_visible()
+        if os.environ.get('GEN3_UI_ARTIFACTS'):
+            events.screenshot(path=str(Path(os.environ['GEN3_UI_ARTIFACTS'])/'event-clues-compact.png'))
+        page.set_viewport_size(dict(width=1100,height=780))
+        events.get_by_role('textbox',name='搜索 ROM 对话或地图名称').fill('not found')
+        expect(events).to_contain_text('未找到匹配的可读引用')
+        events.get_by_role('textbox',name='搜索 ROM 对话或地图名称').fill('Reward')
+        events.get_by_role('button',name='Test cave floor (1, 1) ↗',exact=True).click()
+        page.get_by_role('button',name='查询此地图的事件线索 ↗',exact=True).click()
+        expect(events.get_by_role('combobox',name='按地图筛选事件线索')).to_have_value('0-1')
+        page.get_by_role('button',name='English',exact=True).click()
+        page.get_by_role('button',name='Collection planning',exact=True).click()
         assert not any(r['command'] in ('action','export_save','save_bytes') for r in requests)
         assert not errors,errors
         page.set_viewport_size(dict(width=720,height=740))

@@ -1,5 +1,29 @@
 import { createContext, useContext } from "react";
 export const en = {
+  events: "Event clues",
+  eventCluesHelp:
+    "Search text and map references read from this ROM. These are partial script clues, not verified quests or a complete story log. Native/custom dialogue, entry selectors and current access remain unresolved.",
+  eventCluesSearch: "Search ROM dialogue or map name",
+  eventCluesMapFilter: "Filter event clues by map",
+  eventCluesMatches: "Matching references",
+  eventCluesUnknownTask: "Task completion undetermined",
+  eventCluesVisibility: "NPC visibility checks (not task completion)",
+  eventCluesChanges: "Potential persistent changes",
+  eventCluesObservedHelp:
+    "A matching saved value means only that this write would agree with the snapshot. Other scripts may write the same value; this does not prove this event happened or that it is currently available.",
+  eventCluesObservedYes: "Known result matches the saved snapshot",
+  eventCluesObservedNo: "Known result differs from the saved snapshot",
+  eventCluesNoWrites:
+    "No persistent write was found in the bounded trace. This does not establish that the event has no effect.",
+  eventCluesEffectsLimit:
+    "Showing the first 64 potential writes. Further effects remain outside this view.",
+  eventCluesNone:
+    "No matching readable reference found. Unparsed dialogue and native events may still exist.",
+  eventCluesError: "Event clues could not be loaded",
+  eventCluesPrevious: "Previous references",
+  eventCluesNext: "Next references",
+  eventCluesOnMap: "Find event clues on this map",
+
   conditionFlagSet: "set",
   conditionFlagUnset: "unset",
   dependencyExporting: "Building latest plan and prerequisite appendix…",
@@ -1039,6 +1063,27 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  events: "事件线索",
+  eventCluesHelp:
+    "按当前 ROM 的文字和地图引用搜索。这是部分脚本线索，并非已验证任务或完整剧情日志；原生／自定义对话、激活条件和当前可达性仍有缺口。",
+  eventCluesSearch: "搜索 ROM 对话或地图名称",
+  eventCluesMapFilter: "按地图筛选事件线索",
+  eventCluesMatches: "匹配的引用",
+  eventCluesUnknownTask: "任务完成状态无法确定",
+  eventCluesVisibility: "NPC 可见性检查（不是任务完成状态）",
+  eventCluesChanges: "可能改变的持久化状态",
+  eventCluesObservedHelp:
+    "保存值一致仅表示这次写入的已知结果与快照一致。其他脚本可能写入相同值，不能据此证明已触发此事件或现在能执行。",
+  eventCluesObservedYes: "已知结果与存档快照一致",
+  eventCluesObservedNo: "已知结果与存档快照不同",
+  eventCluesNoWrites: "有界追查未找到持久化写入，不代表此事件没有作用。",
+  eventCluesEffectsLimit: "仅展示前 64 次可能写入，其他变化未在此页展开。",
+  eventCluesNone: "未找到匹配的可读引用；未解析对话或原生事件仍可能存在。",
+  eventCluesError: "无法加载事件线索",
+  eventCluesPrevious: "上一页线索",
+  eventCluesNext: "下一页线索",
+  eventCluesOnMap: "查询此地图的事件线索",
+
   conditionFlagSet: "已设置",
   conditionFlagUnset: "未设置",
   dependencyExporting: "正在生成最新建议与前置线索附录…",

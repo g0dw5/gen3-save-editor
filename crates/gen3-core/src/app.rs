@@ -164,11 +164,23 @@ impl App {
                 let id = serde_json::from_value(p["id"].clone())?;
                 Ok(serde_json::to_value(self.session()?.rom.detail(id)?)?)
             }
-            "event_dependencies" => {
-                let request: crate::event_dependencies::Request = serde_json::from_value(p)?;
+            "event_dependencies" | "event_search" => {
+                let expected = required(&p, "expected_rom_md5")?;
+                let search_request = if input.command == "event_search" {
+                    Some(serde_json::from_value::<
+                        crate::event_dependencies::SearchRequest,
+                    >(p.clone())?)
+                } else {
+                    None
+                };
+                let dependency_request = if search_request.is_none() {
+                    Some(serde_json::from_value::<crate::event_dependencies::Request>(p)?)
+                } else {
+                    None
+                };
                 let session = self.session()?;
-                if request.expected_rom_md5 != session.rom.profile.md5 {
-                    return Err(err("rom_mismatch", request.expected_rom_md5));
+                if expected != session.rom.profile.md5 {
+                    return Err(err("rom_mismatch", expected));
                 }
                 if self
                     .event_dependency_cache
@@ -180,13 +192,20 @@ impl App {
                     self.event_dependency_cache = Some((session.rom.data.clone(), index));
                 }
                 let session = self.session()?;
-                Ok(serde_json::to_value(
-                    self.event_dependency_cache.as_ref().unwrap().1.query(
+                let index = &self.event_dependency_cache.as_ref().unwrap().1;
+                if let Some(request) = search_request {
+                    return Ok(serde_json::to_value(index.search(
                         &session.rom,
                         session.save.as_ref(),
                         request,
-                    )?,
-                )?)
+                    )?)?);
+                }
+                let request = dependency_request.expect("validated dependency request");
+                Ok(serde_json::to_value(index.query(
+                    &session.rom,
+                    session.save.as_ref(),
+                    request,
+                )?)?)
             }
             "world" | "acquisition" | "collection" | "collection_export" | "daycare_sources" => {
                 let session = self.session()?;
