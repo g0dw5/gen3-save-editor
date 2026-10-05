@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 pub struct EventCondition {
     pub kind: &'static str,
     pub id: u16,
-    pub value: u16,
+    pub value: u32,
     pub comparison: u8,
     pub taken: bool,
 }
@@ -160,7 +160,12 @@ struct State {
     flags: BTreeMap<u16, bool>,
     stack: Vec<usize>,
     conditions: Vec<EventCondition>,
-    comparison: Option<(&'static str, u16, u16)>,
+    comparison: Option<(&'static str, u16, u32)>,
+    checks: BTreeMap<u16, EventCondition>,
+    boolean_comparison: Option<(EventCondition, u16, bool)>,
+    bag_changed: bool,
+    money_changed: bool,
+    resource_vars_unknown: bool,
     known_comparison: Option<u8>,
     awards: BTreeMap<RewardKey, AwardTrace>,
 }
@@ -401,25 +406,58 @@ impl Rom {
                             stopped.insert(pc);
                             break;
                         };
-                        let known = s.known_comparison.and_then(|v| test(v, condition));
+                        let mut resource_branch = None;
+                        let known = if let Some((guard, rhs, reversed)) = &s.boolean_comparison {
+                            let outcomes = [0u16, 1].map(|boolean| {
+                                let (a, b) = if *reversed {
+                                    (*rhs, boolean)
+                                } else {
+                                    (boolean, *rhs)
+                                };
+                                test(
+                                    if a < b {
+                                        0
+                                    } else if a == b {
+                                        1
+                                    } else {
+                                        2
+                                    },
+                                    condition,
+                                )
+                                .expect("validated comparison")
+                            });
+                            if outcomes[0] == outcomes[1] {
+                                Some(outcomes[0])
+                            } else {
+                                resource_branch = Some((guard.clone(), outcomes[1]));
+                                None
+                            }
+                        } else {
+                            s.known_comparison.and_then(|v| test(v, condition))
+                        };
                         let mut branch = s.clone();
                         branch.pc = target;
                         if op == 7 {
                             branch.stack.push(s.pc);
                         }
                         if known.is_none() {
-                            let (kind, id, value) = s.comparison.unwrap_or(("unknown", 0, 0));
-                            let mut guard = EventCondition {
-                                kind,
-                                id,
-                                value,
-                                comparison: condition,
-                                taken: true,
+                            let mut guard = if let Some((mut guard, when_true)) = resource_branch {
+                                guard.taken = when_true;
+                                guard
+                            } else {
+                                let (kind, id, value) = s.comparison.unwrap_or(("unknown", 0, 0));
+                                EventCondition {
+                                    kind,
+                                    id,
+                                    value,
+                                    comparison: condition,
+                                    taken: true,
+                                }
                             };
                             if !branch.conditions.contains(&guard) {
                                 branch.conditions.push(guard.clone());
                             }
-                            guard.taken = false;
+                            guard.taken = !guard.taken;
                             if !s.conditions.contains(&guard) {
                                 s.conditions.push(guard);
                             }
@@ -440,9 +478,16 @@ impl Rom {
                                 if std == 1 { "pickup" } else { "gift" },
                             ));
                         }
+                        // Standard-script presentation is qualified for receipt
+                        // tracing, not a proof of unchanged resource state.
+                        s.bag_changed = true;
+                        s.money_changed = true;
+                        s.resource_vars_unknown = true;
+                        s.checks.retain(|k, _| *k < 0x8000);
                         // Standard scripts can overwrite temporary variables/results.
                         s.vars.retain(|k, _| *k < 0x8000);
                         s.comparison = None;
+                        s.boolean_comparison = None;
                         s.known_comparison = None;
                         if prove && !matches!(std, 0 | 2..=6) {
                             complete = false;
@@ -469,6 +514,15 @@ impl Rom {
                         } else {
                             resolve(&s, src)
                         };
+                        let predicate = if op == 0x16 {
+                            None
+                        } else {
+                            s.checks.get(&src).cloned()
+                        };
+                        s.checks.remove(&dst);
+                        if let Some(predicate) = predicate {
+                            s.checks.insert(dst, predicate);
+                        }
                         if let Some(v) = value {
                             s.vars.insert(dst, v);
                         } else {
@@ -478,6 +532,7 @@ impl Rom {
                     0x17 | 0x18 => {
                         let dst = u16(b, pc + 1)?;
                         let a = resolve(&s, dst);
+                        s.checks.remove(&dst);
                         let v = u16(b, pc + 3)?;
                         if let Some(a) = a {
                             s.vars.insert(
@@ -500,6 +555,23 @@ impl Rom {
                         } else {
                             resolve(&s, rhs)
                         };
+                        s.boolean_comparison = s
+                            .checks
+                            .get(&id)
+                            .cloned()
+                            .zip(v)
+                            .map(|(g, v)| (g, v, false))
+                            .or_else(|| {
+                                if op == 0x22 {
+                                    s.checks
+                                        .get(&rhs)
+                                        .cloned()
+                                        .zip(resolve(&s, id))
+                                        .map(|(g, v)| (g, v, true))
+                                } else {
+                                    None
+                                }
+                            });
                         s.known_comparison = resolve(&s, id).zip(v).map(|(a, b)| {
                             if a < b {
                                 0
@@ -509,8 +581,13 @@ impl Rom {
                                 2
                             }
                         });
-                        s.comparison =
-                            v.map(|v| (if id < 0x8000 { "variable" } else { "unknown" }, id, v));
+                        s.comparison = v.map(|v| {
+                            (
+                                if id < 0x8000 { "variable" } else { "unknown" },
+                                id,
+                                v as u32,
+                            )
+                        });
                     }
                     0x29 | 0x2a => {
                         let flag = u16(b, pc + 1)?;
@@ -522,6 +599,7 @@ impl Rom {
                         }
                     }
                     0x2b => {
+                        s.boolean_comparison = None;
                         s.comparison = Some(("flag", u16(b, pc + 1)?, 1));
                         s.known_comparison =
                             s.flags
@@ -530,15 +608,66 @@ impl Rom {
                     }
                     0x1b..=0x20 | 0x60 => {
                         s.comparison = None;
+                        s.boolean_comparison = None;
                         s.known_comparison = None;
                     }
                     0x23 | 0x25 | 0x26 | 0xb6 => {
                         s.vars.clear();
+                        s.checks.clear();
+                        s.bag_changed = true;
+                        s.money_changed = true;
                         s.flags.clear();
                         s.comparison = None;
+                        s.boolean_comparison = None;
                         s.known_comparison = None;
                         // Dynamic/native rewards cannot be inferred from an item table.
                         stopped.insert(pc);
+                    }
+                    0x47 | 0x92 => {
+                        let result = self.script_resource_check(
+                            pc,
+                            |v| {
+                                if s.resource_vars_unknown && v >= 0x4000 {
+                                    None
+                                } else {
+                                    resolve(&s, v)
+                                }
+                            },
+                            s.bag_changed,
+                            s.money_changed,
+                        );
+                        if self.profile.resource_checks.is_some()
+                            && matches!(&result, Ok(None))
+                            && op == 0x92
+                            && b[pc + 5] != 0
+                        {
+                            // Native ignore!=0 leaves variables and comparisons intact.
+                            continue;
+                        }
+                        s.vars.remove(&0x800d);
+                        s.checks.remove(&0x800d);
+                        match result {
+                            Ok(Some(guard)) => {
+                                s.checks.insert(0x800d, guard);
+                            }
+                            Err(e) if e.code == "resource_dispatch" => {
+                                stopped.insert(pc);
+                                s.vars.clear();
+                                s.checks.clear();
+                                s.flags.clear();
+                                s.comparison = None;
+                                s.boolean_comparison = None;
+                                s.known_comparison = None;
+                                s.bag_changed = true;
+                                s.money_changed = true;
+                            }
+                            _ => {
+                                stopped.insert(pc);
+                            }
+                        }
+                    }
+                    0x90 | 0x91 => {
+                        s.money_changed = true;
                     }
                     0x44 | 0x49 => {
                         reward = Some((
@@ -547,8 +676,14 @@ impl Rom {
                             if op == 0x49 { "pc" } else { "gift" },
                         ));
                         s.vars.remove(&0x800d);
+                        s.checks.remove(&0x800d);
+                        if op == 0x44 {
+                            s.bag_changed = true;
+                        }
                     }
                     0x86 => {
+                        s.bag_changed = true;
+                        s.money_changed = true;
                         // Item lists, unlike decoration shops, terminate with item ID zero.
                         if let Ok(table) = pointer(b, pc + 1) {
                             let mut terminated = false;
@@ -579,19 +714,26 @@ impl Rom {
                             stopped.insert(pc);
                         }
                     }
+                    0x87 | 0x88 => {
+                        s.bag_changed = true;
+                        s.money_changed = true;
+                    }
                     0x42 => {
                         s.vars.remove(&u16(b, pc + 1)?);
                         s.vars.remove(&u16(b, pc + 3)?);
+                        s.checks.remove(&u16(b, pc + 1)?);
+                        s.checks.remove(&u16(b, pc + 3)?);
                     }
                     0x43
-                    | 0x45..=0x48
+                    | 0x45
+                    | 0x46
+                    | 0x48
                     | 0x4a..=0x4e
                     | 0x6e..=0x71
                     | 0x79
                     | 0x7a
                     | 0x7c
                     | 0x8f
-                    | 0x92
                     | 0x96
                     | 0xa0
                     | 0xb3
@@ -600,6 +742,14 @@ impl Rom {
                     | 0xe4
                     | 0xe5 => {
                         s.vars.remove(&0x800d);
+                        s.checks.remove(&0x800d);
+                        s.checks.clear();
+                        s.boolean_comparison = None;
+                        s.comparison = None;
+                        s.known_comparison = None;
+                        s.bag_changed = true;
+                        s.money_changed = true;
+                        s.resource_vars_unknown = true;
                     }
                     0x5c | 0x5d | 0xb7 => {
                         // Battle outcomes and post-battle jumps are conditional.
@@ -612,8 +762,12 @@ impl Rom {
                             taken: true,
                         });
                         s.vars.clear();
+                        s.checks.clear();
+                        s.bag_changed = true;
+                        s.money_changed = true;
                         s.flags.clear();
                         s.comparison = None;
+                        s.boolean_comparison = None;
                         s.known_comparison = None;
                         if op == 0x5c && matches!(b[pc + 1], 1 | 2 | 6 | 8) {
                             if let Ok(target) = pointer(b, pc + len - 4) {
@@ -622,6 +776,18 @@ impl Rom {
                                 pending.push_back(branch);
                             }
                         }
+                    }
+                    _ if !matches!(op, 0x00 | 0x01) => {
+                        // A decoded width is not a proof of unchanged holdings,
+                        // parameters or Boolean results. Keep the broad catalog
+                        // traversal separate from the new resource qualification.
+                        s.bag_changed = true;
+                        s.money_changed = true;
+                        s.resource_vars_unknown = true;
+                        s.checks.clear();
+                        s.boolean_comparison = None;
+                        s.comparison = None;
+                        s.known_comparison = None;
                     }
                     _ => {}
                 }
@@ -812,7 +978,7 @@ impl Rom {
                                         EventCondition {
                                             kind: "variable",
                                             id,
-                                            value: u16(b, o + 8)?,
+                                            value: u16(b, o + 8)? as u32,
                                             comparison: 1,
                                             taken: true,
                                         },

@@ -215,3 +215,8 @@ show warnings; a parsed map entry is not proof of a normally accessible area.
 Validation scope: [Mercury display/storage](docs/verification/mercury-display-storage-20261005.md).
 
 Parsed tutor offers now link move queries to NPC tiles, exterior entrances and back navigation. Dark Phantom BW/DP uses the corrected native tutor table; payment, one-time limits and special eligibility remain unresolved. See [teaching evidence](docs/verification/tutor-sources-20261006.md).
+
+Parsed resource checks show item names and holdings, with prerequisite-item links
+in sources/maps/planning and standalone HTML. Money checks are not payment
+proof; alternate facility bags and post-mutation checks remain unknown.
+See [native rules and evidence](docs/verification/resource-conditions-20261006.md).

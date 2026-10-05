@@ -1,5 +1,24 @@
 import { createContext, useContext } from "react";
 export const en = {
+  conditionSourcePath: "This parsed source path requires",
+  conditionItemPresent: "Has an item record in the bag:",
+  conditionItemAbsent: "No item record in the bag:",
+  conditionMoney: "Money held",
+  conditionActual: "SAV value",
+  conditionOrdinaryBag: "Ordinary bag count",
+  conditionEventSet: "Event condition must be set",
+  conditionEventUnset: "Event condition must be unset",
+  conditionUnnamed: "Unnamed event value",
+  conditionUnknown: "Condition not resolved",
+  conditionAlways: "This event check always passes",
+  conditionImpossible: "This event check cannot pass",
+  conditionHoldingsHelp:
+    "A holdings check is not proof of a fee, payment, consumption or current access. Missing native/temporary context stays unknown.",
+  alternate_bag_unresolved:
+    "This engine can check a separate facility bag using map/RAM conditions not fully recoverable from SAV. The ordinary bag count is shown for reference; the native result stays unknown.",
+  script_changes_resource:
+    "Earlier script operations may change this resource. The initial SAV value cannot determine this later check.",
+
   mapHiddenUnderfoot:
     "Stand on this tile and use the Itemfinder; this is an underfoot hidden item.",
   mapUnknownLayerType:
@@ -869,6 +888,25 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  conditionSourcePath: "该条来源分支需要",
+  conditionItemPresent: "背包中存在道具记录：",
+  conditionItemAbsent: "背包中不存在道具记录：",
+  conditionMoney: "持有金钱",
+  conditionActual: "存档当前值",
+  conditionOrdinaryBag: "普通背包数量",
+  conditionEventSet: "需要事件条件已触发",
+  conditionEventUnset: "需要事件条件未触发",
+  conditionUnnamed: "未命名事件数值",
+  conditionUnknown: "条件尚未解析",
+  conditionAlways: "该事件检查总是通过",
+  conditionImpossible: "该事件检查无法通过",
+  conditionHoldingsHelp:
+    "持有量检查不代表费用、已支付、会消耗或当前可达。原生及临时情景不完整时保持未知。",
+  alternate_bag_unresolved:
+    "本作可能由地图／临时状态选择设施专用背包，无法仅从 SAV 完整恢复。普通背包数量仅供参考，原生检查结果保持未知。",
+  script_changes_resource:
+    "此前脚本操作可能改变该资源，不能用存档初始值判断后续检查。",
+
   mapHiddenUnderfoot: "这是脚下的隐藏道具：站在该格位使用探测器。",
   mapUnknownLayerType:
     "部分格块使用了原生绘制例程不更新画面的图层类型，静态样貌无法确定；这些格块暂以背景色显示。",

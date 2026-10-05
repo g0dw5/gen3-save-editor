@@ -53,6 +53,13 @@ UI strings live in `ui/i18n.tsx`, with Chinese required to contain every English
 key. ROM names remain in their ROM language. New translations must preserve
 technical IDs in developer details, while normal labels explain their meaning.
 
+Resource prerequisites use `script_resources.rs` native-dispatch/width rules and
+`map_events.rs` symbolic RESULT predicates. Save overlays use the exact item
+pocket and native duplicate-slot strategy. Unknown alternate-bag context and
+post-mutation checks are explicit; enough holdings do not certify access or
+payment. Required-item links and the shared bilingual `ConditionDetails` formatter
+connect query, maps, planning and safe HTML without a bundled quest catalog.
+
 ## Known research limits
 
 Static map rendering does not simulate events, sprites, animation or collision.

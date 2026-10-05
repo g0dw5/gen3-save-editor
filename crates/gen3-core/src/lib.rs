@@ -18,6 +18,7 @@ pub mod profile;
 pub mod rom;
 pub mod save;
 pub mod script_pokemon;
+pub mod script_resources;
 pub mod script_teaching;
 pub mod session;
 #[cfg(test)]

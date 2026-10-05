@@ -58,6 +58,7 @@ pub const POCKETS: [Pocket; 6] = [
 ];
 
 pub const PROFILE: Profile = Profile {
+    resource_checks: Some(crate::script_resources::EMERALD),
     tutor_scripts: Some(crate::script_teaching::TutorScriptRules {
         specials: 0x1dba64,
         special: 0x1dd,

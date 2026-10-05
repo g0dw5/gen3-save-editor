@@ -168,3 +168,7 @@ ROM 资料仍显示全部事件。未通过证明的奖励保持未知，查询�
 验证范围见[水银显示与背包](docs/verification/mercury-display-storage-20261005.md)。
 
 已解析教招报价可从招式查询跳转 NPC 格位、外部入口并返回。漆黑 BW／DP 使用修正后的原生教招表；费用、次数限制和特殊资格继续保留未知，见[教招验证及边界](docs/verification/tutor-sources-20261006.md)。
+
+已解析的道具／金钱检查显示所需道具与持有量，并贯通来源、地图、收集建议和独立
+HTML。金钱检查不代表费用或已支付；设施临时背包及脚本改变资源后的判断保留未知。
+见[原生条件规则和验证](docs/verification/resource-conditions-20261006.md)。

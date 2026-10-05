@@ -77,7 +77,7 @@ pub fn preview(rom: &Rom, request: &Request) -> Result<Preview> {
     })
 }
 
-/// Bounded read-only ROM execution shared by trainer and teaching queries.
+/// Bounded read-only ROM execution shared by trainer, teaching and resource queries.
 pub(crate) struct Sandbox<'a> {
     rom: &'a [u8],
     ewram: Vec<u8>,

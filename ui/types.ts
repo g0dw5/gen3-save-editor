@@ -523,6 +523,7 @@ export interface AcquisitionSource {
     condition: ItemReward["conditions"][number];
     satisfied: boolean | null;
     actual: number | null;
+    unresolved?: string | null;
   }[];
   requirements: { kind: string; value: number }[];
   evolution: SpeciesDetail["evolutions"][number] | null;

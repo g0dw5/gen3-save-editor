@@ -1,5 +1,10 @@
 //! Read-only, exact-adapter event state. Temporary/RAM-only IDs stay unknown.
-use crate::{profile::EventStateLayout, save::Save};
+use crate::{
+    binary,
+    profile::EventStateLayout,
+    rom::Rom,
+    save::{BagEntry, Save},
+};
 use serde::Serialize;
 
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -21,6 +26,8 @@ pub struct EventSnapshot {
     trainer: Vec<u8>,
     extensions: Vec<u8>,
     layout: EventStateLayout,
+    bag: Option<Vec<BagEntry>>,
+    money: Option<u32>,
 }
 impl EventSnapshot {
     #[cfg(test)]
@@ -35,6 +42,8 @@ impl EventSnapshot {
             trainer,
             extensions,
             layout,
+            bag: None,
+            money: None,
         }
     }
     pub fn new(save: &Save, layout: EventStateLayout) -> Self {
@@ -43,7 +52,43 @@ impl EventSnapshot {
             trainer: save.logical(0..=0),
             extensions: save.extensions(),
             layout,
+            bag: save.bag().ok(),
+            money: binary::u32(&save.data, save.sections[1] + save.layout.money)
+                .ok()
+                .zip(binary::u32(&save.data, save.sections[0] + save.layout.key).ok())
+                .map(|(value, key)| value ^ key),
         }
+    }
+    pub(crate) fn money(&self) -> Option<u32> {
+        self.money
+    }
+
+    /// Ordinary pocket only: PC, another pocket and a facility bag cannot count.
+    /// Returns the native effective quantity and whether any matching slot exists.
+    pub(crate) fn normal_bag_item(&self, rom: &Rom, id: u16) -> Option<(u32, bool)> {
+        let rules = rom.profile.resource_checks?;
+        let category = rom.resource_item_pocket(id).ok()?;
+        let pocket = rom
+            .profile
+            .save
+            .pockets
+            .iter()
+            .find(|p| p.category != 0 && p.category == category)?;
+        let mut matches = self
+            .bag
+            .as_ref()?
+            .iter()
+            .filter(|e| e.pocket == pocket.id && e.item == id);
+        let Some(first) = matches.next() else {
+            return Some((0, false));
+        };
+        let quantity = match rules.bag_count {
+            crate::script_resources::BagCountRule::FirstMatch => first.quantity as u32,
+            crate::script_resources::BagCountRule::Accumulate => {
+                first.quantity as u32 + matches.map(|e| e.quantity as u32).sum::<u32>()
+            }
+        };
+        Some((quantity, true))
     }
     fn block(&self, block: EventBlock) -> &[u8] {
         match block {

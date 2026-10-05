@@ -1,3 +1,4 @@
+import { ConditionDetails } from "./ConditionDetails";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Gift,
@@ -481,9 +482,21 @@ export function MapExplorer({
               ) : !marker.pokemon?.length && !marker.teaching?.length ? (
                 <p>{t("mapNoReward")}</p>
               ) : null}
-              {marker.rewards.some((r) => r.conditions.length > 0) && (
-                <p className="small muted">{t("mapConditionalReward")}</p>
-              )}
+              {[
+                ...marker.rewards,
+                ...(marker.pokemon ?? []),
+                ...(marker.teaching ?? []),
+              ]
+                .filter((r) => r.conditions.length > 0)
+                .map((r, index) => (
+                  <ConditionDetails
+                    key={index}
+                    heading={`${"item" in r ? (items.get(r.item)?.name ?? `#${r.item}`) : "species" in r ? (catalog.species.find((s) => s.id === r.species)?.name ?? `#${r.species}`) : (catalog.moves.find((m) => m.id === r.move_id)?.name ?? `#${r.move_id}`)} · ${t("conditionSourcePath")}`}
+                    conditions={r.conditions}
+                    catalog={catalog}
+                    onTarget={(target) => onItem?.(target.id)}
+                  />
+                ))}
               {marker.movement_type === 76 && (
                 <p className="small muted">{t("mapInvisibleObject")}</p>
               )}
@@ -540,14 +553,20 @@ export function MapExplorer({
         <details>
           <summary>{t("mapUnplacedRewards")}</summary>
           <p className="small muted">{t("mapUnplacedHelp")}</p>
-          {[
-            ...new Set(
-              report.unplaced_rewards.map(
-                (r) => items.get(r.item)?.name ?? `#${r.item}`,
-              ),
-            ),
-          ].map((name) => (
-            <p key={name}>{name}</p>
+          {report.unplaced_rewards.map((reward, index) => (
+            <div key={index}>
+              <button
+                className="link-button"
+                onClick={() => onItem?.(reward.item)}
+              >
+                {items.get(reward.item)?.name ?? `#${reward.item}`} ↗
+              </button>
+              <ConditionDetails
+                conditions={reward.conditions}
+                catalog={catalog}
+                onTarget={(target) => onItem?.(target.id)}
+              />
+            </div>
           ))}
         </details>
       )}
@@ -572,6 +591,11 @@ export function MapExplorer({
                 onSpecies={onSpecies}
                 onItem={onItem}
               />
+              <ConditionDetails
+                conditions={mon.conditions}
+                catalog={catalog}
+                onTarget={(target) => onItem?.(target.id)}
+              />
             </div>
           ))}
         </details>
@@ -581,7 +605,7 @@ export function MapExplorer({
           <summary>{t("mapUnplacedTeaching")}</summary>
           <p className="small muted">{t("mapUnplacedHelp")}</p>
           {report.unplaced_teaching.map((offer, i) => (
-            <p key={i}>
+            <div key={i}>
               <button
                 className="link-button"
                 onClick={() => onMove?.(offer.move_id)}
@@ -590,7 +614,12 @@ export function MapExplorer({
                   `#${offer.move_id}`}{" "}
                 ↗
               </button>
-            </p>
+              <ConditionDetails
+                conditions={offer.conditions}
+                catalog={catalog}
+                onTarget={(target) => onItem?.(target.id)}
+              />
+            </div>
           ))}
           <p className="small muted">{t("tutorSourceHelp")}</p>
         </details>

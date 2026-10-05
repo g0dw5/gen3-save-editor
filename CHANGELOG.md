@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Preserve native item/money holdings predicates through script result copies and
+  branch comparisons, with ROM-scoped widths and bag slot rules. Link required
+  items, maps, collection planning and human-readable bilingual HTML. Keep
+  facility/RAM bag selection and checks after resource-changing scripts unknown;
+  holdings are not payment or receipt evidence.
+- 保留原生道具／金钱持有量检查与结果复制、分支关系，按 ROM 核对数量位宽和
+  背包槽位规则；所需道具、地图、收集建议和中英文 HTML 相互关联。设施临时
+  背包及脚本改变资源后的检查保持未知，不把持有量当成费用、已支付或领奖证明。
+
 - Correct Dark Phantom BW/DP tutor lookup to the table used by native code (six
   changed slots), and connect parsed teaching offers to move queries, NPC tiles,
   exterior entrances and return navigation across all five fingerprints. Execute

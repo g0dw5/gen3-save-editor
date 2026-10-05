@@ -1,3 +1,4 @@
+import { conditionLabel } from "./ConditionDetails";
 import type { Catalog, CollectionPlan, GameMap, QueryTarget } from "./types";
 import { tradeSummary } from "./TradeDetails";
 import { clockSummary } from "./ClockDetails";
@@ -38,7 +39,7 @@ export function collectionHtml(
             const conditions = s?.conditions
               .map(
                 (c) =>
-                  `${t(c.satisfied === true ? "planConditionYes" : c.satisfied === false ? "planConditionNo" : "acqStatus_unknown")}: ${c.condition.kind} ${c.condition.id} ${["<", "=", ">", "≤", "≥", "≠"][c.condition.comparison] ?? "?"} ${c.condition.value}${c.condition.taken ? "" : " (false)"}`,
+                  `${t(c.satisfied === true ? "planConditionYes" : c.satisfied === false ? "planConditionNo" : "acqStatus_unknown")}: ${conditionLabel(c, catalog, t)}${c.unresolved ? ` · ${t(c.unresolved)}` : ""}`,
               )
               .join("; ");
             return `<div class="task"><h3><input type="checkbox" aria-label="${esc(t("planCheck"))}"> ${esc(name(task.target))}</h3>${task.family.length ? `<small>${esc(t("planFamily"))}: ${esc(task.family.map((id) => name({ kind: "species", id })).join(" / "))}</small>` : ""}<p>${esc(s ? t(`acqStatus_${s.status}`) : t("acqNoSource"))} · ${esc(s?.map_id ? mapName(s.map_id) : t("planNoRegion"))}${s?.x !== null && s?.x !== undefined ? ` (${s.x}, ${s.y})` : ""}</p>${s?.min_level !== null && s?.min_level !== undefined ? `<p>Lv. ${s.min_level}–${s.max_level ?? s.min_level}${s.encounter_percent !== null ? ` · ${esc(t("acqEncounterChance"))} ${s.encounter_percent}%` : ""}</p>` : ""}${s?.script_source ? `<p>${esc(t("acqScriptSourceHelp"))}</p>` : ""}${
@@ -47,7 +48,7 @@ export function collectionHtml(
                     .map((line) => `<p>${esc(line)}</p>`)
                     .join("")
                 : ""
-            }${s?.receipt ? `<p>${esc(t("acqGiftReceiptHelp"))}</p>` : ""}${s && ["gift", "pc"].includes(s.kind) && s.receipt_flag == null ? `<p>${esc(t("acqReceiptUnknown"))}</p>` : ""}${s?.underfoot ? `<p>${esc(t("mapHiddenUnderfoot"))}</p>` : ""}${s?.evolution ? `<p>${esc(evolutionLabel(s.evolution, catalog, catalog.type_names, t))}</p>` : ""}${s?.periods.length ? `<p>${esc(t("planPeriods"))}: ${esc(s.periods.map((p) => t(({ base: "encounterBase", morning: "encounterMorning", day: "encounterDay", dusk: "encounterDusk", night: "encounterNight" } as Record<string, string>)[p] ?? p)).join(" / "))}</p>` : ""}${s?.in_scenario !== null && s?.in_scenario !== undefined ? `<p>${esc(t(s.in_scenario ? "clockInsideScenario" : "clockOutsideScenario"))}</p>` : ""}${conditions ? `<p>${esc(t("acqConditions"))}: ${esc(conditions)}</p>` : ""}${
+            }${s?.receipt ? `<p>${esc(t("acqGiftReceiptHelp"))}</p>` : ""}${s && ["gift", "pc"].includes(s.kind) && s.receipt_flag == null ? `<p>${esc(t("acqReceiptUnknown"))}</p>` : ""}${s?.underfoot ? `<p>${esc(t("mapHiddenUnderfoot"))}</p>` : ""}${s?.evolution ? `<p>${esc(evolutionLabel(s.evolution, catalog, catalog.type_names, t))}</p>` : ""}${s?.periods.length ? `<p>${esc(t("planPeriods"))}: ${esc(s.periods.map((p) => t(({ base: "encounterBase", morning: "encounterMorning", day: "encounterDay", dusk: "encounterDusk", night: "encounterNight" } as Record<string, string>)[p] ?? p)).join(" / "))}</p>` : ""}${s?.in_scenario !== null && s?.in_scenario !== undefined ? `<p>${esc(t(s.in_scenario ? "clockInsideScenario" : "clockOutsideScenario"))}</p>` : ""}${conditions ? `<p>${esc(t("acqConditions"))}: ${esc(conditions)}</p>${s?.conditions.some((c) => ["money", "money_runtime", "bag_item", "bag_item_runtime"].includes(c.condition.kind)) ? `<p><small>${esc(t("conditionHoldingsHelp"))}</small></p>` : ""}` : ""}${
               entrance?.chains.length
                 ? `<p>${esc(t("navApproaches"))}:</p><ul>${entrance.chains
                     .slice(0, 3)

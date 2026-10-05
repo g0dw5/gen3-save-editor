@@ -1,3 +1,4 @@
+import { ConditionDetails } from "./ConditionDetails";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 import { ClockDetails } from "./ClockDetails";
@@ -307,13 +308,11 @@ export function AcquisitionPanel({
                   {t(s.repeatable ? "acqRepeatable" : "acqOneTime")}
                 </small>
               )}
-              {!!s.conditions.length && (
-                <p className="small muted">
-                  {t("acqConditions")} ·{" "}
-                  {s.conditions.filter((c) => c.satisfied === true).length}/
-                  {s.conditions.length} {t("acqConditionsMet")}
-                </p>
-              )}
+              <ConditionDetails
+                checks={s.conditions}
+                catalog={catalog}
+                onTarget={onTarget}
+              />
               {canDraft && (
                 <button
                   className="link-button small"

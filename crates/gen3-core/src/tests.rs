@@ -248,6 +248,11 @@ fn contest_matches_native_feeding_and_npc_bounds() {
 
 /// Synthetic labels deliberately differ from every supported game's names.
 fn label_fixture(b: &mut [u8], p: profile::Profile) {
+    if let Some(rules) = p.resource_checks {
+        let address = (rules.item_sanitizer - 0x08000000) as usize;
+        // Synthetic identity sanitizer; native redirects are tested separately.
+        put16(b, address, 0x4770);
+    }
     put16(b, p.script_pokemon.egg_level_instruction, 0x2201);
     let codec = Codec::new();
     for n in 0..25 {
@@ -4745,6 +4750,534 @@ fn local_npc_receipts_match_native_control_flow() {
             "{key}: {} qualified NPC reward rows, {} native cases",
             actual.len(),
             actual.len() * 4
+        );
+    }
+}
+
+// Reader fixture for native zero-count records. The editor deliberately rejects
+// creating these; only synthetic test bytes are changed here, never user saves.
+fn fixture_zero_bag_quantity(save: &mut Save, pocket_id: &str, slot: usize) {
+    let pocket = save
+        .layout
+        .pockets
+        .iter()
+        .find(|p| p.id == pocket_id)
+        .unwrap();
+    let spans: Vec<_> = match pocket.block {
+        crate::save::PocketBlock::Main => (1..=4)
+            .map(|id| (save.sections[id], save.layout.sizes[id]))
+            .collect(),
+        crate::save::PocketBlock::SectorExtensions => (0..14)
+            .map(|id| {
+                (
+                    save.sections[id] + save.layout.sizes[id],
+                    0xff0 - save.layout.sizes[id],
+                )
+            })
+            .chain(
+                save.layout
+                    .extension_sectors
+                    .unwrap()
+                    .iter()
+                    .map(|id| (id * 4096, 0xff0)),
+            )
+            .collect(),
+    };
+    let mut offset = pocket.offset + slot * 4 + 2;
+    for (physical, length) in spans {
+        if offset < length {
+            assert!(offset + 2 <= length);
+            let encoded = if pocket.encrypted {
+                u32(&save.data, save.sections[0] + save.layout.key).unwrap() as u16
+            } else {
+                0
+            };
+            put16(&mut save.data, physical + offset, encoded);
+            return;
+        }
+        offset -= length;
+    }
+    panic!("invalid test bag offset");
+}
+
+#[test]
+fn resource_guards_follow_native_boolean_comparisons_aliases_and_noops() {
+    const ROOT: usize = 0x27000;
+    for p in profile::PROFILES {
+        let mut r = adapter_rom(p);
+        let rules = p.resource_checks.unwrap();
+        {
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            put32(
+                b,
+                rules.commands + 0x47 * 4,
+                0x08000001 + rules.item_code as u32,
+            );
+            put32(
+                b,
+                rules.commands + 0x92 * 4,
+                0x08000001 + rules.money_code as u32,
+            );
+        }
+        for rhs in [0u16, 1, 2, 65535] {
+            for comparison in 0..6u8 {
+                // Check a quantity obtained from a script variable, copy RESULT,
+                // and ignore a money check: the saved Boolean predicate must survive.
+                let mut code = vec![
+                    0x16,
+                    5,
+                    0x80,
+                    1,
+                    1,
+                    0x47,
+                    1,
+                    0,
+                    5,
+                    0x80,
+                    0x19,
+                    4,
+                    0x80,
+                    0x0d,
+                    0x80,
+                    0x92,
+                    0,
+                    0,
+                    0,
+                    1,
+                    1,
+                    0x21,
+                    4,
+                    0x80,
+                    rhs as u8,
+                    (rhs >> 8) as u8,
+                    6,
+                    comparison,
+                ];
+                let target = ROOT + code.len() + 4 + 1;
+                code.extend_from_slice(&(0x08000000 + target as u32).to_le_bytes());
+                code.push(2);
+                code.extend_from_slice(&[0x16, 0, 0x80, 2, 0, 0x16, 1, 0x80, 1, 0, 9, 0, 2]);
+                let b = std::sync::Arc::make_mut(&mut r.data);
+                b[ROOT..ROOT + code.len()].copy_from_slice(&code);
+                let (rewards, stops) = r.item_script(ROOT).unwrap();
+                assert!(stops.is_empty(), "{} {rhs} {comparison}", p.id);
+                let predicate = |v: u16| match comparison {
+                    0 => v < rhs,
+                    1 => v == rhs,
+                    2 => v > rhs,
+                    3 => v <= rhs,
+                    4 => v >= rhs,
+                    _ => v != rhs,
+                };
+                if !predicate(0) && !predicate(1) {
+                    assert!(rewards.is_empty());
+                } else {
+                    assert_eq!(rewards.len(), 1);
+                    let guards = &rewards[0].conditions;
+                    if predicate(0) == predicate(1) {
+                        assert!(guards.is_empty());
+                    } else {
+                        assert_eq!(guards.len(), 1);
+                        assert_eq!(guards[0].kind, "bag_item");
+                        assert_eq!(guards[0].id, 1);
+                        assert_eq!(guards[0].value, if rules.quantity_u8 { 1 } else { 257 });
+                        assert_eq!(guards[0].taken, predicate(1));
+                    }
+                    assert!(
+                        rewards[0].receipt.is_none(),
+                        "New resource guards do not certify receipts"
+                    );
+                }
+            }
+        }
+        // A full 32-bit money amount is not truncated to an event-variable word.
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[ROOT..ROOT + 25].copy_from_slice(&[
+            0x92, 0x70, 0x11, 1, 0, 0, 0x21, 0x0d, 0x80, 0, 0, 6, 1, 0x18, 0x70, 2, 8, 0x16, 0,
+            0x80, 2, 0, 9, 0, 2,
+        ]);
+        let guards = &r.item_script(ROOT).unwrap().0[0].conditions;
+        assert_eq!(
+            (guards[0].kind, guards[0].value, guards[0].taken),
+            ("money", 70000, true)
+        );
+        // A resource mutation prevents using the initial SAV for a later check.
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[ROOT] = 0x90; // givemoney; same operand width as checkmoney
+        b[ROOT + 6..ROOT + 24].copy_from_slice(&[
+            0x92, 0x70, 0x11, 1, 0, 0, 0x21, 0x0d, 0x80, 0, 0, 6, 1, 0x25, 0x70, 2, 8, 2,
+        ]);
+        b[ROOT + 19..ROOT + 23].copy_from_slice(&0x08027024u32.to_le_bytes());
+        b[ROOT + 23..ROOT + 36]
+            .copy_from_slice(&[0x16, 0, 0x80, 2, 0, 0x16, 1, 0x80, 1, 0, 9, 0, 2]);
+        b[ROOT + 36] = 2;
+        assert_eq!(
+            r.item_script(ROOT).unwrap().0[0].conditions[0].kind,
+            "money_runtime"
+        );
+        // Width-decoded presentation commands have not been qualified as resource-pure.
+        // A literal check remains visible but cannot use the initial wallet after one.
+        let mut code = vec![
+            0x6a, 0x92, 0x70, 0x11, 1, 0, 0, 0x21, 0x0d, 0x80, 0, 0, 6, 1,
+        ];
+        let target = ROOT + code.len() + 4 + 1;
+        code.extend_from_slice(&(0x08000000 + target as u32).to_le_bytes());
+        code.push(2);
+        code.extend_from_slice(&[0x16, 0, 0x80, 2, 0, 0x16, 1, 0x80, 1, 0, 9, 0, 2]);
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[ROOT..ROOT + code.len()].copy_from_slice(&code);
+        assert_eq!(
+            r.item_script(ROOT).unwrap().0[0].conditions[0].kind,
+            "money_runtime"
+        );
+        // Previously assigned variable operands and copied Boolean results cannot
+        // cross this unqualified effect and become apparently verified guards.
+        let code = [0x16, 5, 0x80, 3, 0, 0x6a, 0x47, 1, 0, 5, 0x80, 2];
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[ROOT..ROOT + code.len()].copy_from_slice(&code);
+        assert_eq!(r.item_script(ROOT).unwrap().1, vec![ROOT + 6]);
+        let mut code = vec![
+            0x47, 1, 0, 3, 0, 0x19, 4, 0x80, 0x0d, 0x80, 0x6a, 0x21, 4, 0x80, 0, 0, 6, 1,
+        ];
+        let target = ROOT + code.len() + 4 + 1;
+        code.extend_from_slice(&(0x08000000 + target as u32).to_le_bytes());
+        code.push(2);
+        code.extend_from_slice(&[0x16, 0, 0x80, 2, 0, 0x16, 1, 0x80, 1, 0, 9, 0, 2]);
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[ROOT..ROOT + code.len()].copy_from_slice(&code);
+        let (rewards, _) = r.item_script(ROOT).unwrap();
+        assert_eq!(rewards.len(), 1);
+        assert!(rewards[0]
+            .conditions
+            .iter()
+            .all(|c| !matches!(c.kind, "bag_item" | "bag_item_runtime")));
+        // Unresolved quantities/native dispatch changes cannot become holdings guards.
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[ROOT..ROOT + 12].copy_from_slice(&[0x47, 1, 0, 5, 0x80, 0x16, 0, 0x80, 2, 0, 9, 0]);
+        b[ROOT + 12] = 2;
+        assert_eq!(r.item_script(ROOT).unwrap().1, vec![ROOT]);
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        put32(
+            b,
+            rules.commands + 0x47 * 4,
+            0x08000001 + rules.item_code as u32 + 4,
+        );
+        assert_eq!(
+            r.script_resource_check(ROOT, Some, false, false)
+                .unwrap_err()
+                .code,
+            "resource_dispatch"
+        );
+    }
+}
+
+#[test]
+fn resource_conditions_query_item_links_without_mutating_or_claiming_receipt() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        event_state::EventSnapshot,
+    };
+    for p in profile::PROFILES {
+        let (mut r, map) = npc_trade_fixture(p);
+        let rules = p.resource_checks.unwrap();
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[p.items.offset + p.items.stride + 26] = 1;
+        put32(
+            b,
+            rules.commands + 0x47 * 4,
+            0x08000001 + rules.item_code as u32,
+        );
+        b[0x26000..0x26013].copy_from_slice(&[
+            0x47, 1, 0, 3, 0, 0x21, 0x0d, 0x80, 0, 0, 6, 1, 0x12, 0x60, 2, 8, 2, 0, 2,
+        ]);
+        b[0x26010] = 0x16;
+        b[0x26010..0x2601d].copy_from_slice(&[0x16, 0, 0x80, 2, 0, 0x16, 1, 0x80, 1, 0, 9, 0, 2]);
+        // Reward lies on the RESULT!=0 path (fallthrough).
+        b[0x2600c..0x26010].copy_from_slice(&0x0802601eu32.to_le_bytes());
+        b[0x2601e] = 2;
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let pocket = r
+            .profile
+            .save
+            .pockets
+            .iter()
+            .find(|p| p.category == 1)
+            .unwrap()
+            .id;
+        save.edit_bag(pocket, 0, 1, 1, &r, Policy::Free).unwrap();
+        save.edit_bag(pocket, 1, 1, 2, &r, Policy::Free).unwrap();
+        save.edit_bag("pc", 0, 1, 99, &r, Policy::Free).unwrap();
+        let initial = save.data.clone();
+        let state = EventSnapshot::new(&save, p.event_state.unwrap());
+        assert_eq!(
+            state.normal_bag_item(&r, 1),
+            Some((if rules.alternate_bag { 3 } else { 1 }, true))
+        );
+        let index = AcquisitionIndex {
+            world: crate::world::World {
+                maps: vec![map.clone()],
+                map_events: vec![r.map_events(&map).unwrap()],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: crate::world::TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: vec![],
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        let target = Target {
+            kind: TargetKind::Item,
+            id: 2,
+        };
+        let report = index.query(&r, Some(&save), target.clone()).unwrap();
+        let source = &report.sources[0];
+        assert!(source
+            .related
+            .iter()
+            .any(|r| r.kind == TargetKind::Item && r.id == 1));
+        let c = &source.conditions[0];
+        if rules.alternate_bag {
+            assert_eq!(c.actual, Some(3));
+            assert_eq!(c.satisfied, None);
+            assert_eq!(c.unresolved, Some("alternate_bag_unresolved"));
+            assert_eq!(source.status, "unknown");
+        } else {
+            assert_eq!(c.actual, Some(1));
+            assert_eq!(c.satisfied, Some(false));
+            assert_eq!(source.status, "blocked");
+        }
+        assert_eq!(source.receipt_flag, None);
+        assert_eq!(
+            index.query(&r, None, target).unwrap().sources[0].conditions[0].actual,
+            None
+        );
+        assert_eq!(save.data, initial);
+        // A native zero check still needs a matching record, not just count>=0.
+        save.edit_bag(pocket, 0, 1, 1, &r, Policy::Free).unwrap();
+        fixture_zero_bag_quantity(&mut save, pocket, 0);
+        save.edit_bag(pocket, 1, 0, 0, &r, Policy::Free).unwrap();
+        assert_eq!(
+            EventSnapshot::new(&save, p.event_state.unwrap()).normal_bag_item(&r, 1),
+            Some((0, true))
+        );
+        save.edit_bag(pocket, 0, 0, 0, &r, Policy::Free).unwrap();
+        // A malformed/free-edit entry in the wrong pocket must not count either.
+        let wrong = p
+            .save
+            .pockets
+            .iter()
+            .find(|p| p.category != 0 && p.category != 1)
+            .unwrap()
+            .id;
+        save.edit_bag(wrong, 0, 1, 99, &r, Policy::Free).unwrap();
+        assert_eq!(
+            EventSnapshot::new(&save, p.event_state.unwrap()).normal_bag_item(&r, 1),
+            Some((0, false))
+        );
+    }
+}
+
+#[test]
+fn resource_pocket_uses_native_sanitization_but_searches_original_item_id() {
+    let mut r = adapter_rom(crate::ultimate::PROFILE);
+    let rules = r.profile.resource_checks.unwrap();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    b[r.profile.items.offset + 26] = 2;
+    b[r.profile.items.offset + 44 + 26] = 1;
+    let address = (rules.item_sanitizer - 0x08000000) as usize;
+    // Simulate a sanitized ID different from the requested record.
+    b[address..address + 4].copy_from_slice(&[0, 0x20, 0x70, 0x47]);
+    assert_eq!(r.resource_item_pocket(1).unwrap(), 2);
+    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+    let ordinary = r
+        .profile
+        .save
+        .pockets
+        .iter()
+        .find(|p| p.category == 1)
+        .unwrap()
+        .id;
+    let effective = r
+        .profile
+        .save
+        .pockets
+        .iter()
+        .find(|p| p.category == 2)
+        .unwrap()
+        .id;
+    save.edit_bag(ordinary, 0, 1, 10, &r, Policy::Free).unwrap();
+    save.edit_bag(effective, 0, 1, 3, &r, Policy::Free).unwrap();
+    let state = crate::event_state::EventSnapshot::new(&save, r.profile.event_state.unwrap());
+    assert_eq!(state.normal_bag_item(&r, 1), Some((3, true)));
+    // Category sanitization does not change the ID matched by the native bag loop.
+    assert_eq!(state.normal_bag_item(&r, 2), Some((0, false)));
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_RESOURCE_PROBES independent native vectors"]
+fn local_resource_guards_match_native_width_inventory_and_money() {
+    use crate::event_state::EventSnapshot;
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_RESOURCE_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{name}")).unwrap()).unwrap())
+                .unwrap();
+        let report = &probes[name];
+        assert_eq!(report["md5"], r.profile.md5);
+        for (item, category) in report["categories"].as_array().unwrap().iter().enumerate() {
+            assert_eq!(
+                r.resource_item_pocket(item as u16).unwrap() as u64,
+                category.as_u64().unwrap(),
+                "{name} item {item}"
+            );
+        }
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let item = report["item"].as_u64().unwrap() as u16;
+        let pocket = r
+            .profile
+            .save
+            .pockets
+            .iter()
+            .find(|p| p.category == r.item(item).unwrap().pocket)
+            .unwrap()
+            .id;
+        for vector in report["vectors"].as_array().unwrap() {
+            if vector["kind"] == "bag_item" {
+                for index in 0..3 {
+                    save.edit_bag(pocket, index, 0, 0, &r, Policy::Free)
+                        .unwrap();
+                }
+                for (index, quantity) in vector["quantities"].as_array().unwrap().iter().enumerate()
+                {
+                    save.edit_bag(
+                        pocket,
+                        index,
+                        item,
+                        (quantity.as_u64().unwrap() as u16).max(1),
+                        &r,
+                        Policy::Free,
+                    )
+                    .unwrap();
+                    if quantity == &serde_json::json!(0) {
+                        fixture_zero_bag_quantity(&mut save, pocket, index);
+                    }
+                }
+                let before = save.data.clone();
+                let state = EventSnapshot::new(&save, r.profile.event_state.unwrap());
+                let (count, present) = state.normal_bag_item(&r, item).unwrap();
+                let quantity = vector["requested"].as_u64().unwrap() as u16;
+                let mut fixture = r.clone();
+                let pc = 0x27000;
+                let b = std::sync::Arc::make_mut(&mut fixture.data);
+                b[pc..pc + 5].copy_from_slice(&[0x47, item as u8, (item >> 8) as u8, 5, 0x80]);
+                let guard = fixture
+                    .script_resource_check(
+                        pc,
+                        |v| if v == 0x8005 { Some(quantity) } else { Some(v) },
+                        false,
+                        false,
+                    )
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(guard.value as u64, vector["value"].as_u64().unwrap());
+                assert_eq!(
+                    u8::from(present && count >= guard.value) as u64,
+                    vector["result"].as_u64().unwrap(),
+                    "{name}: {vector}"
+                );
+                assert_eq!(save.data, before);
+            } else {
+                // Synthetic encrypted wallet bytes; no external save is opened or written.
+                let key = 0xdead4321;
+                put32(&mut save.data, save.sections[0] + save.layout.key, key);
+                let wallet = vector["wallet"].as_u64().unwrap() as u32;
+                put32(
+                    &mut save.data,
+                    save.sections[1] + save.layout.money,
+                    wallet ^ key,
+                );
+                let state = EventSnapshot::new(&save, r.profile.event_state.unwrap());
+                assert_eq!(state.money(), Some(wallet));
+                let required = vector["value"].as_u64().unwrap() as u32;
+                let expected = if vector["ignore"] != 0 {
+                    7
+                } else {
+                    u32::from(wallet >= required)
+                };
+                assert_eq!(expected as u64, vector["result"].as_u64().unwrap());
+            }
+        }
+        // Bind independent native compare/copy/goto outcomes to Rust's
+        // symbolic resource guards, rather than checking a copied Boolean formula.
+        let mut fixture = r.clone();
+        for vector in report["comparisons"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|v| v["boolean"] == 1)
+        {
+            let rhs = vector["rhs"].as_u64().unwrap() as u16;
+            let comparison = vector["comparison"].as_u64().unwrap() as u8;
+            let zero = report["comparisons"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|v| {
+                    v["boolean"] == 0
+                        && v["rhs"] == vector["rhs"]
+                        && v["comparison"] == vector["comparison"]
+                })
+                .unwrap();
+            let on_zero = zero["taken"].as_bool().unwrap();
+            let on_one = vector["taken"].as_bool().unwrap();
+            let pc = 0x27000;
+            let mut code = vec![
+                0x92,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0x19,
+                4,
+                0x80,
+                0x0d,
+                0x80,
+                0x21,
+                4,
+                0x80,
+                rhs as u8,
+                (rhs >> 8) as u8,
+                6,
+                comparison,
+            ];
+            let target = pc + code.len() + 5;
+            code.extend_from_slice(&(0x08000000 + target as u32).to_le_bytes());
+            code.push(2);
+            code.extend_from_slice(&[0x16, 0, 0x80, 2, 0, 0x16, 1, 0x80, 1, 0, 9, 0, 2]);
+            let b = std::sync::Arc::make_mut(&mut fixture.data);
+            b[pc..pc + code.len()].copy_from_slice(&code);
+            let (rewards, stops) = fixture.item_script(pc).unwrap();
+            assert!(stops.is_empty());
+            if !on_zero && !on_one {
+                assert!(rewards.is_empty());
+            } else if on_zero == on_one {
+                assert!(rewards[0].conditions.is_empty());
+            } else {
+                let c = &rewards[0].conditions[0];
+                assert_eq!((c.kind, c.value, c.taken), ("money", 1, on_one));
+            }
+        }
+        println!(
+            "{name}: {} native holdings vectors",
+            report["vectors"].as_array().unwrap().len()
         );
     }
 }

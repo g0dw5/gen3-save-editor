@@ -28,7 +28,8 @@ pub struct Target {
 pub struct ConditionCheck {
     pub condition: EventCondition,
     pub satisfied: Option<bool>,
-    pub actual: Option<u16>,
+    pub actual: Option<u32>,
+    pub unresolved: Option<&'static str>,
 }
 #[derive(Clone, Serialize)]
 pub struct TradeContext {
@@ -132,31 +133,63 @@ fn source(kind: &str, offset: usize) -> AcquisitionSource {
         in_scenario: None,
     }
 }
-fn check(state: Option<&EventSnapshot>, condition: &EventCondition) -> ConditionCheck {
+fn check(
+    state: Option<&EventSnapshot>,
+    rom: Option<&Rom>,
+    condition: &EventCondition,
+) -> ConditionCheck {
+    // Neither ROM-only queries nor SAV overlays can infer unsaved native context.
+    let unresolved = if matches!(condition.kind, "bag_item_runtime" | "money_runtime") {
+        Some("script_changes_resource")
+    } else if condition.kind == "bag_item"
+        && rom
+            .and_then(|r| r.profile.resource_checks)
+            .is_some_and(|r| r.alternate_bag)
+    {
+        Some("alternate_bag_unresolved")
+    } else {
+        None
+    };
+    let mut present = None;
     let actual = state.and_then(|s| match condition.kind {
-        "flag" => s.flag(condition.id),
-        "variable" => s.variable(condition.id),
+        "flag" => s.flag(condition.id).map(u32::from),
+        "variable" => s.variable(condition.id).map(u32::from),
+        "money" => s.money(),
+        "bag_item" => {
+            let rom = rom?;
+            let (quantity, found) = s.normal_bag_item(rom, condition.id)?;
+            present = Some(found);
+            Some(quantity)
+        }
+        "bag_item_runtime" | "money_runtime" => None,
         _ => None,
     });
-    let satisfied = actual.and_then(|v| {
-        Some(
-            match condition.comparison {
-                0 => v < condition.value,
-                1 => v == condition.value,
-                2 => v > condition.value,
-                3 => v <= condition.value,
-                4 => v >= condition.value,
-                5 => v != condition.value,
-                _ => return None,
-            } == condition.taken,
-        )
-    });
+    let satisfied = if unresolved.is_some() {
+        None
+    } else {
+        actual.and_then(|v| {
+            Some(
+                (match condition.comparison {
+                    0 => v < condition.value,
+                    1 => v == condition.value,
+                    2 => v > condition.value,
+                    3 => v <= condition.value,
+                    4 => v >= condition.value,
+                    5 => v != condition.value,
+                    _ => return None,
+                } && present != Some(false))
+                    == condition.taken,
+            )
+        })
+    };
     ConditionCheck {
         condition: condition.clone(),
         actual,
         satisfied,
+        unresolved,
     }
 }
+
 fn scripted_source(
     rom: &Rom,
     save: Option<&Save>,
@@ -172,7 +205,11 @@ fn scripted_source(
     s.y = marker.map(|m| m.y);
     s.min_level = mon.level;
     s.max_level = mon.level;
-    s.conditions = mon.conditions.iter().map(|c| check(state, c)).collect();
+    s.conditions = mon
+        .conditions
+        .iter()
+        .map(|c| check(state, Some(rom), c))
+        .collect();
     s.script_source = Some(mon.clone());
     if let Some(item) = mon.held_item.filter(|i| *i != 0) {
         s.related.push(Target {
@@ -307,7 +344,7 @@ impl AcquisitionIndex {
                         s.conditions = reward
                             .conditions
                             .iter()
-                            .map(|c| check(state.as_ref(), c))
+                            .map(|c| check(state.as_ref(), Some(rom), c))
                             .collect();
                         s.receipt = reward.receipt.clone();
                         s.receipt_flag = s.receipt.as_ref().map(|r| r.flag);
@@ -402,10 +439,11 @@ impl AcquisitionIndex {
                     if let Some(selector) = &e.selector {
                         s.conditions.push(check(
                             state.as_ref(),
+                            Some(rom),
                             &EventCondition {
                                 kind: "variable",
                                 id: selector.variable,
-                                value: selector.value,
+                                value: selector.value as u32,
                                 comparison: if selector.fallback { 5 } else { 1 },
                                 taken: true,
                             },
@@ -527,7 +565,7 @@ impl AcquisitionIndex {
                         s.conditions = offer
                             .conditions
                             .iter()
-                            .map(|c| check(state.as_ref(), c))
+                            .map(|c| check(state.as_ref(), Some(rom), c))
                             .collect();
                         s.teaching_source = Some(offer.clone());
                         if s.conditions.iter().any(|c| c.satisfied == Some(false)) {
@@ -557,6 +595,42 @@ impl AcquisitionIndex {
                             });
                             sources.push(s);
                         }
+                    }
+                }
+            }
+        }
+        for source in &mut sources {
+            if source.conditions.iter().any(|c| {
+                matches!(
+                    c.condition.kind,
+                    "bag_item" | "bag_item_runtime" | "money" | "money_runtime"
+                )
+            }) {
+                source.partial = true;
+                if source.status != "completed"
+                    && source.conditions.iter().any(|c| {
+                        c.satisfied == Some(false)
+                            && matches!(c.condition.kind, "bag_item" | "money")
+                    })
+                {
+                    source.status = "blocked";
+                } else if source.status == "available" {
+                    source.status = "unknown";
+                }
+            }
+            for check in &source.conditions {
+                if matches!(check.condition.kind, "bag_item" | "bag_item_runtime") {
+                    let item = check.condition.id;
+                    if item != 0
+                        && !source
+                            .related
+                            .iter()
+                            .any(|r| r.kind == TargetKind::Item && r.id == item)
+                    {
+                        source.related.push(Target {
+                            kind: TargetKind::Item,
+                            id: item,
+                        });
                     }
                 }
             }
@@ -658,8 +732,8 @@ mod tests {
             comparison: 1,
             taken: true,
         };
-        assert_eq!(check(Some(&state), &c).satisfied, Some(true));
-        assert_eq!(check(None, &c).satisfied, None);
+        assert_eq!(check(Some(&state), None, &c).satisfied, Some(true));
+        assert_eq!(check(None, None, &c).satisfied, None);
         let c = EventCondition {
             kind: "variable",
             id: 0x4000,
@@ -667,8 +741,8 @@ mod tests {
             comparison: 2,
             taken: false,
         };
-        assert_eq!(check(Some(&state), &c).satisfied, Some(false));
+        assert_eq!(check(Some(&state), None, &c).satisfied, Some(false));
         let c = EventCondition { id: 0x800d, ..c };
-        assert_eq!(check(Some(&state), &c).satisfied, None);
+        assert_eq!(check(Some(&state), None, &c).satisfied, None);
     }
 }

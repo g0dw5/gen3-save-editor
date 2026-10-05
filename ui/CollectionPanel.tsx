@@ -1,3 +1,4 @@
+import { ConditionDetails } from "./ConditionDetails";
 import { useEffect, useState } from "react";
 import { api } from "./api";
 import { ClockDetails } from "./ClockDetails";
@@ -211,6 +212,11 @@ export function CollectionPanel({
                               onTarget({ kind: "species", id })
                             }
                             onItem={(id) => onTarget({ kind: "item", id })}
+                          />
+                          <ConditionDetails
+                            checks={s?.conditions}
+                            catalog={catalog}
+                            onTarget={onTarget}
                           />
                           {s?.receipt && (
                             <p className="small muted">

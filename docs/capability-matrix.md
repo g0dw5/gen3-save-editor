@@ -32,12 +32,13 @@ from missing code. A P row can contain individually verified subfeatures.
 |---|---|---|---|---|---|---|
 | Map layouts, NPC art / 地图与 NPC | P | P | P | P | P | `graphics.rs`, `map_events.rs`, [map palettes](research/map-palettes.md), [Rocket maps](research/rocket-map-and-trainer-display.md), [Mercury](research/mercury-fc-11.md). Static initial layouts; no live movement/layout replacement simulation. |
 | Entrances, connections, current reachability / 入口与可达性 | P | P | P | P | P | `navigation.rs`, shared map UI and five exact-ROM tests. Static entrance alternatives, focus and return work; current access and dynamic destinations remain unresolved. |
-| Pickup, hidden items, dialogue rewards / 拾取与奖励 | P | P | P | P | P | [map events](research/map-events.md): BW/DP 707 maps, 122 balls, 112 hidden items. Bounded scripts report stop offsets; FireRed command semantics and reward guards need further validation. |
+| Pickup, hidden items, dialogue rewards / 拾取与奖励 | P | P | P | P | P | [map events](research/map-events.md): BW/DP 707 maps, 122 balls, 112 hidden items. Bounded scripts retain stop evidence; ordinary/hidden and qualified NPC receipt protocols have five-fingerprint evidence below. Custom commands, complete resource/runtime guards and access remain partial. |
 | Random encounters, probability, time tables / 随机相遇 | P | P | P | P | P | `world.rs`; [time selection](research/encounter-time-selection.md), Mercury native selector. Slot weights are separate from encounter frequency; no full weekday/clock-state validation. |
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Shared typed map-script sources and [bounded NPC trade quotes](verification/npc-trades-20261006.md); [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers, actual delivery and custom exchanges are not comprehensively indexed. |
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. No verified probability under all ability modifiers. |
 | SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. [Bounded NPC success/receipt protocols](verification/npc-receipts-20261006.md) cover 80 reward rows. Compound/custom pickups, unqualified NPC protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
+| Item/money prerequisites / 道具与金钱前置条件 | P | P | P | P | P | [Native holdings and Boolean branch verification](verification/resource-conditions-20261006.md), required-item cross-links, readable query/map/planning/HTML conditions. Mercury ordinary checks use the first matching slot; other four retain unknown facility-bag context. Spending, complete eligibility and access remain unverified. |
 | Effective game clock, weekday, next event / 有效时钟与刷新 | U | U | U | U | P | Mercury virtual SAVE clock, native weekday, speed, forced-night state and jump menu verified within [bounded scope](verification/mercury-clock-20261005.md); hardware RTC and all weekday refresh remain unresolved. No device-time assumption. |
 | Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | P | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury executes its native constructor for explicit zero-context scenarios; independent CPU comparisons are recorded below, while full setup remains unknown. |
 | Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution with party/scenario. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
@@ -259,3 +260,22 @@ native-menu sources remain unknown. See [scope and reproduction](verification/tu
 NPC；普通兼容表也不证明已完整覆盖所有特殊招式学习。整体仍为部分验证。
 
 Current teaching increment regressions: 98 public core tests pass (23 opt-in ignored), plus independent native lookup/menu/compatibility checks, five-ROM source/query/navigation regression and bilingual browser workflows. No new edited-SAV emulator round trip or package is claimed.
+
+## Resource prerequisites increment / 资源条件增量
+
+All five fingerprints retain verified holdings predicates and symbolic Boolean
+branches, with 690 native holdings vectors, 240 native copy/compare/goto cases,
+3,227 native category lookups and 8 alternate-bag flag cases. Source → required item → acquisition → map/back,
+collection and bilingual standalone HTML use shared conditions. Mercury ordinary
+bag/money checks can be evaluated; other four normal-bag counts are projections
+with unknown satisfaction until facility context is recovered. Checks after
+resource changes stay unknown. No spending, access or new receipt proof is implied.
+See [evidence and remaining scope](verification/resource-conditions-20261006.md).
+
+五份指纹的道具／金钱条件均有原生验证并可跳转所需道具。水银普通背包条件可以
+叠加存档；其他四份的设施临时情景仍未恢复，只显示普通背包参考数量。所有功能
+行仍为部分覆盖；持有量不代表支付、领奖或当前可达。保持当前版本号。
+
+Resource increment regression: 101 public core tests passed, 24 opt-in ignored;
+native and five-ROM query/teaching parity plus bilingual browser workflows pass.
+No new save-edit emulator round trip or package is asserted for this increment.
