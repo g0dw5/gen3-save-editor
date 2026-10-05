@@ -92,6 +92,7 @@ pub const PROFILE: Profile = Profile {
         region_override: None,
     }),
     event_state: Some(crate::profile::EventStateLayout {
+        effects: Some(crate::event_dependencies::EMERALD),
         flags: &[
             crate::event_state::EventRange {
                 first: 0,

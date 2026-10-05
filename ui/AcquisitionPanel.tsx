@@ -294,6 +294,7 @@ export function AcquisitionPanel({
               <ConditionDetails
                 checks={s.conditions}
                 catalog={catalog}
+                onMap={onMap}
                 onTarget={onTarget}
               />
               {canDraft && (

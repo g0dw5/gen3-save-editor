@@ -2430,7 +2430,7 @@ summary {
 
 .map-navigation {
   margin-block: 16px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--line);
 }
 .map-navigation .reference-line {
   flex-wrap: wrap;
@@ -2484,7 +2484,7 @@ summary {
   max-height: 68vh;
 }
 .collection-panel > details {
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   padding: 10px;
   margin-block: 8px;
   border-radius: 8px;
@@ -2539,4 +2539,21 @@ summary {
   .breeding-parents {
     grid-template-columns: 1fr;
   }
+}
+
+.event-dependencies {
+  margin-block: 0.45rem;
+  padding-inline-start: 0.65rem;
+  border-inline-start: 2px solid var(--line);
+}
+.event-dependencies article {
+  margin-block: 0.65rem;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.event-dependencies blockquote {
+  margin: 0.55rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

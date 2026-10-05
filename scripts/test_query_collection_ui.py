@@ -25,6 +25,12 @@ def main():
     edge = dict(from_='0-0',to='0-1',kind='warp',x=2,y=1,target_x=1,target_y=1,warp_index=0,target_warp=0,direction=None,displacement=None,offset=200,unresolved=None)
     edge['from'] = edge.pop('from_')
     source = dict(underfoot=True,kind='pickup',map_id='0-1',region=1,x=1,y=1,related=[],quantity=1,min_level=None,max_level=None,encounter_percent=None,held_percent=None,periods=[],conditions=[],requirements=[],evolution=None,status='unknown',receipt_flag=None,repeatable=None,offset=100,partial=True,in_scenario=None)
+    g1=dict(condition=dict(kind='flag',id=10,value=1,comparison=1,taken=True),satisfied=False,actual=0,unresolved=None)
+    g2=dict(condition=dict(kind='flag',id=11,value=1,comparison=1,taken=True),satisfied=None,actual=None,unresolved=None)
+    source['conditions']=[g1]
+    reward['conditions']=[g1['condition']]
+    writer=dict(effect=dict(kind='flag',id=10,operation='set',operand=None,value=1,offset=300,conditions=[g2['condition']]),reference=dict(map_id='0-1',map_name='Test cave floor',region=1,kind='trigger',x=1,y=1,local_id=None,offset=200,root=250,conditions=[],entry_unresolved=True),conditions=[g2],text=[dict(offset=800,text='<script>context</script>')],stopped_at=[400],path_complete=False)
+    report=dict(rom_md5='test',condition=g1,writers=[writer],coverage=dict(checked_scripts=10,total_scripts=12,failed_scripts=1,truncated=True),total_matches=1,next_offset=None,partial=True)
     save = dict(trainer={'name':'TEST'},pokemon=[pokemon(2,dict(kind='party',slot=0))],boxes=[dict(index=i,name=f'Box {i}',count=0,wallpaper=0) for i in range(14)],bag=[],dex=[],active_slot=0,counter=1,backup_valid=True,dirty=False,can_undo=False,can_redo=False,changes=[])
     task = dict(target=dict(kind='species',id=1),family=[1],existing_family_members=[],source=source,alternatives=1)
     catalog['species'][1]['name'] = 'ROM parent'
@@ -32,16 +38,29 @@ def main():
     evolution = dict(method=7,condition='item',parameter=1,auxiliary=0,target=1,offset=300,requirements=[])
     task['preparation'] = dict(origin=2,current_count=0,source=capture,steps=[{'from':2,'evolution':evolution,'related':[dict(kind='item',id=1)]}],needs_hatching=False,truncated=False,partial=True)
     plan = dict(rom_md5='test',basis='individuals',families=True,owned_count=1,missing_count=1,regions=[dict(region=1,tasks=[task])],entrances=[dict(map_id='0-1',chains=[[edge]],truncated=False)],partial=True)
+    plan['prerequisites']=dict(reports=[report],entrances=[dict(map_id='0-1',chains=[[edge]],truncated=False)],skipped_conditions=1,truncated=True,partial=True)
     errors, requests = [], []
     def respond(route):
         req = route.request.post_data_json
         command,payload = req['command'],req['payload']; requests.append(req)
         if command=='state': data=dict(catalog=catalog,save=save)
+        elif command=='open_save':
+            writer['conditions']=[dict(g2,actual=1,satisfied=True)]
+            data=copy.deepcopy(save);data['counter']=2
         elif command=='world': data=world
         elif command=='species': data=dict(species=catalog['species'][payload['id']-1],evolutions=[],learnset=[],encounters=[],origins={})
         elif command=='acquisition': data=dict(target=payload,sources=[source],partial=True,clock=None)
         elif command=='map_navigation': data=dict(map_id=payload['id'],outgoing=[edge] if payload['id']=='0-0' else [],incoming=[edge] if payload['id']=='0-1' else [],approaches=[[edge]] if payload['id']=='0-1' else [],truncated=False,diagnostics=[])
-        elif command=='collection': data=plan
+        elif command in ('collection','collection_export'):
+            if command=='collection_export': assert payload['expected_rom_md5']=='test' and payload['query']['basis']=='individuals'
+            data=plan
+        elif command=='event_dependencies':
+            assert payload['expected_rom_md5']=='test'
+            data=copy.deepcopy(report)
+            if payload['id']==11:
+                data['condition']=g2;data['writers'][0]['conditions']=[g1]
+            elif sum(r['command']=='event_dependencies' and r['payload']['id']==10 for r in requests)>1:
+                data['condition']=dict(g1,actual=1,satisfied=True)
         elif command=='breeding_preview':
             assert payload['parents']==[dict(kind='stored',location=dict(kind='party',slot=0)),dict(kind='stored',location=dict(kind='box',box_index=0,slot=1))]
             data=dict(rom_md5='test',parents=[],compatibility=50,child=pokemon(2,dict(kind='party',slot=0))['pokemon'],seed=42,offspring_pid=24,rng_after=1,partial=True,production=None)
@@ -62,6 +81,30 @@ def main():
         page.get_by_role('button', name='简体中文', exact=True).click()
         expect(page.locator('.acquisition-panel')).to_contain_text('尚未确认此事件的领取规则')
         page.get_by_role('button', name='English', exact=True).click()
+        assert not any(r['command']=='event_dependencies' for r in requests)
+        trace=page.locator('.acquisition-panel .event-dependencies').first
+        trace.locator('summary').first.click()
+        expect(trace).to_contain_text('May set this event')
+        expect(trace).to_contain_text('Tile-triggered event')
+        trace.get_by_text('Text referenced by this script',exact=True).click()
+        expect(trace.locator('blockquote')).to_have_text('<script>context</script>')
+        nested=trace.locator('.event-dependencies').first
+        nested.locator('summary').first.click()
+        expect(nested.locator('article')).to_have_count(1)
+        cycle=nested.locator('.event-dependencies').first
+        cycle.locator('summary').first.click()
+        expect(cycle).to_contain_text('This dependency repeats')
+        assert sum(r['command']=='event_dependencies' for r in requests)==2
+        trace.get_by_role('button',name='Refresh saved-state checks',exact=True).first.click()
+        expect(trace).to_contain_text('Current query snapshot · Satisfied · Event condition must be set · SAV value set')
+        if os.environ.get('GEN3_UI_ARTIFACTS'):
+            trace.get_by_text('Text referenced by this script',exact=True).first.click()
+            Path(os.environ['GEN3_UI_ARTIFACTS']).mkdir(parents=True,exist_ok=True)
+            trace.screenshot(path=str(Path(os.environ['GEN3_UI_ARTIFACTS'])/'prerequisite-clues.png'))
+        trace.get_by_role('button',name='Test cave floor (1, 1) ↗',exact=True).first.click()
+        expect(page.locator('.map-focus')).to_be_visible()
+        expect(page.locator('.map-navigation')).to_contain_text('Test region entrance')
+        page.get_by_role('button',name='Back to previous reference',exact=False).click()
         page.locator('.acquisition-panel .link-button').filter(has_text='Test cave floor').click()
         expect(page.locator('.map-focus')).to_be_visible()
         expect(page.locator('.map-navigation')).to_contain_text('Test region entrance')
@@ -70,6 +113,17 @@ def main():
         page.get_by_role('button',name='Back to previous reference',exact=False).click()
         expect(page.locator('.map-navigation')).to_contain_text('Test cave floor')
         page.locator('.map-focus').click()
+        # Map conditions are ROM-only data; the open trace must recheck a new SAV
+        # even when its outer condition and map report did not change.
+        maptrace=page.locator('.map-marker-details .event-dependencies').first
+        maptrace.locator('summary').first.click()
+        expect(maptrace).to_contain_text('May set this event')
+        before_refresh=sum(r['command']=='event_dependencies' for r in requests)
+        with page.expect_file_chooser() as choice:
+            page.get_by_role('button',name='Open save',exact=True).first.click()
+        choice.value.set_files(dict(name='synthetic.sav',mimeType='application/octet-stream',buffer=b'fixture-only'))
+        expect(maptrace.locator('.condition-details').first).to_contain_text('SAV value set')
+        assert sum(r['command']=='event_dependencies' for r in requests)>before_refresh
         page.locator('.map-marker-details .link-button').filter(has_text='Test stone').click()
         expect(page.locator('.acquisition-panel')).to_contain_text('Collected' if False else 'Undetermined')
         page.get_by_role('button',name='Collection planning',exact=True).click()
@@ -100,6 +154,8 @@ def main():
         assert '<script>' not in html and 'default-src' in html
         assert 'Stand on this tile and use the Itemfinder' in html
         assert 'Test region entrance (2, 1)' in html and 'Test cave floor' in html
+        assert 'Find prerequisite clues' in html and 'prerequisite-flag' in html and '&lt;script&gt;context&lt;/script&gt;' in html
+        assert 'May set this event' in html and 'Test region entrance (2, 1)' in html
         assert 'Evolution preparation suggestion' in html and 'ROM parent → Test species' in html and 'Use Test stone' in html
         assert 'Encounter slot probability: 20%' in html and 'Outside the query period' in html
         task['preparation'] = dict(task['preparation'],current_count=2,source=None)
@@ -123,6 +179,7 @@ def main():
         with page.expect_download() as info:
             page.get_by_role('button',name='导出独立 HTML',exact=True).click()
         html=Path(info.value.path()).read_text()
+        assert '追查前置线索' in html and '可能设置此事件' in html
         assert '孵蛋与进化准备建议' in html and '2048 / 5050' in html
         assert '&lt;script&gt;parent&lt;/script&gt;' in html and '<script>' not in html
         assert '盒子 1 / 2' in html and '不向 SAV 添加个体' in html and '携带道具' in html

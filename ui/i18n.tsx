@@ -1,5 +1,39 @@
 import { createContext, useContext } from "react";
 export const en = {
+  conditionFlagSet: "set",
+  conditionFlagUnset: "unset",
+  dependencyExporting: "Building latest plan and prerequisite appendix…",
+  dependencyAppendixLimit:
+    "This appendix is bounded (128 conditions, three dependency expansions, 64 writers per condition and 256 entrance maps); some clues are omitted or unresolved. Use the app to continue tracing.",
+  dependencyTrace: "Find prerequisite clues",
+  dependencyHelp:
+    "These referenced scripts may change this prerequisite. This is a partial static trace, not a verified quest list or proof of current access. Native calls, dynamic scripts and unreferenced records are not exhaustive.",
+  dependencySnapshot: "Current query snapshot",
+  dependencyRefresh: "Refresh saved-state checks",
+  dependencyNone:
+    "No matching writer was located in the parsed map scripts. This does not mean the prerequisite cannot be fulfilled.",
+  dependencyLimit:
+    "This dependency repeats or reaches the expansion limit. Continue from another clue; a cycle does not prove impossibility.",
+  dependencyError: "Prerequisite trace could not be verified",
+  dependencySetEvent: "May set this event",
+  dependencyClearEvent: "May clear this event",
+  dependencyChangeStage: "May change this stage",
+  dependencyUnknownStage: "May change this stage; resulting value unresolved",
+  dependency_npc: "NPC script",
+  dependency_trigger: "Tile-triggered event",
+  dependency_sign: "Interaction on a map tile",
+  dependency_map_script: "Map-level event",
+  dependencyText: "Text referenced by this script",
+  dependencyTextHelp:
+    "Text references are context clues across the root script, not confirmed dialogue on this branch or a quest title.",
+  dependencyAccessUnknown:
+    "Map reference and parsed checks do not establish activation, access or completion.",
+  dependencyPathPartial:
+    "This script contains unresolved commands or bounded branches. See evidence.",
+  dependencyMore: "Show more matching clues",
+  dependencyCoverage:
+    "Inspected {checked} of {total} referenced script roots; overall coverage is partial.",
+
   breedTitle: "Native daycare egg preview",
   daycareSavedTitle: "Saved ordinary daycare",
   daycareSavedHelp:
@@ -1005,6 +1039,39 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  conditionFlagSet: "已设置",
+  conditionFlagUnset: "未设置",
+  dependencyExporting: "正在生成最新建议与前置线索附录…",
+  dependencyAppendixLimit:
+    "附录有界（128 个条件、三层依赖展开、每条件 64 个来源及 256 张入口地图），部分线索被省略或尚未确定。可回到应用继续追查。",
+  dependencyTrace: "追查前置线索",
+  dependencyHelp:
+    "这些被地图引用的脚本可能改变此前置条件。这是部分静态线索，不是已验证任务清单或当前可达证明；原生调用、动态脚本与无引用记录尚未完整覆盖。",
+  dependencySnapshot: "本次查询快照",
+  dependencyRefresh: "重新核对存档条件",
+  dependencyNone:
+    "已解析地图脚本中未找到匹配的改变来源；不表示无法完成该条件。",
+  dependencyLimit:
+    "该依赖重复或达到展开上限。可从其他线索继续追查；循环不代表无法完成。",
+  dependencyError: "前置线索未能核实",
+  dependencySetEvent: "可能设置此事件",
+  dependencyClearEvent: "可能清除此事件",
+  dependencyChangeStage: "可能改变此阶段",
+  dependencyUnknownStage: "可能改变此阶段，结果值尚未确定",
+  dependency_npc: "NPC 对话脚本",
+  dependency_trigger: "格位触发事件",
+  dependency_sign: "地图格位交互",
+  dependency_map_script: "地图级事件",
+  dependencyText: "此脚本引用的文字",
+  dependencyTextHelp:
+    "文字为整个根脚本的上下文线索，不保证由此分支实际说出，也不是已确认的任务名称。",
+  dependencyAccessUnknown:
+    "地图引用与已解析检查不代表可激活、当前可达或任务完成。",
+  dependencyPathPartial: "此脚本包含未确定的命令或有界分支，详见证据。",
+  dependencyMore: "查看更多匹配线索",
+  dependencyCoverage:
+    "检查了 {checked} / {total} 个被引用根脚本；整体仍为部分覆盖。",
+
   breedTitle: "原生寄养孵蛋预览",
   daycareSavedTitle: "已保存的普通寄养状态",
   daycareSavedHelp:

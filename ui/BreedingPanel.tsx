@@ -573,6 +573,7 @@ export function BreedingPanel({
             <ConditionDetails
               checks={s.conditions}
               catalog={catalog}
+              onMap={onMap}
               onTarget={onTarget}
             />
           </article>

@@ -21,6 +21,8 @@ pub struct Request {
 #[derive(Default)]
 pub struct App {
     pub session: Option<Session>,
+    pub(crate) event_dependency_cache:
+        Option<(std::sync::Arc<Vec<u8>>, crate::event_dependencies::Index)>,
     pub(crate) acquisition_cache: Option<(
         std::sync::Arc<Vec<u8>>,
         crate::acquisition::AcquisitionIndex,
@@ -94,6 +96,7 @@ impl App {
                 self.session = Some(session);
                 self.editor_cheat_cache = None;
                 self.acquisition_cache = None;
+                self.event_dependency_cache = None;
                 Ok(json!({"catalog":catalog,"save":null}))
             }
             "open_save" => {
@@ -161,7 +164,31 @@ impl App {
                 let id = serde_json::from_value(p["id"].clone())?;
                 Ok(serde_json::to_value(self.session()?.rom.detail(id)?)?)
             }
-            "world" | "acquisition" | "collection" | "daycare_sources" => {
+            "event_dependencies" => {
+                let request: crate::event_dependencies::Request = serde_json::from_value(p)?;
+                let session = self.session()?;
+                if request.expected_rom_md5 != session.rom.profile.md5 {
+                    return Err(err("rom_mismatch", request.expected_rom_md5));
+                }
+                if self
+                    .event_dependency_cache
+                    .as_ref()
+                    .is_none_or(|(data, _)| !std::sync::Arc::ptr_eq(data, &session.rom.data))
+                {
+                    let maps = session.rom.maps()?;
+                    let index = crate::event_dependencies::Index::build(&session.rom, &maps)?;
+                    self.event_dependency_cache = Some((session.rom.data.clone(), index));
+                }
+                let session = self.session()?;
+                Ok(serde_json::to_value(
+                    self.event_dependency_cache.as_ref().unwrap().1.query(
+                        &session.rom,
+                        session.save.as_ref(),
+                        request,
+                    )?,
+                )?)
+            }
+            "world" | "acquisition" | "collection" | "collection_export" | "daycare_sources" => {
                 let session = self.session()?;
                 if self
                     .acquisition_cache
@@ -179,6 +206,40 @@ impl App {
                     Ok(serde_json::to_value(
                         index.daycare_sources(&session.rom, session.save.as_ref()),
                     )?)
+                } else if input.command == "collection_export" {
+                    #[derive(Deserialize)]
+                    #[serde(deny_unknown_fields)]
+                    struct Input {
+                        expected_rom_md5: String,
+                        query: crate::collection::CollectionRequest,
+                    }
+                    let request: Input = serde_json::from_value(p)?;
+                    let session = self.session()?;
+                    if request.expected_rom_md5 != session.rom.profile.md5 {
+                        return Err(err("rom_mismatch", request.expected_rom_md5));
+                    }
+                    let mut plan =
+                        index.collection(&session.rom, session.save_ref()?, request.query)?;
+                    if self
+                        .event_dependency_cache
+                        .as_ref()
+                        .is_none_or(|(data, _)| !std::sync::Arc::ptr_eq(data, &session.rom.data))
+                    {
+                        let deps = crate::event_dependencies::Index::build(
+                            &session.rom,
+                            &index.world.maps,
+                        )?;
+                        self.event_dependency_cache = Some((session.rom.data.clone(), deps));
+                    }
+                    let session = self.session()?;
+                    plan.prerequisites =
+                        Some(self.event_dependency_cache.as_ref().unwrap().1.trace_plan(
+                            &session.rom,
+                            session.save_ref()?,
+                            &self.acquisition_cache.as_ref().unwrap().1.world.maps,
+                            &plan,
+                        )?);
+                    Ok(serde_json::to_value(plan)?)
                 } else if input.command == "collection" {
                     let request = serde_json::from_value(p)?;
                     let session = self.session()?;

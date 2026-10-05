@@ -37,7 +37,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Shared typed map-script sources and [bounded NPC trade quotes](verification/npc-trades-20261006.md); [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers, actual delivery and custom exchanges are not comprehensively indexed. |
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). [Native ordinary daycare scenarios](verification/breeding-20261006.md) execute compatibility/full receipt across five fingerprints with stored/simulated parents and offspring/NPC/map navigation. [Ordinary production checks](verification/breeding-production-20261006.md) execute native step/item branches with explicit bag scenarios. Rocket/Mercury service references and complete setup/inheritance/hatching/access remain unknown. Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. Native ordinary single-wild item selection has five-fingerprint evidence, including tested lead abilities and exceptional layout branches; full encounter modifiers and facilities remain unresolved. See [wild-item evidence](verification/wild-held-20261006.md). |
-| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. [Bounded NPC success/receipt protocols](verification/npc-receipts-20261006.md) cover 80 reward rows. Compound/custom pickups, unqualified NPC protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
+| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. [Bounded NPC success/receipt protocols](verification/npc-receipts-20261006.md) cover 80 reward rows. The [prerequisite trace](verification/event-dependencies-20261006.md) links potential referenced writers, guards, ROM text and maps to queries/HTML; it is not a full task DAG. Compound/custom pickups, unqualified NPC protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
 | Item/money prerequisites / 道具与金钱前置条件 | P | P | P | P | P | [Native holdings and Boolean branch verification](verification/resource-conditions-20261006.md), required-item cross-links, readable query/map/planning/HTML conditions. Mercury ordinary checks use the first matching slot; other four retain unknown facility-bag context. Spending, complete eligibility and access remain unverified. |
 | Effective game clock, weekday, next event / 有效时钟与刷新 | U | U | U | U | P | Mercury virtual SAVE clock, native weekday, speed, forced-night state and jump menu verified within [bounded scope](verification/mercury-clock-20261005.md); hardware RTC and all weekday refresh remain unresolved. No device-time assumption. |
 | Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | P | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury executes its native constructor for explicit zero-context scenarios; independent CPU comparisons are recorded below, while full setup remains unknown. |
@@ -353,3 +353,18 @@ reverse-evolution breeding are asserted. See [evidence and scope](verification/e
 收集规划仍为部分支持。准备链区分实际非蛋个体与图鉴记录，展示进化条件、道具、
 招式和前代来源地图；不把“已有前代”自动提升为当前可进化，也不把不同分支视为
 只需一个个体。完整孵蛋、资格、剧情依赖及合并路线最优性尚未完成。
+
+## Prerequisite trace increment / 前置线索增量
+
+All five progression/query/collection rows remain **P**. The [native command and
+workflow evidence](verification/event-dependencies-20261006.md) covers potential
+persistent writers from referenced map roots, non-reward tile triggers, root text
+contexts, guard expansion, map/entrance/back and standalone HTML links. Five
+fingerprints have 360 independent native write cases, 25,106 referenced roots and
+16,680 sampled effect queries. This is not proof of all activations or a complete
+mainline/sidequest DAG; native writes, dynamic entry conditions and current access
+remain unresolved. No receipt logic is replaced with item holdings or visibility.
+
+五份指纹均保持部分支持。线索来自当前 ROM，被地图表引用不代表游戏中当前可达或
+必定使用；NPC 可见和标记满足不代表领奖／完成。普通 SAV 检查不是模拟器实时状态
+或全部设施情景。独立 HTML 附录有界，未知条件和循环不包装成无法完成。

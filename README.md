@@ -256,3 +256,9 @@ can be checked with the full native receipt preview. Standalone HTML includes pa
 locations and the same limitations. Sampling is bounded, is not a complete offspring
 catalog and does not include already deposited daycare parents. Missing suggestions
 do not prove breeding impossible. See [planning evidence](docs/verification/breeding-planning-20261006.md).
+
+Prerequisite checks now offer **Find prerequisite clues**: potential map-referenced
+script writers, ROM text context, further guards and tile/entrance/back navigation.
+Standalone collection HTML includes a linked, bounded appendix from the same
+current ROM/SAV snapshot. These are partial clues, not a complete quest graph or
+proof of access/completion. See [evidence and limits](docs/verification/event-dependencies-20261006.md).

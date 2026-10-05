@@ -88,6 +88,8 @@ struct AwardTrace {
     sets: BTreeMap<u16, BTreeSet<usize>>,
 }
 struct Walk {
+    effects: Vec<crate::event_dependencies::Effect>,
+    text: Vec<crate::event_dependencies::TextReference>,
     rewards: Vec<ItemReward>,
     pokemon: Vec<crate::script_pokemon::PokemonSource>,
     teaching: Vec<crate::script_teaching::TeachingSource>,
@@ -238,7 +240,7 @@ impl Rom {
         Ok((walk.rewards, walk.stopped))
     }
     fn event_script(&self, root: usize) -> Result<Walk> {
-        let mut walk = self.walk_item_script(root, false)?;
+        let mut walk = self.walk_item_script(root, false, false)?;
         // A second, bounded pass follows native boolean award outcomes. Keep the
         // broad catalog traversal independent of proof limits and branch expansion.
         if self.profile.event_state.is_some_and(|l| l.gift_result)
@@ -250,7 +252,7 @@ impl Rom {
                         .any(|c| guards_unset(&r.conditions, c.id))
             })
         {
-            let proof = self.walk_item_script(root, true)?.receipts(root);
+            let proof = self.walk_item_script(root, true, false)?.receipts(root);
             for reward in &mut walk.rewards {
                 reward.receipt = proof.get(&reward.key()).cloned();
             }
@@ -258,7 +260,21 @@ impl Rom {
         Ok(walk)
     }
 
-    fn walk_item_script(&self, root: usize, prove: bool) -> Result<Walk> {
+    pub(crate) fn event_effect_script(
+        &self,
+        root: usize,
+    ) -> Result<crate::event_dependencies::ScriptEffects> {
+        crate::event_dependencies::validate(self)?;
+        let walk = self.walk_item_script(root, false, true)?;
+        Ok(crate::event_dependencies::ScriptEffects {
+            effects: walk.effects,
+            text: walk.text,
+            complete: walk.complete && walk.stopped.is_empty(),
+            stopped_at: walk.stopped,
+        })
+    }
+
+    fn walk_item_script(&self, root: usize, prove: bool, observe: bool) -> Result<Walk> {
         let b = &self.data;
         let mut pending = VecDeque::from([State {
             pc: root,
@@ -269,6 +285,8 @@ impl Rom {
         let mut pokemon = BTreeSet::new();
         let mut teaching = BTreeSet::new();
         let mut daycare = BTreeSet::new();
+        let mut effects = BTreeSet::new();
+        let mut text = BTreeSet::new();
         let mut stopped = BTreeSet::new();
         let mut steps = 0;
         let mut complete = true;
@@ -314,7 +332,7 @@ impl Rom {
                     stopped.insert(pc);
                     break;
                 }
-                if !prove {
+                if !prove && !observe {
                     match self.script_daycare_instruction(pc) {
                         Ok(Some(mut source)) => {
                             source.conditions = s.conditions.clone();
@@ -358,6 +376,44 @@ impl Rom {
                         }
                         Err(_) => {
                             stopped.insert(pc);
+                        }
+                    }
+                }
+                if observe {
+                    // Width alone does not establish preservation of local state.
+                    // Retain potential later writes, but invalidate known operands
+                    // after commands outside this verified event/presentation set.
+                    if !matches!(op,
+                        0x00..=0x07 | 0x0f | 0x16..=0x1a | 0x21 | 0x22 | 0x29..=0x2b |
+                        0x2f..=0x32 | 0x44 | 0x47 | 0x48 | 0x5a | 0x66 | 0x67 | 0x6a..=0x6d | 0x84 | 0x90..=0x92
+                    ) {
+                        stopped.insert(pc);
+                        s.vars.clear();
+                        s.flags.clear();
+                        s.checks.clear();
+                        s.comparison = None;
+                        s.boolean_comparison = None;
+                        s.known_comparison = None;
+                        s.resource_vars_unknown = true;
+                    }
+                    // Bank zero is the native ordinary message fallback context.
+                    // A text reference is root context, not proof of dialogue delivery.
+                    if op == 0x0f && b[pc + 1] == 0 {
+                        if let Ok(offset) = pointer(b, pc + 2) {
+                            let end = (offset + 1024).min(b.len());
+                            if let Some(n) = b[offset..end].iter().position(|v| *v == 0xff) {
+                                if text.len() < 16 {
+                                    let decoded = self.text(offset, n + 1)?;
+                                    if !decoded.trim().is_empty() {
+                                        text.insert(crate::event_dependencies::TextReference {
+                                            offset,
+                                            text: decoded,
+                                        });
+                                    }
+                                } else {
+                                    stopped.insert(pc);
+                                }
+                            }
                         }
                     }
                 }
@@ -523,6 +579,12 @@ impl Rom {
                     0x16 | 0x19 | 0x1a => {
                         let dst = u16(b, pc + 1)?;
                         let src = u16(b, pc + 3)?;
+                        if dst < 0x4000 || (op == 0x19 && src < 0x4000) {
+                            // copyvar dereferences a variable pointer, unlike
+                            // setorcopyvar's VarGet. Invalid pointers are not constants.
+                            stopped.insert(pc);
+                            break;
+                        }
                         let value = if op == 0x16 {
                             Some(src)
                         } else {
@@ -542,23 +604,55 @@ impl Rom {
                         } else {
                             s.vars.remove(&dst);
                         }
+                        if observe && crate::event_dependencies::persistent(self, "variable", dst) {
+                            effects.insert(crate::event_dependencies::Effect {
+                                kind: "variable",
+                                id: dst,
+                                operation: if op == 0x16 { "set" } else { "copy" },
+                                operand: Some(src),
+                                value,
+                                offset: pc,
+                                conditions: s.conditions.clone(),
+                            });
+                        }
                     }
                     0x17 | 0x18 => {
                         let dst = u16(b, pc + 1)?;
+                        if dst < 0x4000 {
+                            stopped.insert(pc);
+                            break;
+                        }
                         let a = resolve(&s, dst);
                         s.checks.remove(&dst);
-                        let v = u16(b, pc + 3)?;
-                        if let Some(a) = a {
-                            s.vars.insert(
-                                dst,
-                                if op == 0x17 {
-                                    a.wrapping_add(v)
-                                } else {
-                                    a.wrapping_sub(v)
-                                },
-                            );
+                        let operand = u16(b, pc + 3)?;
+                        // addvar consumes an immediate; subvar calls native VarGet.
+                        let v = if op == 0x17 {
+                            Some(operand)
+                        } else {
+                            resolve(&s, operand)
+                        };
+                        let value = a.zip(v).map(|(a, v)| {
+                            if op == 0x17 {
+                                a.wrapping_add(v)
+                            } else {
+                                a.wrapping_sub(v)
+                            }
+                        });
+                        if let Some(value) = value {
+                            s.vars.insert(dst, value);
                         } else {
                             s.vars.remove(&dst);
+                        }
+                        if observe && crate::event_dependencies::persistent(self, "variable", dst) {
+                            effects.insert(crate::event_dependencies::Effect {
+                                kind: "variable",
+                                id: dst,
+                                operation: if op == 0x17 { "add" } else { "subtract" },
+                                operand: Some(operand),
+                                value,
+                                offset: pc,
+                                conditions: s.conditions.clone(),
+                            });
                         }
                     }
                     0x21 | 0x22 => {
@@ -606,6 +700,17 @@ impl Rom {
                     0x29 | 0x2a => {
                         let flag = u16(b, pc + 1)?;
                         s.flags.insert(flag, op == 0x29);
+                        if observe && crate::event_dependencies::persistent(self, "flag", flag) {
+                            effects.insert(crate::event_dependencies::Effect {
+                                kind: "flag",
+                                id: flag,
+                                operation: if op == 0x29 { "set" } else { "clear" },
+                                operand: None,
+                                value: Some(u16::from(op == 0x29)),
+                                offset: pc,
+                                conditions: s.conditions.clone(),
+                            });
+                        }
                         if prove && op == 0x29 {
                             for trace in s.awards.values_mut().filter(|t| t.success) {
                                 trace.sets.entry(flag).or_default().insert(pc);
@@ -856,6 +961,8 @@ impl Rom {
             }
         }
         Ok(Walk {
+            effects: effects.into_iter().collect(),
+            text: text.into_iter().collect(),
             rewards: rewards.into_iter().collect(),
             pokemon: pokemon.into_iter().collect(),
             teaching: teaching.into_iter().collect(),

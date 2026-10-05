@@ -153,6 +153,7 @@ pub const PROFILE: Profile = Profile {
         }),
     }),
     event_state: Some(crate::profile::EventStateLayout {
+        effects: Some(crate::event_dependencies::MERCURY),
         flags: &[
             crate::event_state::EventRange {
                 first: 0,

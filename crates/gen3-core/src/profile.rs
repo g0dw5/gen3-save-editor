@@ -38,6 +38,7 @@ impl SplitText {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct EventStateLayout {
+    pub effects: Option<crate::event_dependencies::Rules>,
     pub flags: &'static [crate::event_state::EventRange],
     pub variables: &'static [crate::event_state::EventRange],
     /// Native-verified ordinary item-ball protocol; individual scripts must also qualify.
@@ -325,6 +326,7 @@ pub const BW: Profile = Profile {
         region_override: None,
     }),
     event_state: Some(EventStateLayout {
+        effects: Some(crate::event_dependencies::EMERALD),
         flags: &[crate::event_state::EventRange {
             first: 0,
             count: 0x4000,
@@ -577,6 +579,7 @@ pub const ROCKET: Profile = Profile {
         region_override: None,
     }),
     event_state: Some(EventStateLayout {
+        effects: Some(crate::event_dependencies::ROCKET),
         flags: &[crate::event_state::EventRange {
             first: 0,
             count: 0x4000,

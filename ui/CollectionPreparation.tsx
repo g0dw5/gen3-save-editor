@@ -171,6 +171,7 @@ export function CollectionPreparation({
           <ConditionDetails
             checks={s.conditions}
             catalog={catalog}
+            onMap={onMap}
             onTarget={onTarget}
           />
           <TradeDetails

@@ -1,3 +1,4 @@
+import { ConditionQueryRevision } from "./ConditionDetails";
 import { speciesDisplayName } from "./speciesDisplay";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -983,33 +984,36 @@ export default function App() {
             onClose={() => setCheatsOpen(false)}
           />
         )}
-        {catalog &&
-          windows.map((info) => (
-            <ReferenceWindow
-              key={`${catalog.profile.md5}:${info.id}`}
-              window={info}
-              catalog={catalog}
-              world={world}
-              save={save}
-              trainerDifficulty={trainerDifficulty}
-              onTrainerDifficulty={setTrainerDifficulty}
-              loadWorld={loadWorld}
-              onClose={() =>
-                setWindows((old) => old.filter((w) => w.id !== info.id))
-              }
-              onTemplate={async (template) => {
-                if (!save) {
-                  onError({ code: "no_save", detail: "" });
-                  return;
+        {catalog && (
+          <ConditionQueryRevision.Provider value={revision}>
+            {windows.map((info) => (
+              <ReferenceWindow
+                key={`${catalog.profile.md5}:${info.id}`}
+                window={info}
+                catalog={catalog}
+                world={world}
+                save={save}
+                trainerDifficulty={trainerDifficulty}
+                onTrainerDifficulty={setTrainerDifficulty}
+                loadWorld={loadWorld}
+                onClose={() =>
+                  setWindows((old) => old.filter((w) => w.id !== info.id))
                 }
-                if (await guard()) {
-                  setCarry({ kind: "template", template });
-                  setPage("pokemon");
-                }
-              }}
-              onError={onError}
-            />
-          ))}
+                onTemplate={async (template) => {
+                  if (!save) {
+                    onError({ code: "no_save", detail: "" });
+                    return;
+                  }
+                  if (await guard()) {
+                    setCarry({ kind: "template", template });
+                    setPage("pokemon");
+                  }
+                }}
+                onError={onError}
+              />
+            ))}
+          </ConditionQueryRevision.Provider>
+        )}
         {boxSettings !== null && save && (
           <BoxSettings
             box={save.boxes[boxSettings]}

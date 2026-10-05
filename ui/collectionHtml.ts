@@ -1,5 +1,5 @@
 import { heldSummary } from "./WildHeldDetails";
-import { conditionLabel } from "./ConditionDetails";
+import { conditionLabel, conditionKey, effectLabel } from "./ConditionDetails";
 import type { Catalog, CollectionPlan, GameMap, QueryTarget } from "./types";
 import { tradeSummary } from "./TradeDetails";
 import { clockSummary } from "./ClockDetails";
@@ -31,8 +31,55 @@ export function collectionHtml(
       (x) => x.id === v.id,
     )?.name ?? `#${v.id}`;
   const mapName = (id: string) => maps.find((m) => m.id === id)?.name ?? id;
+  const prerequisiteId = (c: Parameters<typeof conditionKey>[0]) =>
+    `prerequisite-${encodeURIComponent(conditionKey(c))}`;
+  const checkHtml = (c: Parameters<typeof conditionLabel>[0]) => {
+    const label = `${t(c.satisfied === true ? "planConditionYes" : c.satisfied === false ? "planConditionNo" : "acqStatus_unknown")}: ${conditionLabel(c, catalog, t)}${c.unresolved ? ` · ${t(c.unresolved)}` : ""}`;
+    return plan.prerequisites?.reports.some(
+      (r) => conditionKey(r.condition.condition) === conditionKey(c.condition),
+    )
+      ? `<a href="#${esc(prerequisiteId(c.condition))}">${esc(label)}</a>`
+      : esc(label);
+  };
+  const appendix = plan.prerequisites
+    ? `<section id="prerequisites"><h2>${esc(t("dependencyTrace"))}</h2><p>${esc(t("dependencyHelp"))}</p>${plan.prerequisites.truncated || plan.prerequisites.skipped_conditions ? `<p>${esc(t("dependencyAppendixLimit"))}</p>` : ""}${plan.prerequisites.reports
+        .map(
+          (report) =>
+            `<article id="${esc(prerequisiteId(report.condition.condition))}"><h3>${esc(conditionLabel(report.condition, catalog, t))}</h3>${!report.writers.length ? `<p>${esc(t("dependencyNone"))}</p>` : ""}${report.writers
+              .map((w) => {
+                const entry = plan.prerequisites?.entrances.find(
+                  (e) => e.map_id === w.reference.map_id,
+                );
+                return `<div class="task"><strong>${esc(effectLabel(w.effect, t))} · ${esc(t(`dependency_${w.reference.kind}`))}</strong><p>${esc(w.reference.map_name)}${w.reference.x != null ? ` (${w.reference.x}, ${w.reference.y})` : ` · ${esc(t("acqNoTile"))}`}</p><p>${esc(t("dependencyAccessUnknown"))}</p>${w.text.length ? `<details><summary>${esc(t("dependencyText"))}</summary><p>${esc(t("dependencyTextHelp"))}</p>${w.text.map((r) => `<blockquote>${esc(r.text)}</blockquote>`).join("")}</details>` : ""}${w.conditions.length ? `<p>${esc(t("acqConditions"))}: ${w.conditions.map(checkHtml).join("; ")}</p>` : ""}${
+                  entry?.chains.length
+                    ? `<p>${esc(t("navApproaches"))}</p><ul>${entry.chains
+                        .slice(0, 3)
+                        .map(
+                          (chain) =>
+                            `<li>${esc(
+                              chain
+                                .map(
+                                  (e) =>
+                                    `${mapName(e.from)}${e.x != null ? ` (${e.x}, ${e.y})` : ""}`,
+                                )
+                                .concat(w.reference.map_name)
+                                .join(" → "),
+                            )}</li>`,
+                        )
+                        .join(
+                          "",
+                        )}</ul>${entry.truncated ? `<p>${esc(t("dependencyAppendixLimit"))}</p>` : ""}`
+                    : `<p>${esc(t("navNoApproach"))}</p>`
+                }${!w.path_complete ? `<p>${esc(t("dependencyPathPartial"))}</p>` : ""}<details><summary>${esc(t("evidence"))}</summary><pre>${esc(JSON.stringify(w, null, 2))}</pre></details></div>`;
+              })
+              .join(
+                "",
+              )}<details><summary>${esc(t("evidence"))}</summary><pre>${esc(JSON.stringify(report.coverage, null, 2))}</pre></details></article>`,
+        )
+        .join("")}<p>${esc(t("navHelp"))}</p></section>`
+    : "";
   const title = t("collection");
-  return `<!doctype html><html lang="${document.documentElement.lang || "zh"}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; form-action 'none'"><title>${esc(title)}</title><style>body{font:16px/1.7 system-ui,sans-serif;background:#f4f7fa;color:#182532;max-width:980px;margin:auto;padding:22px}section{background:white;padding:20px;margin:18px 0;border-radius:12px}table{border-collapse:collapse;width:100%;font-size:14px}td,th{text-align:left;border-bottom:1px solid #dce3e9;padding:10px;vertical-align:top}small{color:#576775}details{margin-top:8px}pre{white-space:pre-wrap;overflow-wrap:anywhere}.task{margin-bottom:16px}h1{font-size:27px}h2{font-size:21px}input{width:20px;height:20px;vertical-align:middle}@media(max-width:600px){body{padding:12px}section{padding:12px}td,th{padding:5px;font-size:12px}}</style><h1>${esc(title)}</h1><p>${esc(catalog.profile.label)} · ${esc(t("planGeneratedAt"))}: ${esc(new Date().toLocaleString())}</p><p>${esc(t("planHelp"))}</p><p>${esc(t("planFamilyHelp"))}</p><p>${esc(t("acqSaveOverlay"))}</p><p>${esc(t("planBasis"))}: ${esc(t(plan.basis === "dex" ? "planDex" : "planIndividuals"))} · ${esc(t("planMissing"))}: ${plan.missing_count}</p>${plan.clock ? `<p>${esc(clockSummary(plan.clock, t))}</p>${plan.clock.saved ? `<p><small>${esc(t("clockSnapshotHelp"))}</small></p>` : ""}${plan.clock.forced_night ? `<p>${esc(t("clockForcedNight"))}</p>` : ""}` : ""}<small>MD5 ${esc(plan.rom_md5)}</small>${breedingCoverageSummary(
+  return `<!doctype html><html lang="${document.documentElement.lang || "zh"}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; form-action 'none'"><title>${esc(title)}</title><style>body{font:16px/1.7 system-ui,sans-serif;background:#f4f7fa;color:#182532;max-width:980px;margin:auto;padding:22px}section{background:white;padding:20px;margin:18px 0;border-radius:12px}blockquote{white-space:pre-wrap}table{border-collapse:collapse;width:100%;font-size:14px}td,th{text-align:left;border-bottom:1px solid #dce3e9;padding:10px;vertical-align:top}small{color:#576775}details{margin-top:8px}pre{white-space:pre-wrap;overflow-wrap:anywhere}.task{margin-bottom:16px}h1{font-size:27px}h2{font-size:21px}input{width:20px;height:20px;vertical-align:middle}@media(max-width:600px){body{padding:12px}section{padding:12px}td,th{padding:5px;font-size:12px}}</style><h1>${esc(title)}</h1><p>${esc(catalog.profile.label)} · ${esc(t("planGeneratedAt"))}: ${esc(new Date().toLocaleString())}</p><p>${esc(t("planHelp"))}</p><p>${esc(t("planFamilyHelp"))}</p><p>${esc(t("acqSaveOverlay"))}</p><p>${esc(t("planBasis"))}: ${esc(t(plan.basis === "dex" ? "planDex" : "planIndividuals"))} · ${esc(t("planMissing"))}: ${plan.missing_count}</p>${plan.clock ? `<p>${esc(clockSummary(plan.clock, t))}</p>${plan.clock.saved ? `<p><small>${esc(t("clockSnapshotHelp"))}</small></p>` : ""}${plan.clock.forced_night ? `<p>${esc(t("clockForcedNight"))}</p>` : ""}` : ""}<small>MD5 ${esc(plan.rom_md5)}</small>${breedingCoverageSummary(
     plan.breeding_coverage,
     t,
   )
@@ -70,12 +117,7 @@ export function collectionHtml(
                 }</div>`
               : "";
             const entrance = plan.entrances.find((e) => e.map_id === s?.map_id);
-            const conditions = s?.conditions
-              .map(
-                (c) =>
-                  `${t(c.satisfied === true ? "planConditionYes" : c.satisfied === false ? "planConditionNo" : "acqStatus_unknown")}: ${conditionLabel(c, catalog, t)}${c.unresolved ? ` · ${t(c.unresolved)}` : ""}`,
-              )
-              .join("; ");
+            const conditions = s?.conditions.map(checkHtml).join("; ");
             return `<div class="task"><h3><input type="checkbox" aria-label="${esc(t("planCheck"))}"> ${esc(name(task.target))}</h3>${task.family.length ? `<small>${esc(t("planFamily"))}: ${esc(task.family.map((id) => name({ kind: "species", id })).join(" / "))}</small>` : ""}<p>${esc(s ? t(`acqStatus_${s.status}`) : t("acqNoSource"))} · ${esc(s?.map_id ? mapName(s.map_id) : t("planNoRegion"))}${s?.x !== null && s?.x !== undefined ? ` (${s.x}, ${s.y})` : ""}</p>${s?.min_level !== null && s?.min_level !== undefined ? `<p>Lv. ${s.min_level}–${s.max_level ?? s.min_level}${s.encounter_percent !== null ? ` · ${esc(t("acqEncounterChance"))} ${s.encounter_percent}%` : ""}</p>` : ""}${s?.script_source ? `<p>${esc(t("acqScriptSourceHelp"))}</p>` : ""}${
               s?.script_source?.trade
                 ? tradeSummary(s.script_source, s.trade_context, catalog, t)
@@ -88,7 +130,7 @@ export function collectionHtml(
                     .map((line) => `<p>${esc(line)}</p>`)
                     .join("")
                 : ""
-            }${s?.receipt ? `<p>${esc(t("acqGiftReceiptHelp"))}</p>` : ""}${s && ["gift", "pc"].includes(s.kind) && s.receipt_flag == null ? `<p>${esc(t("acqReceiptUnknown"))}</p>` : ""}${s?.underfoot ? `<p>${esc(t("mapHiddenUnderfoot"))}</p>` : ""}${s?.evolution ? `<p>${esc(evolutionLabel(s.evolution, catalog, catalog.type_names, t))}</p>` : ""}${s?.periods.length ? `<p>${esc(t("planPeriods"))}: ${esc(s.periods.map((p) => t(({ base: "encounterBase", morning: "encounterMorning", day: "encounterDay", dusk: "encounterDusk", night: "encounterNight" } as Record<string, string>)[p] ?? p)).join(" / "))}</p>` : ""}${s?.in_scenario !== null && s?.in_scenario !== undefined ? `<p>${esc(t(s.in_scenario ? "clockInsideScenario" : "clockOutsideScenario"))}</p>` : ""}${conditions ? `<p>${esc(t("acqConditions"))}: ${esc(conditions)}</p>${s?.conditions.some((c) => ["money", "money_runtime", "bag_item", "bag_item_runtime"].includes(c.condition.kind)) ? `<p><small>${esc(t("conditionHoldingsHelp"))}</small></p>` : ""}` : ""}${
+            }${s?.receipt ? `<p>${esc(t("acqGiftReceiptHelp"))}</p>` : ""}${s && ["gift", "pc"].includes(s.kind) && s.receipt_flag == null ? `<p>${esc(t("acqReceiptUnknown"))}</p>` : ""}${s?.underfoot ? `<p>${esc(t("mapHiddenUnderfoot"))}</p>` : ""}${s?.evolution ? `<p>${esc(evolutionLabel(s.evolution, catalog, catalog.type_names, t))}</p>` : ""}${s?.periods.length ? `<p>${esc(t("planPeriods"))}: ${esc(s.periods.map((p) => t(({ base: "encounterBase", morning: "encounterMorning", day: "encounterDay", dusk: "encounterDusk", night: "encounterNight" } as Record<string, string>)[p] ?? p)).join(" / "))}</p>` : ""}${s?.in_scenario !== null && s?.in_scenario !== undefined ? `<p>${esc(t(s.in_scenario ? "clockInsideScenario" : "clockOutsideScenario"))}</p>` : ""}${conditions ? `<p>${esc(t("acqConditions"))}: ${conditions}</p>${s?.conditions.some((c) => ["money", "money_runtime", "bag_item", "bag_item_runtime"].includes(c.condition.kind)) ? `<p><small>${esc(t("conditionHoldingsHelp"))}</small></p>` : ""}` : ""}${
               entrance?.chains.length
                 ? `<p>${esc(t("navApproaches"))}:</p><ul>${entrance.chains
                     .slice(0, 3)
@@ -110,5 +152,5 @@ export function collectionHtml(
           })
           .join("")}</section>`,
     )
-    .join("")}</html>`;
+    .join("")}${appendix}</html>`;
 }

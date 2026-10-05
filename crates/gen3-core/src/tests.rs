@@ -6387,3 +6387,408 @@ fn local_breeding_collection_matches_native_selection_and_current_parent_plans()
         eprintln!("{key}: 42 native compatibility scenarios and {} accepted selection checkpoints; existing-parent plan/receipt, cache invalidation and ROM/SAV preservation passed", probes[key]["rows"].as_array().unwrap().iter().filter(|row| !row["species"].is_null()).count());
     }
 }
+
+#[test]
+fn event_dependency_queries_follow_guarded_writers_and_nonreward_tiles() {
+    use crate::event_dependencies::{Index, Kind, Request};
+    let (mut r, mut map) = npc_trade_fixture(profile::BW);
+    let rules = r.profile.event_state.unwrap().effects.unwrap();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    for (op, code) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
+        .into_iter()
+        .zip(rules.handlers)
+    {
+        put32(
+            b,
+            rules.commands + op as usize * 4,
+            0x08000001 + code as u32,
+        );
+    }
+    // Flag 11 is needed before the NPC can set flag 12; alternate clears it.
+    let root = 0x26000;
+    let branch = 0x26100;
+    b[root..root + 3].copy_from_slice(&[0x2b, 11, 0]);
+    b[root + 3] = 6;
+    b[root + 4] = 1;
+    put32(b, root + 5, 0x08000000 + branch as u32);
+    b[root + 9..root + 13].copy_from_slice(&[0x2a, 12, 0, 2]);
+    b[branch..branch + 4].copy_from_slice(&[0x29, 12, 0, 2]);
+    // A non-reward coordinate event has no reward marker but must remain positioned.
+    b[0x25002] = 1;
+    put32(b, 0x2500c, 0x08025200);
+    put16(b, 0x25200, 1);
+    put16(b, 0x25202, 2);
+    put32(b, 0x2520c, 0x08026200);
+    b[0x26200..0x26204].copy_from_slice(&[0x29, 11, 0, 2]);
+    // Unreferenced bytes must never become an obtainable event.
+    b[0x26300..0x26304].copy_from_slice(&[0x29, 12, 0, 2]);
+    map.scripts.push(0x26200);
+    let original = r.data.clone();
+    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+    let saved = save.data.clone();
+    let index = Index::build(&r, std::slice::from_ref(&map)).unwrap();
+    let request = |id| Request {
+        kind: Kind::Flag,
+        id,
+        value: 1,
+        comparison: 1,
+        taken: true,
+        expected_rom_md5: r.profile.md5.into(),
+        offset: 0,
+    };
+    let report = index.query(&r, None, request(12)).unwrap();
+    assert_eq!(report.writers.len(), 1);
+    assert_eq!(report.writers[0].effect.offset, branch);
+    assert_eq!(report.writers[0].reference.kind, "npc");
+    assert!(report.writers[0]
+        .conditions
+        .iter()
+        .any(|c| c.condition.id == 11 && c.satisfied.is_none()));
+    let with_save = index.query(&r, Some(&save), request(12)).unwrap();
+    assert_eq!(with_save.condition.satisfied, Some(false));
+    assert!(with_save.writers[0]
+        .conditions
+        .iter()
+        .any(|c| c.condition.id == 11 && c.satisfied == Some(false)));
+    // SAV state is checked per query, not retained in the ROM-bound index.
+    let layout = r.profile.event_state.unwrap();
+    let range = &layout.flags[0];
+    let logical = range.offset + 11 / 8;
+    let per = 3968;
+    let absolute = save.sections[1 + logical / per] + logical % per;
+    save.data[absolute] |= 1 << (11 % 8);
+    let changed = index.query(&r, Some(&save), request(12)).unwrap();
+    assert!(changed.writers[0]
+        .conditions
+        .iter()
+        .any(|c| c.condition.id == 11 && c.satisfied == Some(true)));
+    let before = save.data.clone();
+    let trigger = index.query(&r, Some(&save), request(11)).unwrap();
+    assert_eq!(trigger.writers.len(), 1);
+    assert_eq!(trigger.writers[0].reference.kind, "trigger");
+    assert_eq!(
+        (
+            trigger.writers[0].reference.x,
+            trigger.writers[0].reference.y
+        ),
+        (Some(1), Some(2))
+    );
+    assert!(trigger.partial && trigger.writers[0].reference.entry_unresolved);
+    assert_eq!(save.data, before);
+    assert_eq!(r.data, original);
+    assert_ne!(save.data, saved); // Only this explicit synthetic state change above.
+    let invalid = Request {
+        kind: Kind::Variable,
+        id: 0x8000,
+        value: 1,
+        comparison: 1,
+        taken: true,
+        expected_rom_md5: r.profile.md5.into(),
+        offset: 0,
+    };
+    assert_eq!(
+        index.query(&r, None, invalid).err().unwrap().code,
+        "event_dependency_condition"
+    );
+    let mut other = r.clone();
+    std::sync::Arc::make_mut(&mut other.data)[0] ^= 1;
+    assert_eq!(
+        index.query(&other, None, request(12)).err().unwrap().code,
+        "rom_mismatch"
+    );
+    let mut other_profile = r.clone();
+    other_profile.profile.md5 = profile::DP.md5;
+    assert_eq!(
+        index
+            .query(&other_profile, None, request(12))
+            .err()
+            .unwrap()
+            .code,
+        "rom_mismatch"
+    );
+}
+
+#[test]
+fn event_effects_keep_unknown_values_and_native_copy_subtract_semantics() {
+    let (mut r, _) = npc_trade_fixture(profile::BW);
+    let rules = r.profile.event_state.unwrap().effects.unwrap();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    for (op, code) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
+        .into_iter()
+        .zip(rules.handlers)
+    {
+        put32(
+            b,
+            rules.commands + op as usize * 4,
+            0x08000001 + code as u32,
+        );
+    }
+    let start = 0x26000;
+    b[start..start + 16].copy_from_slice(&[
+        0x16, 0, 0x40, 10, 0, 0x16, 1, 0x40, 3, 0, 0x18, 0, 0x40, 1, 0x40, 2,
+    ]);
+    let report = r.event_effect_script(start).unwrap();
+    assert!(report
+        .effects
+        .iter()
+        .any(|e| e.operation == "subtract" && e.value == Some(7)));
+    // An unresolved native call destroys local value knowledge, not potential writes.
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    b[start + 10..start + 19].copy_from_slice(&[0x25, 1, 0, 0x17, 0, 0x40, 1, 0, 2]);
+    let report = r.event_effect_script(start).unwrap();
+    assert!(report
+        .effects
+        .iter()
+        .any(|e| e.operation == "add" && e.value.is_none()));
+    assert!(!report.complete && !report.stopped_at.is_empty());
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    b[start..start + 10].copy_from_slice(&[0x19, 0, 0x40, 5, 0, 0x29, 12, 0, 2, 2]);
+    let report = r.event_effect_script(start).unwrap();
+    assert!(report.effects.is_empty());
+    assert!(!report.complete);
+    // Changed native dispatch is not silently parsed with another engine's rule.
+    put32(
+        std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+        rules.commands + 0x19 * 4,
+        0x08026001,
+    );
+    assert_eq!(
+        r.event_effect_script(start).err().unwrap().code,
+        "event_dependency_dispatch"
+    );
+}
+
+#[test]
+#[ignore = "requires five private exact ROMs and GEN3_EVENT_EFFECT_PROBES independent mGBA evidence"]
+fn local_event_effects_match_native_commands_and_referenced_dependency_queries() {
+    use crate::event_dependencies::{Kind, Request};
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_EVENT_EFFECT_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    let mut app = crate::app::App::default();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let data = std::fs::read(&path).unwrap();
+        let r = Rom::open(data.clone()).unwrap();
+        assert_eq!(probes[key]["md5"], r.profile.md5);
+        let rules = r.profile.event_state.unwrap().effects.unwrap();
+        for (op, code) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
+            .into_iter()
+            .zip(rules.handlers)
+        {
+            assert_eq!(probes[key]["handlers"][op.to_string()], 0x08000000 + code);
+        }
+        for row in probes[key]["rows"].as_array().unwrap() {
+            // Synthetic reader fixture only; native oracle used the same operands
+            // in RAM. No modified ROM is written/exported or used by the app.
+            let mut fixture = r.clone();
+            let mut script = Vec::new();
+            let op = row["opcode"].as_u64().unwrap() as u8;
+            let dst = row["destination"].as_u64().unwrap() as u16;
+            let mut assignment = |id: u16, value: u16| {
+                script.push(0x16);
+                script.extend(id.to_le_bytes());
+                script.extend(value.to_le_bytes());
+            };
+            if op < 0x29 {
+                assignment(dst, row["before"].as_u64().unwrap() as u16);
+                let operand = row["operand"].as_u64().unwrap() as u16;
+                if matches!(op, 0x18..=0x1a) && operand >= 0x4000 {
+                    assignment(operand, row["source_value"].as_u64().unwrap() as u16);
+                }
+            }
+            let start = fixture.data.len();
+            let effect_offset = start + script.len();
+            script.push(op);
+            script.extend(dst.to_le_bytes());
+            if op < 0x29 {
+                script.extend((row["operand"].as_u64().unwrap() as u16).to_le_bytes());
+            }
+            script.push(2);
+            std::sync::Arc::make_mut(&mut fixture.data).extend(script);
+            let report = fixture.event_effect_script(start).unwrap();
+            assert_eq!(
+                report
+                    .effects
+                    .iter()
+                    .find(|e| e.offset == effect_offset)
+                    .unwrap()
+                    .value,
+                Some(row["result"].as_u64().unwrap() as u16),
+                "{key}: {row}"
+            );
+        }
+        let maps = r.maps().unwrap();
+        let seed = maps
+            .iter()
+            .flat_map(|m| &m.scripts)
+            .find_map(|root| {
+                r.event_effect_script(*root)
+                    .ok()?
+                    .effects
+                    .into_iter()
+                    .next()
+            })
+            .unwrap();
+        app.session = Some(Session::new(r.clone()));
+        let output = app.dispatch(crate::app::Request {
+            command: "event_dependencies".into(),
+            payload: serde_json::json!({"kind": seed.kind, "id":seed.id, "value":seed.value.unwrap_or(1), "comparison":1,"taken":true,"expected_rom_md5":r.profile.md5}),
+        }).unwrap();
+        assert_eq!(output["rom_md5"], r.profile.md5);
+        assert!(std::sync::Arc::ptr_eq(
+            &app.event_dependency_cache.as_ref().unwrap().0,
+            &r.data
+        ));
+        let index = &app.event_dependency_cache.as_ref().unwrap().1;
+        assert_eq!(index.coverage.failed_scripts, 0, "{key}");
+        let mut observed = 0;
+        for map in &maps {
+            for &root in map.scripts.iter().take(32) {
+                let effects = r.event_effect_script(root).unwrap();
+                for effect in effects.effects.iter().take(3) {
+                    let report = index
+                        .query(
+                            &r,
+                            None,
+                            Request {
+                                kind: if effect.kind == "flag" {
+                                    Kind::Flag
+                                } else {
+                                    Kind::Variable
+                                },
+                                id: effect.id,
+                                value: effect.value.unwrap_or(1) as u32,
+                                comparison: 1,
+                                taken: true,
+                                expected_rom_md5: r.profile.md5.into(),
+                                offset: 0,
+                            },
+                        )
+                        .unwrap();
+                    assert!(report.total_matches > 0, "{key}: {root:x}");
+                    assert!(report.condition.actual.is_none());
+                    assert!(report
+                        .writers
+                        .iter()
+                        .all(|w| maps.iter().any(|m| m.id == w.reference.map_id)));
+                    observed += 1;
+                }
+            }
+        }
+        assert!(observed > 0);
+        assert_eq!(r.data.as_ref(), &data);
+        assert_eq!(std::fs::read(path).unwrap(), data);
+        println!(
+            "{key}: {} native command cases; {observed} referenced effect queries; {}/{} roots",
+            probes[key]["rows"].as_array().unwrap().len(),
+            index.coverage.checked_scripts,
+            index.coverage.total_scripts
+        );
+    }
+}
+
+#[test]
+fn collection_export_traces_current_prerequisites_without_save_or_rom_writes() {
+    use crate::{
+        acquisition::AcquisitionIndex,
+        app::{App, Request},
+    };
+    let (mut r, map) = npc_trade_fixture(profile::BW);
+    let rules = r.profile.event_state.unwrap().effects.unwrap();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    for (op, code) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
+        .into_iter()
+        .zip(rules.handlers)
+    {
+        put32(
+            b,
+            rules.commands + op as usize * 4,
+            0x08000001 + code as u32,
+        );
+    }
+    // NPC needs flag 11; the map-level script can set it. Gift receipt unknown.
+    b[0x26000..0x26003].copy_from_slice(&[0x2b, 11, 0]);
+    b[0x26003] = 6;
+    b[0x26004] = 1;
+    put32(b, 0x26005, 0x08026100);
+    b[0x26009] = 2;
+    b[0x26100..0x2610d].copy_from_slice(&[0x16, 0, 0x80, 1, 0, 0x16, 1, 0x80, 1, 0, 9, 0, 2]);
+    b[0x26200..0x26204].copy_from_slice(&[0x29, 11, 0, 2]);
+    let mut map = map;
+    map.scripts.push(0x26200);
+    let report = r.map_events(&map).unwrap();
+    let bytes = save_bytes(&r);
+    let original = r.data.clone();
+    let md5 = r.profile.md5;
+    let mut session = Session::new(r);
+    session.load(bytes.clone(), None).unwrap();
+    let index = AcquisitionIndex {
+        wild_cache: Default::default(),
+        breeding_cache: Default::default(),
+        world: crate::world::World {
+            maps: vec![map],
+            map_events: vec![report],
+            encounters: vec![],
+            trainers: vec![],
+            trainer_locations: crate::world::TrainerLocationIndex {
+                locations: vec![],
+                unresolved_maps: vec![],
+            },
+            map_groups: &[],
+        },
+        species: vec![],
+        evolutions: Default::default(),
+        learnsets: Default::default(),
+    };
+    let mut app = App {
+        acquisition_cache: Some((session.rom.data.clone(), index)),
+        session: Some(session),
+        ..Default::default()
+    };
+    let payload = serde_json::json!({"expected_rom_md5":md5,"query":{"basis":"individuals","families":true,"include_unknown_rewards":true}});
+    let result = app
+        .dispatch(Request {
+            command: "collection_export".into(),
+            payload: payload.clone(),
+        })
+        .unwrap();
+    let prerequisites = &result["prerequisites"]["reports"];
+    assert!(prerequisites
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|r| r["condition"]["condition"]["id"] == 11
+            && r["writers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|w| w["reference"]["kind"] == "map_script")));
+    assert!(result["prerequisites"]["partial"].as_bool().unwrap());
+    assert_eq!(
+        app.session.as_ref().unwrap().save.as_ref().unwrap().data,
+        bytes
+    );
+    assert_eq!(app.session.as_ref().unwrap().rom.data, original);
+    let cache = app.event_dependency_cache.as_ref().unwrap().0.clone();
+    let repeated = app
+        .dispatch(Request {
+            command: "collection_export".into(),
+            payload,
+        })
+        .unwrap();
+    assert_eq!(result, repeated);
+    assert!(std::sync::Arc::ptr_eq(
+        &cache,
+        &app.event_dependency_cache.as_ref().unwrap().0
+    ));
+    let stale=app.dispatch(Request { command:"event_dependencies".into(),payload:serde_json::json!({"kind":"flag","id":11,"value":1,"comparison":1,"taken":true,"expected_rom_md5":profile::ROCKET.md5}) }).unwrap_err();
+    assert_eq!(stale.code, "rom_mismatch");
+    let invalid=app.dispatch(Request { command:"event_dependencies".into(),payload:serde_json::json!({"kind":"flag","id":null,"value":1,"comparison":1,"taken":true,"expected_rom_md5":md5}) }).unwrap_err();
+    assert_eq!(invalid.code, "json");
+    assert_eq!(
+        app.session.as_ref().unwrap().save.as_ref().unwrap().data,
+        bytes
+    );
+}

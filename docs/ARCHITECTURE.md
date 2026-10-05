@@ -151,3 +151,11 @@ defines the theoretical count across all 16-bit draws; unknown patterns fail.
 Native pending-availability differences stay in adapter rules, not ROM-name checks.
 Production state is an explicit simulation, separate from live daycare state and
 the receipt scenario. UI item overrides never call save editing APIs.
+
+`event_dependencies.rs` lazily observes persistent writes through the shared
+bounded event walker and maps referenced roots to NPC/trigger/sign/map locations.
+Necessary dispatch guards live in each adapter's event-state rules. Cached indices
+contain current-ROM references/text, never saved progress; queries overlay the
+current immutable SAV. The same readonly trace drives shared condition details
+and bounded collection-export HTML appendices. No complete story DAG or current
+reachability is inferred from these static potential writers.

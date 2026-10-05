@@ -640,6 +640,13 @@ export interface CollectionBreedingRoute {
   partial: boolean;
 }
 export interface CollectionPlan {
+  prerequisites?: {
+    reports: EventDependencyReport[];
+    entrances: { map_id: string; chains: MapLink[][]; truncated: boolean }[];
+    skipped_conditions: number;
+    truncated: boolean;
+    partial: boolean;
+  } | null;
   clock: ClockReport | null;
   rom_md5: string;
   basis: "dex" | "individuals";
@@ -675,4 +682,45 @@ export interface HeldDistribution {
   lead_species: number | null;
   lead_ability: number | null;
   lead_egg: boolean;
+}
+
+export interface EventDependencyReport {
+  rom_md5: string;
+  condition: AcquisitionSource["conditions"][number];
+  writers: {
+    effect: {
+      kind: string;
+      id: number;
+      operation: string;
+      operand: number | null;
+      value: number | null;
+      offset: number;
+      conditions: ItemReward["conditions"];
+    };
+    reference: {
+      map_id: string;
+      map_name: string;
+      region: number;
+      kind: string;
+      x: number | null;
+      y: number | null;
+      local_id: number | null;
+      offset: number;
+      root: number;
+      entry_unresolved: boolean;
+    };
+    conditions: AcquisitionSource["conditions"];
+    text: { offset: number; text: string }[];
+    stopped_at: number[];
+    path_complete: boolean;
+  }[];
+  coverage: {
+    checked_scripts: number;
+    total_scripts: number;
+    failed_scripts: number;
+    truncated: boolean;
+  };
+  total_matches: number;
+  next_offset: number | null;
+  partial: boolean;
 }

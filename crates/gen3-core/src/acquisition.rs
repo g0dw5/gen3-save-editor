@@ -193,7 +193,21 @@ fn source(kind: &str, offset: usize) -> AcquisitionSource {
         in_scenario: None,
     }
 }
-fn check(
+pub(crate) fn compare(value: u32, condition: &EventCondition) -> Option<bool> {
+    Some(
+        (match condition.comparison {
+            0 => value < condition.value,
+            1 => value == condition.value,
+            2 => value > condition.value,
+            3 => value <= condition.value,
+            4 => value >= condition.value,
+            5 => value != condition.value,
+            _ => return None,
+        }) == condition.taken,
+    )
+}
+
+pub(crate) fn check(
     state: Option<&EventSnapshot>,
     rom: Option<&Rom>,
     condition: &EventCondition,
@@ -228,18 +242,13 @@ fn check(
         None
     } else {
         actual.and_then(|v| {
-            Some(
-                (match condition.comparison {
-                    0 => v < condition.value,
-                    1 => v == condition.value,
-                    2 => v > condition.value,
-                    3 => v <= condition.value,
-                    4 => v >= condition.value,
-                    5 => v != condition.value,
-                    _ => return None,
-                } && present != Some(false))
-                    == condition.taken,
-            )
+            compare(v, condition).map(|result| {
+                if present == Some(false) {
+                    !condition.taken
+                } else {
+                    result
+                }
+            })
         })
     };
     ConditionCheck {
@@ -1001,6 +1010,7 @@ mod tests {
     fn predicates_are_tristate_and_compare_numeric_values() {
         use crate::event_state::{EventBlock, EventRange};
         let layout = crate::profile::EventStateLayout {
+            effects: None,
             flags: &[EventRange {
                 first: 0,
                 count: 0x4000,

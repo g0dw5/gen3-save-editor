@@ -21,7 +21,7 @@ fn run() -> Result<()> {
         println!("{}", serde_json::to_string_pretty(&v).unwrap());
     };
     if command == "help" {
-        println!("gen3 profiles\ngen3 identify ROM\ngen3 cheats ROM\ngen3 cheat-code ROM CHEAT_ID gameshark_v1_v2|codebreaker [PARAMETERS.json]\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 game-clock ROM [SAVE]\ngen3 daycare-state ROM SAVE\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]");
+        println!("gen3 profiles\ngen3 identify ROM\ngen3 cheats ROM\ngen3 cheat-code ROM CHEAT_ID gameshark_v1_v2|codebreaker [PARAMETERS.json]\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 game-clock ROM [SAVE]\ngen3 daycare-state ROM SAVE\ngen3 event-dependencies ROM CONDITION.json [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]");
         return Ok(());
     }
     if command == "profiles" {
@@ -83,6 +83,34 @@ fn run() -> Result<()> {
             std::io::stdout().write_all(&rom.sprite(id, false)?)?;
         }
         "world" => print(serde_json::to_value(rom.world()?)?),
+        "event-dependencies" => {
+            if !matches!(a.len(), 3 | 4) {
+                return Err(err(
+                    "arguments",
+                    "gen3 event-dependencies ROM CONDITION.json [SAVE]",
+                ));
+            }
+            let mut input: serde_json::Value = serde_json::from_slice(&fs::read(arg(2)?)?)?;
+            input
+                .as_object_mut()
+                .ok_or_else(|| err("arguments", "condition object"))?
+                .entry("expected_rom_md5")
+                .or_insert_with(|| serde_json::json!(rom.profile.md5));
+            let save = a
+                .get(3)
+                .map(|path| {
+                    let save = Save::open(fs::read(path)?, rom.profile.save)?;
+                    save.validate(&rom)?;
+                    Ok::<_, gen3_core::Error>(save)
+                })
+                .transpose()?;
+            let index = gen3_core::event_dependencies::Index::build(&rom, &rom.maps()?)?;
+            print(serde_json::to_value(index.query(
+                &rom,
+                save.as_ref(),
+                serde_json::from_value(input)?,
+            )?)?);
+        }
         "fishing-spots" => {
             let save = a
                 .get(2)

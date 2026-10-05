@@ -10,6 +10,16 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Trace persistent prerequisites to potential referenced NPC/tile/map scripts,
+  current-ROM text contexts, guard chains and map entrances. Add fingerprint-bound
+  lazy queries and a linked, escaped collection HTML appendix. Verify native
+  command semantics across five ROMs (360 writes); correct shared copyvar/subvar
+  handling. Keep full task graphs, native writes and current access unresolved.
+- 前置条件可追查可能改变它的 NPC／格位／地图脚本，关联当前 ROM 文字上下文、
+  其他条件及地图入口；新增按指纹隔离的只读查询和独立 HTML 线索附录。五份 ROM
+  原生命令验证 360 次写入，修正共享变量复制／减法语义。完整任务树、原生剧情写入
+  和当前可达性保留未知，不修改剧情标记。
+
 - Connect collection preparation to sampled native ordinary breeding outcomes
   from exact existing party/box parents, with held-item links, receiving-service
   references, hatching and directed evolution steps. Add a one-click full native

@@ -65,6 +65,7 @@ pub struct EntranceSuggestion {
 }
 #[derive(Serialize)]
 pub struct CollectionPlan {
+    pub prerequisites: Option<crate::event_dependencies::Bundle>,
     pub clock: Option<crate::clock::ClockReport>,
     pub rom_md5: &'static str,
     pub basis: CollectionBasis,
@@ -490,6 +491,7 @@ impl AcquisitionIndex {
             })
             .collect();
         Ok(CollectionPlan {
+            prerequisites: None,
             clock,
             rom_md5: rom.profile.md5,
             basis: request.basis,

@@ -472,6 +472,7 @@ export function MapExplorer({
                       key={`daycare-${i}`}
                       conditions={offer.conditions}
                       catalog={catalog}
+                      onMap={onMap}
                       onTarget={(target) => onItem?.(target.id)}
                     />
                   ))}
@@ -510,6 +511,7 @@ export function MapExplorer({
                     heading={`${"item" in r ? (items.get(r.item)?.name ?? `#${r.item}`) : "species" in r ? (catalog.species.find((s) => s.id === r.species)?.name ?? `#${r.species}`) : (catalog.moves.find((m) => m.id === r.move_id)?.name ?? `#${r.move_id}`)} · ${t("conditionSourcePath")}`}
                     conditions={r.conditions}
                     catalog={catalog}
+                    onMap={onMap}
                     onTarget={(target) => onItem?.(target.id)}
                   />
                 ))}
@@ -580,6 +582,7 @@ export function MapExplorer({
               <ConditionDetails
                 conditions={reward.conditions}
                 catalog={catalog}
+                onMap={onMap}
                 onTarget={(target) => onItem?.(target.id)}
               />
             </div>
@@ -610,6 +613,7 @@ export function MapExplorer({
               <ConditionDetails
                 conditions={mon.conditions}
                 catalog={catalog}
+                onMap={onMap}
                 onTarget={(target) => onItem?.(target.id)}
               />
             </div>
@@ -633,6 +637,7 @@ export function MapExplorer({
               <ConditionDetails
                 conditions={offer.conditions}
                 catalog={catalog}
+                onMap={onMap}
                 onTarget={(target) => onItem?.(target.id)}
               />
             </div>
@@ -650,6 +655,7 @@ export function MapExplorer({
               key={i}
               conditions={offer.conditions}
               catalog={catalog}
+              onMap={onMap}
               onTarget={(target) => onItem?.(target.id)}
             />
           ))}

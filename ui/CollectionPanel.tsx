@@ -3,7 +3,7 @@ import { CollectionPreparation } from "./CollectionPreparation";
 import { breedingCoverageSummary } from "./CollectionBreeding";
 import { evolutionLabel } from "./referenceLabels";
 import { ConditionDetails } from "./ConditionDetails";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { ClockDetails } from "./ClockDetails";
 import { TradeDetails } from "./TradeDetails";
@@ -40,8 +40,12 @@ export function CollectionPanel({
   const [plan, setPlan] = useState<CollectionPlan | null>(null);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
+  const [exporting, setExporting] = useState(false);
+  const generation = useRef(0);
   useEffect(() => {
     let active = true;
+    generation.current++;
+    setExporting(false);
     setPlan(null);
     if (save)
       api<CollectionPlan>("collection", {
@@ -149,20 +153,45 @@ export function CollectionPanel({
                   ))}
                 </select>
                 <button
-                  onClick={() => {
-                    const blob = new Blob(
-                      [collectionHtml(plan, catalog, maps, t)],
-                      { type: "text/html;charset=utf-8" },
-                    );
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `collection-${catalog.profile.id}.html`;
-                    a.click();
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                  disabled={exporting}
+                  onClick={async () => {
+                    const ticket = generation.current;
+                    setExporting(true);
+                    try {
+                      const latest = await api<CollectionPlan>(
+                        "collection_export",
+                        {
+                          expected_rom_md5: catalog.profile.md5,
+                          query: {
+                            basis,
+                            families,
+                            include_unknown_rewards: unknown,
+                          },
+                        },
+                      );
+                      if (
+                        ticket !== generation.current ||
+                        latest.rom_md5 !== catalog.profile.md5
+                      )
+                        return;
+                      const blob = new Blob(
+                        [collectionHtml(latest, catalog, maps, t)],
+                        { type: "text/html;charset=utf-8" },
+                      );
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `collection-${catalog.profile.id}.html`;
+                      a.click();
+                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    } catch (e) {
+                      if (ticket === generation.current) onError(e);
+                    } finally {
+                      if (ticket === generation.current) setExporting(false);
+                    }
                   }}
                 >
-                  {t("planExport")}
+                  {t(exporting ? "dependencyExporting" : "planExport")}
                 </button>
               </div>
               {plan.regions.map((r, i) => {
@@ -259,6 +288,7 @@ export function CollectionPanel({
                           <ConditionDetails
                             checks={s?.conditions}
                             catalog={catalog}
+                            onMap={onMap}
                             onTarget={onTarget}
                           />
                           {s?.receipt && (
