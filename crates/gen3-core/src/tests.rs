@@ -2098,6 +2098,7 @@ fn tutor_sources_preserve_native_selector_guards_tiles_and_read_only_queries() {
         assert!(report.unplaced_teaching.is_empty());
         assert_eq!(marker.receipt_flag, None);
         let index = AcquisitionIndex {
+            wild_cache: std::cell::RefCell::default(),
             world: crate::world::World {
                 maps: vec![map.clone()],
                 map_events: vec![report],
@@ -2286,6 +2287,7 @@ fn npc_trade_queries_and_plans_keep_donor_requirements_and_save_read_only() {
         let (r, map) = npc_trade_fixture(p);
         let report = r.map_events(&map).unwrap();
         let index = AcquisitionIndex {
+            wild_cache: std::cell::RefCell::default(),
             world: crate::world::World {
                 maps: vec![map],
                 map_events: vec![report],
@@ -2576,6 +2578,7 @@ fn reward_parser_stops_unknown_commands_and_invalidates_native_values() {
 /// Synthetic tables intentionally use the same public model with different byte formats.
 fn adapter_rom(p: profile::Profile) -> Rom {
     let mut r = rom();
+    r.profile.wild_items = None;
     if p.id == profile::BW.id || p.id == profile::DP.id {
         // Synthetic BW/DP tables share test addresses, while identity/capabilities differ.
         r.profile.id = p.id;
@@ -2638,7 +2641,10 @@ fn adapter_rom(p: profile::Profile) -> Rom {
         b[p.moves.offset + id * p.moves.stride + if expanded { 6 } else { 4 }] = 35;
     }
     r.data = std::sync::Arc::new(b);
-    r.profile = p;
+    r.profile = profile::Profile {
+        wild_items: None,
+        ..p
+    };
     r
 }
 
@@ -3735,6 +3741,92 @@ fn local_query_acquisition_and_collection_all_profiles() {
             // Initial event locations outside a dynamic layout must not be normalized.
             assert!(s.x.unwrap().abs() < 32767 && map.width > 0);
         }
+        // A real grass/cave/surf/dive/fishing reference must close the held-item
+        // query, with the independent native chance rather than an orphan species row.
+        let encounter = index
+            .world
+            .encounters
+            .iter()
+            .find(|e| {
+                matches!(
+                    e.method.as_str(),
+                    "grass"
+                        | "cave"
+                        | "surf"
+                        | "dive"
+                        | "rock_smash"
+                        | "old_rod"
+                        | "good_rod"
+                        | "super_rod"
+                ) && r
+                    .species(e.species)
+                    .is_ok_and(|s| s.items.iter().any(|i| *i != 0))
+            })
+            .unwrap();
+        let held = r
+            .species(encounter.species)
+            .unwrap()
+            .items
+            .into_iter()
+            .find(|i| *i != 0)
+            .unwrap();
+        let held_report = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Item,
+                    id: held,
+                },
+            )
+            .unwrap();
+        let held_source = held_report
+            .sources
+            .iter()
+            .find(|s| {
+                s.kind == "wild_held"
+                    && s.map_id.as_deref() == Some(encounter.map_id.as_str())
+                    && s.related
+                        .iter()
+                        .any(|t| t.kind == TargetKind::Species && t.id == encounter.species)
+            })
+            .unwrap();
+        assert!(
+            held_source
+                .held_percent
+                .is_some_and(|p| p > 0.0 && p <= 100.0),
+            "{name}"
+        );
+        assert!(held_source.held_context.is_some());
+        assert_eq!(held_source.encounter_percent, encounter.weight);
+        assert_eq!(
+            held_source.encounter_method.as_deref(),
+            Some(encounter.method.as_str())
+        );
+        assert!(held_source.partial);
+        // Current raw party context belongs to the cache key; no quantity, identity
+        // or unrelated byte can change during a reference query.
+        let synthetic = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let original = synthetic.data.clone();
+        let current = index
+            .query(
+                &r,
+                Some(&synthetic),
+                Target {
+                    kind: TargetKind::Item,
+                    id: held,
+                },
+            )
+            .unwrap();
+        assert!(current
+            .sources
+            .iter()
+            .filter(|s| s.kind == "wild_held")
+            .all(|s| s
+                .held_context
+                .as_ref()
+                .is_some_and(|c| c.current_party.is_some())));
+        assert_eq!(synthetic.data, original);
         let species = index.world.encounters.first().unwrap().species;
         let mon = index
             .query(
@@ -4157,6 +4249,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
             })
             .collect();
         let mut index = AcquisitionIndex {
+            wild_cache: std::cell::RefCell::default(),
             world: World {
                 maps: vec![map],
                 map_events: vec![MapEventReport {
@@ -4594,6 +4687,7 @@ fn gift_receipt_queries_and_plans_use_the_qualified_reward_not_visibility() {
             objects: vec![],
         };
         let mut index = AcquisitionIndex {
+            wild_cache: std::cell::RefCell::default(),
             world: crate::world::World {
                 maps: vec![map],
                 map_events: vec![],
@@ -5014,6 +5108,7 @@ fn resource_conditions_query_item_links_without_mutating_or_claiming_receipt() {
             Some((if rules.alternate_bag { 3 } else { 1 }, true))
         );
         let index = AcquisitionIndex {
+            wild_cache: std::cell::RefCell::default(),
             world: crate::world::World {
                 maps: vec![map.clone()],
                 map_events: vec![r.map_events(&map).unwrap()],
@@ -5279,5 +5374,121 @@ fn local_resource_guards_match_native_width_inventory_and_money() {
             "{name}: {} native holdings vectors",
             report["vectors"].as_array().unwrap().len()
         );
+    }
+}
+
+#[test]
+fn held_sources_follow_random_references_time_and_preserve_unreferenced_uncertainty() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        world::{Encounter, TrainerLocationIndex, World},
+    };
+    for p in profile::PROFILES {
+        let (mut rom, map) = npc_trade_fixture(p);
+        rom.profile.wild_items = None; // Synthetic tables contain no native assignment code.
+        let tail = if p.formats.species == crate::adapter::SpeciesFormat::Expanded36 {
+            2
+        } else {
+            0
+        };
+        let b = std::sync::Arc::make_mut(&mut rom.data);
+        put16(
+            b,
+            rom.profile.base_stats.offset + rom.profile.base_stats.stride + 12 + tail,
+            1,
+        );
+        put16(
+            b,
+            rom.profile.base_stats.offset + 2 * rom.profile.base_stats.stride + 12 + tail,
+            1,
+        );
+        let base = Encounter {
+            selector: None,
+            periods: vec!["base"],
+            species: 1,
+            map_id: map.id.clone(),
+            map_name: map.name.clone(),
+            region: map.region,
+            method: "grass".into(),
+            min_level: 10,
+            max_level: 12,
+            weight: Some(20),
+            encounter_rate: Some(30),
+            slot: Some(0),
+            offset: 123,
+            conditional: true,
+        };
+        let mut water = base.clone();
+        water.method = "surf".into();
+        water.offset = 124;
+        let mut night = base.clone();
+        night.species = 3;
+        night.periods = vec!["night"];
+        night.offset = 125;
+        let mut fixed = base.clone();
+        fixed.species = 2;
+        fixed.method = "static".into();
+        fixed.offset = 126;
+        let index = AcquisitionIndex {
+            wild_cache: Default::default(),
+            world: World {
+                maps: vec![map],
+                map_events: vec![],
+                encounters: vec![base, water, night, fixed],
+                trainers: vec![],
+                trainer_locations: TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: (1..=3).map(|id| rom.species(id).unwrap()).collect(),
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        let save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
+        let before = save.data.clone();
+        let data = rom.data.clone();
+        let mut report = index
+            .query(
+                &rom,
+                Some(&save),
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        assert_eq!(report.sources.len(), 3);
+        let land = &report.sources[0];
+        assert_eq!(land.kind, "wild_held");
+        assert_eq!(land.map_id.as_deref(), Some("0-0"));
+        assert_eq!(land.encounter_method.as_deref(), Some("grass"));
+        assert_eq!(land.encounter_percent, Some(20));
+        assert_eq!((land.min_level, land.max_level), (Some(10), Some(12)));
+        assert_eq!(land.held_percent, None);
+        assert!(land.held_issue.is_some());
+        assert_eq!(land.status, "unknown");
+        assert_eq!(report.sources[2].kind, "wild_held_unreferenced");
+        assert!(report.sources[2].map_id.is_none());
+        assert_eq!(report.sources[2].repeatable, None);
+        assert!(report.sources[2].partial);
+        index.mark_period(&mut report.sources, Some("night"));
+        assert_eq!(report.sources[0].in_scenario, Some(false));
+        assert_eq!(report.sources[1].in_scenario, Some(true));
+        assert!(index
+            .query(
+                &rom,
+                None,
+                Target {
+                    kind: TargetKind::Item,
+                    id: 0
+                }
+            )
+            .unwrap()
+            .sources
+            .is_empty());
+        assert_eq!(save.data, before);
+        assert!(std::sync::Arc::ptr_eq(&rom.data, &data));
     }
 }

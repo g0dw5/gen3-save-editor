@@ -518,6 +518,15 @@ export interface AcquisitionSource {
   max_level: number | null;
   encounter_percent: number | null;
   held_percent: number | null;
+  encounter_method?: string | null;
+  held_issue?: string | null;
+  held_context?: {
+    species: number;
+    layout: number;
+    routine: number;
+    baseline: HeldDistribution;
+    current_party: HeldDistribution | null;
+  } | null;
   periods: string[];
   conditions: {
     condition: ItemReward["conditions"][number];
@@ -592,4 +601,12 @@ export interface NativeTrainerPreview {
   scenario: string;
   partial: boolean;
   mons: Pokemon[];
+}
+
+export interface HeldDistribution {
+  outcomes: { item: number; count: number }[];
+  denominator: number;
+  lead_species: number | null;
+  lead_ability: number | null;
+  lead_egg: boolean;
 }

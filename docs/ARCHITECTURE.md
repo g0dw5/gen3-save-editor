@@ -79,3 +79,16 @@ Verified format reference for trainer level width:
 Dark Phantom table offsets and anomalies are established against the supplied
 bytes; upstream struct definitions alone are not proof that every hacked field
 has identical runtime semantics.
+
+## Native wild held-item queries
+
+`wild_items.rs` runs the current ROM's ordinary single-wild held-item assignment
+routine in isolated ARM RAM, including native RNG, getters and setter. Adapter
+metadata contains addresses/layouts, not content or percentages. Acquisition
+indexing reads current held columns and native exceptional tables, joins actual
+random encounter references and preserves selectors. Candidate rows are not
+obtainability proof. Distribution caching binds to the ROM data Arc and includes
+normalized layout plus the complete leading party record; no cache is bundled.
+A uniform 16-bit native output supplies conditional counts, separate from encounter
+slot probabilities. Unqualified contexts remain unknown. Bilingual UI and HTML
+share `WildHeldDetails.tsx`; queries never modify a ROM or SAV.

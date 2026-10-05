@@ -106,7 +106,17 @@ export const en = {
   acqEncounterChance: "Encounter slot probability",
   acqHeldChance: "Held-item probability",
   acqHeldHelp:
-    "Separate from encounter probability; ability modifiers remain unverified.",
+    "Conditional on encountering this Pokémon. Encounter slot weight and held-item chance are different quantities; slot-changing abilities are not included in the encounter weight.",
+  heldBaseline: "No-modifier baseline (simulated)",
+  heldCurrentLead: "Current first party Pokémon",
+  heldStaticContextHelp:
+    "The loaded ROM's native assignment routine is executed for an ordinary single wild battle and this static map layout. Dynamic layouts, scripted held items, facilities and later battle effects may use other rules. Counts assume a uniform 16-bit random output, not a prediction of the next encounter.",
+  heldUnreferenced:
+    "Held-item table record without a random encounter reference",
+  heldUnreferencedHelp:
+    "This Pokémon's table contains the item, but no random encounter reference was found in the parsed coverage. This does not prove the item is obtainable here.",
+  heldNativeUnknown:
+    "Native held-item selection could not be established for this context; no standard-game percentage is substituted.",
   acqBreedHelp:
     "Egg groups suggest a candidate. Parent, incense, special baby and daycare access requirements are not fully verified.",
   acqRepeatable: "Repeatable source",
@@ -989,7 +999,16 @@ export const zh: Record<Key, string> = {
   acqNoTile: "精确格位待解析",
   acqEncounterChance: "相遇槽位概率",
   acqHeldChance: "携带概率",
-  acqHeldHelp: "与遇怪概率独立，特性修正仍待验证。",
+  acqHeldHelp:
+    "按已经遇到该宝可梦计算。相遇槽位与携带道具是两种概率；相遇槽位权重尚不包含改变遇怪分布的特性。",
+  heldBaseline: "无修正基准（模拟条件）",
+  heldCurrentLead: "当前同行首位",
+  heldStaticContextHelp:
+    "执行当前 ROM 的原生携带分配例程，情景为普通单只野生战斗与此地图的静态布局。动态布局、脚本携带道具、设施及后续战斗效果可能另有规则。比例假设 16 位随机输出均匀，不预测下一次相遇。",
+  heldUnreferenced: "尚未找到随机相遇引用的携带表记录",
+  heldUnreferencedHelp:
+    "该宝可梦的表记录含此道具，但在已解析范围内未找到随机相遇引用，不能据此断言可在这里获得。",
+  heldNativeUnknown: "此情景的原生携带分配未能确认，未套用官方通用百分比。",
   acqBreedHelp:
     "蛋组仅提供候选；亲本、熏香、特殊幼体与培育屋可用条件尚未完整验证。",
   acqRepeatable: "可重复获取来源",

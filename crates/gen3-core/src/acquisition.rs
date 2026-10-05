@@ -9,7 +9,11 @@ use crate::{
     Result,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::{
+    cell::RefCell,
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+};
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -74,7 +78,10 @@ pub struct AcquisitionSource {
     /// Slot selection conditional on this encounter method, not held-item chance.
     pub encounter_percent: Option<u8>,
     /// Unknown until the exact native held-item selection routine is verified.
-    pub held_percent: Option<u8>,
+    pub held_percent: Option<f64>,
+    pub held_context: Option<crate::wild_items::HeldContext>,
+    pub held_issue: Option<String>,
+    pub encounter_method: Option<String>,
     pub periods: Vec<String>,
     pub conditions: Vec<ConditionCheck>,
     pub requirements: Vec<crate::rom::EvolutionRequirement>,
@@ -97,7 +104,13 @@ pub struct AcquisitionReport {
     pub sources: Vec<AcquisitionSource>,
     pub partial: bool,
 }
+#[derive(Default)]
+pub(crate) struct WildCache {
+    data: Option<Arc<Vec<u8>>>,
+    values: BTreeMap<(u16, u16, Vec<u8>), crate::wild_items::HeldDistribution>,
+}
 pub struct AcquisitionIndex {
+    pub(crate) wild_cache: RefCell<WildCache>,
     pub world: World,
     pub species: Vec<Species>,
     pub evolutions: BTreeMap<u16, Vec<Evolution>>,
@@ -117,6 +130,9 @@ fn source(kind: &str, offset: usize) -> AcquisitionSource {
         max_level: None,
         encounter_percent: None,
         held_percent: None,
+        held_context: None,
+        held_issue: None,
+        encounter_method: None,
         periods: vec![],
         conditions: vec![],
         requirements: vec![],
@@ -241,6 +257,86 @@ fn scripted_source(
     Ok(s)
 }
 impl AcquisitionIndex {
+    fn wild_distribution(
+        &self,
+        rom: &Rom,
+        species: u16,
+        layout: u16,
+        lead: Option<&[u8]>,
+    ) -> Result<crate::wild_items::HeldDistribution> {
+        let key = (
+            species,
+            rom.held_layout(layout)?,
+            lead.unwrap_or(&[]).to_vec(),
+        );
+        let mut cache = self.wild_cache.borrow_mut();
+        if cache
+            .data
+            .as_ref()
+            .is_none_or(|data| !Arc::ptr_eq(data, &rom.data))
+        {
+            cache.values.clear();
+            cache.data = Some(rom.data.clone());
+        }
+        if let Some(distribution) = cache.values.get(&key) {
+            return Ok(distribution.clone());
+        }
+        let distribution = rom.wild_item_distribution(species, layout, lead)?;
+        // Bounded runtime cache; changing either ROM bytes or leading individual
+        // changes the key. No cached names, artwork or results become release data.
+        if cache.values.len() >= 512 {
+            cache.values.clear();
+        }
+        cache.values.insert(key, distribution.clone());
+        Ok(distribution)
+    }
+    fn encounter_source(
+        &self,
+        rom: &Rom,
+        state: Option<&EventSnapshot>,
+        e: &crate::world::Encounter,
+    ) -> AcquisitionSource {
+        let mut s = source(&e.method, e.offset);
+        s.map_id = Some(e.map_id.clone());
+        s.region = Some(e.region);
+        s.min_level = Some(e.min_level);
+        s.max_level = Some(e.max_level);
+        s.encounter_percent = e.weight;
+        s.periods = e.periods.iter().map(|v| v.to_string()).collect();
+        if let Some(selector) = &e.selector {
+            s.conditions.push(check(
+                state,
+                Some(rom),
+                &EventCondition {
+                    kind: "variable",
+                    id: selector.variable,
+                    value: selector.value as u32,
+                    comparison: if selector.fallback { 5 } else { 1 },
+                    taken: true,
+                },
+            ));
+        }
+        s.repeatable = if matches!(
+            e.method.as_str(),
+            "grass"
+                | "cave"
+                | "surf"
+                | "dive"
+                | "old_rod"
+                | "good_rod"
+                | "super_rod"
+                | "rock_smash"
+        ) {
+            Some(true)
+        } else {
+            None
+        };
+        s.partial = e.conditional || !e.periods.is_empty();
+        if s.conditions.iter().any(|c| c.satisfied == Some(false)) {
+            s.status = "blocked";
+        }
+        s
+    }
     pub fn build(rom: &Rom) -> Result<Self> {
         let species: Vec<_> = (1..rom.profile.species.count as u16)
             .filter_map(|id| rom.valid_species(id).ok())
@@ -252,6 +348,7 @@ impl AcquisitionIndex {
             learnsets.insert(s.id, rom.learnset(s.id)?);
         }
         Ok(Self {
+            wild_cache: RefCell::default(),
             world: rom.world()?,
             species,
             evolutions,
@@ -289,7 +386,8 @@ impl AcquisitionIndex {
                 let base_fallback = source.periods.iter().any(|p| p == "base")
                     && !self.world.encounters.iter().any(|e| {
                         Some(&e.map_id) == source.map_id.as_ref()
-                            && e.method == source.kind
+                            && e.method
+                                == source.encounter_method.as_deref().unwrap_or(&source.kind)
                             && e.periods.contains(&period)
                     });
                 source.in_scenario =
@@ -411,14 +509,110 @@ impl AcquisitionIndex {
                         sources.push(s);
                     }
                 }
-                for species in self.species.iter().filter(|s| s.items.contains(&target.id)) {
-                    let mut s = source("wild_held", species.offset);
-                    s.related.push(Target {
-                        kind: TargetKind::Species,
-                        id: species.id,
-                    });
-                    s.repeatable = Some(true);
-                    sources.push(s);
+                if target.id != 0 {
+                    let mut candidates: BTreeSet<_> = self
+                        .species
+                        .iter()
+                        .filter(|s| s.items.contains(&target.id))
+                        .map(|s| s.id)
+                        .collect();
+                    if rom.profile.wild_items.is_some() {
+                        candidates.extend(
+                            rom.special_held_species(target.id)?
+                                .into_iter()
+                                .filter(|id| rom.valid_species(*id).is_ok()),
+                        );
+                    }
+                    let lead = save
+                        .filter(|s| s.party_count() > 0)
+                        .map(|s| s.raw(crate::save::Location::Party { slot: 0 }))
+                        .transpose()?;
+                    for species in candidates {
+                        let mut referenced = false;
+                        for e in self.world.encounters.iter().filter(|e| {
+                            e.species == species
+                                && matches!(
+                                    e.method.as_str(),
+                                    "grass"
+                                        | "cave"
+                                        | "dive"
+                                        | "surf"
+                                        | "old_rod"
+                                        | "good_rod"
+                                        | "super_rod"
+                                        | "rock_smash"
+                                )
+                        }) {
+                            referenced = true;
+                            let mut s = self.encounter_source(rom, state.as_ref(), e);
+                            s.kind = "wild_held".into();
+                            s.encounter_method = Some(e.method.clone());
+                            s.quantity = Some(1);
+                            s.partial = true; // Static references do not establish access or all encounter overrides.
+                            s.related.push(Target {
+                                kind: TargetKind::Species,
+                                id: species,
+                            });
+                            let map = self
+                                .world
+                                .maps
+                                .iter()
+                                .find(|m| m.id == e.map_id)
+                                .ok_or_else(|| err("map_id", &e.map_id))?;
+                            let layout = crate::binary::u16(&rom.data, map.header + 18)?;
+                            let context = (|| {
+                                let baseline =
+                                    self.wild_distribution(rom, species, layout, None)?;
+                                let current_party = lead
+                                    .as_deref()
+                                    .map(|raw| {
+                                        self.wild_distribution(rom, species, layout, Some(raw))
+                                    })
+                                    .transpose()?;
+                                Ok::<_, crate::Error>(crate::wild_items::HeldContext {
+                                    species,
+                                    layout,
+                                    routine: rom.profile.wild_items.unwrap().routine,
+                                    baseline,
+                                    current_party,
+                                })
+                            })();
+                            match context {
+                                Ok(context) => {
+                                    let used =
+                                        context.current_party.as_ref().unwrap_or(&context.baseline);
+                                    // Normal species fields can be overridden in an exceptional layout.
+                                    // A zero native chance is not an obtainable source in this context.
+                                    if used.count(target.id) == 0
+                                        && context.baseline.count(target.id) == 0
+                                    {
+                                        continue;
+                                    }
+                                    s.held_percent = Some(used.percent(target.id));
+                                    s.held_context = Some(context);
+                                }
+                                Err(error) => {
+                                    s.held_issue = Some(error.to_string());
+                                }
+                            }
+                            sources.push(s);
+                        }
+                        if !referenced
+                            && self
+                                .species
+                                .iter()
+                                .any(|s| s.id == species && s.items.contains(&target.id))
+                        {
+                            let mut s =
+                                source("wild_held_unreferenced", rom.species(species)?.offset);
+                            s.related.push(Target {
+                                kind: TargetKind::Species,
+                                id: species,
+                            });
+                            // A table field without a random encounter reference is not a catchable source.
+                            sources.push(s);
+                        }
+                    }
                 }
             }
             TargetKind::Species => {
@@ -429,40 +623,7 @@ impl AcquisitionIndex {
                             "static" | "gift" | "egg" | "special_battle"
                         )
                 }) {
-                    let mut s = source(&e.method, e.offset);
-                    s.map_id = Some(e.map_id.clone());
-                    s.region = Some(e.region);
-                    s.min_level = Some(e.min_level);
-                    s.max_level = Some(e.max_level);
-                    s.encounter_percent = e.weight;
-                    s.periods = e.periods.iter().map(|v| v.to_string()).collect();
-                    if let Some(selector) = &e.selector {
-                        s.conditions.push(check(
-                            state.as_ref(),
-                            Some(rom),
-                            &EventCondition {
-                                kind: "variable",
-                                id: selector.variable,
-                                value: selector.value as u32,
-                                comparison: if selector.fallback { 5 } else { 1 },
-                                taken: true,
-                            },
-                        ));
-                    }
-                    s.repeatable = if matches!(
-                        e.method.as_str(),
-                        "land" | "water" | "old_rod" | "good_rod" | "super_rod" | "rock_smash"
-                    ) {
-                        Some(true)
-                    } else {
-                        None
-                    };
-                    // Scripted sources and clock selectors require context not captured by raw tables.
-                    s.partial = e.conditional || !e.periods.is_empty();
-                    if s.conditions.iter().any(|c| c.satisfied == Some(false)) {
-                        s.status = "blocked";
-                    }
-                    sources.push(s);
+                    sources.push(self.encounter_source(rom, state.as_ref(), e));
                 }
                 for report in &self.world.map_events {
                     let map = self
@@ -657,7 +818,7 @@ mod tests {
             map_id: "0-0".into(),
             map_name: "Synthetic map".into(),
             region: 1,
-            method: "land".into(),
+            method: "grass".into(),
             min_level: 1,
             max_level: 1,
             weight: Some(100),
@@ -667,6 +828,7 @@ mod tests {
             conditional: true,
         };
         let index = AcquisitionIndex {
+            wild_cache: RefCell::default(),
             world: World {
                 maps: vec![],
                 map_events: vec![],
@@ -682,7 +844,7 @@ mod tests {
             evolutions: BTreeMap::new(),
             learnsets: BTreeMap::new(),
         };
-        let mut sources: Vec<_> = ["land", "water", "land", "static"]
+        let mut sources: Vec<_> = ["grass", "surf", "grass", "static"]
             .into_iter()
             .map(|kind| {
                 let mut s = source(kind, 0);

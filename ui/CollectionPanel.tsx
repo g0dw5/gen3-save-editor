@@ -1,3 +1,4 @@
+import { WildHeldDetails } from "./WildHeldDetails";
 import { ConditionDetails } from "./ConditionDetails";
 import { useEffect, useState } from "react";
 import { api } from "./api";
@@ -213,6 +214,13 @@ export function CollectionPanel({
                             }
                             onItem={(id) => onTarget({ kind: "item", id })}
                           />
+                          {s && (
+                            <WildHeldDetails
+                              source={s}
+                              item={task.target.id}
+                              catalog={catalog}
+                            />
+                          )}
                           <ConditionDetails
                             checks={s?.conditions}
                             catalog={catalog}

@@ -36,7 +36,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Random encounters, probability, time tables / 随机相遇 | P | P | P | P | P | `world.rs`; [time selection](research/encounter-time-selection.md), Mercury native selector. Slot weights are separate from encounter frequency; no full weekday/clock-state validation. |
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Shared typed map-script sources and [bounded NPC trade quotes](verification/npc-trades-20261006.md); [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers, actual delivery and custom exchanges are not comprehensively indexed. |
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
-| Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. No verified probability under all ability modifiers. |
+| Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. Native ordinary single-wild item selection has five-fingerprint evidence, including tested lead abilities and exceptional layout branches; full encounter modifiers and facilities remain unresolved. See [wild-item evidence](verification/wild-held-20261006.md). |
 | SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. [Bounded NPC success/receipt protocols](verification/npc-receipts-20261006.md) cover 80 reward rows. Compound/custom pickups, unqualified NPC protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
 | Item/money prerequisites / 道具与金钱前置条件 | P | P | P | P | P | [Native holdings and Boolean branch verification](verification/resource-conditions-20261006.md), required-item cross-links, readable query/map/planning/HTML conditions. Mercury ordinary checks use the first matching slot; other four retain unknown facility-bag context. Spending, complete eligibility and access remain unverified. |
 | Effective game clock, weekday, next event / 有效时钟与刷新 | U | U | U | U | P | Mercury virtual SAVE clock, native weekday, speed, forced-night state and jump menu verified within [bounded scope](verification/mercury-clock-20261005.md); hardware RTC and all weekday refresh remain unresolved. No device-time assumption. |
@@ -279,3 +279,18 @@ See [evidence and remaining scope](verification/resource-conditions-20261006.md)
 Resource increment regression: 101 public core tests passed, 24 opt-in ignored;
 native and five-ROM query/teaching parity plus bilingual browser workflows pass.
 No new save-edit emulator round trip or package is asserted for this increment.
+
+## Wild held-item increment / 野生携带道具增量
+
+All five source rows remain **P**. Actual random encounter references close item
+→ Pokémon → map/entry/back; encounter slot probability and native held-item
+probability are separate. Time selectors stay distinct. With a SAV, the first
+raw party individual supplies the native ability/egg context. No random reference
+means an explicitly unplaced, unverified source, not guaranteed availability.
+Independent CPU execution covers 1,090 contexts / 327,000 assignment cases and
+327,680 native RNG outputs. Dynamic layouts, facilities, full encounter ability
+modifiers, complete access and next-encounter prediction are outside this evidence.
+See [scope and reproduction](verification/wild-held-20261006.md).
+
+五份指纹仍为部分支持。原生概率验证不证明地图当前可达，不把静态或赠送引用
+当作普通随机来源；收集建议与独立 HTML 保留相同的情景和未知边界。

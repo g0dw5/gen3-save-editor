@@ -54,6 +54,7 @@ pub struct HiddenItemRules {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct Profile {
+    pub wild_items: Option<crate::wild_items::WildItemRules>,
     pub resource_checks: Option<crate::script_resources::ResourceCheckRules>,
     pub tutor_scripts: Option<crate::script_teaching::TutorScriptRules>,
     pub script_pokemon: crate::script_pokemon::PokemonScriptRules,
@@ -285,6 +286,7 @@ pub const EMERALD: SaveLayout = SaveLayout {
     skip_unoccupied_box_records: false,
 };
 pub const BW: Profile = Profile {
+    wild_items: Some(crate::wild_items::EMERALD),
     resource_checks: Some(crate::script_resources::EMERALD),
     tutor_scripts: Some(crate::script_teaching::TutorScriptRules {
         specials: 0x1dba64,
@@ -542,6 +544,7 @@ pub const DP: Profile = Profile {
     ..BW
 };
 pub const ROCKET: Profile = Profile {
+    wild_items: Some(crate::wild_items::ROCKET),
     resource_checks: Some(crate::script_resources::ROCKET),
     tutor_scripts: Some(crate::script_teaching::TutorScriptRules {
         specials: 0x22b620,

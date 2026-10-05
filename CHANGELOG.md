@@ -10,6 +10,17 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Connect wild held-item sources to referenced encounter maps, levels, slots and
+  time selectors. Execute each current ROM's ordinary single-wild assignment
+  routine for a simulated baseline and the current SAV's first party member;
+  show held-item chances separately from encounter slot probabilities. Preserve
+  unreferenced records and unresolved access as unknown. Queries, collection
+  suggestions and bilingual HTML share the same explanation.
+- 野生携带道具来源关联真实相遇引用、地图、等级、槽位和时段；执行当前 ROM 的
+  普通单只野生携带例程，分别展示无修正模拟基准和存档同行首位情景。携带概率与
+  相遇槽位概率分开；无相遇引用和未确认可达性仍保留未知。查询、收集建议和
+  中英文 HTML 共用说明。
+
 - Preserve native item/money holdings predicates through script result copies and
   branch comparisons, with ROM-scoped widths and bag slot rules. Link required
   items, maps, collection planning and human-readable bilingual HTML. Keep

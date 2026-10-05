@@ -1,3 +1,4 @@
+import { heldSummary } from "./WildHeldDetails";
 import { conditionLabel } from "./ConditionDetails";
 import type { Catalog, CollectionPlan, GameMap, QueryTarget } from "./types";
 import { tradeSummary } from "./TradeDetails";
@@ -45,6 +46,12 @@ export function collectionHtml(
             return `<div class="task"><h3><input type="checkbox" aria-label="${esc(t("planCheck"))}"> ${esc(name(task.target))}</h3>${task.family.length ? `<small>${esc(t("planFamily"))}: ${esc(task.family.map((id) => name({ kind: "species", id })).join(" / "))}</small>` : ""}<p>${esc(s ? t(`acqStatus_${s.status}`) : t("acqNoSource"))} · ${esc(s?.map_id ? mapName(s.map_id) : t("planNoRegion"))}${s?.x !== null && s?.x !== undefined ? ` (${s.x}, ${s.y})` : ""}</p>${s?.min_level !== null && s?.min_level !== undefined ? `<p>Lv. ${s.min_level}–${s.max_level ?? s.min_level}${s.encounter_percent !== null ? ` · ${esc(t("acqEncounterChance"))} ${s.encounter_percent}%` : ""}</p>` : ""}${s?.script_source ? `<p>${esc(t("acqScriptSourceHelp"))}</p>` : ""}${
               s?.script_source?.trade
                 ? tradeSummary(s.script_source, s.trade_context, catalog, t)
+                    .map((line) => `<p>${esc(line)}</p>`)
+                    .join("")
+                : ""
+            }${
+              s
+                ? heldSummary(s, task.target.id, catalog, t)
                     .map((line) => `<p>${esc(line)}</p>`)
                     .join("")
                 : ""

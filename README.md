@@ -220,3 +220,10 @@ Parsed resource checks show item names and holdings, with prerequisite-item link
 in sources/maps/planning and standalone HTML. Money checks are not payment
 proof; alternate facility bags and post-mutation checks remain unknown.
 See [native rules and evidence](docs/verification/resource-conditions-20261006.md).
+
+Wild held-item queries link referenced Pokémon to encounter maps and preserve
+slot/time selectors. The current ROM's native ordinary single-wild routine
+provides a simulated no-modifier baseline and, with a SAV, the first party
+member's context. Held chances are conditional on that Pokémon being encountered;
+encounter slot probabilities remain separate. Unreferenced records do not prove
+obtainability. See [native evidence and limits](docs/verification/wild-held-20261006.md).

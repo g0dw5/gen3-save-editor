@@ -258,7 +258,10 @@ impl Rom {
     pub(crate) fn fixture(data: Vec<u8>) -> Self {
         Self {
             data: Arc::new(data),
-            profile: profile::BW,
+            profile: profile::Profile {
+                wild_items: None,
+                ..profile::BW
+            },
             codec: Codec::new(),
         }
     }

@@ -1,3 +1,4 @@
+import { WildHeldDetails } from "./WildHeldDetails";
 import { ConditionDetails } from "./ConditionDetails";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "./api";
@@ -90,6 +91,7 @@ export function AcquisitionPanel({
           pc: "mapGifts",
           shop: "acqShop",
           wild_held: "acqWildHeld",
+          wild_held_unreferenced: "heldUnreferenced",
           evolution: "acqEvolution",
           breeding_candidate: "acqBreeding",
           machine: "acqMachine",
@@ -184,7 +186,12 @@ export function AcquisitionPanel({
               }}
             >
               <div>
-                <strong>{kindName(s.kind)}</strong>
+                <strong>
+                  {kindName(s.kind)}
+                  {s.encounter_method
+                    ? ` · ${kindName(s.encounter_method)}`
+                    : ""}
+                </strong>
                 {save && (
                   <small className={`source-status status-${s.status}`}>
                     {t(`acqStatus_${s.status}`)}
@@ -259,15 +266,7 @@ export function AcquisitionPanel({
                   {t("acqEncounterChance")} {s.encounter_percent}%
                 </p>
               )}
-              {s.kind === "wild_held" && (
-                <p className="small muted">
-                  {t("acqHeldChance")}{" "}
-                  {s.held_percent !== null
-                    ? `${s.held_percent}%`
-                    : t("unresolved")}{" "}
-                  · {t("acqHeldHelp")}
-                </p>
-              )}
+              <WildHeldDetails source={s} item={target.id} catalog={catalog} />
               {!!s.periods.length && (
                 <p>
                   {s.periods
