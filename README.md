@@ -26,6 +26,12 @@ Coverage is partial: script prerequisites, dynamic access and special sources
 may remain undetermined. Mercury currently supports individual-based planning,
 not unverified expanded Pokédex flags. See the [exact-ROM capability matrix](docs/capability-matrix.md).
 
+Mercury 1.2 acquisition queries and collection HTML use the native virtual-clock
+snapshot from SAV, including saved weekday, speed and forced-night state. Choose
+an explicit simulated hour or all periods as needed. Hardware RTC mode remains
+unresolved; device time is never substituted. See [clock verification](docs/verification/mercury-clock-20261005.md).
+The read-only CLI supports `gen3 game-clock ROM [SAVE]`.
+
 ## Cheat codes
 
 Open an exact-match ROM first, then use **Cheats** in the toolbar; no save is

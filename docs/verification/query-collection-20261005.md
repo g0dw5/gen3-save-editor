@@ -22,13 +22,15 @@ all-mechanism certification.
 3. Mercury ROM → trainer → native ordinary-party scenario → generated nature,
    gender, ability, IVs, EVs, moves, item and level. Explicit simulation seeds are
    separate from actual game RNG. This does not emulate the complete battle setup.
-4. Mercury acquisition → explicit simulated hour → native period and the next
-   period boundary. No device clock fallback or claim of decoded virtual SAVE time.
+4. Mercury acquisition → saved virtual time or explicit simulated hour → native
+   period and next boundary. Virtual SAVE time is now decoded by the later
+   [clock increment](mercury-clock-20261005.md); no device-clock fallback.
 
 以上流程均为共用页面与查询模型。地图静态关系不保证现在可达；收集路线按区域
 合并，仅作建议，不宣称最短。家族模式表示至少有一个成员，不表示分支已全部完成。
 水银训练家预览为剧情状态清零的普通生成情景，不保证等于当前存档下一场实战。
-时钟仅是明确输入的模拟条件，还未解码水银虚拟时钟／跳转时段的持久化状态。
+时钟后续增量已验证虚拟保存时间和跳时持久化，保留明确模拟条件；硬件 RTC 和完整
+星期刷新仍待验证，详见时钟增量记录。
 
 ## Evidence / 证据
 
@@ -82,8 +84,9 @@ Use an absolute `GEN3_NATIVE_TRAINER_PROBES` output path for the Cargo local tes
   trainer and opponent-side arguments. Its full setup `0x09D0D514`, nonzero context,
   player-party dependencies and facilities remain unverified. Two seeds do not
   describe the complete distribution. Other ROM preview rules remain separate.
-- Mercury expanded Dex flags, effective virtual clock, jump-time persistence and
-  forced-night SAVE conditions remain unverified. No unsupported mechanism is
+- Mercury expanded Dex flags, hardware RTC mode and complete weekday refresh
+  remain unverified. Virtual-clock, jump-time and forced-night SAVE conditions
+  have since been validated in the clock increment. No unsupported mechanism is
   inferred absent merely because the current parser does not expose it.
 
 未完成项保留为明确缺口；不得把读取表格、生成情景或打开页面等同于完整支持。

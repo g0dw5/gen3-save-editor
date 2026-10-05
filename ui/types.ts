@@ -498,11 +498,24 @@ export interface AcquisitionSource {
   partial: boolean;
 }
 export interface ClockReport {
-  source: "scenario" | "unresolved";
+  source: "scenario" | "unresolved" | "save_virtual";
   effective_hour: number | null;
   weekday: number | null;
   period: string | null;
   next_period_hour: number | null;
+  seconds_until_next_period: number | null;
+  saved: {
+    year: number;
+    month: number;
+    day: number;
+    weekday: number;
+    hour: number;
+    minute: number;
+    second: number;
+    speed: number;
+  } | null;
+  forced_night: boolean | null;
+  issue: string | null;
   current_clock_verified: boolean;
   forced_night_state_verified: boolean;
 }
@@ -521,6 +534,7 @@ export interface CollectionTask {
   alternatives: number;
 }
 export interface CollectionPlan {
+  clock: ClockReport | null;
   rom_md5: string;
   basis: "dex" | "individuals";
   families: boolean;

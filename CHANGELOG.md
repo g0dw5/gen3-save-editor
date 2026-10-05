@@ -10,6 +10,17 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Read Mercury 1.2's native virtual clock from SAVE extensions: date, independent
+  weekday, time, speed and forced-night override. Annotate acquisition queries,
+  regional collection suggestions and standalone HTML with this saved snapshot;
+  retain explicit simulated-hour and all-period modes. Native restoration,
+  leap/calendar validation, jump-menu behavior and post-jump re-save are verified.
+  Hardware RTC and complete weekday-event refresh remain unresolved.
+- 水银 1.2 查询原生扩展存档中的虚拟日期、独立星期、时间、速度及强制夜晚条件；
+  获取途径、区域收集建议和独立 HTML 共用保存时间依据，仍可模拟小时或查看全部
+  时段。已对照原生恢复／历法／跳时菜单，并验证跳时后的游戏再次保存回读；
+  硬件 RTC 与完整星期事件刷新仍待验证。查询不修改时钟或存档。
+
 - Correct Mercury 1.2 expanded bag storage (sector tails and auxiliary sectors),
   plaintext quantities, and native map/met-location names. Preserve displayed
   zero quantities instead of silently treating them as one. Reproduce extended

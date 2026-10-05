@@ -38,7 +38,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. No verified probability under all ability modifiers. |
 | SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | U | U | U | Native BW/DP SB1 addressing and direct pickup/hidden receipt protocols; unknown guards remain tri-state. Other layouts and complete story dependencies await proof. NPC visibility and bag absence are not receipt evidence. |
-| Effective game clock, weekday, next event / 有效时钟与刷新 | U | U | U | U | P | Mercury has verified four encounter periods, but virtual-clock/jump-time save state still needs native proof. No device-time assumption. |
+| Effective game clock, weekday, next event / 有效时钟与刷新 | U | U | U | U | P | Mercury virtual SAVE clock, native weekday, speed, forced-night state and jump menu verified within [bounded scope](verification/mercury-clock-20261005.md); hardware RTC and all weekday refresh remain unresolved. No device-time assumption. |
 | Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | P | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury executes its native constructor for explicit zero-context scenarios; independent CPU comparisons are recorded below, while full setup remains unknown. |
 | Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution with party/scenario. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
 | Edit, drag/swap, batch, undo/export safety / 编辑事务 | V | V | V | V | V | `session.rs`, [save integrity](research/save-integrity.md). Checksums, record preservation, rollback, backup and source conflict checks; linked mail changes blocked. Scope is represented fields, not all in-game legitimacy rules. |
@@ -105,8 +105,8 @@ period-predicate results** across all 24 hours. These are query scenarios with
 forced-night flag `0x1041` modeled unset, not effective-time decoding. A previous
 Mercury research table described the 1.1 selector's literal pool at `0x1D65828`;
 the 1.2 header-selection entry is `0x1D69AC0`, with predicates at `0x1D20DE0`,
-`0x1D20DF8`, `0x1D20814`. Virtual clock persistence, jump-time state and weekday
-refresh remain unresolved. The UI never substitutes the device's clock.
+`0x1D20DF8`, `0x1D20814`. Virtual-clock persistence and jump-time state were pending at this increment;
+they are validated in the later clock increment below. Complete weekday refresh remains unresolved. The UI never substitutes the device's clock.
 
 收集家族只用永久进化边，不用名称推测或战斗变身关联。按图鉴判断时，图鉴的
 共同编号只能证明该物种曾获得，不证明每种独立形态都持有；按现有个体可区分
@@ -145,3 +145,21 @@ Maps remain **P**. See [scope and evidence](verification/mercury-display-storage
 早期空背包／原版地址回读不构成扩展背包证明。当前背包已对照原生内存及游戏
 再次保存核验。地图名称表与扩展图层已修正；1-0 有入口引用，在原生直接加载时
 也错乱，不能宣称废弃或已还原正常游戏场景。地图总体仍为部分验证。
+
+## Virtual-clock increment / 虚拟时钟增量
+
+Mercury's time row stays **P**, with verified subfeatures expanded to its restored
+virtual SAVE snapshot, native weekday/speed/forced-night fields and jump-menu
+persistence. `clock.rs` reads ROM month parameters at runtime; acquisition and
+collection/HTML share the snapshot. The four older profiles keep **U** effective-clock
+status. Hardware RTC, all weekday event resets and full quest/reward semantics
+are not inferred. See [native evidence and reproducible checks](verification/mercury-clock-20261005.md).
+
+水银时钟总体仍为部分验证：虚拟保存快照和跳时持久化已有原生／模拟器证据，
+并接入查询与收集 HTML；硬件 RTC 和完整星期事件刷新仍有缺口。其他 ROM 不继承
+这些规则，领取状态／剧情依赖不会因时钟字段验证而自动升级。
+
+Final regression for this increment: 88 public core tests passed (18 opt-in
+ignored); both five-ROM local query checks and the five-ROM actual query/map UI
+passed. Mercury's saved-clock English/Chinese planning/HTML flow and existing
+inventory/location/map-warning UI regression passed without SAVE writes.

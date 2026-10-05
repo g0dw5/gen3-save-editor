@@ -189,6 +189,8 @@ impl App {
                         kind: crate::acquisition::TargetKind,
                         id: u16,
                         hour: Option<u8>,
+                        #[serde(default)]
+                        use_save_clock: bool,
                     }
                     let query: Input = serde_json::from_value(p)?;
                     let session = self.session()?;
@@ -200,6 +202,7 @@ impl App {
                             id: query.id,
                         },
                         query.hour,
+                        query.use_save_clock,
                     )?)?)
                 }
             }
@@ -241,11 +244,13 @@ impl App {
                     p.condition,
                 )?)?)
             }
-            "clock_query" => Ok(serde_json::to_value(
-                self.session()?
-                    .rom
-                    .clock_query(serde_json::from_value(p)?)?,
-            )?),
+            "clock_query" => {
+                let session = self.session()?;
+                Ok(serde_json::to_value(session.rom.clock_query_with_save(
+                    session.save.as_ref(),
+                    serde_json::from_value(p)?,
+                )?)?)
+            }
             "fishing_spots" => {
                 let s = self.session()?;
                 Ok(serde_json::to_value(s.rom.fishing_spots(s.save.as_ref())?)?)

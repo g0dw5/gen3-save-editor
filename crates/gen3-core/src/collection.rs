@@ -45,6 +45,7 @@ pub struct EntranceSuggestion {
 }
 #[derive(Serialize)]
 pub struct CollectionPlan {
+    pub clock: Option<crate::clock::ClockReport>,
     pub rom_md5: &'static str,
     pub basis: CollectionBasis,
     pub families: bool,
@@ -67,6 +68,20 @@ impl AcquisitionIndex {
         save: &Save,
         request: CollectionRequest,
     ) -> Result<CollectionPlan> {
+        let clock = rom
+            .profile
+            .clock
+            .map(|_| {
+                rom.clock_query_with_save(
+                    Some(save),
+                    crate::clock::ClockScenario {
+                        hour: None,
+                        weekday: None,
+                    },
+                )
+            })
+            .transpose()?;
+        let period = clock.as_ref().and_then(|c| c.period);
         let owned: BTreeSet<u16> = match request.basis {
             CollectionBasis::Individuals => save
                 .all(rom)?
@@ -153,17 +168,16 @@ impl AcquisitionIndex {
                 missing_count += 1;
                 let mut candidates = Vec::new();
                 for id in &goals {
-                    for s in self
-                        .query(
-                            rom,
-                            Some(save),
-                            Target {
-                                kind: TargetKind::Species,
-                                id: *id,
-                            },
-                        )?
-                        .sources
-                    {
+                    let mut report = self.query(
+                        rom,
+                        Some(save),
+                        Target {
+                            kind: TargetKind::Species,
+                            id: *id,
+                        },
+                    )?;
+                    self.mark_period(&mut report.sources, period);
+                    for s in report.sources {
                         candidates.push((*id, s));
                     }
                 }
@@ -172,6 +186,7 @@ impl AcquisitionIndex {
                 candidates.sort_by_key(|(id, s)| {
                     (
                         s.status == "blocked",
+                        s.in_scenario == Some(false),
                         s.map_id.is_none(),
                         s.partial,
                         s.region,
@@ -283,6 +298,7 @@ impl AcquisitionIndex {
             })
             .collect();
         Ok(CollectionPlan {
+            clock,
             rom_md5: rom.profile.md5,
             basis: request.basis,
             families: request.families,

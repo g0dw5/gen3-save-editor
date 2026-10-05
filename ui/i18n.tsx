@@ -4,7 +4,27 @@ export const en = {
     "Some cells use a layer type whose native routine retains the previous screen contents. Their static appearance cannot be determined; those cells use the backdrop color.",
   mapNativeLayoutMismatch:
     "This static ROM layout also renders with mismatched tiles when loaded directly in the native emulator. Whether a normal entrance replaces the layout is unverified; this image does not establish the appearance or accessibility of a playable area.",
-  clockScenario: "Time query scenario",
+  clockScenario: "Game time and query scenario",
+  clockUseSave: "Use saved game time",
+  clockSavedVirtual: "Saved virtual clock",
+  clockForcedNight:
+    "A saved condition forces night encounters; the next boundary depends on clearing this condition.",
+  clockSnapshotHelp:
+    "Time at this SAVE snapshot, not a live clock. The game advances virtual time during play; its jump-time menu also advances the date when needed. Device time is not used.",
+  clockSpeed: "Virtual clock speed",
+  clockUntilNext: "Game time until the next period",
+  hardware_rtc_unresolved:
+    "This SAVE uses hardware RTC rather than virtual time. Its effective time cannot be recovered from these saved fields; enter a simulated hour instead.",
+  invalid_saved_clock:
+    "The saved virtual date/time is invalid or incomplete. Native code resets it from RTC, so the effective time cannot be determined here.",
+  clock_save_layout: "The SAVE and ROM clock layouts differ.",
+  clockWeekday0: "Sunday",
+  clockWeekday1: "Monday",
+  clockWeekday2: "Tuesday",
+  clockWeekday3: "Wednesday",
+  clockWeekday4: "Thursday",
+  clockWeekday5: "Friday",
+  clockWeekday6: "Saturday",
   clockUnknown:
     "The current effective game time has not been verified from this SAV. This query never reads device time or changes the game clock.",
   clockHour: "Query hour",
@@ -12,12 +32,13 @@ export const en = {
   clockSimulated: "Simulated condition",
   clockNextPeriod: "Next period boundary",
   clockForcedNightUnknown:
-    "Assumes no forced-night override. Native forced-night flags and virtual-clock/jump-time persistence still require validation.",
-  clockOutsideScenario: "Not in the simulated period",
-  clockInsideScenario: "Matches the simulated period",
+    "This simulated hour assumes no forced-night override and does not change the saved game clock.",
+  clockOutsideScenario: "Outside the query period",
+  clockInsideScenario: "Matches the query period",
   clock_scenario_range: "Enter an hour from 0–23 and weekday from 0–6.",
 
   collection: "Collection planning",
+  planGeneratedAt: "Report generated at",
   planHelp:
     "Regional suggestions from ROM and SAV, not a proven shortest route. Unknown prerequisites and access need verification. No save is changed.",
   planFamilyHelp:
@@ -823,7 +844,26 @@ export const zh: Record<Key, string> = {
     "部分格块使用了原生绘制例程不更新画面的图层类型，静态样貌无法确定；这些格块暂以背景色显示。",
   mapNativeLayoutMismatch:
     "此 ROM 静态布局在模拟器直接加载时也出现贴图错乱。正常入口是否会替换布局尚未确认；这张图不能证明实际可游玩区域的样貌或可达性。",
-  clockScenario: "时间查询情景",
+  clockScenario: "游戏时间与查询情景",
+  clockUseSave: "使用存档游戏时间",
+  clockSavedVirtual: "存档虚拟时钟",
+  clockForcedNight: "存档条件强制使用夜晚相遇；下次时段切换取决于解除该条件。",
+  clockSnapshotHelp:
+    "这是保存时的时间快照，并非实时钟。游戏中游玩会推进虚拟时间，跳转时段菜单也会在需要时推进日期，不使用设备时间。",
+  clockSpeed: "虚拟时钟速度",
+  clockUntilNext: "距下一时段的游戏时间",
+  hardware_rtc_unresolved:
+    "这份存档使用硬件 RTC，未启用虚拟时间。无法从这些字段恢复当前有效时间，请输入模拟小时查询。",
+  invalid_saved_clock:
+    "存档虚拟日期／时间无效或不完整，原生逻辑会从 RTC 重置，因此这里无法确定有效时间。",
+  clock_save_layout: "存档与 ROM 的时钟布局不一致。",
+  clockWeekday0: "星期日",
+  clockWeekday1: "星期一",
+  clockWeekday2: "星期二",
+  clockWeekday3: "星期三",
+  clockWeekday4: "星期四",
+  clockWeekday5: "星期五",
+  clockWeekday6: "星期六",
   clockUnknown:
     "当前 SAV 的有效游戏时间尚未验证。此查询不读取设备时间，也不更改游戏时钟。",
   clockHour: "查询小时",
@@ -831,12 +871,13 @@ export const zh: Record<Key, string> = {
   clockSimulated: "模拟条件",
   clockNextPeriod: "下一时段边界",
   clockForcedNightUnknown:
-    "假设未启用强制夜晚覆盖；原生强制夜晚标记及虚拟时钟／跳时持久化仍待验证。",
-  clockOutsideScenario: "不属于当前模拟时段",
-  clockInsideScenario: "符合当前模拟时段",
+    "该模拟小时假设没有强制夜晚覆盖，不会修改存档游戏时间。",
+  clockOutsideScenario: "不属于查询时段",
+  clockInsideScenario: "符合查询时段",
   clock_scenario_range: "小时应为 0–23，星期应为 0–6。",
 
   collection: "收集规划",
+  planGeneratedAt: "报告生成时间",
   planHelp:
     "按 ROM 和 SAV 提供区域建议，不保证全局最短。未知前置条件和可达性仍需核实，此页面不改存档。",
   planFamilyHelp:

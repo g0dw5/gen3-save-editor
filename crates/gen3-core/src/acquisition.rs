@@ -160,31 +160,38 @@ impl AcquisitionIndex {
         save: Option<&Save>,
         target: Target,
         hour: Option<u8>,
+        use_save_clock: bool,
     ) -> Result<AcquisitionReport> {
         let mut report = self.query(rom, save, target)?;
-        if hour.is_some() {
-            let clock = rom.clock_query(crate::clock::ClockScenario {
-                hour,
-                weekday: None,
-            })?;
-            if let Some(period) = clock.period {
-                for source in &mut report.sources {
-                    if source.periods.is_empty() {
-                        continue;
-                    }
-                    let base_fallback = source.periods.iter().any(|p| p == "base")
-                        && !self.world.encounters.iter().any(|e| {
-                            Some(&e.map_id) == source.map_id.as_ref()
-                                && e.method == source.kind
-                                && e.periods.contains(&period)
-                        });
-                    source.in_scenario =
-                        Some(source.periods.iter().any(|p| p == period) || base_fallback);
-                }
-            }
+        if hour.is_some() || use_save_clock {
+            let clock = rom.clock_query_with_save(
+                if use_save_clock { save } else { None },
+                crate::clock::ClockScenario {
+                    hour,
+                    weekday: None,
+                },
+            )?;
+            self.mark_period(&mut report.sources, clock.period);
             report.clock = Some(clock);
         }
         Ok(report)
+    }
+    pub(crate) fn mark_period(&self, sources: &mut [AcquisitionSource], period: Option<&str>) {
+        if let Some(period) = period {
+            for source in sources {
+                if source.periods.is_empty() {
+                    continue;
+                }
+                let base_fallback = source.periods.iter().any(|p| p == "base")
+                    && !self.world.encounters.iter().any(|e| {
+                        Some(&e.map_id) == source.map_id.as_ref()
+                            && e.method == source.kind
+                            && e.periods.contains(&period)
+                    });
+                source.in_scenario =
+                    Some(source.periods.iter().any(|p| p == period) || base_fallback);
+            }
+        }
     }
     pub fn query(
         &self,
@@ -420,6 +427,61 @@ impl AcquisitionIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn time_table_fallback_is_per_map_and_method_not_per_target_species() {
+        use crate::world::{Encounter, TrainerLocationIndex};
+        let encounter = Encounter {
+            selector: None,
+            periods: vec!["night"],
+            species: 2,
+            map_id: "0-0".into(),
+            map_name: "Synthetic map".into(),
+            region: 1,
+            method: "land".into(),
+            min_level: 1,
+            max_level: 1,
+            weight: Some(100),
+            encounter_rate: Some(20),
+            slot: Some(0),
+            offset: 0,
+            conditional: true,
+        };
+        let index = AcquisitionIndex {
+            world: World {
+                maps: vec![],
+                map_events: vec![],
+                encounters: vec![encounter],
+                trainers: vec![],
+                trainer_locations: TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: vec![],
+            evolutions: BTreeMap::new(),
+            learnsets: BTreeMap::new(),
+        };
+        let mut sources: Vec<_> = ["land", "water", "land", "static"]
+            .into_iter()
+            .map(|kind| {
+                let mut s = source(kind, 0);
+                s.map_id = Some("0-0".into());
+                s.periods = vec!["base".into()];
+                s
+            })
+            .collect();
+        sources[2].map_id = Some("0-1".into());
+        sources[3].periods.clear();
+        index.mark_period(&mut sources, Some("night"));
+        assert_eq!(
+            sources.iter().map(|s| s.in_scenario).collect::<Vec<_>>(),
+            [Some(false), Some(true), Some(true), None]
+        );
+        // The target species need not occur in the overriding table: its base slots still lose priority.
+        index.mark_period(&mut sources, Some("day"));
+        assert_eq!(sources[0].in_scenario, Some(true));
+    }
     #[test]
     fn predicates_are_tristate_and_compare_numeric_values() {
         let layout = EventStateLayout {

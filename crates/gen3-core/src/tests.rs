@@ -3167,3 +3167,206 @@ fn local_mercury_storage_roundtrip() {
     // A playable/current map has no mismatched-layout annotation.
     assert!(r.map_image_warnings("3-79").unwrap().is_empty());
 }
+
+// Write synthetic query fields in the same segmented storage the native hook reads.
+// Queries below must preserve the entire SAVE, including both banks and shared sectors.
+fn clock_extra_byte(save: &mut Save, mut offset: usize, value: u8) {
+    for id in 0..14 {
+        let n = 0xff0 - save.layout.sizes[id];
+        if offset < n {
+            save.data[save.sections[id] + save.layout.sizes[id] + offset] = value;
+            return;
+        }
+        offset -= n;
+    }
+    for sector in save.layout.extension_sectors.unwrap() {
+        if offset < 0xff0 {
+            save.data[sector * 4096 + offset] = value;
+            return;
+        }
+        offset -= 0xff0;
+    }
+    panic!("synthetic clock offset exceeds extension storage");
+}
+fn clock_fields(save: &mut Save, fields: [u16; 4], forced: bool, speed: u16) {
+    clock_extra_byte(save, 0x146, 0x20);
+    clock_extra_byte(save, 0xe8, u8::from(forced) * 2);
+    for (i, field) in fields.into_iter().chain([speed]).enumerate() {
+        for (j, b) in field.to_le_bytes().into_iter().enumerate() {
+            clock_extra_byte(save, 0x5de + i * 2 + j, b);
+        }
+    }
+}
+#[test]
+fn saved_clock_preserves_bytes_and_distinguishes_rtc_invalid_and_simulated_time() {
+    use crate::clock::ClockScenario;
+    let mut r = adapter_rom(crate::mercury::PROFILE);
+    let offset = r.profile.clock.unwrap().saved.unwrap().month_lengths;
+    let data = std::sync::Arc::make_mut(&mut r.data);
+    for (i, length) in [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        .into_iter()
+        .enumerate()
+    {
+        put32(data, offset + i * 4, length);
+    }
+    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+    let current = || ClockScenario {
+        hour: None,
+        weekday: None,
+    };
+    clock_fields(&mut save, [2026, 0xa05, 0x171e, 0x2d01], false, 2);
+    let before = save.data.clone();
+    let report = r.clock_query_with_save(Some(&save), current()).unwrap();
+    assert_eq!(report.source, "save_virtual");
+    assert_eq!(report.next_period_hour, Some(4));
+    assert_eq!(
+        report.seconds_until_next_period,
+        Some(4 * 3600 + 29 * 60 + 15)
+    );
+    assert_eq!(report.weekday, Some(1));
+    assert_eq!(report.saved.unwrap().speed, 2);
+    assert_eq!(save.data, before);
+    clock_fields(&mut save, [2026, 0xa05, 0x081e, 0], true, 3);
+    let report = r.clock_query_with_save(Some(&save), current()).unwrap();
+    assert_eq!(report.period, Some("night"));
+    assert_eq!(report.next_period_hour, None);
+    assert_eq!(report.saved.unwrap().speed, 1);
+    let simulated = r
+        .clock_query_with_save(
+            Some(&save),
+            ClockScenario {
+                hour: Some(17),
+                weekday: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(simulated.source, "scenario");
+    assert_eq!(simulated.period, Some("dusk"));
+    assert!(!simulated.current_clock_verified);
+    assert_eq!(simulated.forced_night, None);
+    // A weekday-only scenario must not accidentally recover/inherit SAVE's hour.
+    assert_eq!(
+        r.clock_query_with_save(
+            Some(&save),
+            ClockScenario {
+                hour: None,
+                weekday: Some(2)
+            }
+        )
+        .unwrap()
+        .effective_hour,
+        None
+    );
+    clock_extra_byte(&mut save, 0x146, 0);
+    assert_eq!(
+        r.clock_query_with_save(Some(&save), current())
+            .unwrap()
+            .issue,
+        Some("hardware_rtc_unresolved")
+    );
+    for fields in [
+        [1999, 0xa05, 0, 0],
+        [3200, 0xa05, 0, 0],
+        [2100, 0x21d, 0, 0],
+        [2026, 0xa00, 0, 0],
+        [2026, 0xa05, 0x1800, 0],
+        [2026, 0xa05, 0, 7],
+    ] {
+        clock_fields(&mut save, fields, false, 1);
+        let report = r.clock_query_with_save(Some(&save), current()).unwrap();
+        assert_eq!(report.issue, Some("invalid_saved_clock"));
+        assert_eq!(report.effective_hour, None);
+    }
+    clock_fields(&mut save, [2400, 0x21d, 0, 0], false, 1);
+    assert!(
+        r.clock_query_with_save(Some(&save), current())
+            .unwrap()
+            .current_clock_verified
+    );
+    // Use runtime month data, not a bundled Gregorian month catalog.
+    std::sync::Arc::make_mut(&mut r.data)[offset + 9 * 4] = 4;
+    clock_fields(&mut save, [2026, 0xa05, 0, 0], false, 1);
+    assert_eq!(
+        r.clock_query_with_save(Some(&save), current())
+            .unwrap()
+            .issue,
+        Some("invalid_saved_clock")
+    );
+    for p in [
+        profile::BW,
+        profile::DP,
+        profile::ROCKET,
+        crate::ultimate::PROFILE,
+    ] {
+        let other = adapter_rom(p);
+        assert_eq!(
+            other
+                .clock_query_with_save(Some(&save), current())
+                .unwrap()
+                .saved,
+            None
+        );
+    }
+}
+#[test]
+#[ignore = "requires exact Mercury 1.2 ROM/SAV and verify_mercury_clock.py parity vectors"]
+fn local_mercury_clock_matches_native_restore_and_period_selection() {
+    use crate::clock::ClockScenario;
+    let r =
+        Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap()).unwrap();
+    let mut save = Save::open(
+        std::fs::read(std::env::var("GEN3_SAVE_MERCURY12").unwrap()).unwrap(),
+        r.profile.save,
+    )
+    .unwrap();
+    let data: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_CLOCK_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(data["rom_md5"], r.profile.md5);
+    let query = || ClockScenario {
+        hour: None,
+        weekday: None,
+    };
+    let original = save.data.clone();
+    let report = r.clock_query_with_save(Some(&save), query()).unwrap();
+    let mut expected = data["current_save"]["clock"].clone();
+    expected["speed"] = serde_json::json!(report.saved.as_ref().unwrap().speed);
+    assert_eq!(serde_json::to_value(report.saved).unwrap(), expected);
+    assert_eq!(
+        serde_json::to_value(report.forced_night).unwrap(),
+        data["current_save"]["forced_night"]
+    );
+    assert_eq!(save.data, original);
+    for vector in data["restore_vectors"].as_array().unwrap() {
+        let words: [u16; 4] = serde_json::from_value(vector["words"].clone()).unwrap();
+        clock_fields(
+            &mut save,
+            words,
+            vector["forced"].as_bool().unwrap(),
+            vector["speed"].as_u64().unwrap() as u16,
+        );
+        let before = save.data.clone();
+        let report = r.clock_query_with_save(Some(&save), query()).unwrap();
+        let mut expected = vector["expected"].clone();
+        expected["speed"] = vector["speed"].clone();
+        assert_eq!(serde_json::to_value(report.saved).unwrap(), expected);
+        assert_eq!(
+            serde_json::to_value(report.period).unwrap(),
+            vector["period"]
+        );
+        assert_eq!(save.data, before);
+    }
+    for words in data["invalid_vectors"].as_array().unwrap() {
+        clock_fields(
+            &mut save,
+            serde_json::from_value(words.clone()).unwrap(),
+            false,
+            1,
+        );
+        assert_eq!(
+            r.clock_query_with_save(Some(&save), query()).unwrap().issue,
+            Some("invalid_saved_clock")
+        );
+    }
+}

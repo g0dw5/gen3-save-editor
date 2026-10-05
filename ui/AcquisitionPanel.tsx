@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "./api";
+import { ClockDetails } from "./ClockDetails";
 import { useI18n } from "./i18n";
 import { evolutionLabel } from "./referenceLabels";
 import type {
@@ -36,13 +37,21 @@ export function AcquisitionPanel({
   const [report, setReport] = useState<AcquisitionReport | null>(null);
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(30);
-  const [hour, setHour] = useState<number | null>(null);
+  const [time, setTime] = useState(() => (save ? "save" : "all"));
+  const hour = time !== "all" && time !== "save" ? Number(time) : null;
+  useEffect(() => {
+    setTime(save ? "save" : "all");
+  }, [catalog.profile.md5]);
   useEffect(() => {
     let active = true;
     setReport(null);
     setQuery("");
     setLimit(30);
-    api<AcquisitionReport>("acquisition", { ...target, hour })
+    api<AcquisitionReport>("acquisition", {
+      ...target,
+      hour,
+      use_save_clock: time === "save",
+    })
       .then((r) => {
         if (active) setReport(r);
       })
@@ -52,7 +61,7 @@ export function AcquisitionPanel({
     return () => {
       active = false;
     };
-  }, [target.kind, target.id, catalog.profile.md5, save, onError, hour]);
+  }, [target.kind, target.id, catalog.profile.md5, save, onError, time]);
   const name = (v: QueryTarget) =>
     (v.kind === "species"
       ? catalog.species
@@ -111,15 +120,13 @@ export function AcquisitionPanel({
       {catalog.profile.clock && (
         <fieldset className="clock-scenario">
           <legend>{t("clockScenario")}</legend>
-          <p className="small muted">{t("clockUnknown")}</p>
+
           <label>
             {t("clockHour")}{" "}
-            <select
-              value={hour ?? "all"}
-              onChange={(e) =>
-                setHour(e.target.value === "all" ? null : +e.target.value)
-              }
-            >
+            <select value={time} onChange={(e) => setTime(e.target.value)}>
+              <option value="save" disabled={!save}>
+                {t("clockUseSave")}
+              </option>
               <option value="all">{t("clockAllPeriods")}</option>
               {Array.from({ length: 24 }, (_, h) => (
                 <option key={h} value={h}>
@@ -128,23 +135,10 @@ export function AcquisitionPanel({
               ))}
             </select>
           </label>
-          {report?.clock && (
-            <p>
-              {t("clockSimulated")} · {report.clock.effective_hour}:00 ·{" "}
-              {t(
-                (
-                  {
-                    morning: "encounterMorning",
-                    day: "encounterDay",
-                    dusk: "encounterDusk",
-                    night: "encounterNight",
-                  } as Record<string, string>
-                )[report.clock.period ?? ""] ?? "unresolved",
-              )}{" "}
-              · {t("clockNextPeriod")} {report.clock.next_period_hour}:00
-            </p>
+          {report?.clock && <ClockDetails report={report.clock} />}
+          {time !== "save" && time !== "all" && (
+            <p className="small muted">{t("clockForcedNightUnknown")}</p>
           )}
-          <p className="small muted">{t("clockForcedNightUnknown")}</p>
         </fieldset>
       )}
       <p className="small muted">{t("acqCoverage")}</p>

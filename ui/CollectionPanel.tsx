@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
+import { ClockDetails } from "./ClockDetails";
 import { useI18n } from "./i18n";
 import { collectionHtml } from "./collectionHtml";
 import type {
@@ -104,6 +105,7 @@ export function CollectionPanel({
             <p>{t("loading")}</p>
           ) : (
             <>
+              {plan.clock && <ClockDetails report={plan.clock} />}
               <p>
                 {t("planOwned")} {plan.owned_count} · {t("planMissing")}{" "}
                 {plan.missing_count}
@@ -186,6 +188,14 @@ export function CollectionPanel({
                                 .map((id) => name({ kind: "species", id }))
                                 .join(" / ")}
                             </p>
+                          )}
+                          {s?.in_scenario === false && (
+                            <p className="small muted">
+                              {t("clockOutsideScenario")}
+                            </p>
+                          )}
+                          {s?.in_scenario === true && (
+                            <p className="small">{t("clockInsideScenario")}</p>
                           )}
                           {s?.map_id && (
                             <button

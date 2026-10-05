@@ -23,7 +23,8 @@ the relocated 1.2 entries are recorded in the final section.
 同行、箱子、PID、捕获球、金钱及箱名的个体测试仍保留各自证据。当前 1.2 背包
 已重新从原生初始化／保存例程解析，并以真实含物品存档及游戏再次保存验证，详见
 [地图、地点名和扩展背包修正](../verification/mercury-display-storage-20261005.md)。
-扩展图鉴、有效时钟和完整剧情状态仍需另行验证。
+扩展图鉴、硬件 RTC 与完整剧情状态仍需另行验证；1.2 虚拟保存时间和跳时机制见
+[时钟验证](../verification/mercury-clock-20261005.md)。
 
 ## Located tables
 
