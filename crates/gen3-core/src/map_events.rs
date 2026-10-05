@@ -305,7 +305,21 @@ impl Rom {
                     match self.script_pokemon_instruction(pc, |v| resolve(&s, v)) {
                         Ok(sources) => {
                             for mut source in sources {
-                                source.conditions = s.conditions.clone();
+                                // A script can set/clear the constructor's mode flag before
+                                // the offer. Such a write is not a prerequisite in the SAV.
+                                if source.conditions.iter().any(|c| {
+                                    c.kind == "flag"
+                                        && s.flags.get(&c.id) == Some(&true)
+                                        && !c.taken
+                                }) {
+                                    continue;
+                                }
+                                source.conditions.retain(|c| {
+                                    !(c.kind == "flag"
+                                        && s.flags.get(&c.id) == Some(&false)
+                                        && !c.taken)
+                                });
+                                source.conditions.splice(0..0, s.conditions.clone());
                                 pokemon.insert(source);
                             }
                         }

@@ -99,6 +99,14 @@ pub const PROFILE: Profile = Profile {
         wild: crate::script_pokemon::WildCommand::MercuryDouble,
         egg_level_instruction: 0x1d1b31e,
         native_battle: None,
+        trade: Some(crate::script_pokemon::TradeRules {
+            specials: 0x15fd60,
+            information_special: 0xfc,
+            information_code: 0x53a9c,
+            table_pointer: 0x53ad4,
+            count: 9,
+            alternate_flag: Some(0x15f8),
+        }),
     },
     hidden_items: Some(crate::profile::HiddenItemRules {
         packed: true,

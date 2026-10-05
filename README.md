@@ -47,6 +47,9 @@ plus [bounded NPC receipt verification](docs/verification/npc-receipts-20261006.
 Parsed scripted Pokémon gifts, eggs and fixed encounters also link to NPC tiles,
 species references and collection HTML. Unplaced records remain separate;
 delivery and current access remain undetermined. See [scope and verification](docs/verification/script-pokemon-20261006.md).
+Bounded NPC trade quotes link to the exact requested Pokémon and held-item
+sources. With SAV, party and box donors are distinguished; no Pokémon is created
+or exchanged automatically. See [native trade verification and limits](docs/verification/npc-trades-20261006.md).
 
 ## Cheat codes
 

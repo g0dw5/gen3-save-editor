@@ -10,6 +10,17 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Index bounded NPC trade quotes from the current ROM and connect requested/
+  received Pokémon, held items, NPC tiles and entrance navigation. SAV queries
+  distinguish matching non-egg party/box donors and retain unknown completion
+  and access. Verify 29 offer records with 174 native ordinary-generation cases
+  across five fingerprints; Mercury's alternate constructor remains separate.
+  Acquisition, planning and standalone HTML explain the exchange in both languages.
+- 实时解析有界 NPC 交换报价，关联交出／获得的宝可梦、携带道具、NPC 格位及
+  入口导航；SAV 查询区分同行／盒子的对应非蛋个体，不把报价当成已完成或当前
+  可达。五份指纹的 29 条报价通过 174 个原生普通生成情景；水银的特殊构造分支
+  单独保留未知。获取途径、收集建议和独立 HTML 共用中英文交换说明。
+
 - Connect parsed scripted Pokémon gifts, gift eggs and fixed encounters to NPC
   tiles, acquisition queries, map-to-species navigation and collection HTML.
   Keep unplaced sources separate and delivery/access conditions undetermined.

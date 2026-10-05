@@ -31,6 +31,34 @@ pub struct ConditionCheck {
     pub actual: Option<u16>,
 }
 #[derive(Clone, Serialize)]
+pub struct TradeContext {
+    pub party_levels: Vec<u8>,
+    pub box_levels: Vec<u8>,
+}
+impl TradeContext {
+    fn read(save: &Save, rom: &Rom, requested: u16) -> Result<Self> {
+        let mut context = Self {
+            party_levels: vec![],
+            box_levels: vec![],
+        };
+        for stored in save
+            .all(rom)?
+            .into_iter()
+            .filter(|p| p.pokemon.species == requested && !p.pokemon.egg)
+        {
+            match stored.location {
+                crate::save::Location::Party { .. } => {
+                    context.party_levels.push(stored.pokemon.level)
+                }
+                crate::save::Location::Box { .. } => context.box_levels.push(stored.pokemon.level),
+            }
+        }
+        context.party_levels.sort_unstable();
+        context.box_levels.sort_unstable();
+        Ok(context)
+    }
+}
+#[derive(Clone, Serialize)]
 pub struct AcquisitionSource {
     pub kind: String,
     pub map_id: Option<String>,
@@ -54,6 +82,7 @@ pub struct AcquisitionSource {
     pub receipt_flag: Option<u16>,
     pub receipt: Option<crate::map_events::ReceiptEvidence>,
     pub script_source: Option<crate::script_pokemon::PokemonSource>,
+    pub trade_context: Option<TradeContext>,
     pub repeatable: Option<bool>,
     pub offset: usize,
     pub partial: bool,
@@ -94,6 +123,7 @@ fn source(kind: &str, offset: usize) -> AcquisitionSource {
         receipt_flag: None,
         receipt: None,
         script_source: None,
+        trade_context: None,
         repeatable: None,
         offset,
         partial: true,
@@ -124,6 +154,52 @@ fn check(state: Option<&EventSnapshot>, condition: &EventCondition) -> Condition
         actual,
         satisfied,
     }
+}
+fn scripted_source(
+    rom: &Rom,
+    save: Option<&Save>,
+    state: Option<&EventSnapshot>,
+    map: &crate::world::Map,
+    marker: Option<&crate::map_events::MapMarker>,
+    mon: &crate::script_pokemon::PokemonSource,
+) -> Result<AcquisitionSource> {
+    let mut s = source(mon.method, mon.offset);
+    s.map_id = Some(map.id.clone());
+    s.region = Some(map.region);
+    s.x = marker.map(|m| m.x);
+    s.y = marker.map(|m| m.y);
+    s.min_level = mon.level;
+    s.max_level = mon.level;
+    s.conditions = mon.conditions.iter().map(|c| check(state, c)).collect();
+    s.script_source = Some(mon.clone());
+    if let Some(item) = mon.held_item.filter(|i| *i != 0) {
+        s.related.push(Target {
+            kind: TargetKind::Item,
+            id: item,
+        });
+    }
+    if let Some(trade) = &mon.trade {
+        s.related.push(Target {
+            kind: TargetKind::Species,
+            id: trade.requested_species,
+        });
+        s.trade_context = save
+            .map(|save| TradeContext::read(save, rom, trade.requested_species))
+            .transpose()?;
+        if s.trade_context
+            .as_ref()
+            .is_some_and(|c| c.party_levels.is_empty())
+        {
+            s.status = "blocked";
+        }
+    }
+    if s.conditions.iter().any(|c| c.satisfied == Some(false)) {
+        s.status = "blocked";
+    }
+    // These are native command inputs, not a receipt, current access,
+    // or a complete generated individual. Visibility never proves receipt.
+    s.partial = true;
+    Ok(s)
 }
 impl AcquisitionIndex {
     pub fn build(rom: &Rom) -> Result<Self> {
@@ -265,6 +341,37 @@ impl AcquisitionIndex {
                         sources.push(s);
                     }
                 }
+                for report in &self.world.map_events {
+                    let map = self
+                        .world
+                        .maps
+                        .iter()
+                        .find(|m| m.id == report.map_id)
+                        .ok_or_else(|| err("map_id", &report.map_id))?;
+                    for (marker, mon) in report
+                        .markers
+                        .iter()
+                        .flat_map(|m| m.pokemon.iter().map(move |p| (Some(m), p)))
+                        .chain(report.unplaced_pokemon.iter().map(|p| (None, p)))
+                        .filter(|(_, p)| {
+                            p.trade.is_some() && p.held_item == Some(target.id) && target.id != 0
+                        })
+                    {
+                        let mut s = scripted_source(rom, save, state.as_ref(), map, marker, mon)?;
+                        s.kind = "npc_trade_item".into();
+                        s.quantity = Some(1);
+                        s.related
+                            .retain(|t| !(t.kind == TargetKind::Item && t.id == target.id));
+                        s.related.insert(
+                            0,
+                            Target {
+                                kind: TargetKind::Species,
+                                id: mon.species,
+                            },
+                        );
+                        sources.push(s);
+                    }
+                }
                 for species in self.species.iter().filter(|s| s.items.contains(&target.id)) {
                     let mut s = source("wild_held", species.offset);
                     s.related.push(Target {
@@ -331,23 +438,14 @@ impl AcquisitionIndex {
                         .chain(report.unplaced_pokemon.iter().map(|p| (None, p)))
                         .filter(|(_, p)| p.species == target.id)
                     {
-                        let mut s = source(mon.method, mon.offset);
-                        s.map_id = Some(map.id.clone());
-                        s.region = Some(map.region);
-                        s.x = marker.map(|m| m.x);
-                        s.y = marker.map(|m| m.y);
-                        s.min_level = mon.level;
-                        s.max_level = mon.level;
-                        s.conditions = mon
-                            .conditions
-                            .iter()
-                            .map(|c| check(state.as_ref(), c))
-                            .collect();
-                        s.script_source = Some(mon.clone());
-                        // These are native command inputs, not a receipt, current access,
-                        // or a complete generated individual. Visibility never proves receipt.
-                        s.partial = true;
-                        sources.push(s);
+                        sources.push(scripted_source(
+                            rom,
+                            save,
+                            state.as_ref(),
+                            map,
+                            marker,
+                            mon,
+                        )?);
                     }
                 }
                 for (parent, evos) in &self.evolutions {

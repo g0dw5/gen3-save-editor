@@ -1972,6 +1972,355 @@ fn scripted_pokemon_keep_npc_tile_and_unplaced_sources_separate() {
     assert_eq!(report.unplaced_pokemon[0].method, "egg");
 }
 
+fn npc_trade_fixture(p: profile::Profile) -> (Rom, crate::world::Map) {
+    let mut r = adapter_rom(p);
+    let rule = r.profile.script_pokemon.trade.unwrap();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    put32(
+        b,
+        rule.specials + rule.information_special as usize * 4,
+        0x08000001 + rule.information_code as u32,
+    );
+    put32(b, rule.table_pointer, 0x08027000);
+    put16(b, 0x27000 + 12, 2);
+    put16(b, 0x27000 + 40, 1);
+    put16(b, 0x27000 + 56, 1);
+    b[0x26000..0x2600b].copy_from_slice(&[
+        0x16,
+        4,
+        0x80,
+        0,
+        0,
+        0x26,
+        0x0d,
+        0x80,
+        rule.information_special as u8,
+        (rule.information_special >> 8) as u8,
+        2,
+    ]);
+    b[0x25000] = 1;
+    put32(b, 0x25004, 0x08025100);
+    b[0x25100] = 1;
+    put16(b, 0x25104, 3);
+    put16(b, 0x25106, 2);
+    put32(b, 0x25110, 0x08026000);
+    let map = crate::world::Map {
+        id: "0-0".into(),
+        group: 0,
+        number: 0,
+        name: "Synthetic trade room".into(),
+        region: 1,
+        width: 4,
+        height: 4,
+        map_type: 1,
+        header: 0,
+        layout: 0,
+        invalid_events: false,
+        events: Some(0x25000),
+        scripts: vec![0x26000],
+        objects: vec![],
+    };
+    (r, map)
+}
+
+#[test]
+fn npc_trade_sources_use_native_dispatch_runtime_records_and_mode_guards() {
+    for p in profile::PROFILES {
+        let (mut r, map) = npc_trade_fixture(p);
+        let rule = p.script_pokemon.trade.unwrap();
+        let report = r.map_events(&map).unwrap();
+        assert_eq!(report.markers.len(), 1, "{}", p.id);
+        assert!(report.unplaced_pokemon.is_empty());
+        let marker = &report.markers[0];
+        assert_eq!((marker.x, marker.y), (3, 2));
+        let source = &marker.pokemon[0];
+        assert_eq!(
+            (
+                source.species,
+                source.method,
+                source.level,
+                source.held_item
+            ),
+            (2, "npc_trade", None, Some(1))
+        );
+        assert_eq!(source.trade.as_ref().unwrap().requested_species, 1);
+        assert!(r.trade_offer(rule.count).is_err());
+        if let Some(flag) = rule.alternate_flag {
+            assert!(source.conditions.iter().any(|c| c.id == flag && !c.taken));
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            b[0x25ffd] = 0x29;
+            put16(b, 0x25ffe, flag);
+            put32(b, 0x25110, 0x08025ffd);
+            assert!(r.map_events(&map).unwrap().markers[0].pokemon.is_empty());
+            std::sync::Arc::make_mut(&mut r.data)[0x25ffd] = 0x2a;
+            assert!(r.map_events(&map).unwrap().markers[0].pokemon[0]
+                .conditions
+                .is_empty());
+        }
+        put16(
+            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+            0x27000 + 12,
+            3,
+        );
+        assert_eq!(r.trade_offer(0).unwrap().0, 3);
+        put32(
+            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+            rule.specials + rule.information_special as usize * 4,
+            0x08000001,
+        );
+        assert_eq!(r.trade_offer(0).unwrap_err().code, "trade_dispatch");
+    }
+}
+
+#[test]
+fn npc_trade_queries_and_plans_keep_donor_requirements_and_save_read_only() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        collection::{CollectionBasis, CollectionRequest},
+    };
+    for p in profile::PROFILES {
+        let (r, map) = npc_trade_fixture(p);
+        let report = r.map_events(&map).unwrap();
+        let index = AcquisitionIndex {
+            world: crate::world::World {
+                maps: vec![map],
+                map_events: vec![report],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: crate::world::TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: (1..=3).map(|id| r.valid_species(id).unwrap()).collect(),
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        let target = Target {
+            kind: TargetKind::Species,
+            id: 2,
+        };
+        let rom_only = index.query(&r, None, target.clone()).unwrap();
+        assert_eq!(rom_only.sources[0].status, "unknown");
+        assert!(rom_only.sources[0].trade_context.is_none());
+        let mut save = Save::open(save_bytes(&r), p.save).unwrap();
+        let before = save.data.clone();
+        let report = index.query(&r, Some(&save), target.clone()).unwrap();
+        assert_eq!(report.sources[0].status, "unknown");
+        assert_eq!(
+            report.sources[0]
+                .trade_context
+                .as_ref()
+                .unwrap()
+                .party_levels,
+            [50]
+        );
+        assert_eq!(report.sources[0].receipt_flag, None);
+        let items = index
+            .query(
+                &r,
+                Some(&save),
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        assert!(items.sources.iter().any(|s| s.kind == "npc_trade_item"
+            && s.quantity == Some(1)
+            && s.related
+                .iter()
+                .any(|t| t.kind == TargetKind::Species && t.id == 2)));
+        let plan = index
+            .collection(
+                &r,
+                &save,
+                CollectionRequest {
+                    basis: CollectionBasis::Individuals,
+                    families: true,
+                    include_unknown_rewards: true,
+                },
+            )
+            .unwrap();
+        assert!(plan
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .any(|t| t.target.id == 2
+                && t.source
+                    .as_ref()
+                    .unwrap()
+                    .script_source
+                    .as_ref()
+                    .unwrap()
+                    .trade
+                    .is_some()));
+        assert!(plan
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .any(|t| t.target.kind == TargetKind::Item
+                && t.target.id == 1
+                && t.source.as_ref().unwrap().kind == "npc_trade_item"));
+        assert_eq!(save.data, before);
+        save.transfer(party(), loc(5), true, &r).unwrap();
+        save.edit(
+            party(),
+            &PokemonPatch {
+                species: Some(3),
+                ..Default::default()
+            },
+            &r,
+            Policy::Free,
+        )
+        .unwrap();
+        let report = index.query(&r, Some(&save), target.clone()).unwrap();
+        let c = report.sources[0].trade_context.as_ref().unwrap();
+        assert!(c.party_levels.is_empty());
+        assert!(!c.box_levels.is_empty());
+        assert_eq!(report.sources[0].status, "blocked");
+        let known_only = index
+            .collection(
+                &r,
+                &save,
+                CollectionRequest {
+                    basis: CollectionBasis::Individuals,
+                    families: true,
+                    include_unknown_rewards: false,
+                },
+            )
+            .unwrap();
+        assert!(known_only
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .all(|t| t.target.kind != TargetKind::Item));
+        // Eggs are not eligible donors; the query must use the exact requested species.
+        for stored in save
+            .all(&r)
+            .unwrap()
+            .into_iter()
+            .filter(|s| s.pokemon.species == 1)
+        {
+            save.edit(
+                stored.location,
+                &PokemonPatch {
+                    egg: Some(true),
+                    ..Default::default()
+                },
+                &r,
+                Policy::Free,
+            )
+            .unwrap();
+        }
+        let before = save.data.clone();
+        let report = index.query(&r, Some(&save), target).unwrap();
+        let c = report.sources[0].trade_context.as_ref().unwrap();
+        assert!(c.party_levels.is_empty() && c.box_levels.is_empty());
+        assert_eq!(save.data, before);
+    }
+}
+
+#[test]
+#[ignore = "requires five exact private ROMs and GEN3_TRADE_PROBES native vectors"]
+fn local_npc_trades_match_native_quote_and_generation() {
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_TRADE_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        assert_eq!(probes[key]["md5"], r.profile.md5);
+        let rows = probes[key]["rows"].as_array().unwrap();
+        assert_eq!(
+            rows.len(),
+            r.profile.script_pokemon.trade.unwrap().count as usize
+        );
+        for row in rows {
+            let (received, held, trade) = r
+                .trade_offer(row["index"].as_u64().unwrap() as u16)
+                .unwrap();
+            assert_eq!(
+                trade.requested_species as u64,
+                row["requested_species"].as_u64().unwrap()
+            );
+            for case in row["cases"].as_array().unwrap() {
+                assert_eq!(received as u64, case["species"].as_u64().unwrap());
+                assert_eq!(held as u64, case["held_item"].as_u64().unwrap());
+                assert_eq!(case["level"], case["offered_level"]);
+            }
+        }
+        let index = crate::acquisition::AcquisitionIndex::build(&r).unwrap();
+        let sources: Vec<_> = index
+            .world
+            .map_events
+            .iter()
+            .flat_map(|m| {
+                m.markers
+                    .iter()
+                    .flat_map(|m| &m.pokemon)
+                    .chain(&m.unplaced_pokemon)
+            })
+            .filter(|m| m.trade.is_some())
+            .collect();
+        assert!(
+            !sources.is_empty(),
+            "{key}: referenced offers must be indexed"
+        );
+        assert!(sources
+            .iter()
+            .all(|m| m.level.is_none() && m.method == "npc_trade"));
+        for mon in &sources {
+            let query = index
+                .query(
+                    &r,
+                    None,
+                    crate::acquisition::Target {
+                        kind: crate::acquisition::TargetKind::Species,
+                        id: mon.species,
+                    },
+                )
+                .unwrap();
+            assert!(query.sources.iter().any(|s| s.kind == "npc_trade"
+                && s.offset == mon.offset
+                && s.script_source.as_ref().unwrap().trade == mon.trade));
+            if let Some(item) = mon.held_item.filter(|id| *id != 0) {
+                let query = index
+                    .query(
+                        &r,
+                        None,
+                        crate::acquisition::Target {
+                            kind: crate::acquisition::TargetKind::Item,
+                            id: item,
+                        },
+                    )
+                    .unwrap();
+                assert!(query.sources.iter().any(|s| s.kind == "npc_trade_item"
+                    && s.offset == mon.offset
+                    && s.related
+                        .iter()
+                        .any(|t| t.kind == crate::acquisition::TargetKind::Species
+                            && t.id == mon.species)));
+            }
+        }
+        if let Some(flag) = r.profile.script_pokemon.trade.unwrap().alternate_flag {
+            assert_eq!(
+                probes[key]["alternate"]["flag"].as_u64().unwrap(),
+                flag as u64
+            );
+            assert_eq!(probes[key]["alternate"]["different_constructor"], true);
+        }
+        eprintln!(
+            "{key}: {} table rows match native generation; {} parsed map offer references",
+            rows.len(),
+            sources.len()
+        );
+    }
+}
+
 #[test]
 fn reward_scripts_follow_calls_and_preserve_branch_evidence() {
     let mut r = rom();

@@ -300,6 +300,12 @@ export interface PokemonSource {
   offset: number;
   member: number;
   conditions: ItemReward["conditions"];
+  trade: {
+    index: number;
+    record_offset: number;
+    requested_species: number;
+    level_rule: "offered_pokemon";
+  } | null;
 }
 export interface MapMarker {
   id: string;
@@ -516,6 +522,7 @@ export interface AcquisitionSource {
   receipt_flag: number | null;
   receipt: ReceiptEvidence | null;
   script_source: PokemonSource | null;
+  trade_context: { party_levels: number[]; box_levels: number[] } | null;
   repeatable: boolean | null;
   offset: number;
   partial: boolean;

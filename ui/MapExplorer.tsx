@@ -10,6 +10,7 @@ import {
   DoorOpen,
 } from "lucide-react";
 import { useI18n } from "./i18n";
+import { TradeDetails } from "./TradeDetails";
 import { useRomCharacterImage } from "./romCharacterImage";
 import type {
   MapFocus,
@@ -412,7 +413,7 @@ export function MapExplorer({
                 <p className="small muted">{t("mapHiddenUnderfoot")}</p>
               )}
               {(marker.pokemon ?? []).map((mon, i) => (
-                <p key={`pokemon-${mon.offset}-${i}`}>
+                <div key={`pokemon-${mon.offset}-${i}`}>
                   <button
                     className="link-button"
                     onClick={() => onSpecies?.(mon.species)}
@@ -424,8 +425,16 @@ export function MapExplorer({
                   · {t(mon.method)}
                   {mon.level !== null
                     ? ` · Lv. ${mon.level}`
-                    : ` · ${t("unresolved")}`}
-                </p>
+                    : mon.trade
+                      ? ""
+                      : ` · ${t("unresolved")}`}
+                  <TradeDetails
+                    mon={mon}
+                    catalog={catalog}
+                    onSpecies={onSpecies}
+                    onItem={onItem}
+                  />
+                </div>
               ))}
               {!!marker.pokemon?.length && (
                 <p className="small muted">{t("acqScriptSourceHelp")}</p>
@@ -521,7 +530,7 @@ export function MapExplorer({
           <summary>{t("mapUnplacedPokemon")}</summary>
           <p className="small muted">{t("mapUnplacedHelp")}</p>
           {report.unplaced_pokemon.map((mon, i) => (
-            <p key={i}>
+            <div key={i}>
               <button
                 className="link-button"
                 onClick={() => onSpecies?.(mon.species)}
@@ -531,7 +540,13 @@ export function MapExplorer({
                 ↗
               </button>{" "}
               · {t(mon.method)}
-            </p>
+              <TradeDetails
+                mon={mon}
+                catalog={catalog}
+                onSpecies={onSpecies}
+                onItem={onItem}
+              />
+            </div>
           ))}
         </details>
       )}

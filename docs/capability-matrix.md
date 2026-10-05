@@ -34,7 +34,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Entrances, connections, current reachability / 入口与可达性 | P | P | P | P | P | `navigation.rs`, shared map UI and five exact-ROM tests. Static entrance alternatives, focus and return work; current access and dynamic destinations remain unresolved. |
 | Pickup, hidden items, dialogue rewards / 拾取与奖励 | P | P | P | P | P | [map events](research/map-events.md): BW/DP 707 maps, 122 balls, 112 hidden items. Bounded scripts report stop offsets; FireRed command semantics and reward guards need further validation. |
 | Random encounters, probability, time tables / 随机相遇 | P | P | P | P | P | `world.rs`; [time selection](research/encounter-time-selection.md), Mercury native selector. Slot weights are separate from encounter frequency; no full weekday/clock-state validation. |
-| Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Bounded `script_report`; [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers and custom exchanges are not comprehensively indexed. |
+| Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | Shared typed map-script sources and [bounded NPC trade quotes](verification/npc-trades-20261006.md); [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers, actual delivery and custom exchanges are not comprehensively indexed. |
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. No verified probability under all ability modifiers. |
 | SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. [Bounded NPC success/receipt protocols](verification/npc-receipts-20261006.md) cover 80 reward rows. Compound/custom pickups, unqualified NPC protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
@@ -226,3 +226,18 @@ receipt state and full access prerequisites remain unresolved. See
 
 五份指纹的脚本宝可梦获取仍为部分解析；来源和格位关联不代表当前可领取。
 交换、自定义原生来源、完整生成／发放结果、领取状态和剧情可达性仍有缺口。
+
+## NPC trade increment / NPC 交换增量
+
+All five source rows remain **P**. Native ordinary generation matches 29 offer
+records / 174 synthetic cases. Parsed map references: BW 4, DP 4, Rocket 4,
+Ultimate 8, Mercury 14. These are quote references, not a count of reachable NPCs.
+Required Pokémon and held items share source/map/back links; current SAV donors
+are checked by exact species, excluding eggs, with party/box context. Completion,
+receipt/reset rules, trade animation/evolution and special branches stay unknown.
+Mercury's alternate flag selects a different constructor; ordinary rules do not
+apply to it. See [evidence and workflow](verification/npc-trades-20261006.md).
+
+交换查询读取当前 ROM 的报价，不打包名称或目录。等级按交出个体变化，并非固定
+等级；有候选也不意味着剧情和地图可达性已满足。原生对照不包括实际交换动画、
+交换后进化或特殊生成；这些边界继续保留。

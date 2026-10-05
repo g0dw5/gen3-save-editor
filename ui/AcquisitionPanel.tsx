@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 import { ClockDetails } from "./ClockDetails";
+import { TradeDetails } from "./TradeDetails";
 import { useI18n } from "./i18n";
 import { evolutionLabel } from "./referenceLabels";
 import type {
@@ -192,6 +193,13 @@ export function AcquisitionPanel({
               {s.script_source && (
                 <p className="small muted">{t("acqScriptSourceHelp")}</p>
               )}
+              <TradeDetails
+                mon={s.script_source}
+                context={s.trade_context}
+                catalog={catalog}
+                onSpecies={(id) => onTarget({ kind: "species", id })}
+                onItem={(id) => onTarget({ kind: "item", id })}
+              />
               {s.receipt && (
                 <p className="small muted">{t("acqGiftReceiptHelp")}</p>
               )}

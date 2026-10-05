@@ -92,6 +92,21 @@ export const en = {
     "The receipt protocol is not verified for this event. A visibility flag does not prove that you collected its reward.",
   acqGiftReceiptHelp:
     "Receipt follows a successful award in this script, independent of bag contents. Resets by other scripts remain unverified.",
+  npc_trade: "NPC Pokémon trade",
+  npc_trade_item: "Held item from an NPC trade",
+  tradeGive: "Give the NPC",
+  tradeGiveSummary:
+    "Give the NPC {species}; this individual leaves your collection.",
+  tradeLevelRule:
+    "Ordinary generation: received level equals the offered Pokémon’s level.",
+  tradeOfferHelp:
+    "Scripted offer and ordinary generation rule. Receipt, access, special branches and evolution after the trade remain unverified.",
+  tradePartyReady:
+    "Matching non-egg Pokémon in your party: {levels}. Other exchange conditions still apply.",
+  tradeBoxReady:
+    "Matching non-egg Pokémon in your boxes: {levels}. Bring one into your party first.",
+  tradeDonorMissing:
+    "No matching non-egg individual in this save. Obtain the exact requested Pokémon first.",
   acqScriptSourceHelp:
     "Map-script source and parsed command inputs. Delivery outcome, complete generation rules and current access remain unverified.",
   mapUnplacedPokemon: "Pokémon events without a verified tile",
@@ -937,6 +952,17 @@ export const zh: Record<Key, string> = {
     "尚未确认此事件的领取规则，不能仅凭对象的消失标记判断已经领奖。",
   acqGiftReceiptHelp:
     "按成功领奖后写入的存档标记判断，不根据背包是否持有；其他脚本的重置规则仍待验证。",
+  npc_trade: "NPC 宝可梦交换",
+  npc_trade_item: "NPC 交换宝可梦携带的道具",
+  tradeGive: "交给 NPC",
+  tradeGiveSummary: "交给 NPC「{species}」；这一只个体会离开你的收集。",
+  tradeLevelRule: "普通生成规则：获得的宝可梦等级与交出的宝可梦相同。",
+  tradeOfferHelp:
+    "脚本报价及普通生成规则；领取状态、当前可达性、特殊分支与交换后进化仍待核实。",
+  tradePartyReady: "同行有对应的非蛋个体：{levels}；其他交换条件仍需满足。",
+  tradeBoxReady: "盒子有对应的非蛋个体：{levels}；需先带入同行。",
+  tradeDonorMissing:
+    "此存档没有对应的非蛋个体；需先获取 NPC 要求的确切宝可梦。",
   acqScriptSourceHelp:
     "地图脚本来源及已解析的指令输入；发放结果、完整生成规则和当前可达性仍待核实。",
   mapUnplacedPokemon: "格位待确定的宝可梦事件",

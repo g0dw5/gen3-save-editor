@@ -227,6 +227,14 @@ impl AcquisitionIndex {
             })
             .filter(|r| r.via != "shop")
             .map(|r| r.item)
+            .chain(self.world.map_events.iter().flat_map(|r| {
+                r.markers
+                    .iter()
+                    .flat_map(|m| &m.pokemon)
+                    .chain(&r.unplaced_pokemon)
+                    .filter(|p| p.trade.is_some())
+                    .filter_map(|p| p.held_item.filter(|id| *id != 0))
+            }))
             .collect();
         for id in item_ids {
             let mut seen = BTreeSet::new();
@@ -257,6 +265,7 @@ impl AcquisitionIndex {
                     || s.kind == "shop"
                     || s.status == "completed"
                     || s.status == "unknown" && !request.include_unknown_rewards
+                    || s.kind == "npc_trade_item" && !request.include_unknown_rewards
                 {
                     continue;
                 }
