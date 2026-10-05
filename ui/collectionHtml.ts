@@ -5,6 +5,7 @@ import { tradeSummary } from "./TradeDetails";
 import { clockSummary } from "./ClockDetails";
 import { evolutionLabel } from "./referenceLabels";
 import { preparationSummary } from "./CollectionPreparation";
+import { breedingCoverageSummary } from "./CollectionBreeding";
 
 /** Standalone, escaped, non-executable report; never embeds ROM artwork or save bytes. */
 export function collectionHtml(
@@ -31,7 +32,12 @@ export function collectionHtml(
     )?.name ?? `#${v.id}`;
   const mapName = (id: string) => maps.find((m) => m.id === id)?.name ?? id;
   const title = t("collection");
-  return `<!doctype html><html lang="${document.documentElement.lang || "zh"}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; form-action 'none'"><title>${esc(title)}</title><style>body{font:16px/1.7 system-ui,sans-serif;background:#f4f7fa;color:#182532;max-width:980px;margin:auto;padding:22px}section{background:white;padding:20px;margin:18px 0;border-radius:12px}table{border-collapse:collapse;width:100%;font-size:14px}td,th{text-align:left;border-bottom:1px solid #dce3e9;padding:10px;vertical-align:top}small{color:#576775}details{margin-top:8px}pre{white-space:pre-wrap;overflow-wrap:anywhere}.task{margin-bottom:16px}h1{font-size:27px}h2{font-size:21px}input{width:20px;height:20px;vertical-align:middle}@media(max-width:600px){body{padding:12px}section{padding:12px}td,th{padding:5px;font-size:12px}}</style><h1>${esc(title)}</h1><p>${esc(catalog.profile.label)} · ${esc(t("planGeneratedAt"))}: ${esc(new Date().toLocaleString())}</p><p>${esc(t("planHelp"))}</p><p>${esc(t("planFamilyHelp"))}</p><p>${esc(t("acqSaveOverlay"))}</p><p>${esc(t("planBasis"))}: ${esc(t(plan.basis === "dex" ? "planDex" : "planIndividuals"))} · ${esc(t("planMissing"))}: ${plan.missing_count}</p>${plan.clock ? `<p>${esc(clockSummary(plan.clock, t))}</p>${plan.clock.saved ? `<p><small>${esc(t("clockSnapshotHelp"))}</small></p>` : ""}${plan.clock.forced_night ? `<p>${esc(t("clockForcedNight"))}</p>` : ""}` : ""}<small>MD5 ${esc(plan.rom_md5)}</small>${plan.regions
+  return `<!doctype html><html lang="${document.documentElement.lang || "zh"}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; form-action 'none'"><title>${esc(title)}</title><style>body{font:16px/1.7 system-ui,sans-serif;background:#f4f7fa;color:#182532;max-width:980px;margin:auto;padding:22px}section{background:white;padding:20px;margin:18px 0;border-radius:12px}table{border-collapse:collapse;width:100%;font-size:14px}td,th{text-align:left;border-bottom:1px solid #dce3e9;padding:10px;vertical-align:top}small{color:#576775}details{margin-top:8px}pre{white-space:pre-wrap;overflow-wrap:anywhere}.task{margin-bottom:16px}h1{font-size:27px}h2{font-size:21px}input{width:20px;height:20px;vertical-align:middle}@media(max-width:600px){body{padding:12px}section{padding:12px}td,th{padding:5px;font-size:12px}}</style><h1>${esc(title)}</h1><p>${esc(catalog.profile.label)} · ${esc(t("planGeneratedAt"))}: ${esc(new Date().toLocaleString())}</p><p>${esc(t("planHelp"))}</p><p>${esc(t("planFamilyHelp"))}</p><p>${esc(t("acqSaveOverlay"))}</p><p>${esc(t("planBasis"))}: ${esc(t(plan.basis === "dex" ? "planDex" : "planIndividuals"))} · ${esc(t("planMissing"))}: ${plan.missing_count}</p>${plan.clock ? `<p>${esc(clockSummary(plan.clock, t))}</p>${plan.clock.saved ? `<p><small>${esc(t("clockSnapshotHelp"))}</small></p>` : ""}${plan.clock.forced_night ? `<p>${esc(t("clockForcedNight"))}</p>` : ""}` : ""}<small>MD5 ${esc(plan.rom_md5)}</small>${breedingCoverageSummary(
+    plan.breeding_coverage,
+    t,
+  )
+    .map((line) => `<p>${esc(line)}</p>`)
+    .join("")}${plan.regions
     .map(
       (region) =>
         `<section><h2>${esc(region.region === null ? t("planNoRegion") : (catalog.met_locations.find((r) => r.id === region.region)?.name ?? `#${region.region}`))}</h2>${region.tasks

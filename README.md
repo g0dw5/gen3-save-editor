@@ -248,3 +248,11 @@ production check. Deposited parents can be used directly in a read-only scenario
 their original records are preserved. This is a saved snapshot, not live emulator
 state or a forecast of the next egg. Mercury's additional custom service record
 remains unresolved. See [saved-state evidence](docs/verification/daycare-state-20261006.md).
+
+Collection preparation also samples the current ROM's ordinary offspring selection
+using exact existing party/box parents and their held items. A suggestion can lead
+through receiving-service references, hatching and directed evolution; its pairing
+can be checked with the full native receipt preview. Standalone HTML includes parent
+locations and the same limitations. Sampling is bounded, is not a complete offspring
+catalog and does not include already deposited daycare parents. Missing suggestions
+do not prove breeding impossible. See [planning evidence](docs/verification/breeding-planning-20261006.md).

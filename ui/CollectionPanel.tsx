@@ -1,5 +1,6 @@
 import { WildHeldDetails } from "./WildHeldDetails";
 import { CollectionPreparation } from "./CollectionPreparation";
+import { breedingCoverageSummary } from "./CollectionBreeding";
 import { evolutionLabel } from "./referenceLabels";
 import { ConditionDetails } from "./ConditionDetails";
 import { useEffect, useState } from "react";
@@ -111,6 +112,19 @@ export function CollectionPanel({
           ) : (
             <>
               {plan.clock && <ClockDetails report={plan.clock} />}
+              {plan.breeding_coverage && (
+                <div className="small muted">
+                  {breedingCoverageSummary(plan.breeding_coverage, t).map(
+                    (line, i) => (
+                      <p key={i}>{line}</p>
+                    ),
+                  )}
+                  <details>
+                    <summary>{t("evidence")}</summary>
+                    <pre>{JSON.stringify(plan.breeding_coverage, null, 2)}</pre>
+                  </details>
+                </div>
+              )}
               <p>
                 {t("planOwned")} {plan.owned_count} · {t("planMissing")}{" "}
                 {plan.missing_count}
@@ -224,6 +238,7 @@ export function CollectionPanel({
                             entrances={plan.entrances}
                             onTarget={onTarget}
                             onMap={onMap}
+                            onError={onError}
                           />
                           <TradeDetails
                             mon={s?.script_source}

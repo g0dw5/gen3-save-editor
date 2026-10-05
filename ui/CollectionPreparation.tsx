@@ -1,4 +1,5 @@
 import { acquisitionKindName } from "./acquisitionLabels";
+import { CollectionBreeding, breedingRouteSummary } from "./CollectionBreeding";
 import { ConditionDetails, conditionLabel } from "./ConditionDetails";
 import { TradeDetails, tradeSummary } from "./TradeDetails";
 import { evolutionLabel } from "./referenceLabels";
@@ -22,7 +23,7 @@ export function preparationSummary(
     catalog.species.find((s) => s.id === id)?.name ?? `#${id}`;
   const mapName = (id: string) => maps.find((m) => m.id === id)?.name ?? id;
   const lines = [
-    t("planPreparation"),
+    t(p.breeding ? "planBreedPreparation" : "planPreparation"),
     p.current_count > 0
       ? t("planPreparationOwned")
           .replace("{species}", name(p.origin))
@@ -30,6 +31,7 @@ export function preparationSummary(
       : t("planPreparationAcquire").replace("{species}", name(p.origin)),
   ];
   const s = p.source;
+  if (p.breeding) lines.push(...breedingRouteSummary(p.breeding, catalog, t));
   if (s) {
     lines.push(
       `${acquisitionKindName(s.kind, catalog, t)}${s.encounter_method ? ` / ${acquisitionKindName(s.encounter_method, catalog, t)}` : ""} · ${t(`acqStatus_${s.status}`)}`,
@@ -74,6 +76,7 @@ export function CollectionPreparation({
   entrances,
   onTarget,
   onMap,
+  onError,
 }: {
   preparation?: Preparation | null;
   catalog: Catalog;
@@ -81,6 +84,7 @@ export function CollectionPreparation({
   entrances: CollectionPlan["entrances"];
   onTarget: (t: QueryTarget) => void;
   onMap: (id: string, focus?: MapFocus) => void;
+  onError: (error: unknown) => void;
 }) {
   const { t } = useI18n();
   if (!p) return null;
@@ -101,7 +105,9 @@ export function CollectionPreparation({
   const entrance = entrances.find((e) => e.map_id === s?.map_id);
   return (
     <section className="collection-preparation small">
-      <strong>{t("planPreparation")}</strong>
+      <strong>
+        {t(p.breeding ? "planBreedPreparation" : "planPreparation")}
+      </strong>
       <p>
         {t(
           p.current_count > 0
@@ -111,6 +117,15 @@ export function CollectionPreparation({
         : {link({ kind: "species", id: p.origin })}
         {p.current_count > 0 ? ` × ${p.current_count}` : ""}
       </p>
+      {p.breeding && (
+        <CollectionBreeding
+          route={p.breeding}
+          origin={p.origin}
+          catalog={catalog}
+          onTarget={onTarget}
+          onError={onError}
+        />
+      )}
       {s && (
         <>
           <p>

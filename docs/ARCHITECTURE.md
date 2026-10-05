@@ -95,6 +95,17 @@ share `WildHeldDetails.tsx`; queries never modify a ROM or SAV.
 
 ## Native daycare scenarios
 
+`breeding_collection.rs` observes native ordinary constructors before creation,
+where the verified checkpoint exposes the selected offspring species. It uses
+exact non-egg party/box records, bounded pairs and explicit seed/personality
+scenarios; no parent is synthesized and no evolution edge is reversed. Collection
+preparation can start from a sampled child, then follow directed evolution.
+Runtime results are cached only with the current ROM Arc and full SAV hash.
+The shared UI can rerun the complete receipt for the suggested locations and
+exports human-readable parent/item/service/hatching dependencies to HTML. Missing
+or truncated outcomes do not prove absence, and live RNG/access/full inheritance
+remain separate. Saved daycare parents are not included in this automatic search.
+
 `daycare_state.rs` copies logical SAV blocks into disposable RAM and executes the
 current ROM's configured presence, availability and service-status getters. It
 checks that copied blocks remain unchanged. Structurally invalid parents remain

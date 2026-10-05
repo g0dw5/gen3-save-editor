@@ -28,6 +28,7 @@ pub struct BreedingRules {
     pub receive_code: usize,
     pub production: Option<crate::breeding_production::Rules>,
     pub saved: Option<crate::daycare_state::Rules>,
+    pub selection: Option<crate::breeding_collection::Rules>,
 }
 pub const EMERALD: BreedingRules = BreedingRules {
     compatibility: 0x08070d4c,
@@ -45,6 +46,7 @@ pub const EMERALD: BreedingRules = BreedingRules {
     receive_code: 0x70aa8,
     production: Some(crate::breeding_production::EMERALD),
     saved: Some(crate::daycare_state::EMERALD),
+    selection: Some(crate::breeding_collection::EMERALD),
 };
 pub const ROCKET: BreedingRules = BreedingRules {
     compatibility: 0x0809ed3c,
@@ -62,6 +64,7 @@ pub const ROCKET: BreedingRules = BreedingRules {
     receive_code: 0x9ea90,
     production: Some(crate::breeding_production::ROCKET),
     saved: Some(crate::daycare_state::ROCKET),
+    selection: Some(crate::breeding_collection::ROCKET),
 };
 pub const MERCURY: BreedingRules = BreedingRules {
     compatibility: 0x0804654c,
@@ -79,6 +82,7 @@ pub const MERCURY: BreedingRules = BreedingRules {
     receive_code: 0x462ac,
     production: Some(crate::breeding_production::MERCURY),
     saved: Some(crate::daycare_state::MERCURY),
+    selection: Some(crate::breeding_collection::MERCURY),
 };
 pub const ULTIMATE: BreedingRules = BreedingRules {
     production: Some(crate::breeding_production::ULTIMATE),

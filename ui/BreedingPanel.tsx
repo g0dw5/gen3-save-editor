@@ -17,7 +17,7 @@ import type {
 
 type Gender = "male" | "female" | "genderless";
 type Choice = { source: string; species: number; gender: Gender; item: number };
-interface Preview {
+export interface Preview {
   rom_md5: string;
   parents: Pokemon[];
   compatibility: number;

@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Connect collection preparation to sampled native ordinary breeding outcomes
+  from exact existing party/box parents, with held-item links, receiving-service
+  references, hatching and directed evolution steps. Add a one-click full native
+  receipt preview and the same explanation to standalone HTML. Cache by current
+  ROM and complete SAV hash; show sampling bounds and unresolved scenarios.
+- 收集准备链加入现有同行／盒子亲本的原生普通孵蛋抽样结果，关联携带道具、已定位
+  领蛋服务、孵化及后续进化；可一键用完整领蛋例程复核，独立 HTML 同步说明。
+  缓存绑定当前 ROM 与完整 SAV 哈希，展示搜索边界及未确定情景，不生成个体。
+
 - Read ordinary daycare snapshots from SAV using each current ROM's native
   getters: deposited individuals, saved egg availability and the next ordinary
   production-check phase. Use exact deposited records in read-only scenarios.

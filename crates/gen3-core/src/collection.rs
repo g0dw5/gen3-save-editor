@@ -47,6 +47,7 @@ pub struct CollectionPreparation {
     pub source: Option<AcquisitionSource>,
     /// Directed permanent evolution edges, ordered from origin to goal.
     pub steps: Vec<EvolutionStep>,
+    pub breeding: Option<crate::breeding_collection::Route>,
     pub needs_hatching: bool,
     pub truncated: bool,
     pub partial: bool,
@@ -72,6 +73,7 @@ pub struct CollectionPlan {
     pub missing_count: usize,
     pub regions: Vec<CollectionRegion>,
     pub entrances: Vec<EntranceSuggestion>,
+    pub breeding_coverage: Option<crate::breeding_collection::Coverage>,
     pub partial: bool,
 }
 fn root(parents: &BTreeMap<u16, u16>, mut id: u16) -> u16 {
@@ -80,16 +82,26 @@ fn root(parents: &BTreeMap<u16, u16>, mut id: u16) -> u16 {
     }
     id
 }
+struct PreparationContext<'a> {
+    current: &'a BTreeMap<u16, usize>,
+    period: Option<&'a str>,
+    cache: &'a mut BTreeMap<u16, Vec<AcquisitionSource>>,
+    breeding: Option<&'a crate::breeding_collection::Suggestions>,
+    daycare: Option<&'a AcquisitionSource>,
+}
 impl AcquisitionIndex {
     fn preparation(
         &self,
         rom: &Rom,
         save: &Save,
         goal: u16,
-        current: &BTreeMap<u16, usize>,
-        period: Option<&str>,
-        cache: &mut BTreeMap<u16, Vec<AcquisitionSource>>,
+        context: &mut PreparationContext,
     ) -> Result<Option<CollectionPreparation>> {
+        let current = context.current;
+        let period = context.period;
+        let cache = &mut *context.cache;
+        let breeding = context.breeding;
+        let daycare = context.daycare;
         // Bounded backwards traversal is only a preparation suggestion. Neither
         // possession nor a directed ROM edge proves that evolution can run now.
         let mut pending = VecDeque::from([(goal, Vec::<EvolutionStep>::new())]);
@@ -102,6 +114,18 @@ impl AcquisitionIndex {
                 truncated = true;
                 break;
             }
+            if let Some(route) = breeding.and_then(|b| b.children.get(&id)) {
+                candidates.push(CollectionPreparation {
+                    origin: id,
+                    current_count: 0,
+                    source: daycare.cloned(),
+                    steps: steps.clone(),
+                    breeding: Some(route.clone()),
+                    needs_hatching: true,
+                    truncated: false,
+                    partial: true,
+                });
+            }
             if !steps.is_empty() {
                 let count = current.get(&id).copied().unwrap_or(0);
                 if count != 0 {
@@ -110,6 +134,7 @@ impl AcquisitionIndex {
                         current_count: count,
                         source: None,
                         steps: steps.clone(),
+                        breeding: None,
                         needs_hatching: false,
                         truncated: false,
                         partial: true,
@@ -142,6 +167,7 @@ impl AcquisitionIndex {
                             needs_hatching: source.kind == "egg",
                             source: Some(source.clone()),
                             steps: steps.clone(),
+                            breeding: None,
                             truncated: false,
                             partial: true,
                         });
@@ -170,6 +196,7 @@ impl AcquisitionIndex {
         candidates.sort_by_key(|p| {
             (
                 p.current_count == 0,
+                p.breeding.is_none() && p.source.is_none(),
                 p.source.as_ref().is_some_and(|s| s.status == "blocked"),
                 p.source
                     .as_ref()
@@ -205,6 +232,9 @@ impl AcquisitionIndex {
             })
             .transpose()?;
         let period = clock.as_ref().and_then(|c| c.period);
+        let breeding = self.breeding_cache.borrow_mut().get(rom, save)?;
+        let mut daycare = self.daycare_sources(rom, Some(save));
+        daycare.sort_by_key(|s| (s.status == "blocked", s.map_id.is_none(), s.offset));
         let mut current = BTreeMap::new();
         for stored in save
             .all(rom)?
@@ -339,9 +369,13 @@ impl AcquisitionIndex {
                         rom,
                         save,
                         id,
-                        &current,
-                        period,
-                        &mut preparation_sources,
+                        &mut PreparationContext {
+                            current: &current,
+                            period,
+                            cache: &mut preparation_sources,
+                            breeding: breeding.as_ref(),
+                            daycare: daycare.first(),
+                        },
                     )?,
                 };
                 regions
@@ -467,6 +501,7 @@ impl AcquisitionIndex {
                 .map(|(region, tasks)| CollectionRegion { region, tasks })
                 .collect(),
             entrances,
+            breeding_coverage: breeding.map(|b| b.coverage),
             partial: true,
         })
     }

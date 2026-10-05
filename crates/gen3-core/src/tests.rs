@@ -2099,6 +2099,7 @@ fn tutor_sources_preserve_native_selector_guards_tiles_and_read_only_queries() {
         assert_eq!(marker.receipt_flag, None);
         let index = AcquisitionIndex {
             wild_cache: std::cell::RefCell::default(),
+            breeding_cache: Default::default(),
             world: crate::world::World {
                 maps: vec![map.clone()],
                 map_events: vec![report],
@@ -2288,6 +2289,7 @@ fn npc_trade_queries_and_plans_keep_donor_requirements_and_save_read_only() {
         let report = r.map_events(&map).unwrap();
         let index = AcquisitionIndex {
             wild_cache: std::cell::RefCell::default(),
+            breeding_cache: Default::default(),
             world: crate::world::World {
                 maps: vec![map],
                 map_events: vec![report],
@@ -4281,6 +4283,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
             .collect();
         let mut index = AcquisitionIndex {
             wild_cache: std::cell::RefCell::default(),
+            breeding_cache: Default::default(),
             world: World {
                 maps: vec![map],
                 map_events: vec![MapEventReport {
@@ -4720,6 +4723,7 @@ fn gift_receipt_queries_and_plans_use_the_qualified_reward_not_visibility() {
         };
         let mut index = AcquisitionIndex {
             wild_cache: std::cell::RefCell::default(),
+            breeding_cache: Default::default(),
             world: crate::world::World {
                 maps: vec![map],
                 map_events: vec![],
@@ -5143,6 +5147,7 @@ fn resource_conditions_query_item_links_without_mutating_or_claiming_receipt() {
         );
         let index = AcquisitionIndex {
             wild_cache: std::cell::RefCell::default(),
+            breeding_cache: Default::default(),
             world: crate::world::World {
                 maps: vec![map.clone()],
                 map_events: vec![r.map_events(&map).unwrap()],
@@ -5465,6 +5470,7 @@ fn held_sources_follow_random_references_time_and_preserve_unreferenced_uncertai
         fixed.offset = 126;
         let index = AcquisitionIndex {
             wild_cache: Default::default(),
+            breeding_cache: Default::default(),
             world: World {
                 maps: vec![map],
                 map_events: vec![],
@@ -5570,6 +5576,7 @@ fn daycare_queries_preserve_guards_tiles_and_reject_changed_dispatch() {
         assert!(report.unplaced_daycare.is_empty());
         let index = crate::acquisition::AcquisitionIndex {
             wild_cache: std::cell::RefCell::default(),
+            breeding_cache: Default::default(),
             world: crate::world::World {
                 maps: vec![map.clone()],
                 map_events: vec![report],
@@ -5766,6 +5773,7 @@ fn collection_preparation_uses_directed_edges_current_individuals_and_keeps_save
         let report = r.map_events(&map).unwrap();
         let mut index = AcquisitionIndex {
             wild_cache: Default::default(),
+            breeding_cache: Default::default(),
             world: crate::world::World {
                 maps: vec![map],
                 map_events: vec![report],
@@ -5949,7 +5957,11 @@ fn local_collection_preparation_all_fingerprints() {
                 chains += 1;
                 possessed += usize::from(p.current_count > 0);
                 let mut from = p.origin;
-                assert!(!p.steps.is_empty() && p.steps.len() <= 8 && p.partial);
+                assert!(
+                    (!p.steps.is_empty() || p.breeding.is_some())
+                        && p.steps.len() <= 8
+                        && p.partial
+                );
                 let mut visited = std::collections::BTreeSet::from([from]);
                 for step in &p.steps {
                     assert_eq!(step.from, from);
@@ -5985,21 +5997,28 @@ fn local_collection_preparation_all_fingerprints() {
                 if let Some(source) = &p.source {
                     let id = source.map_id.as_ref().unwrap();
                     assert!(plan.entrances.iter().any(|e| &e.map_id == id));
-                    assert!(index
-                        .query(
-                            &r,
-                            Some(&save),
-                            crate::acquisition::Target {
-                                kind: crate::acquisition::TargetKind::Species,
-                                id: p.origin
-                            }
-                        )
-                        .unwrap()
-                        .sources
-                        .iter()
-                        .any(|s| s.offset == source.offset
-                            && s.map_id == source.map_id
-                            && s.kind == source.kind));
+                    if p.breeding.is_some() {
+                        assert!(index
+                            .daycare_sources(&r, Some(&save))
+                            .iter()
+                            .any(|s| s.offset == source.offset && s.map_id == source.map_id));
+                    } else {
+                        assert!(index
+                            .query(
+                                &r,
+                                Some(&save),
+                                crate::acquisition::Target {
+                                    kind: crate::acquisition::TargetKind::Species,
+                                    id: p.origin
+                                }
+                            )
+                            .unwrap()
+                            .sources
+                            .iter()
+                            .any(|s| s.offset == source.offset
+                                && s.map_id == source.map_id
+                                && s.kind == source.kind));
+                    }
                 }
             }
         }
@@ -6223,5 +6242,148 @@ fn local_saved_daycare_matches_native_state_and_deposited_parent_records() {
         assert_eq!(save.data, before);
         assert_eq!(*r.data, *rom_before);
         eprintln!("{key}: {} native saved-state cases, 8 phases, deposited preview and corrupt-record safety passed",native["rows"].as_array().unwrap().len());
+    }
+}
+
+#[test]
+fn breeding_collection_has_no_unverified_fallback_or_fabricated_parents() {
+    let r = rom();
+    let save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+    let before = save.data.clone();
+    assert!(crate::breeding_collection::suggestions(&r, &save)
+        .unwrap()
+        .is_none());
+    assert_eq!(
+        crate::breeding_collection::select(&r, Some(&save), &[vec![], vec![]], 42, 24)
+            .unwrap_err()
+            .code,
+        "breeding_unverified"
+    );
+    assert_eq!(save.data, before);
+}
+
+#[test]
+#[ignore = "requires five exact private ROMs and GEN3_BREEDING_SELECTION_PROBES independent native vectors"]
+fn local_breeding_collection_matches_native_selection_and_current_parent_plans() {
+    use crate::{
+        acquisition::AcquisitionIndex,
+        collection::{CollectionBasis, CollectionRequest},
+    };
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_BREEDING_SELECTION_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        assert_eq!(probes[key]["md5"], r.profile.md5);
+        assert_eq!(probes[key]["engine"], "mGBA ARM7");
+        let original = r.data.clone();
+        for row in probes[key]["rows"].as_array().unwrap() {
+            let parents: [Vec<u8>; 2] = serde_json::from_value(row["parents"].clone()).unwrap();
+            let (compat, child) = crate::breeding_collection::select(
+                &r,
+                None,
+                &parents,
+                row["seed"].as_u64().unwrap() as u32,
+                row["offspring_pid"].as_u64().unwrap() as u32,
+            )
+            .unwrap();
+            assert_eq!(
+                serde_json::json!([compat, child]),
+                serde_json::json!([row["compatibility"], row["species"]]),
+                "{key}"
+            );
+        }
+        let index = AcquisitionIndex::build(&r).unwrap();
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let row = probes[key]["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|v| v["species"].as_u64().is_some_and(|s| s != 1 && s != 25))
+            .unwrap();
+        let raws: [Vec<u8>; 2] = serde_json::from_value(row["parents"].clone()).unwrap();
+        let child = row["species"].as_u64().unwrap() as u16;
+        for (i, raw) in raws.iter().enumerate() {
+            save.insert(loc(i), raw, &r).unwrap();
+        }
+        save.validate(&r).unwrap();
+        let before = save.data.clone();
+        let request = || CollectionRequest {
+            basis: CollectionBasis::Individuals,
+            families: false,
+            include_unknown_rewards: false,
+        };
+        let plan = index.collection(&r, &save, request()).unwrap();
+        let coverage = plan.breeding_coverage.as_ref().unwrap();
+        assert_eq!(
+            (
+                coverage.parent_count,
+                coverage.checked_pairs,
+                coverage.total_pairs,
+                coverage.failed_pairs
+            ),
+            (3, 3, 3, 0)
+        );
+        let task = plan
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .find(|t| {
+                t.target.kind == crate::acquisition::TargetKind::Species && t.target.id == child
+            })
+            .unwrap();
+        let prep = task.preparation.as_ref().unwrap();
+        assert_eq!(prep.origin, child);
+        assert!(prep.breeding.is_some() && prep.needs_hatching && prep.steps.is_empty());
+        let route = prep.breeding.as_ref().unwrap();
+        let native = crate::breeding::preview(
+            &r,
+            Some(&save),
+            &crate::breeding::Request {
+                parents: [
+                    crate::breeding::Parent::Stored {
+                        location: route.parents[0].location,
+                    },
+                    crate::breeding::Parent::Stored {
+                        location: route.parents[1].location,
+                    },
+                ],
+                seed: route.seed,
+                offspring_pid: route.offspring_pid,
+                production_item: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(native.child.unwrap().species, child);
+        for p in &route.parents {
+            assert_eq!(
+                save.pokemon(p.location, &r).unwrap().unwrap().species,
+                p.species
+            );
+        }
+        assert_eq!(save.data, before);
+        let again = index.collection(&r, &save, request()).unwrap();
+        assert_eq!(
+            serde_json::to_value(&again).unwrap(),
+            serde_json::to_value(&plan).unwrap(),
+            "cached native suggestions must remain ROM/SAV bound"
+        );
+        save.remove(loc(0), &r).unwrap();
+        save.remove(loc(1), &r).unwrap();
+        let after = save.data.clone();
+        let without = index.collection(&r, &save, request()).unwrap();
+        assert_eq!(without.breeding_coverage.as_ref().unwrap().parent_count, 1);
+        assert!(without
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .filter_map(|t| t.preparation.as_ref())
+            .all(|p| p.breeding.is_none()));
+        assert_eq!(save.data, after);
+        assert_eq!(*r.data, *original);
+        eprintln!("{key}: 42 native compatibility scenarios and {} accepted selection checkpoints; existing-parent plan/receipt, cache invalidation and ROM/SAV preservation passed", probes[key]["rows"].as_array().unwrap().iter().filter(|row| !row["species"].is_null()).count());
     }
 }

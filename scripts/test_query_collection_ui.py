@@ -42,6 +42,9 @@ def main():
         elif command=='acquisition': data=dict(target=payload,sources=[source],partial=True,clock=None)
         elif command=='map_navigation': data=dict(map_id=payload['id'],outgoing=[edge] if payload['id']=='0-0' else [],incoming=[edge] if payload['id']=='0-1' else [],approaches=[[edge]] if payload['id']=='0-1' else [],truncated=False,diagnostics=[])
         elif command=='collection': data=plan
+        elif command=='breeding_preview':
+            assert payload['parents']==[dict(kind='stored',location=dict(kind='party',slot=0)),dict(kind='stored',location=dict(kind='box',box_index=0,slot=1))]
+            data=dict(rom_md5='test',parents=[],compatibility=50,child=pokemon(2,dict(kind='party',slot=0))['pokemon'],seed=42,offspring_pid=24,rng_after=1,partial=True,production=None)
         elif command in ('map_image','sprite','object_sprite','trainer_sprite'): data=dict(url='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="lightblue"/></svg>')
         else: raise AssertionError(req)
         route.fulfill(content_type='application/json',body=json.dumps(dict(ok=True,data=data)))
@@ -102,6 +105,30 @@ def main():
         task['preparation'] = dict(task['preparation'],current_count=2,source=None)
         page.get_by_role('checkbox',name='Permanent evolution family',exact=True).uncheck()
         expect(page.locator('.collection-preparation')).to_contain_text('Existing non-egg individuals: ROM parent ↗ × 2')
+        # Native existing-parent suggestions keep exact locations, item links and HTML.
+        task['preparation'] = dict(task['preparation'],current_count=0,source=capture,needs_hatching=True,breeding=dict(parents=[dict(location=dict(kind='party',slot=0),species=2,nickname='<script>parent</script>',gender='female',held_item=1),dict(location=dict(kind='box',box_index=0,slot=1),species=2,nickname='Father',gender='male',held_item=0)],compatibility=50,seed=42,offspring_pid=24,partial=True))
+        plan['breeding_coverage']=dict(parent_count=101,checked_pairs=2048,total_pairs=5050,failed_pairs=1,truncated=True,sampled=True,issue='test-only unresolved path')
+        page.get_by_role('checkbox',name='Permanent evolution family',exact=True).check()
+        expect(page.locator('.collection-breeding')).to_contain_text('Pair existing non-egg individuals')
+        expect(page.locator('.collection-panel')).to_contain_text('2048 / 5050')
+        expect(page.locator('.collection-panel')).to_contain_text('missing suggestions do not prove breeding is impossible')
+        page.get_by_role('button',name='Preview this pairing with the native receipt routine',exact=True).click()
+        expect(page.locator('.collection-breeding')).to_contain_text('The full receipt scenario confirms')
+        page.locator('.collection-breeding').get_by_role('button',name='Test stone ↗',exact=True).click()
+        expect(page.locator('.acquisition-panel')).to_be_visible()
+        page.get_by_role('button',name='Back to previous reference',exact=False).click()
+        page.get_by_role('button',name='简体中文',exact=True).click()
+        expect(page.locator('.collection-breeding')).to_contain_text('使用现有非蛋个体配对')
+        expect(page.locator('.collection-breeding')).to_contain_text('携带道具')
+        with page.expect_download() as info:
+            page.get_by_role('button',name='导出独立 HTML',exact=True).click()
+        html=Path(info.value.path()).read_text()
+        assert '孵蛋与进化准备建议' in html and '2048 / 5050' in html
+        assert '&lt;script&gt;parent&lt;/script&gt;' in html and '<script>' not in html
+        assert '盒子 1 / 2' in html and '不向 SAV 添加个体' in html and '携带道具' in html
+        if os.environ.get('GEN3_UI_ARTIFACTS'):
+            page.locator('.collection-breeding').screenshot(path=str(Path(os.environ['GEN3_UI_ARTIFACTS'])/'breeding-preparation.png'))
+        page.get_by_role('button',name='English',exact=True).click()
         assert not any(r['command'] in ('action','export_save','save_bytes') for r in requests)
         assert not errors,errors
         page.set_viewport_size(dict(width=720,height=740))

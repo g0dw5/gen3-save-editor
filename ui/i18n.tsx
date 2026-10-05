@@ -157,6 +157,20 @@ export const en = {
   planMissing: "Missing goals",
   planNoRegion: "Location unresolved",
   planPreparation: "Evolution preparation suggestion",
+  planBreedPreparation: "Breeding and evolution preparation suggestion",
+  planBreedTitle: "Pair existing non-egg individuals",
+  planBreedHelp:
+    "The current ROM selected this offspring in a sampled ordinary daycare scenario using these exact parents and their current held items. This is not the next real egg, a complete offspring list, inheritance proof or service-access proof. Obtain and hatch the egg normally; no individual is added to your SAV.",
+  planBreedVerify: "Preview this pairing with the native receipt routine",
+  planBreedMatches:
+    "The full receipt scenario confirms this preparation's offspring species",
+  planBreedChanged:
+    "The receipt scenario differs; rebuild the plan and check the current parents",
+  planBreedCoverage: "Sampled existing-parent pairs: {checked} / {total}",
+  planBreedBound:
+    "The pairing search reached its bound; missing suggestions do not prove breeding is impossible.",
+  planBreedFailed:
+    "Some native pairing scenarios could not be resolved; inspect the evidence.",
   planPreparationExisting: "Existing non-egg individuals",
   planPreparationStart: "First obtain",
   planPreparationOwned: "Existing non-egg individuals: {species} × {count}",
@@ -1136,6 +1150,16 @@ export const zh: Record<Key, string> = {
   planMissing: "缺失目标",
   planNoRegion: "地点待确认",
   planPreparation: "进化准备建议",
+  planBreedPreparation: "孵蛋与进化准备建议",
+  planBreedTitle: "使用现有非蛋个体配对",
+  planBreedHelp:
+    "当前 ROM 在普通寄养抽样情景中，用这两只原始个体及其当前携带道具选出了该后代。这不是下一颗真实蛋、全部后代清单、完整遗传或服务可达性的证明。仍需正常领蛋并孵化，不向 SAV 添加个体。",
+  planBreedVerify: "用原生领蛋例程预览这组亲本",
+  planBreedMatches: "完整领蛋情景确认了此准备链的后代种类",
+  planBreedChanged: "领蛋情景与建议不一致，请重新生成规划并核对当前亲本",
+  planBreedCoverage: "已抽样现有亲本组合：{checked} / {total}",
+  planBreedBound: "配对搜索已达到边界，没有建议不能证明无法孵蛋。",
+  planBreedFailed: "部分原生配对情景无法确定，请查看证据。",
   planPreparationExisting: "现有非蛋个体",
   planPreparationStart: "先获得",
   planPreparationOwned: "现有非蛋个体：{species} × {count}",

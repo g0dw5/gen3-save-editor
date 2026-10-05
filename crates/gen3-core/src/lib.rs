@@ -4,6 +4,7 @@ pub mod adapter;
 pub mod app;
 pub mod binary;
 pub mod breeding;
+pub mod breeding_collection;
 pub mod breeding_production;
 pub mod cheats;
 pub mod clock;

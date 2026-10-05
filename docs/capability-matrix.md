@@ -297,6 +297,13 @@ See [scope and reproduction](verification/wild-held-20261006.md).
 
 ## Native daycare increment / 原生寄养增量
 
+The [existing-parent collection increment](verification/breeding-planning-20261006.md)
+observes native ordinary offspring selection and links sampled party/box pairings
+to preparation, service references, full receipt previews and HTML. Bounds and
+unknown results are visible. Deposited-parent automatic search, complete offspring
+coverage, inheritance, hatching and service access remain unresolved; all five
+breeding/planning rows remain **P**.
+
 The [saved ordinary daycare increment](verification/daycare-state-20261006.md)
 adds native saved presence, availability, service status and next ordinary check
 phase across five fingerprints, with deposited-parent scenario selection.

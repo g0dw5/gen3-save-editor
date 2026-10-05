@@ -154,6 +154,7 @@ pub(crate) struct WildCache {
 }
 pub struct AcquisitionIndex {
     pub(crate) wild_cache: RefCell<WildCache>,
+    pub(crate) breeding_cache: RefCell<crate::breeding_collection::Cache>,
     pub world: World,
     pub species: Vec<Species>,
     pub evolutions: BTreeMap<u16, Vec<Evolution>>,
@@ -392,6 +393,7 @@ impl AcquisitionIndex {
         }
         Ok(Self {
             wild_cache: RefCell::default(),
+            breeding_cache: Default::default(),
             world: rom.world()?,
             species,
             evolutions,
@@ -959,6 +961,7 @@ mod tests {
         };
         let index = AcquisitionIndex {
             wild_cache: RefCell::default(),
+            breeding_cache: Default::default(),
             world: World {
                 maps: vec![],
                 map_events: vec![],

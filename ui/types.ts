@@ -622,7 +622,21 @@ export interface CollectionPreparation {
     related: QueryTarget[];
   }[];
   needs_hatching: boolean;
+  breeding?: CollectionBreedingRoute | null;
   truncated: boolean;
+  partial: boolean;
+}
+export interface CollectionBreedingRoute {
+  parents: {
+    location: Location;
+    species: number;
+    nickname: string;
+    gender: string;
+    held_item: number;
+  }[];
+  compatibility: number;
+  seed: number;
+  offspring_pid: number;
   partial: boolean;
 }
 export interface CollectionPlan {
@@ -634,6 +648,15 @@ export interface CollectionPlan {
   missing_count: number;
   regions: { region: number | null; tasks: CollectionTask[] }[];
   entrances: { map_id: string; chains: MapLink[][]; truncated: boolean }[];
+  breeding_coverage?: {
+    parent_count: number;
+    checked_pairs: number;
+    total_pairs: number;
+    failed_pairs: number;
+    truncated: boolean;
+    sampled: boolean;
+    issue: string | null;
+  } | null;
   partial: boolean;
 }
 
