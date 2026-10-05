@@ -28,6 +28,49 @@ pub struct Target {
     pub kind: TargetKind,
     pub id: u16,
 }
+/// Cross-links from already decoded evolution semantics, never a name-based guess.
+pub(crate) fn evolution_targets(e: &Evolution) -> Vec<Target> {
+    let mut targets = vec![];
+    let mut add = |kind, id| {
+        if !targets
+            .iter()
+            .any(|t: &Target| t.kind == kind && t.id == id)
+        {
+            targets.push(Target { kind, id });
+        }
+    };
+    if matches!(
+        e.condition,
+        "item"
+            | "trade_item"
+            | "held_day"
+            | "held_night"
+            | "male_item"
+            | "female_item"
+            | "item_night"
+            | "item_location"
+            | "item_hold_item"
+    ) {
+        add(TargetKind::Item, e.parameter);
+    }
+    if matches!(e.condition, "level_hold_item" | "item_hold_item") {
+        add(TargetKind::Item, e.auxiliary);
+    }
+    if matches!(e.condition, "move" | "move_male" | "move_female") {
+        add(TargetKind::Move, e.parameter);
+    }
+    if matches!(e.condition, "party_species" | "trade_species") {
+        add(TargetKind::Species, e.parameter);
+    }
+    for r in &e.requirements {
+        match r.kind {
+            "item" | "held_item" => add(TargetKind::Item, r.value),
+            "move" => add(TargetKind::Move, r.value),
+            _ => {}
+        }
+    }
+    targets
+}
 #[derive(Clone, Serialize)]
 pub struct ConditionCheck {
     pub condition: EventCondition,
@@ -689,33 +732,7 @@ impl AcquisitionIndex {
                         });
                         s.evolution = Some(evo.clone());
                         s.requirements = evo.requirements.clone();
-                        if matches!(
-                            evo.condition,
-                            "item" | "trade_item" | "held_item_day" | "held_item_night"
-                        ) {
-                            s.related.push(Target {
-                                kind: TargetKind::Item,
-                                id: evo.parameter,
-                            });
-                        } else if evo.condition == "move" {
-                            s.related.push(Target {
-                                kind: TargetKind::Move,
-                                id: evo.parameter,
-                            });
-                        }
-                        for r in &s.requirements {
-                            if matches!(r.kind, "item" | "held_item") {
-                                s.related.push(Target {
-                                    kind: TargetKind::Item,
-                                    id: r.value,
-                                });
-                            } else if r.kind == "move" {
-                                s.related.push(Target {
-                                    kind: TargetKind::Move,
-                                    id: r.value,
-                                });
-                            }
-                        }
+                        s.related.extend(evolution_targets(evo));
                         sources.push(s);
                     }
                 }
@@ -839,6 +856,88 @@ impl AcquisitionIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn evolution_cross_links_keep_compound_operands_and_do_not_guess_by_number() {
+        let mut e = Evolution {
+            method: 0,
+            condition: "held_day",
+            requirements: vec![],
+            parameter: 17,
+            auxiliary: 23,
+            target: 2,
+            offset: 100,
+        };
+        for condition in [
+            "held_day",
+            "held_night",
+            "male_item",
+            "female_item",
+            "trade_item",
+            "item_night",
+            "item_location",
+        ] {
+            e.condition = condition;
+            let targets = evolution_targets(&e);
+            assert!(
+                targets.len() == 1 && targets[0].kind == TargetKind::Item && targets[0].id == 17
+            );
+        }
+        e.condition = "item_hold_item";
+        assert_eq!(
+            evolution_targets(&e)
+                .iter()
+                .map(|t| t.id)
+                .collect::<Vec<_>>(),
+            [17, 23]
+        );
+        e.condition = "level_hold_item";
+        assert_eq!(evolution_targets(&e)[0].id, 23, "level is not an item ID");
+        for condition in ["move", "move_male", "move_female"] {
+            e.condition = condition;
+            assert!(evolution_targets(&e)
+                .iter()
+                .all(|t| t.kind == TargetKind::Move && t.id == 17));
+        }
+        for condition in ["party_species", "trade_species"] {
+            e.condition = condition;
+            assert!(evolution_targets(&e)
+                .iter()
+                .all(|t| t.kind == TargetKind::Species && t.id == 17));
+        }
+        for condition in [
+            "level",
+            "unknown",
+            "flag",
+            "move_type",
+            "party_type",
+            "nature_high",
+            "map",
+        ] {
+            e.condition = condition;
+            assert!(
+                evolution_targets(&e).is_empty(),
+                "numeric values must not be guessed into resource IDs"
+            );
+        }
+        e.condition = "item";
+        e.requirements = vec![
+            crate::rom::EvolutionRequirement {
+                kind: "item",
+                value: 17,
+            },
+            crate::rom::EvolutionRequirement {
+                kind: "held_item",
+                value: 23,
+            },
+        ];
+        assert_eq!(
+            evolution_targets(&e)
+                .iter()
+                .map(|t| t.id)
+                .collect::<Vec<_>>(),
+            [17, 23]
+        );
+    }
     #[test]
     fn time_table_fallback_is_per_map_and_method_not_per_target_species() {
         use crate::world::{Encounter, TrainerLocationIndex};

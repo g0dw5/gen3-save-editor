@@ -4,6 +4,7 @@ import type { Catalog, CollectionPlan, GameMap, QueryTarget } from "./types";
 import { tradeSummary } from "./TradeDetails";
 import { clockSummary } from "./ClockDetails";
 import { evolutionLabel } from "./referenceLabels";
+import { preparationSummary } from "./CollectionPreparation";
 
 /** Standalone, escaped, non-executable report; never embeds ROM artwork or save bytes. */
 export function collectionHtml(
@@ -36,6 +37,32 @@ export function collectionHtml(
         `<section><h2>${esc(region.region === null ? t("planNoRegion") : (catalog.met_locations.find((r) => r.id === region.region)?.name ?? `#${region.region}`))}</h2>${region.tasks
           .map((task) => {
             const s = task.source;
+            const preparation = task.preparation;
+            const prepEntrance = plan.entrances.find(
+              (e) => e.map_id === preparation?.source?.map_id,
+            );
+            const preparationHtml = preparation
+              ? `<div class="collection-preparation">${preparationSummary(
+                  preparation,
+                  catalog,
+                  maps,
+                  t,
+                )
+                  .map((line) => `<p>${esc(line)}</p>`)
+                  .join("")}${
+                  prepEntrance?.chains.length
+                    ? `<p>${esc(t("navApproaches"))}: ${esc(
+                        prepEntrance.chains[0]
+                          .map(
+                            (e) =>
+                              `${mapName(e.from)}${e.x !== null ? ` (${e.x}, ${e.y})` : ""}`,
+                          )
+                          .concat(mapName(prepEntrance.map_id))
+                          .join(" → "),
+                      )}</p>`
+                    : ""
+                }</div>`
+              : "";
             const entrance = plan.entrances.find((e) => e.map_id === s?.map_id);
             const conditions = s?.conditions
               .map(
@@ -73,7 +100,7 @@ export function collectionHtml(
                     )
                     .join("")}</ul>`
                 : `<p><small>${esc(t("navNoApproach"))}</small></p>`
-            }<details><summary>${esc(t("evidence"))}</summary><pre>${esc(JSON.stringify(task, null, 2))}</pre></details></div>`;
+            }${preparationHtml}<details><summary>${esc(t("evidence"))}</summary><pre>${esc(JSON.stringify(task, null, 2))}</pre></details></div>`;
           })
           .join("")}</section>`,
     )

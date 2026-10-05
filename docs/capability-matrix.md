@@ -303,7 +303,7 @@ halfword microcases. Stored/simulated parents, child/move links and located
 receiving NPC/map/back are a read-only shared workflow. BW/DP have two receiving
 paths each, Ultimate six; Rocket/Mercury currently have no located service and
 show explicit uncertainty. Complete production/charm context, live pending eggs,
-complete inheritance/forms and collection dependency planning remain gaps.
+complete inheritance/forms and full collection dependency planning remain gaps.
 See [scope, CPU correction and evidence](verification/breeding-20261006.md).
 
 本增量未将孵蛋候选或模拟后代视作可达、已捕获、当前有蛋可领。没有新增 SAV 编辑
@@ -326,3 +326,17 @@ See [scope and reproduction](verification/breeding-production-20261006.md).
 界面区分配对兼容性与产蛋概率，普通背包投影与道具模拟不会改动 SAV。漆黑
 BW／DP 的不兼容亲本道具分支按原生证据明示，不认定已获得或正常可获得后代。
 本增量不生成个体，不修改图鉴或剧情，不递增版本，不另行打包或发布。
+
+## Evolution preparation increment / 进化准备链增量
+
+Collection rows remain **P**. Suggestions now expand one bounded directed
+permanent-evolution chain, starting from actual non-egg individuals or a located
+ancestor source, with resource and map/entrance/back links and bilingual HTML.
+Dex history is never substituted for current parents. Possession does not certify
+eligibility; gender/time/friendship, full breeding, joint branch quantities and
+complete story/access dependencies remain unverified. Neither shortest paths nor
+reverse-evolution breeding are asserted. See [evidence and scope](verification/evolution-preparation-20261006.md).
+
+收集规划仍为部分支持。准备链区分实际非蛋个体与图鉴记录，展示进化条件、道具、
+招式和前代来源地图；不把“已有前代”自动提升为当前可进化，也不把不同分支视为
+只需一个个体。完整孵蛋、资格、剧情依赖及合并路线最优性尚未完成。

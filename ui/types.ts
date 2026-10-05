@@ -591,6 +591,20 @@ export interface CollectionTask {
   existing_family_members: number[];
   source: AcquisitionSource | null;
   alternatives: number;
+  preparation?: CollectionPreparation | null;
+}
+export interface CollectionPreparation {
+  origin: number;
+  current_count: number;
+  source: AcquisitionSource | null;
+  steps: {
+    from: number;
+    evolution: SpeciesDetail["evolutions"][number];
+    related: QueryTarget[];
+  }[];
+  needs_hatching: boolean;
+  truncated: boolean;
+  partial: boolean;
 }
 export interface CollectionPlan {
   clock: ClockReport | null;

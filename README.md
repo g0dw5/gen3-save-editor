@@ -22,6 +22,12 @@ connected maps and exterior entrance chains. Read-only **Collection planning**
 uses an opened SAV: choose Pokédex ownership or existing individuals, optionally
 group permanent evolution families, and export a standalone HTML suggestion.
 Receipt status is independent of inventory; unknown rewards are opt-in.
+Missing species also show a bounded, directed permanent-evolution preparation
+chain when a current non-egg ancestor or referenced ancestor source is found.
+Open each required item/move and the origin map/entrance; the same explanation is
+included in standalone HTML. Historical Dex records do not supply usable parents,
+and evolution edges are never reversed into assumed breeding outcomes. These are
+preparation suggestions, not verification of current evolution eligibility.
 Coverage is partial: script prerequisites, dynamic access and special sources
 may remain undetermined. Mercury currently supports individual-based planning,
 not unverified expanded Pokédex flags. See the [exact-ROM capability matrix](docs/capability-matrix.md).

@@ -3,12 +3,12 @@ use crate::{
     acquisition::{AcquisitionIndex, AcquisitionSource, Target, TargetKind},
     err,
     navigation::MapLink,
-    rom::Rom,
+    rom::{Evolution, Rom},
     save::Save,
     Result,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 #[derive(Clone, Copy, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -31,6 +31,25 @@ pub struct CollectionTask {
     pub existing_family_members: Vec<u16>,
     pub source: Option<AcquisitionSource>,
     pub alternatives: usize,
+    pub preparation: Option<CollectionPreparation>,
+}
+#[derive(Clone, Serialize)]
+pub struct EvolutionStep {
+    pub from: u16,
+    pub evolution: Evolution,
+    pub related: Vec<Target>,
+}
+#[derive(Serialize)]
+pub struct CollectionPreparation {
+    pub origin: u16,
+    /// Actual healthy non-egg individuals, even when goals use historical Dex records.
+    pub current_count: usize,
+    pub source: Option<AcquisitionSource>,
+    /// Directed permanent evolution edges, ordered from origin to goal.
+    pub steps: Vec<EvolutionStep>,
+    pub needs_hatching: bool,
+    pub truncated: bool,
+    pub partial: bool,
 }
 #[derive(Serialize)]
 pub struct CollectionRegion {
@@ -62,6 +81,110 @@ fn root(parents: &BTreeMap<u16, u16>, mut id: u16) -> u16 {
     id
 }
 impl AcquisitionIndex {
+    fn preparation(
+        &self,
+        rom: &Rom,
+        save: &Save,
+        goal: u16,
+        current: &BTreeMap<u16, usize>,
+        period: Option<&str>,
+        cache: &mut BTreeMap<u16, Vec<AcquisitionSource>>,
+    ) -> Result<Option<CollectionPreparation>> {
+        // Bounded backwards traversal is only a preparation suggestion. Neither
+        // possession nor a directed ROM edge proves that evolution can run now.
+        let mut pending = VecDeque::from([(goal, Vec::<EvolutionStep>::new())]);
+        let mut candidates = vec![];
+        let mut truncated = false;
+        let mut examined = 0;
+        while let Some((id, steps)) = pending.pop_front() {
+            examined += 1;
+            if examined > 512 {
+                truncated = true;
+                break;
+            }
+            if !steps.is_empty() {
+                let count = current.get(&id).copied().unwrap_or(0);
+                if count != 0 {
+                    candidates.push(CollectionPreparation {
+                        origin: id,
+                        current_count: count,
+                        source: None,
+                        steps: steps.clone(),
+                        needs_hatching: false,
+                        truncated: false,
+                        partial: true,
+                    });
+                } else {
+                    if let std::collections::btree_map::Entry::Vacant(e) = cache.entry(id) {
+                        let mut sources = self
+                            .query(
+                                rom,
+                                Some(save),
+                                Target {
+                                    kind: TargetKind::Species,
+                                    id,
+                                },
+                            )?
+                            .sources;
+                        self.mark_period(&mut sources, period);
+                        e.insert(sources);
+                    }
+                    for source in &cache[&id] {
+                        if source.map_id.is_none()
+                            || matches!(source.kind.as_str(), "evolution" | "breeding_candidate")
+                            || source.status == "completed" && source.repeatable != Some(true)
+                        {
+                            continue;
+                        }
+                        candidates.push(CollectionPreparation {
+                            origin: id,
+                            current_count: 0,
+                            needs_hatching: source.kind == "egg",
+                            source: Some(source.clone()),
+                            steps: steps.clone(),
+                            truncated: false,
+                            partial: true,
+                        });
+                    }
+                }
+            }
+            for (parent, edges) in &self.evolutions {
+                for edge in edges.iter().filter(|e| e.target == id) {
+                    if *parent == goal || steps.iter().any(|step| step.from == *parent) {
+                        continue;
+                    }
+                    if steps.len() >= 8 || pending.len() + examined >= 512 {
+                        truncated = true;
+                        continue;
+                    }
+                    let mut chain = vec![EvolutionStep {
+                        from: *parent,
+                        evolution: edge.clone(),
+                        related: crate::acquisition::evolution_targets(edge),
+                    }];
+                    chain.extend(steps.clone());
+                    pending.push_back((*parent, chain));
+                }
+            }
+        }
+        candidates.sort_by_key(|p| {
+            (
+                p.current_count == 0,
+                p.source.as_ref().is_some_and(|s| s.status == "blocked"),
+                p.source
+                    .as_ref()
+                    .is_some_and(|s| s.in_scenario == Some(false)),
+                p.steps.len(),
+                p.origin,
+                p.source.as_ref().map(|s| s.offset),
+            )
+        });
+        Ok(candidates.into_iter().next().map(|mut p| {
+            p.truncated = truncated;
+            p
+        }))
+    }
+
     pub fn collection(
         &self,
         rom: &Rom,
@@ -82,13 +205,16 @@ impl AcquisitionIndex {
             })
             .transpose()?;
         let period = clock.as_ref().and_then(|c| c.period);
+        let mut current = BTreeMap::new();
+        for stored in save
+            .all(rom)?
+            .into_iter()
+            .filter(|p| !p.pokemon.egg && p.pokemon.checksum_ok)
+        {
+            *current.entry(stored.pokemon.species).or_insert(0) += 1;
+        }
         let owned: BTreeSet<u16> = match request.basis {
-            CollectionBasis::Individuals => save
-                .all(rom)?
-                .into_iter()
-                .filter(|p| !p.pokemon.egg && p.pokemon.checksum_ok)
-                .map(|p| p.pokemon.species)
-                .collect(),
+            CollectionBasis::Individuals => current.keys().copied().collect(),
             CollectionBasis::Dex => {
                 if rom.profile.save.dex.is_none() {
                     return Err(err(
@@ -142,6 +268,7 @@ impl AcquisitionIndex {
             .collect();
         let mut regions: BTreeMap<Option<u8>, Vec<CollectionTask>> = BTreeMap::new();
         let mut missing_count = 0;
+        let mut preparation_sources = BTreeMap::new();
         for family in families.values() {
             let existing: Vec<_> = family
                 .iter()
@@ -208,9 +335,22 @@ impl AcquisitionIndex {
                     existing_family_members: existing.clone(),
                     source,
                     alternatives: count,
+                    preparation: self.preparation(
+                        rom,
+                        save,
+                        id,
+                        &current,
+                        period,
+                        &mut preparation_sources,
+                    )?,
                 };
                 regions
-                    .entry(task.source.as_ref().and_then(|s| s.region))
+                    .entry(task.source.as_ref().and_then(|s| s.region).or_else(|| {
+                        task.preparation
+                            .as_ref()
+                            .and_then(|p| p.source.as_ref())
+                            .and_then(|s| s.region)
+                    }))
                     .or_default()
                     .push(task);
             }
@@ -281,6 +421,7 @@ impl AcquisitionIndex {
                     existing_family_members: vec![],
                     source: Some(s),
                     alternatives: 1,
+                    preparation: None,
                 };
                 regions
                     .entry(task.source.as_ref().and_then(|s| s.region))
@@ -291,7 +432,15 @@ impl AcquisitionIndex {
         let used_maps: BTreeSet<_> = regions
             .values()
             .flatten()
-            .filter_map(|t| t.source.as_ref().and_then(|s| s.map_id.clone()))
+            .flat_map(|t| {
+                [
+                    t.source.as_ref(),
+                    t.preparation.as_ref().and_then(|p| p.source.as_ref()),
+                ]
+                .into_iter()
+                .flatten()
+                .filter_map(|s| s.map_id.clone())
+            })
             .collect();
         let (edges, _) = crate::navigation::links(&rom.data, &self.world.maps)?;
         let entrances = used_maps

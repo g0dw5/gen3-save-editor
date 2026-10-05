@@ -1,4 +1,6 @@
 import { WildHeldDetails } from "./WildHeldDetails";
+import { CollectionPreparation } from "./CollectionPreparation";
+import { evolutionLabel } from "./referenceLabels";
 import { ConditionDetails } from "./ConditionDetails";
 import { useEffect, useState } from "react";
 import { api } from "./api";
@@ -154,7 +156,7 @@ export function CollectionPanel({
                   (task) =>
                     (status === "all" ||
                       (task.source?.status ?? "unknown") === status) &&
-                    `${name(task.target)} ${task.source?.map_id ? mapName(task.source.map_id) : ""} ${task.family.map((id) => name({ kind: "species", id })).join(" ")}`
+                    `${name(task.target)} ${task.source?.map_id ? mapName(task.source.map_id) : ""} ${task.preparation?.source?.map_id ? mapName(task.preparation.source.map_id) : ""} ${task.family.map((id) => name({ kind: "species", id })).join(" ")}`
                       .toLowerCase()
                       .includes(query.toLowerCase()),
                 );
@@ -205,6 +207,24 @@ export function CollectionPanel({
                               {t("acqScriptSourceHelp")}
                             </p>
                           )}
+                          {s?.evolution && (
+                            <p className="small">
+                              {evolutionLabel(
+                                s.evolution,
+                                catalog,
+                                catalog.type_names,
+                                t,
+                              )}
+                            </p>
+                          )}
+                          <CollectionPreparation
+                            preparation={task.preparation}
+                            catalog={catalog}
+                            maps={maps}
+                            entrances={plan.entrances}
+                            onTarget={onTarget}
+                            onMap={onMap}
+                          />
                           <TradeDetails
                             mon={s?.script_source}
                             context={s?.trade_context}

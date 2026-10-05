@@ -110,7 +110,18 @@ The shared CPU corrects only odd Thumb halfword loads whose upstream interpreter
 loses the GBA address/rotation behavior. This is instruction semantics, not an
 adapter-specific function hook. mGBA full-record and halfword tests establish the
 bounded correction; ARM halfword conformance is not implied. Full daycare live
-state, complete service setup/access and collection dependencies remain separate gaps.
+state, complete service setup/access and full collection dependencies remain separate gaps.
+
+`collection.rs` derives bounded directed preparation chains from the same runtime
+permanent-evolution index used by acquisition queries. Actual healthy non-egg
+individual counts are separate from historical Dex goal coverage. The search is
+cycle-safe (eight edges, 512 examined/queued paths), retains compound condition
+records and never reverses evolution into breeding. Referenced ancestor sources
+share clock/resource overlays, map topology and HTML output. Possession changes
+the preparation suggestion, not the acquisition eligibility status. Evolution
+item/move/species cross-links are decoded once in the core and shared by both UIs;
+names stay in the currently loaded ROM catalog. Complete eligibility and a joint
+minimum-individual/route solver remain gaps.
 
 `breeding_production.rs` observes the complete ordinary step before its native
 comparison, without replacing functions. It projects each ordinary bag's ordered

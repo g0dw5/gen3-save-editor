@@ -129,6 +129,17 @@ export const en = {
   planOwned: "Owned species",
   planMissing: "Missing goals",
   planNoRegion: "Location unresolved",
+  planPreparation: "Evolution preparation suggestion",
+  planPreparationExisting: "Existing non-egg individuals",
+  planPreparationStart: "First obtain",
+  planPreparationOwned: "Existing non-egg individuals: {species} × {count}",
+  planPreparationAcquire: "First obtain: {species}",
+  planPreparationHatch:
+    "Hatch the source egg first; complete hatching requirements remain unverified.",
+  planPreparationHelp:
+    "This is one directed permanent evolution chain, not a shortest route or proof of current eligibility. Possession does not establish level, gender, friendship, item, move, time or access requirements. Branches may need additional individuals; breeding cannot be inferred by reversing evolution edges.",
+  planPreparationTruncated:
+    "The preparation search reached its bound; additional alternatives may exist.",
   planSearch: "Search goals / regions / maps",
   planFilter: "Progress status",
   planExport: "Export standalone HTML",
@@ -1074,6 +1085,15 @@ export const zh: Record<Key, string> = {
   planOwned: "已持有／记录宝可梦",
   planMissing: "缺失目标",
   planNoRegion: "地点待确认",
+  planPreparation: "进化准备建议",
+  planPreparationExisting: "现有非蛋个体",
+  planPreparationStart: "先获得",
+  planPreparationOwned: "现有非蛋个体：{species} × {count}",
+  planPreparationAcquire: "先获得：{species}",
+  planPreparationHatch: "先孵化来源中的蛋；完整孵化条件尚未验证。",
+  planPreparationHelp:
+    "这是按永久进化边展开的一条建议链，不保证最短或当前可进化。持有不代表等级、性别、亲密度、道具、招式、时间及可达条件已满足；不同分支可能需要更多个体。不能通过反转进化边推断孵蛋结果。",
+  planPreparationTruncated: "准备链搜索已达到边界，可能还有其他途径。",
   planSearch: "搜索目标／区域／地图",
   planFilter: "进度状态",
   planExport: "导出独立 HTML",

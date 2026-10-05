@@ -1,3 +1,4 @@
+import { acquisitionKindName } from "./acquisitionLabels";
 import { BreedingPanel } from "./BreedingPanel";
 import { WildHeldDetails } from "./WildHeldDetails";
 import { ConditionDetails } from "./ConditionDetails";
@@ -74,36 +75,7 @@ export function AcquisitionPanel({
         : catalog.moves
     ).find((x) => x.id === v.id)?.name ?? `#${v.id}`;
   const mapName = (id: string) => maps.find((m) => m.id === id)?.name ?? id;
-  const kindName = (kind: string) => {
-    const rod = ({ old_rod: 0, good_rod: 1, super_rod: 2 } as const)[
-      kind as "old_rod"
-    ];
-    if (rod !== undefined)
-      return (
-        catalog.items.find((i) => i.id === catalog.profile.fishing_rods?.[rod])
-          ?.name ?? t(kind)
-      );
-    return t(
-      (
-        {
-          pickup: "mapPickups",
-          hidden: "mapHidden",
-          gift: "mapGifts",
-          pc: "mapGifts",
-          shop: "acqShop",
-          wild_held: "acqWildHeld",
-          wild_held_unreferenced: "heldUnreferenced",
-          evolution: "acqEvolution",
-          breeding_candidate: "acqBreeding",
-          machine: "acqMachine",
-          learn_level: "levelSource",
-          learn_egg: "eggSource",
-          learn_tm: "tm",
-          learn_tutor: "tutor",
-        } as Record<string, string>
-      )[kind] ?? kind,
-    );
-  };
+  const kindName = (kind: string) => acquisitionKindName(kind, catalog, t);
   const filtered = useMemo(
     () =>
       (report?.sources ?? []).filter((s) =>

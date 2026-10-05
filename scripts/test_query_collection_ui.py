@@ -27,6 +27,10 @@ def main():
     source = dict(underfoot=True,kind='pickup',map_id='0-1',region=1,x=1,y=1,related=[],quantity=1,min_level=None,max_level=None,encounter_percent=None,held_percent=None,periods=[],conditions=[],requirements=[],evolution=None,status='unknown',receipt_flag=None,repeatable=None,offset=100,partial=True,in_scenario=None)
     save = dict(trainer={'name':'TEST'},pokemon=[pokemon(2,dict(kind='party',slot=0))],boxes=[dict(index=i,name=f'Box {i}',count=0,wallpaper=0) for i in range(14)],bag=[],dex=[],active_slot=0,counter=1,backup_valid=True,dirty=False,can_undo=False,can_redo=False,changes=[])
     task = dict(target=dict(kind='species',id=1),family=[1],existing_family_members=[],source=source,alternatives=1)
+    catalog['species'][1]['name'] = 'ROM parent'
+    capture = dict(source, kind='grass',underfoot=None,min_level=5,max_level=8,encounter_percent=20,periods=['night'],in_scenario=False)
+    evolution = dict(method=7,condition='item',parameter=1,auxiliary=0,target=1,offset=300,requirements=[])
+    task['preparation'] = dict(origin=2,current_count=0,source=capture,steps=[{'from':2,'evolution':evolution,'related':[dict(kind='item',id=1)]}],needs_hatching=False,truncated=False,partial=True)
     plan = dict(rom_md5='test',basis='individuals',families=True,owned_count=1,missing_count=1,regions=[dict(region=1,tasks=[task])],entrances=[dict(map_id='0-1',chains=[[edge]],truncated=False)],partial=True)
     errors, requests = [], []
     def respond(route):
@@ -67,6 +71,25 @@ def main():
         expect(page.locator('.acquisition-panel')).to_contain_text('Collected' if False else 'Undetermined')
         page.get_by_role('button',name='Collection planning',exact=True).click()
         expect(page.locator('.collection-panel')).to_contain_text('Missing goals 1')
+        prep = page.locator('.collection-preparation')
+        expect(prep).to_contain_text('Evolution preparation suggestion')
+        expect(prep).to_contain_text('Use Test stone')
+        expect(prep).to_contain_text('Encounter slot probability 20%')
+        expect(prep).to_contain_text('Outside the query period')
+        if os.environ.get('GEN3_UI_ARTIFACTS'):
+            out = Path(os.environ['GEN3_UI_ARTIFACTS']); out.mkdir(parents=True, exist_ok=True)
+            prep.screenshot(path=str(out/'evolution-preparation.png'))
+        prep.get_by_role('button',name='Test stone ↗',exact=True).click()
+        expect(page.locator('.acquisition-panel')).to_be_visible()
+        assert requests[-1]['command'] == 'acquisition' and requests[-1]['payload']['kind'] == 'item'
+        page.get_by_role('button',name='Back to previous reference',exact=False).click()
+        page.locator('.collection-preparation').get_by_role('button',name='Test cave floor (1, 1) ↗',exact=True).click()
+        expect(page.locator('.map-focus')).to_be_visible()
+        page.get_by_role('button',name='Back to previous reference',exact=False).click()
+        page.get_by_role('button',name='简体中文',exact=True).click()
+        expect(page.locator('.collection-preparation')).to_contain_text('进化准备建议')
+        expect(page.locator('.collection-preparation')).to_contain_text('使用「Test stone」')
+        page.get_by_role('button',name='English',exact=True).click()
         with page.expect_download() as info:
             page.get_by_role('button',name='Export standalone HTML',exact=True).click()
         html=Path(info.value.path()).read_text()
@@ -74,6 +97,11 @@ def main():
         assert '<script>' not in html and 'default-src' in html
         assert 'Stand on this tile and use the Itemfinder' in html
         assert 'Test region entrance (2, 1)' in html and 'Test cave floor' in html
+        assert 'Evolution preparation suggestion' in html and 'ROM parent → Test species' in html and 'Use Test stone' in html
+        assert 'Encounter slot probability: 20%' in html and 'Outside the query period' in html
+        task['preparation'] = dict(task['preparation'],current_count=2,source=None)
+        page.get_by_role('checkbox',name='Permanent evolution family',exact=True).uncheck()
+        expect(page.locator('.collection-preparation')).to_contain_text('Existing non-egg individuals: ROM parent ↗ × 2')
         assert not any(r['command'] in ('action','export_save','save_bytes') for r in requests)
         assert not errors,errors
         page.set_viewport_size(dict(width=720,height=740))

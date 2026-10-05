@@ -3877,6 +3877,36 @@ fn local_query_acquisition_and_collection_all_profiles() {
                 .unwrap();
             assert_eq!(s.data, original, "planning must be read-only");
             assert!(plan.missing_count > 0);
+            let current = s.all(&r).unwrap();
+            for task in plan.regions.iter().flat_map(|r| &r.tasks) {
+                if let Some(p) = &task.preparation {
+                    assert!(p.partial && !p.steps.is_empty());
+                    let mut from = p.origin;
+                    for step in &p.steps {
+                        assert_eq!(step.from, from);
+                        assert!(index.evolutions[&from]
+                            .iter()
+                            .any(|e| e.offset == step.evolution.offset
+                                && e.target == step.evolution.target));
+                        from = step.evolution.target;
+                    }
+                    assert_eq!(from, task.target.id);
+                    assert_eq!(
+                        p.current_count,
+                        current
+                            .iter()
+                            .filter(|v| v.pokemon.species == p.origin
+                                && !v.pokemon.egg
+                                && v.pokemon.checksum_ok)
+                            .count()
+                    );
+                    if let Some(source) = &p.source {
+                        let id = source.map_id.as_ref().unwrap();
+                        assert!(plan.entrances.iter().any(|e| &e.map_id == id));
+                        assert_ne!(source.kind, "breeding_candidate");
+                    }
+                }
+            }
             if r.profile.save.dex.is_none() {
                 assert_eq!(
                     index
@@ -5721,5 +5751,264 @@ fn local_breeding_production_matches_native_rolls_bag_and_steps() {
             "{key}: all 65536 native draws and {} keyed SAV/override scenarios",
             native["rows"].as_array().unwrap().len()
         );
+    }
+}
+
+#[test]
+fn collection_preparation_uses_directed_edges_current_individuals_and_keeps_saves_unchanged() {
+    use crate::{
+        acquisition::AcquisitionIndex,
+        collection::{CollectionBasis, CollectionRequest},
+        rom::Evolution,
+    };
+    for profile in profile::PROFILES {
+        let (r, map) = npc_trade_fixture(profile);
+        let report = r.map_events(&map).unwrap();
+        let mut index = AcquisitionIndex {
+            wild_cache: Default::default(),
+            world: crate::world::World {
+                maps: vec![map],
+                map_events: vec![report],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: crate::world::TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: (1..=3).map(|id| r.valid_species(id).unwrap()).collect(),
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        let edge = |target, condition, parameter, auxiliary, offset| Evolution {
+            method: 4,
+            condition,
+            parameter,
+            auxiliary,
+            target,
+            offset,
+            requirements: vec![],
+        };
+        index
+            .evolutions
+            .insert(1, vec![edge(2, "level", 20, 0, 100)]);
+        index
+            .evolutions
+            .insert(2, vec![edge(3, "item_hold_item", 1, 2, 200)]);
+        let mut save = Save::open(save_bytes(&r), profile.save).unwrap();
+        let request = || CollectionRequest {
+            basis: CollectionBasis::Individuals,
+            families: false,
+            include_unknown_rewards: false,
+        };
+        let before = save.data.clone();
+        let plan = index.collection(&r, &save, request()).unwrap();
+        let task = plan
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .find(|t| t.target.kind == crate::acquisition::TargetKind::Species && t.target.id == 3)
+            .unwrap();
+        let p = task.preparation.as_ref().unwrap();
+        assert_eq!(
+            (p.origin, p.current_count, p.needs_hatching, p.truncated),
+            (1, 1, false, false)
+        );
+        assert!(p.source.is_none());
+        assert_eq!(
+            p.steps
+                .iter()
+                .map(|s| (s.from, s.evolution.target))
+                .collect::<Vec<_>>(),
+            [(1, 2), (2, 3)]
+        );
+        assert_eq!(
+            p.steps[1].related.iter().map(|t| t.id).collect::<Vec<_>>(),
+            [1, 2]
+        );
+        assert_eq!(
+            task.source.as_ref().unwrap().status,
+            "unknown",
+            "possession must not certify evolution eligibility"
+        );
+        assert_eq!(save.data, before);
+        // Historical Dex records cannot supply a presently usable parent.
+        save.edit(
+            party(),
+            &PokemonPatch {
+                species: Some(3),
+                ..Default::default()
+            },
+            &r,
+            Policy::Free,
+        )
+        .unwrap();
+        if profile.save.dex.is_some() {
+            save.edit_dex(1, true, true).unwrap();
+            for (i, s) in index.species.iter_mut().enumerate() {
+                s.dex_number = i as u16 + 1;
+            }
+            let plan = index
+                .collection(
+                    &r,
+                    &save,
+                    CollectionRequest {
+                        basis: CollectionBasis::Dex,
+                        ..request()
+                    },
+                )
+                .unwrap();
+            assert!(plan
+                .regions
+                .iter()
+                .flat_map(|r| &r.tasks)
+                .filter_map(|t| t.preparation.as_ref())
+                .all(|p| p.current_count == 0 || p.origin == 3));
+        }
+        let before = save.data.clone();
+        let plan = index.collection(&r, &save, request()).unwrap();
+        let first = plan
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .find(|t| t.target.kind == crate::acquisition::TargetKind::Species && t.target.id == 1)
+            .unwrap();
+        assert!(
+            first.preparation.is_none(),
+            "owned final stage cannot be treated as a reverse-evolution parent"
+        );
+        let middle = plan
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .find(|t| t.target.kind == crate::acquisition::TargetKind::Species && t.target.id == 2)
+            .unwrap();
+        assert!(
+            middle.preparation.is_none(),
+            "an unreferenced origin is not an obtainable source"
+        );
+        assert_eq!(save.data, before);
+        // Cycles terminate; eggs are excluded from the actual-individual inventory.
+        index
+            .evolutions
+            .insert(3, vec![edge(1, "unknown", 0, 0, 300)]);
+        save.edit(
+            party(),
+            &PokemonPatch {
+                egg: Some(true),
+                ..Default::default()
+            },
+            &r,
+            Policy::Free,
+        )
+        .unwrap();
+        let before = save.data.clone();
+        let plan = index.collection(&r, &save, request()).unwrap();
+        assert!(plan
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .filter_map(|t| t.preparation.as_ref())
+            .all(|p| p.current_count == 0));
+        assert_eq!(save.data, before);
+    }
+}
+
+#[test]
+#[ignore = "requires all five exact private ROMs; creates only synthetic readonly SAV fixtures"]
+fn local_collection_preparation_all_fingerprints() {
+    use crate::{
+        acquisition::AcquisitionIndex,
+        collection::{CollectionBasis, CollectionRequest},
+    };
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        let index = AcquisitionIndex::build(&r).unwrap();
+        let save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let before = save.data.clone();
+        let rom_before = r.data.clone();
+        let plan = index
+            .collection(
+                &r,
+                &save,
+                CollectionRequest {
+                    basis: CollectionBasis::Individuals,
+                    families: false,
+                    include_unknown_rewards: false,
+                },
+            )
+            .unwrap();
+        let current = save.all(&r).unwrap();
+        let mut chains = 0;
+        let mut possessed = 0;
+        for task in plan.regions.iter().flat_map(|r| &r.tasks) {
+            if let Some(p) = &task.preparation {
+                chains += 1;
+                possessed += usize::from(p.current_count > 0);
+                let mut from = p.origin;
+                assert!(!p.steps.is_empty() && p.steps.len() <= 8 && p.partial);
+                let mut visited = std::collections::BTreeSet::from([from]);
+                for step in &p.steps {
+                    assert_eq!(step.from, from);
+                    let raw = r.evolutions(from).unwrap();
+                    assert!(
+                        raw.iter().any(|e| serde_json::to_value(e).unwrap()
+                            == serde_json::to_value(&step.evolution).unwrap()),
+                        "{key}: evolution must match current ROM"
+                    );
+                    assert_eq!(
+                        serde_json::to_value(&step.related).unwrap(),
+                        serde_json::to_value(crate::acquisition::evolution_targets(
+                            &step.evolution
+                        ))
+                        .unwrap()
+                    );
+                    from = step.evolution.target;
+                    assert!(
+                        visited.insert(from),
+                        "cycle must not become a proposed route"
+                    );
+                }
+                assert_eq!(from, task.target.id);
+                assert_eq!(
+                    p.current_count,
+                    current
+                        .iter()
+                        .filter(|v| v.pokemon.species == p.origin
+                            && !v.pokemon.egg
+                            && v.pokemon.checksum_ok)
+                        .count()
+                );
+                if let Some(source) = &p.source {
+                    let id = source.map_id.as_ref().unwrap();
+                    assert!(plan.entrances.iter().any(|e| &e.map_id == id));
+                    assert!(index
+                        .query(
+                            &r,
+                            Some(&save),
+                            crate::acquisition::Target {
+                                kind: crate::acquisition::TargetKind::Species,
+                                id: p.origin
+                            }
+                        )
+                        .unwrap()
+                        .sources
+                        .iter()
+                        .any(|s| s.offset == source.offset
+                            && s.map_id == source.map_id
+                            && s.kind == source.kind));
+                }
+            }
+        }
+        assert!(
+            chains > 0 && possessed > 0,
+            "{key}: exercise real ROM edges and current origin"
+        );
+        assert_eq!(save.data, before);
+        assert_eq!(*r.data, *rom_before);
+        eprintln!("{key}: {chains} directed preparation chains ({possessed} from current individuals), {} goals; ROM/SAV unchanged",plan.missing_count);
     }
 }

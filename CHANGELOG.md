@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Expand collection suggestions with bounded, directed permanent-evolution
+  preparation chains, actual non-egg ancestor counts, referenced ancestor
+  maps/entrances and item/move links, shared with standalone HTML. Correct missing
+  held-item, gender-dependent and compound evolution cross-links. Keep current
+  eligibility, breeding reversals and global route optimality unproven.
+- 收集建议加入有界的永久进化准备链，区分现有非蛋个体与图鉴历史记录，关联前代
+  来源、地图入口及道具／招式，独立 HTML 同步展示。修复携带道具、性别条件和复合
+  进化的跳转遗漏；不推断当前可进化，不反转进化边代替孵蛋验证，不宣称全局最短。
+
 - Preview ordinary daycare production with the current ROM's native step/item
   branches, an ordinary SAV-bag projection or explicit item simulation, and
   links to required-item acquisition. Verify 270 complete steps, 30 gate cases
