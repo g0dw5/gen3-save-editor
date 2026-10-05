@@ -18,12 +18,12 @@ Version 1.2 is a separate exact profile: MD5
 Both builds are 32 MiB. The original table inventory below describes 1.1;
 the relocated 1.2 entries are recorded in the final section.
 
-水银按精确 MD5 开放 ROM 资料和存档编辑。已在 mGBA 中从新游戏正常保存，
-并验证扇区、角色资料、空队伍、背包、箱名及 RTC 尾部。随后在副本中创建测试
-宝可梦、修改金钱与精灵球及箱名，修改器完成副本回读与校验；1.2 的副本在
-mGBA 中正常加载，同行图标及运行内存字段与编辑结果一致；游戏再次保存后
-完成回读，同行、箱子、捕获球、PID、金钱、球数量及箱名保持正确。真实进度
-中扩展图鉴位等结构仍需另行验证。
+水银按精确 MD5 开放 ROM 资料和存档编辑。早期空背包测试及原版火红地址
+回读不足以验证水银的扩展背包；此前关于精灵球数量“已在游戏验证”的表述已撤回。
+同行、箱子、PID、捕获球、金钱及箱名的个体测试仍保留各自证据。当前 1.2 背包
+已重新从原生初始化／保存例程解析，并以真实含物品存档及游戏再次保存验证，详见
+[地图、地点名和扩展背包修正](../verification/mercury-display-storage-20261005.md)。
+扩展图鉴、有效时钟和完整剧情状态仍需另行验证。
 
 ## Located tables
 
@@ -55,7 +55,7 @@ cross-checked against adjacent records and decoding.
 | Normal palettes | `0x17D64CC`, 1,554 × 8 | `04 88 54 09 00 00 00 00` | ROM header pointer `0x130`; high |
 | Shiny palettes | `0x17E49D4`, 1,554 × 8 | `5C F8 41 09 12 06 00 00` | ROM header pointer `0x134`; tags start at 1554; high |
 | Map groups | `0xB3B100`, 58 group pointers, 871 map headers | `04 20 35 08 98 F7 CA 08` | Native reference at `0x5524C`; group counts bounded and four rendered maps inspected; high for listed maps |
-| Map-section names | `0x45F89C`, pointer names for section IDs 88–255 | `45 0C 1B 08` | Native reference at `0x12DB00`; index 88 is 真新镇; high |
+| Legacy town-map names (superseded for 1.2) | `0x45F89C` | `45 0C 1B 08` | Reference at `0x12DB00` is not the 1.2 `GetMapName` routine. Do not use for current map/met labels. |
 | Trainer roster | `0x23EAC8`, 743 × 40-byte records (742 populated) | `—` | 21 direct references; party records and classes decode; high for raw roster |
 | Trainer classes | `0x23E558`, 107 × 13-byte names | `—` | Two direct references; high |
 | Trainer art | `0x23957C` sprites, `0x239A1C` palettes | `—` | Every portrait used by the parsed roster renders as PNG; high |
@@ -147,8 +147,9 @@ sector checksums and fields. mGBA loaded the 1.2 edited copy with the expected
 party count, species, ball type and PID in native RAM, and displayed its party
 sprite and edited money on the trainer card. The 1.2 game then saved the edited
 copy through its native menu. The editor reopened that save, validated both
-save banks and confirmed party/box species, PID, ball, origin, money, ball
-quantity and box name. mGBA added a supported 16-byte RTC trailer. This covers
+save banks and confirmed party/box species, PID, ball, origin, money and box
+name. The old vanilla-offset ball-count check was insufficient and is superseded
+by the expanded-bag native re-save verification linked above. mGBA added a supported 16-byte RTC trailer. This covers
 the tested core fields, not every later-game extension. No test ROM/save or
 extracted assets are committed.
 
@@ -177,7 +178,7 @@ Additional CFRU checks preserve Gigantamax and hidden-ability flags, including
 native hidden-ability fallback, and avoid forcing even PIDs for species with
 only one ordinary ability.
 The 1.2 native resave regression uses `GEN3_SAVE_MERCURY12_NATIVE`. The custom
-start menu's third icon is Save; the fourth icon changes time. Frame-held
+start menu's fourth icon (zero-based index 3) is Save; the fifth icon changes time. Frame-held
 inputs need spacing through menu transitions in mGBA. Native UI input can miss
 very short key presses; check input routing and the input method before
 interpreting a missed press as an unavailable game feature.
@@ -204,7 +205,16 @@ compared with 737 in 1.1.
 | NPC palettes | `0x1E0E080` | Pointer table and complete used-NPC render pass |
 | Morning / day / dusk / night encounters | `0x1E4779C` / `0x1E3FFB0` / `0x1E458A0` / `0x1E4380C` | Native time-table pointer literals |
 
-The user-supplied 1.2 battery save is 128 KiB. It contains an opening-stage
-trainer and no party/storage Pokémon or bag items. It loads losslessly through
-the shared verified sector layout; this does not establish later-game Pokédex
-or story-state semantics.
+The initial 1.2 fixture was an opening-stage empty save; it did not validate
+expanded inventory decoding. The current 128 KiB fixture has Totodile and six
+Potions. Its met-location field 143 resolves through native `GetMapName` to
+若叶镇. Native bag descriptors and 778 loaded RAM slots now match the reader.
+Further progression, Pokédex and story-state semantics remain unverified.
+
+| Corrected 1.2 structure | Runtime source / layout |
+| --- | --- |
+| Native section labels | `GetMapName 0xC4D78`, table `0xC2B000`, section IDs 88–252; invalid pointers stay absent |
+| Expanded bag pointers | `SetMemoryForBagStorage 0x1D40C70`, table `0x1DDDB84` |
+| Parasite storage | RAM `0x0203B174`, tails of logical sections 0/4/13, then flash sectors 30/31 |
+| Bag quantities | Plain u16, native getter/setter `0x99DD8` / `0x99DDC` |
+| Extended map layers | `DrawMetatile 0x5A9B4` hook `0x1C8BDA0`; attributes `Tileset+20`, bits 28–30; base stride stays 16 bytes |

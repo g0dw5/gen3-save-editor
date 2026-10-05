@@ -42,7 +42,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | P | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury executes its native constructor for explicit zero-context scenarios; independent CPU comparisons are recorded below, while full setup remains unknown. |
 | Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution with party/scenario. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
 | Edit, drag/swap, batch, undo/export safety / 编辑事务 | V | V | V | V | V | `session.rs`, [save integrity](research/save-integrity.md). Checksums, record preservation, rollback, backup and source conflict checks; linked mail changes blocked. Scope is represented fields, not all in-game legitimacy rules. |
-| Edited SAV in-game save and re-read / 模拟器再次保存 | P | P | P | P | V | Mercury 1.2 mGBA load, game save and re-read of disposable edited party/box/items verified. Other individual emulator experiments do not certify every edit or format. |
+| Edited SAV in-game save and re-read / 模拟器再次保存 | P | P | P | P | V | Mercury 1.2 mGBA party/box core fields and corrected expanded-bag editing/re-save verified; earlier vanilla-offset inventory claims were withdrawn. [Correction evidence](verification/mercury-display-storage-20261005.md). Other individual emulator experiments do not certify every edit or format. |
 | Missing collection, regional planning, HTML / 缺失与路线规划 | P | P | P | P | P | `collection.rs` and shared Collection planning UI: read-only SAV missing goals, regions, static entrances and standalone HTML. Full task DAG/access/time remain partial. Mercury uses existing individuals; expanded Dex flags stay disabled. |
 
 ## Reproducible baseline / 可重复基线
@@ -129,3 +129,19 @@ coverage merely by an interface. See [the current verification and gaps](verific
 
 水银普通配队由待验证提升为部分验证，展示原生构造器的情景结果。领取标记、
 虚拟时钟、完整剧情依赖、特殊设施等缺口仍未关闭，详见增量验证记录。
+
+## Mercury display/storage correction / 水银显示与背包修正
+
+The opening-stage empty fixture and vanilla FireRed pocket reads did **not**
+prove the expanded bag. The current reader uses native descriptors, section tails
+and shared auxiliary flash sectors, with plaintext quantities. A real current SAV
+matches all 778 native RAM bag slots; edited quantities survive an actual mGBA
+Save-menu save and re-read without changing the Pokémon. Map/met labels use native
+`GetMapName`, not the legacy town-map table. The extended metatile hook is
+reproduced; map 1-0 also renders incorrectly on direct native load and has inbound
+ROM references, so neither normal appearance nor unreachability is asserted.
+Maps remain **P**. See [scope and evidence](verification/mercury-display-storage-20261005.md).
+
+早期空背包／原版地址回读不构成扩展背包证明。当前背包已对照原生内存及游戏
+再次保存核验。地图名称表与扩展图层已修正；1-0 有入口引用，在原生直接加载时
+也错乱，不能宣称废弃或已还原正常游戏场景。地图总体仍为部分验证。

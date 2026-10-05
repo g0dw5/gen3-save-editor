@@ -2700,7 +2700,49 @@ fn adapter_inventory_crosses_logical_sectors_without_touching_other_bytes() {
                     profile.id,
                     pocket.id
                 );
-                assert_eq!(&save.data[14 * 4096..], &original[14 * 4096..]);
+                let mut expected_file = original.clone();
+                // Permit only the addressed slot and necessary main-bank checksum.
+                let mut remaining = 0;
+                let spans: Vec<(usize, usize)> =
+                    if pocket.block == crate::save::PocketBlock::SectorExtensions {
+                        (0..14)
+                            .map(|id| {
+                                (
+                                    save.sections[id] + profile.save.sizes[id],
+                                    0xff0 - profile.save.sizes[id],
+                                )
+                            })
+                            .chain(
+                                profile
+                                    .save
+                                    .extension_sectors
+                                    .unwrap()
+                                    .iter()
+                                    .map(|id| (id * 4096, 0xff0)),
+                            )
+                            .collect()
+                    } else {
+                        (1..=4)
+                            .map(|id| (save.sections[id], profile.save.sizes[id]))
+                            .collect()
+                    };
+                for (off, len) in spans {
+                    for i in 0..len {
+                        if (offset..offset + 4).contains(&(remaining + i)) {
+                            expected_file[off + i] = save.data[off + i];
+                        }
+                    }
+                    remaining += len;
+                }
+                for id in 0..14 {
+                    let off = save.sections[id] + 0xff6;
+                    expected_file[off..off + 2].copy_from_slice(&save.data[off..off + 2]);
+                }
+                assert_eq!(
+                    save.data, expected_file,
+                    "{} {} {index} unrelated bytes",
+                    profile.id, pocket.id
+                );
             }
         }
     }
@@ -3056,4 +3098,72 @@ fn local_query_acquisition_and_collection_all_profiles() {
 #[cfg(test)]
 pub(crate) fn query_fixture_rom() -> Rom {
     rom()
+}
+
+#[test]
+fn native_extension_configuration_rejects_overlaps_and_invalid_sector_bounds() {
+    let r = adapter_rom(crate::mercury::PROFILE);
+    let bytes = save_bytes(&r);
+    for sectors in [&[27_usize][..], &[32][..], &[30, 30][..]] {
+        let sectors: &'static [usize] = Box::leak(sectors.to_vec().into_boxed_slice());
+        let mut layout = r.profile.save;
+        layout.extension_sectors = Some(sectors);
+        assert_eq!(
+            Save::open(bytes.clone(), layout).err().unwrap().code,
+            "save_layout"
+        );
+    }
+    let mut layout = r.profile.save;
+    layout.sizes[0] = 0xff4;
+    assert_eq!(Save::open(bytes, layout).err().unwrap().code, "save_layout");
+}
+
+#[test]
+#[ignore = "requires private exact Mercury 1.2 ROM and current SAV"]
+fn local_mercury_storage_roundtrip() {
+    let r =
+        Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap()).unwrap();
+    let original = std::fs::read(std::env::var("GEN3_SAVE_MERCURY12").unwrap()).unwrap();
+    let save = Save::open(original.clone(), r.profile.save).unwrap();
+    save.validate(&r).unwrap();
+    assert_eq!(save.bag().unwrap().len(), 808);
+    let mut session = Session::new(r.clone());
+    session.load(original.clone(), None).unwrap();
+    for pocket in r.profile.save.pockets {
+        let item = (1..r.profile.items.count as u16)
+            .find(|id| r.item(*id).unwrap().pocket == pocket.category || pocket.category == 0)
+            .unwrap();
+        for slot in [0, pocket.count - 1] {
+            let before = session.snapshot().unwrap();
+            session
+                .apply(
+                    Action::Bag {
+                        pocket: pocket.id.into(),
+                        slot,
+                        item,
+                        quantity: 1,
+                    },
+                    Policy::Standard,
+                )
+                .unwrap();
+            let after = session.snapshot().unwrap();
+            assert_eq!(
+                serde_json::to_value(before.pokemon).unwrap(),
+                serde_json::to_value(after.pokemon).unwrap()
+            );
+            Save::open(session.save_ref().unwrap().data.clone(), r.profile.save)
+                .unwrap()
+                .validate(&r)
+                .unwrap();
+            session.undo().unwrap();
+            assert_eq!(session.save_ref().unwrap().data, original);
+        }
+    }
+    assert_eq!(r.region_name(143), "若叶镇");
+    assert_eq!(
+        r.map_image_warnings("1-0").unwrap(),
+        ["mapNativeLayoutMismatch"]
+    );
+    // A playable/current map has no mismatched-layout annotation.
+    assert!(r.map_image_warnings("3-79").unwrap().is_empty());
 }

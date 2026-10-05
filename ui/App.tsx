@@ -1124,11 +1124,12 @@ function BagEditor({
   const [quantity, setQuantity] = useState(1);
   useEffect(() => {
     setItem(selected?.item ?? 0);
-    setQuantity(selected?.quantity || 1);
+    setQuantity(selected?.item ? selected.quantity : 1);
   }, [selected]);
   const dirty =
     !!selected &&
-    (item !== selected.item || quantity !== (selected.quantity || 1));
+    (item !== selected.item ||
+      quantity !== (selected.item ? selected.quantity : 1));
   useEffect(() => onDirty(dirty), [dirty, onDirty]);
   const guardBag = async () =>
     !dirty || (await confirmAction(t("unsavedPrompt")));
@@ -1155,7 +1156,7 @@ function BagEditor({
                   (e) => e.pocket === k && e.slot === 0,
                 );
                 setItem(first?.item ?? 0);
-                setQuantity(first?.quantity || 1);
+                setQuantity(first?.item ? first.quantity : 1);
               }
             }}
           >
@@ -1188,7 +1189,7 @@ function BagEditor({
                     <span className="muted">{t("empty")}</span>
                   )}
                 </td>
-                <td>{e.quantity || "—"}</td>
+                <td>{e.item ? e.quantity : "—"}</td>
                 <td>
                   <button
                     disabled={saving}
@@ -1196,7 +1197,7 @@ function BagEditor({
                       if (await guardBag()) {
                         setSelectedSlot(e.slot);
                         setItem(e.item);
-                        setQuantity(e.quantity || 1);
+                        setQuantity(e.item ? e.quantity : 1);
                       }
                     }}
                   >

@@ -262,25 +262,31 @@ fn slot(data: &[u8], base: usize, layout: SaveLayout) -> Result<([usize; 14], u3
     Ok((std::array::from_fn(|id| refs[&id]), counter.unwrap()))
 }
 impl Save {
-    /// Ultimate's native save hook appends one RAM block through the spare tails
-    /// of all fourteen logical sectors, stopping before the footer at 0xFF0.
+    /// Native extension storage is independent of the main-sector checksum rule.
+    /// Mercury additionally uses shared flash sectors 30/31 outside both save banks.
     pub(crate) fn extensions(&self) -> Vec<u8> {
-        if self.layout.sector_checksum != crate::profile::SectorChecksum::NativeConstantOne {
+        let Some(sectors) = self.layout.extension_sectors else {
             return Vec::new();
-        }
-        (0..14)
+        };
+        let mut data: Vec<u8> = (0..14)
             .flat_map(|id| {
                 self.data[self.sections[id] + self.layout.sizes[id]..self.sections[id] + 0xff0]
                     .iter()
                     .copied()
             })
-            .collect()
+            .collect();
+        for sector in sectors {
+            data.extend_from_slice(&self.data[sector * SECTOR..sector * SECTOR + 0xff0]);
+        }
+        data
     }
     fn write_extensions(&mut self, data: &[u8]) -> Result<()> {
-        if self.layout.sector_checksum != crate::profile::SectorChecksum::NativeConstantOne {
-            return Err(err("unsupported_feature", "sector extensions"));
-        }
-        let total: usize = self.layout.sizes.iter().map(|n| 0xff0 - n).sum();
+        let sectors = self
+            .layout
+            .extension_sectors
+            .ok_or_else(|| err("unsupported_feature", "sector extensions"))?;
+        let total: usize =
+            self.layout.sizes.iter().map(|n| 0xff0 - n).sum::<usize>() + sectors.len() * 0xff0;
         if data.len() != total {
             return Err(err("block_size", data.len()));
         }
@@ -292,9 +298,26 @@ impl Save {
             pos += n;
             self.fix(id);
         }
+        for sector in sectors {
+            let off = sector * SECTOR;
+            // These native auxiliary sectors have no main-bank checksum/footer format.
+            self.data[off..off + 0xff0].copy_from_slice(&data[pos..pos + 0xff0]);
+            pos += 0xff0;
+        }
         Ok(())
     }
     pub fn open(data: Vec<u8>, layout: SaveLayout) -> Result<Self> {
+        if let Some(sectors) = layout.extension_sectors {
+            if layout.sizes.iter().any(|size| *size > 0xff0)
+                || sectors.iter().any(|sector| !(28..32).contains(sector))
+                || sectors
+                    .iter()
+                    .enumerate()
+                    .any(|(i, sector)| sectors[..i].contains(sector))
+            {
+                return Err(err("save_layout", "invalid native extension storage"));
+            }
+        }
         if data.len() != 0x20000
             && !(layout.rtc_trailer_bytes > 0 && data.len() == 0x20000 + layout.rtc_trailer_bytes)
         {

@@ -26,6 +26,7 @@ const icons = { pickup: CircleDot, hidden: Sparkles, gift: Gift, npc: Users };
 export function MapExplorer({
   map,
   image,
+  warnings = [],
   report,
   catalog,
   fishing,
@@ -36,6 +37,7 @@ export function MapExplorer({
 }: {
   map: GameMap;
   image: string;
+  warnings?: string[];
   report?: MapEventReport;
   catalog: Catalog;
   fishing?: FishingReport | null;
@@ -217,6 +219,11 @@ export function MapExplorer({
           )}
         </div>
       )}
+      {warnings.map((warning) => (
+        <p key={warning} className="warning-text" role="status">
+          {t(warning as Parameters<typeof t>[0])}
+        </p>
+      ))}
       {map.invalid_events && (
         <p className="warning-text">{t("mapEventUnavailable")}</p>
       )}

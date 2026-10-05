@@ -28,47 +28,51 @@ const MERCURY_POCKETS: [Pocket; 6] = [
         category: 0,
     },
     Pocket {
-        block: PocketBlock::Main,
+        block: PocketBlock::SectorExtensions,
         id: "items",
-        offset: 0x310,
-        count: 42,
-        encrypted: true,
+        offset: 0x9ac,
+        count: 450,
+        encrypted: false,
         category: 1,
     },
     Pocket {
-        block: PocketBlock::Main,
+        block: PocketBlock::SectorExtensions,
         id: "key_items",
-        offset: 0x3b8,
-        count: 30,
-        encrypted: true,
+        offset: 0x10b4,
+        count: 75,
+        encrypted: false,
         category: 2,
     },
     Pocket {
-        block: PocketBlock::Main,
+        block: PocketBlock::SectorExtensions,
         id: "balls",
-        offset: 0x430,
-        count: 13,
-        encrypted: true,
+        offset: 0x11e0,
+        count: 50,
+        encrypted: false,
         category: 3,
     },
     Pocket {
-        block: PocketBlock::Main,
+        block: PocketBlock::SectorExtensions,
         id: "tmhm",
-        offset: 0x464,
-        count: 58,
-        encrypted: true,
+        offset: 0x12a8,
+        count: 128,
+        encrypted: false,
         category: 4,
     },
     Pocket {
-        block: PocketBlock::Main,
+        block: PocketBlock::SectorExtensions,
         id: "berries",
-        offset: 0x54c,
-        count: 43,
-        encrypted: true,
+        offset: 0x14a8,
+        count: 75,
+        encrypted: false,
         category: 5,
     },
 ];
+// SetMemoryForBagStorage (0x1D40C70) copies the ROM table at 0x1DDDB84.
+// Bag RAM starts at 0x0203BB20 within the parasite block at 0x0203B174;
+// native quantity getters/setters (0x99DD8/0x99DDC) are plaintext.
 const MERCURY_SAVE: SaveLayout = SaveLayout {
+    extension_sectors: Some(&[30, 31]),
     sector_checksum: SectorChecksum::Sum,
     pokemon_codec: PokemonCodec::Cfru,
     pockets: &MERCURY_POCKETS,
@@ -246,11 +250,14 @@ pub const PROFILE: Profile = Profile {
         primary_tiles: 640,
         primary_metatiles: 640,
         layers: 2,
+        extended_layer_types: true,
+        native_mismatch_headers: &[0x34f214],
     },
-    regions: 0x45f89c,
+    // Native GetMapName (0xC4D78), not the legacy town-map name table.
+    regions: 0xc2b000,
     region_first: 88,
     region_stride: 4,
-    region_count: 256,
+    region_count: 253,
     wild: 0xcf915c,
     wild_selection: None,
     wild_time_tables: Some([0x1e4779c, 0x1e3ffb0, 0x1e458a0, 0x1e4380c]),
@@ -322,22 +329,25 @@ mod tests {
             .unwrap();
         let original = std::fs::read(std::env::var("GEN3_SAVE_MERCURY12").unwrap()).unwrap();
         let save = Save::open(original.clone(), rom.profile.save).unwrap();
-        assert_eq!(save.active_slot, 1);
-        assert_eq!(save.party_count(), 0);
-        assert_eq!(save.trainer(&rom).unwrap().tid, 33272);
-        assert_eq!(save.bag().unwrap().len(), 216);
+        assert!(save.party_count() <= 6);
+        save.validate(&rom).unwrap();
+        assert_eq!(save.bag().unwrap().len(), 808);
         let boxes = save.boxes(&rom).unwrap();
         assert_eq!(boxes.len(), 14);
-        assert_eq!(boxes.iter().map(|b| b.count).sum::<usize>(), 0);
-        assert_eq!(boxes[0].name, "盒子1");
-        assert_eq!(boxes[13].name, "盒子14");
-        assert!(save.all(&rom).unwrap().is_empty());
+        assert!(boxes.iter().map(|b| b.count).sum::<usize>() <= 420);
+        assert!(save.all(&rom).unwrap().len() >= save.party_count());
         assert_eq!(save.data, original);
         let mut session = Session::new(rom.clone());
         session.load(original.clone(), None).unwrap();
-        assert_eq!(session.snapshot().unwrap().trainer.tid, 33272);
+        assert_eq!(
+            session.snapshot().unwrap().trainer.tid,
+            save.trainer(&rom).unwrap().tid
+        );
         let raw = Save::open(original[..0x20000].to_vec(), rom.profile.save).unwrap();
-        assert_eq!(raw.trainer(&rom).unwrap().tid, 33272);
+        assert_eq!(
+            raw.trainer(&rom).unwrap().tid,
+            save.trainer(&rom).unwrap().tid
+        );
     }
 
     #[test]

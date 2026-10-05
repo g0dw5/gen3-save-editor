@@ -13,6 +13,12 @@ pub struct MapGraphics {
     pub primary_tiles: usize,
     pub primary_metatiles: usize,
     pub layers: usize,
+    /// FireRed-style u32 metatile attributes at Tileset+20, bits 28..30.
+    /// Extended type 3 reads a third layer without changing the 16-byte stride.
+    pub extended_layer_types: bool,
+    /// Static layouts independently reproduced as mismatched in the native engine.
+    /// These are validation annotations, not replacement artwork or map content.
+    pub native_mismatch_headers: &'static [usize],
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct SplitText {
@@ -199,6 +205,9 @@ pub struct MapGroup {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct SaveLayout {
+    /// Native extension RAM is stored in logical sector tails, then these flash sectors.
+    /// None disables extensions; Some(&[]) uses only the tails.
+    pub extension_sectors: Option<&'static [usize]>,
     pub sector_checksum: SectorChecksum,
     pub pokemon_codec: crate::adapter::PokemonCodec,
     pub pockets: &'static [crate::save::Pocket],
@@ -235,6 +244,7 @@ pub struct DexLayout {
     pub seen_mirrors: &'static [usize],
 }
 pub const EMERALD: SaveLayout = SaveLayout {
+    extension_sectors: None,
     sector_checksum: SectorChecksum::Sum,
     pokemon_codec: crate::adapter::PokemonCodec::Gen3,
     pockets: &crate::save::POCKETS,
@@ -394,6 +404,8 @@ pub const BW: Profile = Profile {
         primary_tiles: 512,
         primary_metatiles: 512,
         layers: 2,
+        extended_layer_types: false,
+        native_mismatch_headers: &[],
     },
     fishing_rods: [262, 263, 264],
     regions: 0x5a1480,
@@ -599,6 +611,8 @@ pub const ROCKET: Profile = Profile {
         primary_tiles: 640,
         primary_metatiles: 640,
         layers: 3,
+        extended_layer_types: false,
+        native_mismatch_headers: &[],
     },
     fishing_rods: [866, 867, 868],
     regions: 0xc6ad68,

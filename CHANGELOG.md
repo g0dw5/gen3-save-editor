@@ -10,6 +10,16 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Correct Mercury 1.2 expanded bag storage (sector tails and auxiliary sectors),
+  plaintext quantities, and native map/met-location names. Preserve displayed
+  zero quantities instead of silently treating them as one. Reproduce extended
+  metatile layers, filler/backdrop transparency, and flag unresolved native layouts.
+- 修正水银 1.2 的扩展背包位置与数量读写、地图及相遇地点名称；数量为零时
+  列表和详情一致显示，不擅自变成一个。按原生规则绘制扩展图层、填充及透明
+  背景；标注在原生模拟器直接加载时同样错乱或图层行为无法确定的静态布局。
+  已用含物品的真实存档副本验证加载、编辑、撤销、导出及游戏再次保存回读。
+
+
 - Execute Mercury 1.2 ordinary trainer construction in read-only isolated RAM,
   with explicit scenario seeds and independently verified generated values.
   Preserve unknown FireRed hidden-item quantity/receipt packing; improve alternate

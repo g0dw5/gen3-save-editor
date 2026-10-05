@@ -132,6 +132,7 @@ export function ReferenceWindow({
   );
   const [detail, setDetail] = useState<SpeciesDetail | null>(null);
   const [mapImage, setMapImage] = useState("");
+  const [mapImageWarnings, setMapImageWarnings] = useState<string[]>([]);
   const [mapImageError, setMapImageError] = useState(false);
   const [fishingState, setFishingState] = useState<{
     save: Snapshot | null;
@@ -236,11 +237,15 @@ export function ReferenceWindow({
   useEffect(() => {
     let active = true;
     setMapImage("");
+    setMapImageWarnings([]);
     setMapImageError(false);
     if (tab === "maps" && typeof selected === "string")
-      api<{ url: string }>("map_image", { id: selected })
+      api<{ url: string; warnings?: string[] }>("map_image", { id: selected })
         .then((r) => {
-          if (active) setMapImage(r.url);
+          if (active) {
+            setMapImage(r.url);
+            setMapImageWarnings(r.warnings ?? []);
+          }
         })
         .catch((error) => {
           if (active) {
@@ -251,7 +256,7 @@ export function ReferenceWindow({
     return () => {
       active = false;
     };
-  }, [tab, selected, onError]);
+  }, [tab, selected, catalog.profile.md5, onError]);
   useEffect(() => {
     let active = true;
     setNavigation(null);
@@ -802,6 +807,7 @@ export function ReferenceWindow({
                   <MapExplorer
                     map={current as GameMap}
                     image={mapImage}
+                    warnings={mapImageWarnings}
                     report={world?.map_events.find(
                       (m) => m.map_id === selected,
                     )}

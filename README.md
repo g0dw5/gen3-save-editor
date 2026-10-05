@@ -183,3 +183,8 @@ Mercury trainer references execute the loaded ROM's ordinary-party constructor
 in isolated RAM. These are explicitly seeded, zero-context scenarios; script
 replacements, special facilities and full live battle-entry state remain unknown.
 [Verification and current gaps](docs/verification/query-collection-20261005.md).
+
+Mercury 1.2 uses its native expanded inventory and section-name table. Static maps
+with independently reproduced native layout mismatches or unresolved layer types
+show warnings; a parsed map entry is not proof of a normally accessible area.
+Validation scope: [Mercury display/storage](docs/verification/mercury-display-storage-20261005.md).

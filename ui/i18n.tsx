@@ -1,5 +1,9 @@
 import { createContext, useContext } from "react";
 export const en = {
+  mapUnknownLayerType:
+    "Some cells use a layer type whose native routine retains the previous screen contents. Their static appearance cannot be determined; those cells use the backdrop color.",
+  mapNativeLayoutMismatch:
+    "This static ROM layout also renders with mismatched tiles when loaded directly in the native emulator. Whether a normal entrance replaces the layout is unverified; this image does not establish the appearance or accessibility of a playable area.",
   clockScenario: "Time query scenario",
   clockUnknown:
     "The current effective game time has not been verified from this SAV. This query never reads device time or changes the game clock.",
@@ -815,6 +819,10 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  mapUnknownLayerType:
+    "部分格块使用了原生绘制例程不更新画面的图层类型，静态样貌无法确定；这些格块暂以背景色显示。",
+  mapNativeLayoutMismatch:
+    "此 ROM 静态布局在模拟器直接加载时也出现贴图错乱。正常入口是否会替换布局尚未确认；这张图不能证明实际可游玩区域的样貌或可达性。",
   clockScenario: "时间查询情景",
   clockUnknown:
     "当前 SAV 的有效游戏时间尚未验证。此查询不读取设备时间，也不更改游戏时钟。",

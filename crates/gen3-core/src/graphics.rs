@@ -198,6 +198,40 @@ impl Rom {
         let palette = bytes(b, pointer(b, palette_offset)?, 32)?;
         tiled_sprite(tiles, palette, width, height)
     }
+    pub fn map_image_warnings(&self, id: &str) -> Result<Vec<&'static str>> {
+        let maps = self.maps()?;
+        let map = maps
+            .iter()
+            .find(|m| m.id == id)
+            .ok_or_else(|| err("map_id", id))?;
+        let mut warnings = Vec::new();
+        let rules = self.profile.map_graphics;
+        if rules.native_mismatch_headers.contains(&map.header) {
+            warnings.push("mapNativeLayoutMismatch");
+        }
+        if rules.extended_layer_types {
+            let b = &self.data;
+            let blocks = pointer(b, map.layout + 12)?;
+            let attributes = [
+                pointer(b, pointer(b, map.layout + 16)? + 20)?,
+                pointer(b, pointer(b, map.layout + 20)? + 20)?,
+            ];
+            for cell in 0..map.width as usize * map.height as usize {
+                let id = u16(b, blocks + cell * 2)? as usize & 1023;
+                let (set, local) = if id < rules.primary_metatiles {
+                    (0, id)
+                } else {
+                    (1, id - rules.primary_metatiles)
+                };
+                if (u32(b, attributes[set] + local * 4)? >> 28) & 7 > 4 {
+                    warnings.push("mapUnknownLayerType");
+                    break;
+                }
+            }
+        }
+        Ok(warnings)
+    }
+
     pub fn map_image(&self, id: &str) -> Result<Vec<u8>> {
         let maps = self.maps()?;
         let m = maps
@@ -212,8 +246,18 @@ impl Rom {
         let b = &self.data;
         let blocks = pointer(b, m.layout + 12)?;
         let rules = self.profile.map_graphics;
-        let primary = Tileset::read(b, pointer(b, m.layout + 16)?, rules.primary_tiles)?;
-        let secondary = Tileset::read(b, pointer(b, m.layout + 20)?, 1024 - rules.primary_tiles)?;
+        let primary = Tileset::read(
+            b,
+            pointer(b, m.layout + 16)?,
+            rules.primary_tiles,
+            rules.extended_layer_types,
+        )?;
+        let secondary = Tileset::read(
+            b,
+            pointer(b, m.layout + 20)?,
+            1024 - rules.primary_tiles,
+            rules.extended_layer_types,
+        )?;
         let palette = map_palette(
             &primary.palette,
             &secondary.palette,
@@ -255,9 +299,40 @@ fn render_map(
                 (secondary, id - rules.primary_metatiles)
             };
             let meta = set.metatiles + local_id * rules.layers * 8;
-            for layer in 0..rules.layers {
-                for part in 0..4 {
-                    let e = u16(b, meta + (layer * 4 + part) * 2)?;
+            // Mirror the native BG3/BG2/BG1 assignments, including its filler
+            // tile and transparent index zero. Type 3 retains the 16-byte stride.
+            let read_layer = |layer: usize| -> Result<[u16; 4]> {
+                let mut entries = [0; 4];
+                for (part, entry) in entries.iter_mut().enumerate() {
+                    *entry = u16(b, meta + (layer * 4 + part) * 2)?;
+                }
+                Ok(entries)
+            };
+            let entries = if let Some(attributes) = set.attributes {
+                match (u32(b, attributes + local_id * 4)? >> 28) & 7 {
+                    0 | 1 => vec![[0x3014; 4], read_layer(0)?, read_layer(1)?],
+                    2 => vec![read_layer(0)?, read_layer(1)?, [0; 4]],
+                    3 => vec![read_layer(0)?, read_layer(1)?, read_layer(2)?],
+                    4 => vec![read_layer(0)?, [0; 4], read_layer(1)?],
+                    // The native hook leaves the previous BG cells intact for
+                    // unknown types. There is no deterministic static replacement.
+                    _ => Vec::new(),
+                }
+            } else {
+                (0..rules.layers)
+                    .map(read_layer)
+                    .collect::<Result<Vec<_>>>()?
+            };
+            if rules.extended_layer_types {
+                for py in 0..16 {
+                    for px in 0..16 {
+                        let off = ((by * 16 + py) * w + bx * 16 + px) * 4;
+                        rgba[off..off + 4].copy_from_slice(&color(u16(palette, 0)?, 255));
+                    }
+                }
+            }
+            for (layer, entries) in entries.iter().enumerate() {
+                for (part, e) in entries.iter().copied().enumerate() {
                     let tile = (e & 1023) as usize;
                     let (set, local_tile) = if tile < rules.primary_tiles {
                         (primary, tile)
@@ -272,7 +347,7 @@ fn render_map(
                             let off = local_tile * 32 + ty * 4 + tx / 2;
                             let v = *set.tiles.get(off).unwrap_or(&0);
                             let index = if tx % 2 == 0 { v & 15 } else { v >> 4 };
-                            if layer > 0 && index == 0 {
+                            if (rules.extended_layer_types || layer > 0) && index == 0 {
                                 continue;
                             }
                             let x = bx * 16 + (part % 2) * 8 + px;
@@ -309,9 +384,10 @@ struct Tileset {
     tiles: Vec<u8>,
     palette: Vec<u8>,
     metatiles: usize,
+    attributes: Option<usize>,
 }
 impl Tileset {
-    fn read(b: &[u8], o: usize, tile_count: usize) -> Result<Self> {
+    fn read(b: &[u8], o: usize, tile_count: usize, extended_layer_types: bool) -> Result<Self> {
         bytes(b, o, 24)?;
         let p = pointer(b, o + 4)?;
         let tiles = if b[o] != 0 {
@@ -324,6 +400,11 @@ impl Tileset {
             tiles,
             palette,
             metatiles: pointer(b, o + 12)?,
+            attributes: if extended_layer_types {
+                Some(pointer(b, o + 20)?)
+            } else {
+                None
+            },
         })
     }
 }
@@ -348,11 +429,13 @@ mod appearance_tests {
                 tiles: vec![0; rules.primary_tiles * 32],
                 palette: vec![0; 512],
                 metatiles: 32,
+                attributes: rules.extended_layer_types.then_some(112),
             };
             let mut secondary = Tileset {
                 tiles: vec![0; 32],
                 palette: vec![0; 512],
                 metatiles: 64,
+                attributes: rules.extended_layer_types.then_some(116),
             };
             primary.tiles[(rules.primary_tiles - 1) * 32..].fill(0x11);
             secondary.tiles[31] = 0x20; // Bottom-right pixel, moved to top-left by XY flip.
@@ -393,6 +476,85 @@ mod appearance_tests {
                         profile.id
                     );
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn extended_metatiles_read_third_layer_without_changing_base_stride() {
+        let rules = crate::mercury::PROFILE.map_graphics;
+        let mut data = vec![0; 128];
+        crate::binary::put16(&mut data, 2, 1);
+        crate::binary::put32(&mut data, 96, 3 << 28);
+        crate::binary::put32(&mut data, 100, 2 << 28);
+        for part in 0..4 {
+            crate::binary::put16(&mut data, 32 + part * 2, 1);
+            // The following metatile's base is also the type-3 cell's third layer.
+            crate::binary::put16(&mut data, 48 + part * 2, 3);
+            crate::binary::put16(&mut data, 56 + part * 2, 2);
+        }
+        let mut primary = Tileset {
+            tiles: vec![0; rules.primary_tiles * 32],
+            palette: vec![0; 512],
+            metatiles: 32,
+            attributes: Some(96),
+        };
+        for tile in 1..4 {
+            primary.tiles[tile * 32..(tile + 1) * 32].fill(tile as u8 * 17);
+        }
+        let secondary = Tileset {
+            tiles: vec![0; 32],
+            palette: vec![0; 512],
+            metatiles: 64,
+            attributes: Some(112),
+        };
+        let mut palette = [0; 512];
+        crate::binary::put16(&mut palette, 2, 31);
+        crate::binary::put16(&mut palette, 4, 31 << 5);
+        crate::binary::put16(&mut palette, 6, 31 << 10);
+        let rgba = render_map(&data, 0, 2, 1, rules, [&primary, &secondary], &palette).unwrap();
+        for y in 0..16 {
+            for x in 0..32 {
+                let expected = if x < 16 {
+                    [0, 0, 255, 255]
+                } else {
+                    [0, 255, 0, 255]
+                };
+                assert_eq!(&rgba[(y * 32 + x) * 4..(y * 32 + x + 1) * 4], &expected);
+            }
+        }
+    }
+
+    #[test]
+    fn extended_transparency_uses_native_filler_and_shared_backdrop() {
+        let rules = crate::mercury::PROFILE.map_graphics;
+        let mut data = vec![0; 128];
+        crate::binary::put16(&mut data, 2, 1);
+        crate::binary::put32(&mut data, 100, 2 << 28);
+        let mut primary = Tileset {
+            tiles: vec![0; rules.primary_tiles * 32],
+            palette: vec![0; 512],
+            metatiles: 32,
+            attributes: Some(96),
+        };
+        primary.tiles[20 * 32..21 * 32].fill(0x11);
+        let secondary = Tileset {
+            tiles: vec![0; 32],
+            palette: vec![0; 512],
+            metatiles: 64,
+            attributes: Some(112),
+        };
+        let mut palette = [0; 512];
+        crate::binary::put16(&mut palette, 3 * 32 + 2, 31);
+        let rgba = render_map(&data, 0, 2, 1, rules, [&primary, &secondary], &palette).unwrap();
+        for y in 0..16 {
+            for x in 0..32 {
+                let expected = if x < 16 {
+                    [255, 0, 0, 255]
+                } else {
+                    [0, 0, 0, 255]
+                };
+                assert_eq!(&rgba[(y * 32 + x) * 4..(y * 32 + x + 1) * 4], &expected);
             }
         }
     }

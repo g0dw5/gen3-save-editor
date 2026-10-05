@@ -207,6 +207,7 @@ pub const PROFILE: Profile = Profile {
     }),
     battle_forms: Some(crate::forms::BattleFormRules::UltimateEvolutionMethods),
     save: SaveLayout {
+        extension_sectors: Some(&[]),
         sector_checksum: SectorChecksum::NativeConstantOne,
         pokemon_codec: PokemonCodec::Ultimate55,
         pockets: &POCKETS,

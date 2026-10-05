@@ -290,7 +290,8 @@ impl App {
             "map_image" => {
                 let id = required(&p, "id")?;
                 Ok(
-                    json!({"url":format!("data:image/png;base64,{}",STANDARD.encode(self.session()?.rom.map_image(&id)?))}),
+                    json!({"url":format!("data:image/png;base64,{}",STANDARD.encode(self.session()?.rom.map_image(&id)?)),
+                        "warnings": self.session()?.rom.map_image_warnings(&id)?}),
                 )
             }
             "export_pokemon" => {
