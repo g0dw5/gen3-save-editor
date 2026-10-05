@@ -189,11 +189,14 @@ export function AcquisitionPanel({
                   </small>
                 )}
               </div>
+              {s.receipt && (
+                <p className="small muted">{t("acqGiftReceiptHelp")}</p>
+              )}
               {s.underfoot === true && (
                 <p className="small muted">{t("mapHiddenUnderfoot")}</p>
               )}
               {save &&
-                ["pickup", "hidden"].includes(s.kind) &&
+                ["pickup", "hidden", "gift", "pc"].includes(s.kind) &&
                 s.receipt_flag == null && (
                   <p className="small muted">{t("acqReceiptUnknown")}</p>
                 )}

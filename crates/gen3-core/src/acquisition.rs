@@ -52,6 +52,7 @@ pub struct AcquisitionSource {
     pub evolution: Option<Evolution>,
     pub status: &'static str,
     pub receipt_flag: Option<u16>,
+    pub receipt: Option<crate::map_events::ReceiptEvidence>,
     pub repeatable: Option<bool>,
     pub offset: usize,
     pub partial: bool,
@@ -90,6 +91,7 @@ fn source(kind: &str, offset: usize) -> AcquisitionSource {
         evolution: None,
         status: "unknown",
         receipt_flag: None,
+        receipt: None,
         repeatable: None,
         offset,
         partial: true,
@@ -227,6 +229,8 @@ impl AcquisitionIndex {
                             .iter()
                             .map(|c| check(state.as_ref(), c))
                             .collect();
+                        s.receipt = reward.receipt.clone();
+                        s.receipt_flag = s.receipt.as_ref().map(|r| r.flag);
                         if matches!(reward.via, "hidden" | "pickup") {
                             s.receipt_flag = marker.and_then(|m| m.receipt_flag);
                             // Receipt protocols do not prove the absence of flag-reset scripts.
@@ -239,7 +243,7 @@ impl AcquisitionIndex {
                         s.partial = marker.is_none_or(|m| !m.stopped_at.is_empty())
                             || !report.stopped_at.is_empty()
                             || rom.profile.event_state.is_none()
-                            || (matches!(reward.via, "hidden" | "pickup")
+                            || (matches!(reward.via, "hidden" | "pickup" | "gift" | "pc")
                                 && (s.receipt_flag.is_none()
                                     || (save.is_some() && receipt.is_none())));
                         s.status = if receipt == Some(1) {
@@ -472,6 +476,7 @@ mod tests {
                 offset: 32,
             }],
             pickup_receipt: true,
+            gift_result: true,
         };
         let mut b = vec![0u8; 64];
         b[1] = 4;

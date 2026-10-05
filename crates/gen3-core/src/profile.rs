@@ -42,6 +42,8 @@ pub struct EventStateLayout {
     pub variables: &'static [crate::event_state::EventRange],
     /// Native-verified ordinary item-ball protocol; individual scripts must also qualify.
     pub pickup_receipt: bool,
+    /// Standard gift and additem return a native boolean in VAR_RESULT.
+    pub gift_result: bool,
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct HiddenItemRules {
@@ -301,6 +303,7 @@ pub const BW: Profile = Profile {
             offset: 0x139c,
         }],
         pickup_receipt: true,
+        gift_result: true,
     }),
     nature_names: 0x61cb50,
     nature_effects: 0x31e818,
@@ -529,6 +532,7 @@ pub const ROCKET: Profile = Profile {
             offset: 0x1f6c,
         }],
         pickup_receipt: true,
+        gift_result: true,
     }),
     nature_names: 0xd052ec,
     nature_effects: 0x5b335c,

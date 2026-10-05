@@ -105,6 +105,7 @@ pub const PROFILE: Profile = Profile {
             offset: 0x139c,
         }],
         pickup_receipt: true,
+        gift_result: true,
     }),
     id: "ultimate-emerald-55",
     label: "究极绿宝石 5.5 · 失落之古遗",

@@ -37,7 +37,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Bounded `script_report`; [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers and custom exchanges are not comprehensively indexed. |
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. No verified probability under all ability modifiers. |
-| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. Compound/custom pickup, NPC receipt protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
+| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. [Bounded NPC success/receipt protocols](verification/npc-receipts-20261006.md) cover 80 reward rows. Compound/custom pickups, unqualified NPC protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
 | Effective game clock, weekday, next event / 有效时钟与刷新 | U | U | U | U | P | Mercury virtual SAVE clock, native weekday, speed, forced-night state and jump menu verified within [bounded scope](verification/mercury-clock-20261005.md); hardware RTC and all weekday refresh remain unresolved. No device-time assumption. |
 | Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | P | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury executes its native constructor for explicit zero-context scenarios; independent CPU comparisons are recorded below, while full setup remains unknown. |
 | Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution with party/scenario. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
@@ -194,3 +194,22 @@ See [verification and remaining boundaries](verification/pickup-receipts-2026100
 五份 ROM 的普通道具球已按独立原生证据接入领取查询与收集建议，判定领取标记
 不再只依赖对象可见性。复杂事件、共享标记／剧情初始化、当前地图可达性和完整
 任务依赖继续保留边界，未扩大为完整任务支持。
+
+
+## NPC receipt increment / NPC 领奖增量
+
+All five receipt rows remain **P**, with bounded per-reward protocol proofs added:
+BW 18, DP 18, Rocket 15, Ultimate 28, Mercury 1.2 1 parsed reward row.
+The 80 rows match 320 native caller/standard-script success, failure and already-set
+flag cases. This is not comprehensive NPC coverage or a count of unique NPCs.
+Qualified gifts carry their own flag/root/award/setter evidence, independent of
+object visibility. The shared acquisition → map → back → planning → bilingual HTML
+flow exposes the evidence and retains unqualified reward uncertainty. No SAV or
+ROM write is performed. Mercury's many custom commands, native reward calls,
+whole-game resets, quest DAGs and current accessibility are still gaps.
+See [method, reproducible checks and limits](verification/npc-receipts-20261006.md).
+
+五份 ROM 均新增有界 NPC 成功领奖协议，整体仍为部分验证。80 条记录经 320 个原生
+分支对照，不是 80 个独立 NPC，也不代表所有赠送。按奖励单独保存证据，共用查询、
+地图、返回、规划及中英文 HTML；未资格化奖励保持未知。水银的大量自定义指令、
+原生奖励调用、完整重置／剧情依赖和当前可达性尚未补齐。

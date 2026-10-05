@@ -3458,6 +3458,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
                     offset: 0,
                     via: kind,
                     conditions: vec![],
+                    receipt: None,
                 }],
             })
             .collect();
@@ -3734,6 +3735,321 @@ fn local_pickup_receipts_match_native_protocol() {
         eprintln!(
             "{key}: {} ordinary receipts match native capacity branches",
             actual.len()
+        );
+    }
+}
+
+#[test]
+fn gift_receipts_follow_success_branches_and_reject_ambiguous_flags() {
+    // These are executable script fixtures, not copies of a game's NPC catalog.
+    fn code(root: usize, flag: u16, result_guard: bool) -> Vec<u8> {
+        let mut b = vec![0x2b, flag as u8, (flag >> 8) as u8, 6, 1];
+        b.extend((0x08000000 + root as u32 + 64).to_le_bytes());
+        b.extend([0x1a, 0, 0x80, 1, 0, 0x1a, 1, 0x80, 1, 0, 9, 0]);
+        if result_guard {
+            b.extend([0x21, 0x0d, 0x80, 0, 0, 6, 1]);
+            b.extend((0x08000000 + root as u32 + 64).to_le_bytes());
+        }
+        b.extend([0x29, flag as u8, (flag >> 8) as u8, 2]);
+        b.resize(65, 2);
+        b
+    }
+    for profile in profile::PROFILES {
+        let mut r = adapter_rom(profile);
+        let root = 0x25000;
+        let install = |r: &mut Rom, code: &[u8]| {
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            b[root..root + 256].fill(2);
+            b[root..root + code.len()].copy_from_slice(code);
+        };
+        let good = code(root, 1, true);
+        install(&mut r, &good);
+        let (rewards, stopped) = r.item_script(root).unwrap();
+        assert!(stopped.is_empty());
+        let proof = rewards[0].receipt.as_ref().unwrap();
+        assert_eq!(
+            (proof.flag, proof.root, proof.award_offset),
+            (1, root, root + 19)
+        );
+        assert_eq!(proof.success_set_offsets, vec![root + 32]);
+        // Shared calls retain the return stack and a copied result variable.
+        let mut called = good[..19].to_vec();
+        called.extend([4]);
+        called.extend((0x08000000 + root as u32 + 80).to_le_bytes());
+        called.extend([0x21, 7, 0x80, 0, 0, 6, 1]);
+        called.extend((0x08000000 + root as u32 + 64).to_le_bytes());
+        called.extend([0x29, 1, 0, 2]);
+        called.resize(80, 2);
+        called.extend([9, 0, 0x19, 7, 0x80, 0x0d, 0x80, 3]);
+        install(&mut r, &called);
+        assert_eq!(
+            r.item_script(root).unwrap().0[0]
+                .receipt
+                .as_ref()
+                .unwrap()
+                .flag,
+            1
+        );
+        // Direct additem has the same native boolean result contract.
+        let mut direct = good[..19].to_vec();
+        direct.extend([0x44, 1, 0, 1, 0, 0x21, 0x0d, 0x80, 0, 0, 6, 1]);
+        direct.extend((0x08000000 + root as u32 + 64).to_le_bytes());
+        direct.extend([0x29, 1, 0, 2]);
+        direct.resize(65, 2);
+        install(&mut r, &direct);
+        assert!(r.item_script(root).unwrap().0[0].receipt.is_some());
+        let mut cleared = good[..35].to_vec();
+        cleared.extend([0x2a, 1, 0, 2]);
+        cleared.resize(65, 2);
+        let mut prelude = vec![0x25, 0, 0];
+        prelude.extend(&good);
+        let mut unguarded = good.clone();
+        unguarded[..9].fill(0);
+        let mut unknown = good.clone();
+        unknown[35] = 0xff;
+        let mut looped = good.clone();
+        looped.truncate(35);
+        looped.extend([5]);
+        looped.extend((0x08000000 + root as u32 + 35).to_le_bytes());
+        looped.resize(65, 2);
+        let mut dynamic = good.clone();
+        dynamic[17..19].copy_from_slice(&0x8002u16.to_le_bytes());
+        for bad in [
+            code(root, 1, false),
+            cleared,
+            prelude,
+            unguarded,
+            unknown,
+            looped,
+            dynamic,
+        ] {
+            install(&mut r, &bad);
+            assert!(
+                r.item_script(root)
+                    .unwrap()
+                    .0
+                    .iter()
+                    .all(|reward| reward.receipt.is_none()),
+                "{}",
+                profile.id
+            );
+        }
+        // Two alternate awards cannot both claim a shared "done" flag.
+        let mut alternate = vec![0x2b, 1, 0, 6, 1];
+        alternate.extend((0x08000000 + root as u32 + 200).to_le_bytes());
+        alternate.extend([0x21, 2, 0x80, 1, 0, 6, 1]);
+        alternate.extend((0x08000000 + root as u32 + 80).to_le_bytes());
+        for (start, item) in [(20, 1), (80, 2)] {
+            alternate.resize(start, 0);
+            alternate.extend([0x44, item, 0, 1, 0, 0x21, 0x0d, 0x80, 0, 0, 6, 1]);
+            alternate.extend((0x08000000 + root as u32 + 200).to_le_bytes());
+            alternate.extend([0x29, 1, 0, 2]);
+        }
+        alternate.resize(201, 2);
+        install(&mut r, &alternate);
+        assert!(r
+            .item_script(root)
+            .unwrap()
+            .0
+            .iter()
+            .all(|r| r.receipt.is_none()));
+        install(&mut r, &good);
+        let mut layout = r.profile.event_state.unwrap();
+        layout.gift_result = false;
+        r.profile.event_state = Some(layout);
+        assert!(r.item_script(root).unwrap().0[0].receipt.is_none());
+    }
+}
+
+#[test]
+fn gift_receipt_queries_and_plans_use_the_qualified_reward_not_visibility() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        collection::{CollectionBasis, CollectionRequest},
+        map_events::{EventCondition, ItemReward, MapEventReport, MapMarker, ReceiptEvidence},
+    };
+    for profile in profile::PROFILES {
+        let r = adapter_rom(profile);
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let range = r.profile.event_state.unwrap().flags[0];
+        let mut offset = range.offset;
+        for section in 1..=4 {
+            if offset < save.layout.sizes[section] {
+                save.data[save.sections[section] + offset] |= 2;
+                break;
+            }
+            offset -= save.layout.sizes[section];
+        }
+        let data = save.data.clone();
+        let map = crate::world::Map {
+            id: "0-0".into(),
+            group: 0,
+            number: 0,
+            name: "Synthetic".into(),
+            region: 1,
+            width: 4,
+            height: 4,
+            map_type: 1,
+            header: 0,
+            layout: 0,
+            invalid_events: false,
+            events: None,
+            scripts: vec![],
+            objects: vec![],
+        };
+        let mut index = AcquisitionIndex {
+            world: crate::world::World {
+                maps: vec![map],
+                map_events: vec![],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: crate::world::TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: vec![],
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        let reward = ItemReward {
+            item: 1,
+            quantity: Some(1),
+            offset: 100,
+            via: "gift",
+            conditions: vec![EventCondition {
+                kind: "flag",
+                id: 1,
+                value: 1,
+                comparison: 1,
+                taken: false,
+            }],
+            receipt: Some(ReceiptEvidence {
+                flag: 1,
+                root: 90,
+                award_offset: 100,
+                success_set_offsets: vec![110],
+            }),
+        };
+        index.world.map_events = vec![MapEventReport {
+            map_id: index.world.maps[0].id.clone(),
+            markers: vec![MapMarker {
+                id: "gift".into(),
+                kind: "gift",
+                x: 1,
+                y: 1,
+                elevation: 0,
+                local_id: Some(1),
+                graphics_id: None,
+                movement_type: None,
+                underfoot: None,
+                flag: Some(2),
+                receipt_flag: None,
+                offset: 80,
+                script: Some(90),
+                rewards: vec![reward],
+                stopped_at: vec![],
+            }],
+            unplaced_rewards: vec![],
+            stopped_at: vec![],
+        }];
+        let target = Target {
+            kind: TargetKind::Item,
+            id: 1,
+        };
+        let query = index.query(&r, Some(&save), target.clone()).unwrap();
+        let source = query.sources.iter().find(|s| s.kind == "gift").unwrap();
+        assert_eq!((source.status, source.receipt_flag), ("completed", Some(1)));
+        assert!(source.receipt.is_some());
+        let plan = index
+            .collection(
+                &r,
+                &save,
+                CollectionRequest {
+                    basis: CollectionBasis::Individuals,
+                    families: true,
+                    include_unknown_rewards: true,
+                },
+            )
+            .unwrap();
+        assert!(plan
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .all(|t| t.source.as_ref().is_none_or(|s| s.offset != 100)));
+        index.world.map_events[0].markers[0].rewards[0].receipt = None;
+        let query = index.query(&r, Some(&save), target).unwrap();
+        assert_eq!(
+            query
+                .sources
+                .iter()
+                .find(|s| s.kind == "gift")
+                .unwrap()
+                .status,
+            "unknown"
+        );
+        assert_eq!(save.data, data);
+    }
+}
+
+#[test]
+#[ignore = "requires five exact private ROMs and GEN3_NPC_PROBES native vectors"]
+fn local_npc_receipts_match_native_control_flow() {
+    let vectors: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(std::env::var("GEN3_NPC_PROBES").unwrap()).unwrap())
+            .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        let proof = &vectors[key];
+        assert_eq!(r.profile.md5, proof["md5"].as_str().unwrap());
+        assert_eq!(proof["rom_memory_unchanged"], true);
+        let world = r.world().unwrap();
+        let mut actual = Vec::new();
+        for report in &world.map_events {
+            for marker in &report.markers {
+                for reward in &marker.rewards {
+                    if let Some(receipt) = &reward.receipt {
+                        assert_eq!(marker.script, Some(receipt.root));
+                        assert_eq!(reward.offset, receipt.award_offset);
+                        assert!(!receipt.success_set_offsets.is_empty());
+                        actual.push((
+                            report.map_id.clone(),
+                            marker.offset,
+                            reward.offset,
+                            receipt.flag,
+                        ));
+                    }
+                }
+            }
+            assert!(
+                report.unplaced_rewards.iter().all(|r| r.receipt.is_none()),
+                "new unplaced proof needs a native vector"
+            );
+        }
+        let mut expected = proof["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| {
+                (
+                    row["map_id"].as_str().unwrap().to_owned(),
+                    row["marker_offset"].as_u64().unwrap() as usize,
+                    row["award_offset"].as_u64().unwrap() as usize,
+                    row["receipt_flag"].as_u64().unwrap() as u16,
+                )
+            })
+            .collect::<Vec<_>>();
+        actual.sort();
+        expected.sort();
+        assert_eq!(actual, expected, "{key}");
+        assert_eq!(proof["cases"].as_u64().unwrap() as usize, actual.len() * 4);
+        eprintln!(
+            "{key}: {} qualified NPC reward rows, {} native cases",
+            actual.len(),
+            actual.len() * 4
         );
     }
 }

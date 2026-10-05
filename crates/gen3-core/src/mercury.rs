@@ -156,6 +156,7 @@ pub const PROFILE: Profile = Profile {
             },
         ],
         pickup_receipt: true,
+        gift_result: true,
     }),
     id: "mercury-fc-1.2",
     label: "宝可梦水银 FC · 1.2",

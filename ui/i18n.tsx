@@ -90,6 +90,8 @@ export const en = {
   acqOneTime: "Single receipt",
   acqReceiptUnknown:
     "The receipt protocol is not verified for this event. A visibility flag does not prove that you collected its reward.",
+  acqGiftReceiptHelp:
+    "Receipt follows a successful award in this script, independent of bag contents. Resets by other scripts remain unverified.",
   acqReceiptEvidence: "Verified receipt flag",
   acqConditions: "Prerequisite checks",
   acqConditionsMet: "known conditions met",
@@ -930,6 +932,8 @@ export const zh: Record<Key, string> = {
   acqOneTime: "一次性领取",
   acqReceiptUnknown:
     "尚未确认此事件的领取规则，不能仅凭对象的消失标记判断已经领奖。",
+  acqGiftReceiptHelp:
+    "按成功领奖后写入的存档标记判断，不根据背包是否持有；其他脚本的重置规则仍待验证。",
   acqReceiptEvidence: "已验证的领取标记",
   acqConditions: "前置条件检查",
   acqConditionsMet: "项已知条件满足",

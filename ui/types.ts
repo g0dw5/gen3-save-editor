@@ -272,7 +272,14 @@ export interface SpeciesDetail {
   learnset: LearnSource[];
   encounters: Encounter[];
 }
+export interface ReceiptEvidence {
+  flag: number;
+  root: number;
+  award_offset: number;
+  success_set_offsets: number[];
+}
 export interface ItemReward {
+  receipt: ReceiptEvidence | null;
   item: number;
   quantity: number | null;
   offset: number;
@@ -496,6 +503,7 @@ export interface AcquisitionSource {
   evolution: SpeciesDetail["evolutions"][number] | null;
   status: "completed" | "available" | "blocked" | "unknown";
   receipt_flag: number | null;
+  receipt: ReceiptEvidence | null;
   repeatable: boolean | null;
   offset: number;
   partial: boolean;

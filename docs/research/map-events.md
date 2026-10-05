@@ -40,6 +40,15 @@ NPC／地图对象使用当前 ROM 的地图小人图像，按原始尺寸随地
 - Qualified complete ordinary item-ball scripts have separately verified
   `receipt_flag` evidence in all five profiles. Compound scripts and missing
   flags remain unknown; see [native pickup branches](../verification/pickup-receipts-20261005.md).
+- NPC gifts carry **per-reward** `receipt` evidence only after a separate bounded
+  control-flow pass. It requires an unset flag guard, native boolean award result,
+  success-only writes on every terminal path, and no failed/alternate award setting
+  that flag. Unknown commands, native caller effects, cycles, dynamic quantities
+  and unsupported standard scripts invalidate proof. The broad reward catalog is
+  independent of this proof pass. See [NPC native parity](../verification/npc-receipts-20261006.md).
+- Receipt evidence is script-local. Whole-game initialization/reset writers,
+  refresh rules, story accessibility and currently active layouts remain unresolved.
+  A local success protocol does not prove a permanent one-time-only reward.
 - Standard script 0 gives an item; standard script 1 picks up an item ball.
   Standard script 7 gives a decoration, whose ID belongs to a different catalog.
 

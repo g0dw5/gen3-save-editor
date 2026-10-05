@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Trace bounded NPC gift receipt protocols at runtime, with per-reward guards,
+  native boolean award outcomes and success-only flag writes. Verify 80 reward
+  rows / 320 native cases across all five exact ROMs. Connect receipt evidence to
+  acquisition, map details, collection filtering and bilingual standalone HTML;
+  preserve uncertainty for unqualified/custom rewards and complete refresh/story rules.
+- 实时追踪有界 NPC 礼物领取协议，按奖励核对条件、原生发放结果及仅成功后写入的
+  标记；五份精确 ROM 的 80 条记录通过 320 个原生情景。证据贯通获取途径、地图详情、
+  收集过滤和中英文独立 HTML；未资格化／自定义奖励、完整刷新与剧情条件保留未知。
+
 - Verify ordinary item-ball receipt branches across all five exact ROMs and
   overlay 1,956 qualified script records in acquisition/collection queries.
   Keep receipt evidence separate from object visibility; compound scripts,

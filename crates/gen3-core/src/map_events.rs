@@ -12,6 +12,14 @@ pub struct EventCondition {
     pub comparison: u8,
     pub taken: bool,
 }
+/// Bounded script proof, independent of the object's visibility flag.
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ReceiptEvidence {
+    pub flag: u16,
+    pub root: usize,
+    pub award_offset: usize,
+    pub success_set_offsets: Vec<usize>,
+}
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ItemReward {
     pub item: u16,
@@ -19,6 +27,7 @@ pub struct ItemReward {
     pub offset: usize,
     pub via: &'static str,
     pub conditions: Vec<EventCondition>,
+    pub receipt: Option<ReceiptEvidence>,
 }
 #[derive(Clone, Serialize)]
 pub struct MapMarker {
@@ -49,6 +58,95 @@ pub struct MapEventReport {
     pub unplaced_rewards: Vec<ItemReward>,
     pub stopped_at: Vec<usize>,
 }
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct RewardKey {
+    offset: usize,
+    item: u16,
+    quantity: Option<u16>,
+    via: &'static str,
+}
+impl ItemReward {
+    fn key(&self) -> RewardKey {
+        RewardKey {
+            offset: self.offset,
+            item: self.item,
+            quantity: self.quantity,
+            via: self.via,
+        }
+    }
+}
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct AwardTrace {
+    success: bool,
+    guards: Vec<EventCondition>,
+    sets: BTreeMap<u16, BTreeSet<usize>>,
+}
+struct Walk {
+    rewards: Vec<ItemReward>,
+    stopped: Vec<usize>,
+    terminals: Vec<State>,
+    complete: bool,
+}
+fn guards_unset(guards: &[EventCondition], flag: u16) -> bool {
+    guards.iter().any(|c| {
+        c.kind == "flag"
+            && c.value == 1
+            && c.id == flag
+            && test(0, c.comparison) == Some(c.taken)
+            && test(1, c.comparison) == Some(!c.taken)
+    })
+}
+impl Walk {
+    fn receipts(&self, root: usize) -> BTreeMap<RewardKey, ReceiptEvidence> {
+        let mut result = BTreeMap::new();
+        if !self.complete || !self.stopped.is_empty() {
+            return result;
+        }
+        for reward in &self.rewards {
+            let key = reward.key();
+            if result.contains_key(&key) || reward.via != "gift" {
+                continue;
+            }
+            for guard in &reward.conditions {
+                let flag = guard.id;
+                if flag == 0 || !guards_unset(&reward.conditions, flag) {
+                    continue;
+                }
+                let mut sets = BTreeSet::new();
+                let mut successes = 0;
+                let proven = self.terminals.iter().all(|s| {
+                    if let Some(trace) = s.awards.get(&key).filter(|t| t.success) {
+                        successes += 1;
+                        if !guards_unset(&trace.guards, flag) || s.flags.get(&flag) != Some(&true) {
+                            return false;
+                        }
+                        let Some(offsets) = trace.sets.get(&flag) else {
+                            return false;
+                        };
+                        sets.extend(offsets);
+                        true
+                    } else {
+                        // Rejection, bag failure and alternate rewards must not set it.
+                        s.flags.get(&flag) != Some(&true)
+                    }
+                });
+                if proven && successes > 0 && !sets.is_empty() {
+                    result.insert(
+                        key.clone(),
+                        ReceiptEvidence {
+                            flag,
+                            root,
+                            award_offset: key.offset,
+                            success_set_offsets: sets.into_iter().collect(),
+                        },
+                    );
+                    break;
+                }
+            }
+        }
+        result
+    }
+}
 #[derive(Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
 struct State {
     pc: usize,
@@ -58,6 +156,7 @@ struct State {
     conditions: Vec<EventCondition>,
     comparison: Option<(&'static str, u16, u16)>,
     known_comparison: Option<u8>,
+    awards: BTreeMap<RewardKey, AwardTrace>,
 }
 // Emerald opcode widths, including operands (trainerbattle is variable length).
 // Source: pret/pokeemerald src/scrcmd.c. Unsupported control-flow constructs stop.
@@ -120,6 +219,27 @@ impl Rom {
     }
 
     pub(crate) fn item_script(&self, root: usize) -> Result<(Vec<ItemReward>, Vec<usize>)> {
+        let mut walk = self.walk_item_script(root, false)?;
+        // A second, bounded pass follows native boolean award outcomes. Keep the
+        // broad catalog traversal independent of proof limits and branch expansion.
+        if self.profile.event_state.is_some_and(|l| l.gift_result)
+            && walk.stopped.is_empty()
+            && walk.rewards.iter().any(|r| {
+                r.via == "gift"
+                    && r.conditions
+                        .iter()
+                        .any(|c| guards_unset(&r.conditions, c.id))
+            })
+        {
+            let proof = self.walk_item_script(root, true)?.receipts(root);
+            for reward in &mut walk.rewards {
+                reward.receipt = proof.get(&reward.key()).cloned();
+            }
+        }
+        Ok((walk.rewards, walk.stopped))
+    }
+
+    fn walk_item_script(&self, root: usize, prove: bool) -> Result<Walk> {
         let b = &self.data;
         let mut pending = VecDeque::from([State {
             pc: root,
@@ -129,6 +249,8 @@ impl Rom {
         let mut rewards = BTreeSet::new();
         let mut stopped = BTreeSet::new();
         let mut steps = 0;
+        let mut complete = true;
+        let mut terminals = Vec::new();
         while let Some(mut s) = pending.pop_front() {
             loop {
                 let pc = s.pc;
@@ -138,6 +260,8 @@ impl Rom {
                 }
                 steps += 1;
                 if !visited.insert(s.clone()) {
+                    // A cycle or merged path cannot certify all terminal outcomes.
+                    complete = false;
                     break;
                 }
                 let Some(&op) = b.get(pc) else {
@@ -168,8 +292,24 @@ impl Rom {
                 }
                 s.pc += len;
                 let mut reward = None;
+                let mut terminal = false;
+                // Only commands with verified event/variable or presentation
+                // semantics may participate in receipt proofs. Width alone is not proof.
+                if prove
+                    && !matches!(op,
+                        0x00..=0x09 | 0x0f | 0x16..=0x19 | 0x1a | 0x21 | 0x22 | 0x29..=0x2b |
+                        0x2f..=0x32 | 0x44 | 0x48 | 0x5a | 0x66 | 0x67 | 0x6a..=0x6d | 0x84
+                    )
+                {
+                    complete = false;
+                }
                 match op {
-                    0x02 => break,
+                    0x02 => {
+                        if prove {
+                            terminals.push(s.clone());
+                        }
+                        break;
+                    }
                     0x39 | 0x3a
                         if matches!(
                             self.profile.formats.scripts,
@@ -182,6 +322,9 @@ impl Rom {
                         if let Some(p) = s.stack.pop() {
                             s.pc = p;
                         } else {
+                            if prove {
+                                terminals.push(s.clone());
+                            }
                             break;
                         }
                     }
@@ -249,23 +392,14 @@ impl Rom {
                         s.vars.retain(|k, _| *k < 0x8000);
                         s.comparison = None;
                         s.known_comparison = None;
+                        if prove && !matches!(std, 0 | 2..=6) {
+                            complete = false;
+                        }
                         if op == 8 {
-                            // Record the reward before returning to the calling script.
-                            if let Some((Some(item), quantity, via)) = reward.take() {
-                                if item > 0 && self.item(item).is_ok() {
-                                    rewards.insert(ItemReward {
-                                        item,
-                                        quantity,
-                                        offset: pc,
-                                        via,
-                                        conditions: s.conditions.clone(),
-                                    });
-                                }
-                            }
                             if let Some(p) = s.stack.pop() {
                                 s.pc = p;
                             } else {
-                                break;
+                                terminal = true;
                             }
                         }
                     }
@@ -327,7 +461,13 @@ impl Rom {
                             v.map(|v| (if id < 0x8000 { "variable" } else { "unknown" }, id, v));
                     }
                     0x29 | 0x2a => {
-                        s.flags.insert(u16(b, pc + 1)?, op == 0x29);
+                        let flag = u16(b, pc + 1)?;
+                        s.flags.insert(flag, op == 0x29);
+                        if prove && op == 0x29 {
+                            for trace in s.awards.values_mut().filter(|t| t.success) {
+                                trace.sets.entry(flag).or_default().insert(pc);
+                            }
+                        }
                     }
                     0x2b => {
                         s.comparison = Some(("flag", u16(b, pc + 1)?, 1));
@@ -377,6 +517,7 @@ impl Rom {
                                     offset: pc,
                                     via: "shop",
                                     conditions: s.conditions.clone(),
+                                    receipt: None,
                                 });
                             }
                             if !terminated {
@@ -434,20 +575,60 @@ impl Rom {
                 }
                 if let Some((item, quantity, via)) = reward {
                     if let Some(item) = item.filter(|i| *i > 0 && self.item(*i).is_ok()) {
-                        rewards.insert(ItemReward {
+                        let record = ItemReward {
                             item,
                             quantity,
                             offset: pc,
                             via,
                             conditions: s.conditions.clone(),
-                        });
+                            receipt: None,
+                        };
+                        if prove {
+                            if via != "gift" || !quantity.is_some_and(|q| q > 0) {
+                                complete = false;
+                            } else {
+                                let key = record.key();
+                                if s.awards.contains_key(&key) {
+                                    complete = false;
+                                }
+                                let trace = AwardTrace {
+                                    success: true,
+                                    guards: s.conditions.clone(),
+                                    sets: BTreeMap::new(),
+                                };
+                                let mut failure = s.clone();
+                                let mut failed_trace = trace.clone();
+                                failed_trace.success = false;
+                                failure.awards.insert(key.clone(), failed_trace);
+                                failure.vars.insert(0x800d, 0);
+                                if terminal {
+                                    terminals.push(failure);
+                                } else {
+                                    pending.push_back(failure);
+                                }
+                                s.awards.insert(key, trace);
+                                s.vars.insert(0x800d, 1);
+                            }
+                        }
+                        rewards.insert(record);
                     } else {
                         stopped.insert(pc);
                     }
                 }
+                if terminal {
+                    if prove {
+                        terminals.push(s);
+                    }
+                    break;
+                }
             }
         }
-        Ok((rewards.into_iter().collect(), stopped.into_iter().collect()))
+        Ok(Walk {
+            rewards: rewards.into_iter().collect(),
+            stopped: stopped.into_iter().collect(),
+            terminals,
+            complete,
+        })
     }
 
     pub fn map_events(&self, map: &Map) -> Result<MapEventReport> {
@@ -543,6 +724,7 @@ impl Rom {
                                 offset: o,
                                 via: "hidden",
                                 conditions: Vec::new(),
+                                receipt: None,
                             });
                         } else {
                             marker.stopped_at.push(o);

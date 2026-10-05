@@ -447,6 +447,24 @@ export function MapExplorer({
                     ? ` · ${t("acqReceiptEvidence")} 0x${marker.receipt_flag.toString(16)}`
                     : ""}
                 </code>
+                {marker.rewards
+                  .filter((r) => r.receipt)
+                  .map((r, i) => (
+                    <p key={i} className="small">
+                      {t("acqReceiptEvidence")} ·{" "}
+                      {items.get(r.item)?.name ?? `#${r.item}`} ·
+                      <code>
+                        {" "}
+                        Flag 0x{r.receipt!.flag.toString(16)} · Script 0x
+                        {r.receipt!.root.toString(16)} ·{" "}
+                        {r
+                          .receipt!.success_set_offsets.map(
+                            (o) => `0x${o.toString(16)}`,
+                          )
+                          .join(" / ")}
+                      </code>
+                    </p>
+                  ))}
               </details>
             </div>
           ))
