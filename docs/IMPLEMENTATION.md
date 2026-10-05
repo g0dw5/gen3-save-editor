@@ -22,7 +22,7 @@ compatibility certification.
   detection. Linked mail operations remain blocked.
 - [x] All boxes and party, movable nonmodal references, actual drag/drop and drafts.
 - [x] Chinese/English UI, file workflow and non-drag transfer controls.
-- [x] Bounded ROM scalar patches with base/output fingerprints and manifests.
+- [x] ROM input is immutable. Only SAV transactions and SAV exports are supported.
 - [x] CLI, standalone research skill, bilingual README and contribution guidelines.
 - [x] macOS desktop preview build; Windows/Linux CI and artifact workflow authored.
 
@@ -93,6 +93,8 @@ Story flags, arbitrary teleportation, scripted quest state, ROM expansion,
 code injection and full map geometry editing require separate research and are
 not enabled by generic offsets. A static map preview is not a live game scene.
 
-Git remote is configured as `git@github.com:g0dw5/gen3-save-editor.git`.
-Local commits work. Remote push is currently blocked by SSH authentication
-(`Permission denied (publickey)`); GitHub CLI is also not authenticated.
+## Current scope / 当前范围
+
+The dated evidence above is historical, not a certification of all adapters.
+See [capability matrix](capability-matrix.md) for the current five-fingerprint
+scope, evidence and gaps. ROM writing has been removed from every public layer.

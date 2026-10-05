@@ -19,9 +19,11 @@ separate exact MD5 identities. Names, stats and assets still come from each ROM.
 Configuration is not a universal reverse-engineering shortcut. Packed 9-bit
 learnsets versus wider entries, expanded species IDs, custom battle categories,
 font encodings, save encryption, extra flags and event semantics require explicit
-codec or rule implementations. The current save codec is Emerald-family; the
-current world parser targets the Dark Phantom engine. It is not claimed to parse
-FireRed or arbitrary Emerald expansion hacks by changing an offset.
+codec or rule implementations. Explicit codecs cover stock encrypted Gen III, Rocket, Ultimate and CFRU
+individual layouts. Script/trainer formats are selected separately from the
+individual codec. The five registered fingerprints share readers where their
+layouts agree; registration does not establish complete script semantics or
+playthrough reachability. See the [capability matrix](capability-matrix.md).
 
 新增版本时，先确定差异属于哪一类：地址与表长 → 配置；结构与编码 → codec；
 游戏行为和合法性 → 规则；证据不足 → 先关闭该能力。不要复制整套存档代码，也
