@@ -14,13 +14,13 @@ bilingual file.
   descriptions, evolutions and battle forms, complete move sources, native
   experience thresholds, appearance, maps, timed encounters, trainers and
   ROM-rendered map/NPC artwork. Add core save editing verified against native
-  routines, private-copy round trips and mGBA loading. Expanded Pokédex flags,
-  a complete in-game resave round trip and cheats remain pending
+  routines, private-copy round trips and a complete 1.2 mGBA load/resave/reopen.
+  Expanded Pokédex flags and cheats remain pending
   verification; no ROM bytes or extracted assets are bundled.
 - 新增宝可梦水银 FC 1.1 / 1.2 的精确指纹资料：宝可梦、招式／道具及说明、进化与
   对战形态、完整招式来源、ROM 原生经验表、外观、地图、分时段相遇、训练家，
   以及从 ROM 渲染的地图和 NPC。核心存档编辑经过原生函数对照、副本读写回读及
-  mGBA 加载验证；完整游戏再次保存流程待验证，扩展图鉴位与金手指暂不开放。
+  1.2 mGBA 加载、游戏再次保存和回读验证；扩展图鉴位与金手指暂不开放。
   不内置 ROM 字节或导出素材。
 - Verify Mercury's unencrypted individual layout against both ROMs' native
   getters/setters and stat routines. Keep its ball byte separate from Gigantamax

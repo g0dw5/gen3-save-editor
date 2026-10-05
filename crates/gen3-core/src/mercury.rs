@@ -440,20 +440,41 @@ mod tests {
     #[test]
     #[ignore = "requires native in-game resave of the Mercury edit probe"]
     fn exact_native_resave_regression() {
-        let rom =
-            Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY").unwrap()).unwrap()).unwrap();
-        let bytes = std::fs::read(std::env::var("GEN3_SAVE_MERCURY_NATIVE").unwrap()).unwrap();
+        check_native_resave("GEN3_ROM_MERCURY", "GEN3_SAVE_MERCURY_NATIVE");
+    }
+
+    #[test]
+    #[ignore = "requires native in-game resave of the Mercury 1.2 edit probe"]
+    fn exact_native_resave_12_regression() {
+        check_native_resave("GEN3_ROM_MERCURY12", "GEN3_SAVE_MERCURY12_NATIVE");
+    }
+
+    fn check_native_resave(rom_key: &str, save_key: &str) {
+        let rom = Rom::open(std::fs::read(std::env::var(rom_key).unwrap()).unwrap()).unwrap();
+        let bytes = std::fs::read(std::env::var(save_key).unwrap()).unwrap();
         let save = Save::open(bytes, rom.profile.save).unwrap();
         save.validate(&rom).unwrap();
         assert_eq!(save.party_count(), 1);
         assert_eq!(save.all(&rom).unwrap().len(), 2);
+        let party = save
+            .pokemon(Location::Party { slot: 0 }, &rom)
+            .unwrap()
+            .unwrap();
         assert_eq!(
-            save.pokemon(Location::Party { slot: 0 }, &rom)
-                .unwrap()
-                .unwrap()
-                .species,
-            1
+            (party.species, party.pid, party.ball, party.origin_game),
+            (1, 0x1234_5678, 4, 4)
         );
+        let boxed = save
+            .pokemon(
+                Location::Box {
+                    box_index: 0,
+                    slot: 0,
+                },
+                &rom,
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!((boxed.species, boxed.pid, boxed.ball), (1, 0x1234_5678, 4));
         assert_eq!(save.trainer(&rom).unwrap().money, 1000);
         assert_eq!(
             save.bag()

@@ -17,8 +17,9 @@ the relocated 1.2 entries are recorded in the final section.
 水银按精确 MD5 开放 ROM 资料和存档编辑。已在 mGBA 中从新游戏正常保存，
 并验证扇区、角色资料、空队伍、背包、箱名及 RTC 尾部。随后在副本中创建测试
 宝可梦、修改金钱与精灵球及箱名，修改器完成副本回读与校验；1.2 的副本在
-mGBA 中正常加载，同行图标及运行内存字段与编辑结果一致。完整游戏再次保存
-流程尚未验证。真实进度中扩展图鉴位等结构仍需另行验证。
+mGBA 中正常加载，同行图标及运行内存字段与编辑结果一致；游戏再次保存后
+完成回读，同行、箱子、捕获球、PID、金钱、球数量及箱名保持正确。真实进度
+中扩展图鉴位等结构仍需另行验证。
 
 ## Located tables
 
@@ -140,9 +141,11 @@ A local probe applied a created test Pokémon in the party and a box, money,
 Poké Balls, and a box rename to a copy, then reopened it and verified all
 sector checksums and fields. mGBA loaded the 1.2 edited copy with the expected
 party count, species, ball type and PID in native RAM, and displayed its party
-sprite and edited money on the trainer card. A complete in-game resave and
-reopen is still pending; the opening-stage custom menu did not expose a save
-entry during this test. This covers the tested core fields, not every later-game extension. No test ROM/save or
+sprite and edited money on the trainer card. The 1.2 game then saved the edited
+copy through its native menu. The editor reopened that save, validated both
+save banks and confirmed party/box species, PID, ball, origin, money, ball
+quantity and box name. mGBA added a supported 16-byte RTC trailer. This covers
+the tested core fields, not every later-game extension. No test ROM/save or
 extracted assets are committed.
 
 ## Regression procedure
@@ -168,6 +171,11 @@ party/storage transfers, undo/export validation and inventory sector boundaries.
 Additional CFRU checks preserve Gigantamax and hidden-ability flags, including
 native hidden-ability fallback, and avoid forcing even PIDs for species with
 only one ordinary ability.
+The 1.2 native resave regression uses `GEN3_SAVE_MERCURY12_NATIVE`. The custom
+start menu's third icon is Save; the fourth icon changes time. Frame-held
+inputs need spacing through menu transitions in mGBA. Native UI input can miss
+very short key presses; check input routing and the input method before
+interpreting a missed press as an unavailable game feature.
 
 ## Version 1.2 relocations
 
