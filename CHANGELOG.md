@@ -10,6 +10,17 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Read native persistent event ranges for all five exact ROMs, including Ultimate's
+  segmented flags and Mercury's extensions. Overlay verified hidden-item receipt
+  state on acquisition/collection queries. Decode Mercury region-dependent hidden
+  flags and packed quantities from ROM; explain underfoot pickup in maps, sources,
+  planning and HTML. Unknown/native reward paths stay undetermined; ordinary
+  pickup/NPC receipt protocols and full refresh rules still need separate proof.
+- 五份精确 ROM 的存档事件条件改为按原生持久化范围读取，补齐隐藏道具领取叠加。
+  水银实时读取 ROM 区域列表选择标记基址，解析数量与脚下探测器取物，并贯通地图、
+  获取途径、收集建议和 HTML。未解析奖励路径保持未知，不把 NPC 消失等同已领奖；
+  其他普通拾取／NPC 领取协议及完整刷新规则仍待验证。
+
 - Read Mercury 1.2's native virtual clock from SAVE extensions: date, independent
   weekday, time, speed and forced-night override. Annotate acquisition queries,
   regional collection suggestions and standalone HTML with this saved snapshot;

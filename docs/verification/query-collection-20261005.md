@@ -70,10 +70,13 @@ Use an absolute `GEN3_NATIVE_TRAINER_PROBES` output path for the Cargo local tes
 
 - Full primary/side-quest dependency graphs, native reward calls and all custom
   gifts/trades/roamers are not indexed. Native stops remain visible as uncertainty.
-- Only BW/DP have native-verified SAV flag/variable addressing. Rocket, Ultimate
-  and Mercury receipt results stay unknown. NPC visibility is not receipt evidence.
-- FireRed/custom hidden-item quantity/index packing needs exact native proof;
-  item identity and tile are shown, quantity and collection flag are unknown.
+- At this increment only BW/DP had native-verified SAV flag/variable addressing.
+  The later [event increment](event-state-20261005.md) verifies persistent ranges
+  and hidden receipts across five ROMs; other ordinary pickup/NPC protocols stay
+  unresolved. NPC visibility is not receipt evidence.
+- FireRed/custom hidden packing was unknown at this increment. Mercury packing,
+  runtime region-dependent flag bases and underfoot quantity are now verified in
+  the event increment; full refresh mechanisms remain unresolved.
 - Complete training-mechanism catalogs and their unlock/acquisition paths are not
   certified. Existing per-ROM editor rules do not prove mint/cap/tutor availability.
 - Shop prerequisites, repetition, held-item probabilities with ability modifiers,

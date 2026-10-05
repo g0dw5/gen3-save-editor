@@ -95,6 +95,11 @@ const MERCURY_SAVE: SaveLayout = SaveLayout {
 };
 
 pub const PROFILE: Profile = Profile {
+    hidden_items: Some(crate::profile::HiddenItemRules {
+        packed: true,
+        flag_base: 0x3e8,
+        region_override: Some((0x1dddb6e, 0xd00)),
+    }),
     native_trainers: Some(crate::native_trainer::NativeTrainerRules {
         constructor: 0x09d0b150,
         enemy_party: 0x0202402c,
@@ -121,7 +126,37 @@ pub const PROFILE: Profile = Profile {
             month_lengths: 0x1ddedf8,
         }),
     }),
-    event_state: None,
+    event_state: Some(crate::profile::EventStateLayout {
+        flags: &[
+            crate::event_state::EventRange {
+                first: 0,
+                count: 0x900,
+                block: crate::event_state::EventBlock::Main,
+                offset: 0xee0,
+            },
+            crate::event_state::EventRange {
+                first: 0x900,
+                count: 0x1000,
+                block: crate::event_state::EventBlock::Extensions,
+                offset: 0,
+            },
+        ],
+        variables: &[
+            crate::event_state::EventRange {
+                first: 0x4000,
+                count: 0x100,
+                block: crate::event_state::EventBlock::Main,
+                offset: 0x1000,
+            },
+            crate::event_state::EventRange {
+                first: 0x5000,
+                count: 0x200,
+                block: crate::event_state::EventBlock::Extensions,
+                offset: 0x200,
+            },
+        ],
+        pickup_receipt: false,
+    }),
     id: "mercury-fc-1.2",
     label: "宝可梦水银 FC · 1.2",
     md5: "f323df1792ac68462a34b42fe8571533",

@@ -24,7 +24,7 @@ def main():
     world = dict(maps=maps,map_events=[dict(map_id='0-1',markers=[marker],unplaced_rewards=[],stopped_at=[])],encounters=[],trainers=[],trainer_locations=dict(locations=[]),map_groups=[])
     edge = dict(from_='0-0',to='0-1',kind='warp',x=2,y=1,target_x=1,target_y=1,warp_index=0,target_warp=0,direction=None,displacement=None,offset=200,unresolved=None)
     edge['from'] = edge.pop('from_')
-    source = dict(kind='pickup',map_id='0-1',region=1,x=1,y=1,related=[],quantity=1,min_level=None,max_level=None,encounter_percent=None,held_percent=None,periods=[],conditions=[],requirements=[],evolution=None,status='unknown',receipt_flag=10,repeatable=False,offset=100,partial=True,in_scenario=None)
+    source = dict(underfoot=True,kind='pickup',map_id='0-1',region=1,x=1,y=1,related=[],quantity=1,min_level=None,max_level=None,encounter_percent=None,held_percent=None,periods=[],conditions=[],requirements=[],evolution=None,status='unknown',receipt_flag=10,repeatable=False,offset=100,partial=True,in_scenario=None)
     save = dict(trainer={'name':'TEST'},pokemon=[pokemon(2,dict(kind='party',slot=0))],boxes=[dict(index=i,name=f'Box {i}',count=0,wallpaper=0) for i in range(14)],bag=[],dex=[],active_slot=0,counter=1,backup_valid=True,dirty=False,can_undo=False,can_redo=False,changes=[])
     task = dict(target=dict(kind='species',id=1),family=[1],existing_family_members=[],source=source,alternatives=1)
     plan = dict(rom_md5='test',basis='individuals',families=True,owned_count=1,missing_count=1,regions=[dict(region=1,tasks=[task])],entrances=[dict(map_id='0-1',chains=[[edge]],truncated=False)],partial=True)
@@ -68,6 +68,7 @@ def main():
         html=Path(info.value.path()).read_text()
         assert '&lt;script&gt;alert(1)&lt;/script&gt;' in html
         assert '<script>' not in html and 'default-src' in html
+        assert 'Stand on this tile and use the Itemfinder' in html
         assert 'Test region entrance (2, 1)' in html and 'Test cave floor' in html
         assert not any(r['command'] in ('action','export_save','save_bytes') for r in requests)
         assert not errors,errors

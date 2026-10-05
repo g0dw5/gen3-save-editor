@@ -401,6 +401,9 @@ export function MapExplorer({
                 {marker.local_id !== null ? `#${marker.local_id}` : ""} · (
                 {marker.x}, {marker.y})
               </strong>
+              {marker.underfoot === true && (
+                <p className="small muted">{t("mapHiddenUnderfoot")}</p>
+              )}
               {marker.rewards.length ? (
                 marker.rewards.map((r, i) => (
                   <p key={`${r.offset}-${i}`}>

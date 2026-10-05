@@ -60,7 +60,52 @@ pub const POCKETS: [Pocket; 6] = [
 pub const PROFILE: Profile = Profile {
     native_trainers: None,
     clock: None,
-    event_state: None,
+    hidden_items: Some(crate::profile::HiddenItemRules {
+        packed: false,
+        flag_base: 0x1f4,
+        region_override: None,
+    }),
+    event_state: Some(crate::profile::EventStateLayout {
+        flags: &[
+            crate::event_state::EventRange {
+                first: 0,
+                count: 0x4000,
+                block: crate::event_state::EventBlock::Main,
+                offset: 0x1270,
+            },
+            crate::event_state::EventRange {
+                first: 0x4000,
+                count: 0x1a0,
+                block: crate::event_state::EventBlock::Main,
+                offset: 0x988,
+            },
+            crate::event_state::EventRange {
+                first: 0x41a0,
+                count: 0x1a0,
+                block: crate::event_state::EventBlock::Main,
+                offset: 0x3b24,
+            },
+            crate::event_state::EventRange {
+                first: 0x4340,
+                count: 0x1a0,
+                block: crate::event_state::EventBlock::Trainer,
+                offset: 0x5c,
+            },
+            crate::event_state::EventRange {
+                first: 0x44e0,
+                count: 0x1a0,
+                block: crate::event_state::EventBlock::Trainer,
+                offset: 0x28,
+            },
+        ],
+        variables: &[crate::event_state::EventRange {
+            first: 0x4000,
+            count: 0x100,
+            block: crate::event_state::EventBlock::Main,
+            offset: 0x139c,
+        }],
+        pickup_receipt: false,
+    }),
     id: "ultimate-emerald-55",
     label: "究极绿宝石 5.5 · 失落之古遗",
     md5: "17ce9785b33319b3dbda9a5d37c57ec1",

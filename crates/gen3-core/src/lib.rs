@@ -7,6 +7,7 @@ pub mod cheats;
 pub mod clock;
 pub mod collection;
 pub mod contest;
+pub mod event_state;
 pub mod fishing;
 pub mod graphics;
 pub mod map_events;

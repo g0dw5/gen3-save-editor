@@ -1,8 +1,8 @@
 //! Runtime-only acquisition index. All content comes from the loaded ROM.
 use crate::{
     err,
+    event_state::EventSnapshot,
     map_events::EventCondition,
-    profile::EventStateLayout,
     rom::{Evolution, LearnSource, Rom, Species},
     save::Save,
     world::World,
@@ -37,6 +37,7 @@ pub struct AcquisitionSource {
     pub region: Option<u8>,
     pub x: Option<i16>,
     pub y: Option<i16>,
+    pub underfoot: Option<bool>,
     pub related: Vec<Target>,
     pub quantity: Option<u16>,
     pub min_level: Option<u8>,
@@ -76,6 +77,7 @@ fn source(kind: &str, offset: usize) -> AcquisitionSource {
         region: None,
         x: None,
         y: None,
+        underfoot: None,
         related: vec![],
         quantity: None,
         min_level: None,
@@ -94,27 +96,10 @@ fn source(kind: &str, offset: usize) -> AcquisitionSource {
         in_scenario: None,
     }
 }
-fn flag(block: &[u8], layout: EventStateLayout, id: u16) -> Option<u16> {
-    if id == 0 || id >= layout.flag_limit {
-        return None;
-    }
-    block
-        .get(layout.flags + id as usize / 8)
-        .map(|b| ((b >> (id % 8)) & 1) as u16)
-}
-fn check(
-    block: &[u8],
-    layout: Option<EventStateLayout>,
-    condition: &EventCondition,
-) -> ConditionCheck {
-    let actual = layout.and_then(|l| match condition.kind {
-        "flag" => flag(block, l, condition.id),
-        "variable" if condition.id >= 0x4000 && condition.id - 0x4000 < l.variable_count => {
-            let o = l.variables + (condition.id - 0x4000) as usize * 2;
-            block
-                .get(o..o + 2)
-                .map(|b| u16::from_le_bytes([b[0], b[1]]))
-        }
+fn check(state: Option<&EventSnapshot>, condition: &EventCondition) -> ConditionCheck {
+    let actual = state.and_then(|s| match condition.kind {
+        "flag" => s.flag(condition.id),
+        "variable" => s.variable(condition.id),
         _ => None,
     });
     let satisfied = actual.and_then(|v| {
@@ -210,7 +195,9 @@ impl AcquisitionIndex {
                 rom.move_info(target.id)?;
             }
         }
-        let block = save.map(|s| s.logical(1..=4));
+        let state = save
+            .zip(rom.profile.event_state)
+            .map(|(save, layout)| EventSnapshot::new(save, layout));
         let mut sources = Vec::new();
         match target.kind {
             TargetKind::Item => {
@@ -234,41 +221,36 @@ impl AcquisitionIndex {
                         s.quantity = reward.quantity;
                         s.x = marker.map(|m| m.x);
                         s.y = marker.map(|m| m.y);
+                        s.underfoot = marker.and_then(|m| m.underfoot);
                         s.conditions = reward
                             .conditions
                             .iter()
-                            .map(|c| {
-                                check(
-                                    block.as_deref().unwrap_or(&[]),
-                                    if save.is_some() {
-                                        rom.profile.event_state
-                                    } else {
-                                        None
-                                    },
-                                    c,
-                                )
-                            })
+                            .map(|c| check(state.as_ref(), c))
                             .collect();
-                        // Only the verified item-ball/hidden-item protocols own a receipt flag.
-                        if rom.profile.event_state.is_some()
-                            && matches!(reward.via, "pickup" | "hidden")
-                        {
+                        // Flag addressing alone does not prove that an NPC's visibility bit is a receipt.
+                        let pickup_verified =
+                            rom.profile.event_state.is_some_and(|l| l.pickup_receipt);
+                        if reward.via == "hidden" || (reward.via == "pickup" && pickup_verified) {
                             s.receipt_flag = marker.and_then(|m| m.flag);
-                            s.repeatable = Some(false);
+                            // Hidden-item flags may be cleared by refresh mechanisms; do not promise one-time-only.
+                            if reward.via == "pickup" {
+                                s.repeatable = Some(false);
+                            }
                         } else if reward.via == "shop" {
                             s.repeatable = Some(true);
                         }
-                        let receipt = block.as_ref().and_then(|b| {
-                            rom.profile
-                                .event_state
-                                .and_then(|l| s.receipt_flag.and_then(|f| flag(b, l, f)))
-                        });
+                        let receipt = state
+                            .as_ref()
+                            .and_then(|state| s.receipt_flag.and_then(|f| state.flag(f)));
                         s.partial = marker.is_none_or(|m| !m.stopped_at.is_empty())
                             || !report.stopped_at.is_empty()
-                            || rom.profile.event_state.is_none();
+                            || rom.profile.event_state.is_none()
+                            || (reward.via == "pickup" && !pickup_verified);
                         s.status = if receipt == Some(1) {
                             "completed"
-                        } else if s.conditions.iter().any(|c| c.satisfied == Some(false)) {
+                        } else if !s.partial
+                            && s.conditions.iter().any(|c| c.satisfied == Some(false))
+                        {
                             "blocked"
                         } else if save.is_some()
                             && !s.partial
@@ -307,12 +289,7 @@ impl AcquisitionIndex {
                     s.periods = e.periods.iter().map(|v| v.to_string()).collect();
                     if let Some(selector) = &e.selector {
                         s.conditions.push(check(
-                            block.as_deref().unwrap_or(&[]),
-                            if save.is_some() {
-                                rom.profile.event_state
-                            } else {
-                                None
-                            },
+                            state.as_ref(),
                             &EventCondition {
                                 kind: "variable",
                                 id: selector.variable,
@@ -484,15 +461,26 @@ mod tests {
     }
     #[test]
     fn predicates_are_tristate_and_compare_numeric_values() {
-        let layout = EventStateLayout {
-            flags: 0,
-            flag_limit: 64,
-            variables: 8,
-            variable_count: 2,
+        use crate::event_state::{EventBlock, EventRange};
+        let layout = crate::profile::EventStateLayout {
+            flags: &[EventRange {
+                first: 0,
+                count: 0x4000,
+                block: EventBlock::Main,
+                offset: 0,
+            }],
+            variables: &[EventRange {
+                first: 0x4000,
+                count: 8,
+                block: EventBlock::Main,
+                offset: 32,
+            }],
+            pickup_receipt: true,
         };
-        let mut b = vec![0; 12];
+        let mut b = vec![0u8; 64];
         b[1] = 4;
-        b[8] = 7;
+        b[32..34].copy_from_slice(&7u16.to_le_bytes());
+        let state = EventSnapshot::fixture(b, vec![], vec![], layout);
         let c = EventCondition {
             kind: "flag",
             id: 10,
@@ -500,8 +488,8 @@ mod tests {
             comparison: 1,
             taken: true,
         };
-        assert_eq!(check(&b, Some(layout), &c).satisfied, Some(true));
-        assert_eq!(check(&b, None, &c).satisfied, None);
+        assert_eq!(check(Some(&state), &c).satisfied, Some(true));
+        assert_eq!(check(None, &c).satisfied, None);
         let c = EventCondition {
             kind: "variable",
             id: 0x4000,
@@ -509,8 +497,8 @@ mod tests {
             comparison: 2,
             taken: false,
         };
-        assert_eq!(check(&b, Some(layout), &c).satisfied, Some(false));
+        assert_eq!(check(Some(&state), &c).satisfied, Some(false));
         let c = EventCondition { id: 0x800d, ..c };
-        assert_eq!(check(&b, Some(layout), &c).satisfied, None);
+        assert_eq!(check(Some(&state), &c).satisfied, None);
     }
 }

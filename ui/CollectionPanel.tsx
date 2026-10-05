@@ -197,6 +197,11 @@ export function CollectionPanel({
                           {s?.in_scenario === true && (
                             <p className="small">{t("clockInsideScenario")}</p>
                           )}
+                          {s?.underfoot === true && (
+                            <p className="small muted">
+                              {t("mapHiddenUnderfoot")}
+                            </p>
+                          )}
                           {s?.map_id && (
                             <button
                               className="link-button"

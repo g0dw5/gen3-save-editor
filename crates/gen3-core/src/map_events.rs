@@ -30,6 +30,8 @@ pub struct MapMarker {
     pub local_id: Option<u8>,
     pub graphics_id: Option<u16>,
     pub movement_type: Option<u8>,
+    /// Packed FireRed hidden item is underfoot rather than in front of the player.
+    pub underfoot: Option<bool>,
     /// Object visibility flag, or hidden-item collection flag. Not a gift receipt.
     pub flag: Option<u16>,
     pub offset: usize,
@@ -456,6 +458,7 @@ impl Rom {
                         local_id: None,
                         graphics_id: None,
                         movement_type: None,
+                        underfoot: None,
                         flag: None,
                         offset: o,
                         script: None,
@@ -474,26 +477,46 @@ impl Rom {
                     } else if b[o + 5] == 7 {
                         marker.kind = "hidden";
                         let item = u16(b, o + 8)?;
-                        // The Emerald index protocol is verified for these adapters.
-                        // FireRed/custom quantity/index packing needs native proof;
-                        // never reinterpret its packed bytes as an Emerald receipt flag.
-                        let emerald = matches!(
-                            self.profile.formats.scripts,
-                            crate::adapter::ScriptFormat::DarkPhantom
-                                | crate::adapter::ScriptFormat::EmeraldExpanded
-                        );
-                        marker.flag = if emerald {
-                            u16(b, o + 10)?.checked_add(0x1f4)
+                        let mut quantity = None;
+                        if let Some(rules) = self.profile.hidden_items {
+                            let mut base = rules.flag_base;
+                            if let Some((table, alternate)) = rules.region_override {
+                                let regions = bytes(b, table, 256)?;
+                                let end =
+                                    regions.iter().position(|r| *r == 0xff).ok_or_else(|| {
+                                        crate::err(
+                                            "hidden_region_table",
+                                            "unterminated region list",
+                                        )
+                                    })?;
+                                if regions[..end].contains(&map.region) {
+                                    base = alternate;
+                                }
+                            }
+                            let index = if rules.packed {
+                                b[o + 10] as u16
+                            } else {
+                                u16(b, o + 10)?
+                            };
+                            marker.flag = base.checked_add(index);
+                            if rules.packed {
+                                marker.underfoot = Some(b[o + 11] & 0x80 != 0);
+                                // Native underfoot consumer forces one, ignoring the packed quantity.
+                                quantity = Some(if marker.underfoot == Some(true) {
+                                    1
+                                } else {
+                                    (b[o + 11] & 0x7f) as u16
+                                });
+                            } else {
+                                quantity = Some(1);
+                            }
                         } else {
-                            None
-                        };
-                        if !emerald {
                             marker.stopped_at.push(o);
                         }
                         if item > 0 && self.item(item).is_ok() {
                             marker.rewards.push(ItemReward {
                                 item,
-                                quantity: emerald.then_some(1),
+                                quantity,
                                 offset: o,
                                 via: "hidden",
                                 conditions: Vec::new(),

@@ -38,17 +38,25 @@ impl SplitText {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct EventStateLayout {
-    pub flags: usize,
-    pub flag_limit: u16,
-    pub variables: usize,
-    pub variable_count: u16,
+    pub flags: &'static [crate::event_state::EventRange],
+    pub variables: &'static [crate::event_state::EventRange],
+    /// Verified standard item-ball script owns the object visibility flag.
+    pub pickup_receipt: bool,
+}
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct HiddenItemRules {
+    pub packed: bool,
+    pub flag_base: u16,
+    /// Runtime ROM list of map sections, terminated by 0xFF, with a separate flag base.
+    pub region_override: Option<(usize, u16)>,
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct Profile {
     pub native_trainers: Option<crate::native_trainer::NativeTrainerRules>,
     pub clock: Option<crate::clock::ClockRules>,
-    /// Native-verified SB1 flag/variable addressing; never inferred from item ownership.
+    /// Native-verified persistent flag/variable ranges; never inferred from item ownership.
     pub event_state: Option<EventStateLayout>,
+    pub hidden_items: Option<HiddenItemRules>,
     pub formats: crate::adapter::RomFormats,
     pub capabilities: crate::adapter::Capabilities,
     pub ability_count: u16,
@@ -274,11 +282,25 @@ pub const EMERALD: SaveLayout = SaveLayout {
 pub const BW: Profile = Profile {
     native_trainers: None,
     clock: None,
+    hidden_items: Some(HiddenItemRules {
+        packed: false,
+        flag_base: 0x1f4,
+        region_override: None,
+    }),
     event_state: Some(EventStateLayout {
-        flags: 0x1270,
-        flag_limit: 0x4000,
-        variables: 0x139c,
-        variable_count: 0x100,
+        flags: &[crate::event_state::EventRange {
+            first: 0,
+            count: 0x4000,
+            block: crate::event_state::EventBlock::Main,
+            offset: 0x1270,
+        }],
+        variables: &[crate::event_state::EventRange {
+            first: 0x4000,
+            count: 0x100,
+            block: crate::event_state::EventBlock::Main,
+            offset: 0x139c,
+        }],
+        pickup_receipt: true,
     }),
     nature_names: 0x61cb50,
     nature_effects: 0x31e818,
@@ -488,7 +510,26 @@ pub const DP: Profile = Profile {
 pub const ROCKET: Profile = Profile {
     native_trainers: None,
     clock: None,
-    event_state: None,
+    hidden_items: Some(HiddenItemRules {
+        packed: false,
+        flag_base: 0x1f4,
+        region_override: None,
+    }),
+    event_state: Some(EventStateLayout {
+        flags: &[crate::event_state::EventRange {
+            first: 0,
+            count: 0x4000,
+            block: crate::event_state::EventBlock::Main,
+            offset: 0x1ca8,
+        }],
+        variables: &[crate::event_state::EventRange {
+            first: 0x4000,
+            count: 0x100,
+            block: crate::event_state::EventBlock::Main,
+            offset: 0x1f6c,
+        }],
+        pickup_receipt: false,
+    }),
     nature_names: 0xd052ec,
     nature_effects: 0x5b335c,
     nature_product_u16: false,

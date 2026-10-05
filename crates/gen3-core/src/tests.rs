@@ -1789,8 +1789,9 @@ fn item_event_layers_keep_coordinates_and_hidden_flags() {
         (hidden.kind, hidden.x, hidden.y, hidden.flag),
         ("hidden", 5, 9, Some(0x1fe))
     );
-    // A FireRed adapter must not apply Emerald's collection index protocol.
+    // An unverified adapter must not inherit another profile's collection index protocol.
     r.profile.formats.scripts = crate::adapter::ScriptFormat::FireRed;
+    r.profile.hidden_items = None;
     let fire_red = r.map_events(&map).unwrap();
     let hidden = fire_red
         .markers
@@ -1800,6 +1801,32 @@ fn item_event_layers_keep_coordinates_and_hidden_flags() {
     assert_eq!(hidden.flag, None);
     assert_eq!(hidden.rewards[0].quantity, None);
     assert!(hidden.stopped_at.contains(&bg));
+    // Exact-adapter rules own the format, including Mercury's runtime region override.
+    r.profile.hidden_items = Some(crate::profile::HiddenItemRules {
+        packed: true,
+        flag_base: 0x3e8,
+        region_override: Some((0x25400, 0xd00)),
+    });
+    {
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[0x25400..0x25402].copy_from_slice(&[0, 0xff]);
+        b[bg + 10] = 10;
+        b[bg + 11] = 5;
+    }
+    let hidden = r.map_events(&map).unwrap().markers.remove(1);
+    assert_eq!(
+        (hidden.flag, hidden.underfoot, hidden.rewards[0].quantity),
+        (Some(0xd0a), Some(false), Some(5))
+    );
+    std::sync::Arc::make_mut(&mut r.data)[bg + 11] = 0x85;
+    let hidden = r.map_events(&map).unwrap().markers.remove(1);
+    assert_eq!(
+        (hidden.flag, hidden.underfoot, hidden.rewards[0].quantity),
+        (Some(0xd0a), Some(true), Some(1))
+    );
+    // Editing the synthetic ROM table changes the result; the override is not bundled.
+    std::sync::Arc::make_mut(&mut r.data)[0x25400] = 1;
+    assert_eq!(r.map_events(&map).unwrap().markers[1].flag, Some(0x3f2));
     // Bad pointers must fail safely, never reinterpret an item's ID as a script.
     let b = std::sync::Arc::make_mut(&mut r.data);
     put32(b, ev + 16, 0xfffffff0);
@@ -3368,5 +3395,160 @@ fn local_mercury_clock_matches_native_restore_and_period_selection() {
             r.clock_query_with_save(Some(&save), query()).unwrap().issue,
             Some("invalid_saved_clock")
         );
+    }
+}
+
+#[test]
+fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        map_events::{ItemReward, MapEventReport, MapMarker},
+        world::{Map, TrainerLocationIndex, World},
+    };
+    for profile in profile::PROFILES {
+        let r = adapter_rom(profile);
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let range = profile.event_state.unwrap().flags[0];
+        // Every adapter has a verified SB1 flag 1; the actual logical offset differs.
+        let mut offset = range.offset;
+        for section in 1..=4 {
+            if offset < save.layout.sizes[section] {
+                save.data[save.sections[section] + offset] |= 2;
+                break;
+            }
+            offset -= save.layout.sizes[section];
+        }
+        let before = save.data.clone();
+        let map = Map {
+            id: "0-0".into(),
+            group: 0,
+            number: 0,
+            name: "Synthetic".into(),
+            region: 1,
+            width: 4,
+            height: 4,
+            map_type: 1,
+            header: 0,
+            layout: 0,
+            invalid_events: false,
+            events: None,
+            scripts: vec![],
+            objects: vec![],
+        };
+        let markers = ["hidden", "pickup", "gift"]
+            .into_iter()
+            .map(|kind| MapMarker {
+                id: kind.into(),
+                kind,
+                x: 1,
+                y: 1,
+                elevation: 0,
+                local_id: Some(1),
+                graphics_id: None,
+                movement_type: None,
+                underfoot: None,
+                flag: Some(1),
+                offset: 0,
+                script: None,
+                stopped_at: vec![],
+                rewards: vec![ItemReward {
+                    item: 1,
+                    quantity: Some(1),
+                    offset: 0,
+                    via: kind,
+                    conditions: vec![],
+                }],
+            })
+            .collect();
+        let mut index = AcquisitionIndex {
+            world: World {
+                maps: vec![map],
+                map_events: vec![MapEventReport {
+                    map_id: "0-0".into(),
+                    markers,
+                    unplaced_rewards: vec![],
+                    stopped_at: vec![],
+                }],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: vec![],
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        let report = index
+            .query(
+                &r,
+                Some(&save),
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        let hidden = report.sources.iter().find(|s| s.kind == "hidden").unwrap();
+        assert_eq!(
+            (hidden.status, hidden.receipt_flag, hidden.repeatable),
+            ("completed", Some(1), None)
+        );
+        let pickup = report.sources.iter().find(|s| s.kind == "pickup").unwrap();
+        assert_eq!(
+            pickup.status,
+            if profile.event_state.unwrap().pickup_receipt {
+                "completed"
+            } else {
+                "unknown"
+            }
+        );
+        let gift = report.sources.iter().find(|s| s.kind == "gift").unwrap();
+        assert_ne!(gift.status, "completed");
+        assert_eq!(gift.receipt_flag, None);
+        // A native/unknown stop may alter later guards; do not turn incomplete traversal into a blocked claim.
+        index.world.map_events[0].markers[2].stopped_at.push(0xdead);
+        index.world.map_events[0].markers[2].rewards[0]
+            .conditions
+            .push(crate::map_events::EventCondition {
+                kind: "flag",
+                id: 2,
+                value: 1,
+                comparison: 1,
+                taken: true,
+            });
+        let partial = index
+            .query(
+                &r,
+                Some(&save),
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            partial
+                .sources
+                .iter()
+                .find(|s| s.kind == "gift")
+                .unwrap()
+                .status,
+            "unknown"
+        );
+        assert_eq!(save.data, before);
+        let without_save = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        assert!(without_save.sources.iter().all(|s| s.status == "unknown"));
     }
 }

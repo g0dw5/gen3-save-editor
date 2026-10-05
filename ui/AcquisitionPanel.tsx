@@ -189,6 +189,9 @@ export function AcquisitionPanel({
                   </small>
                 )}
               </div>
+              {s.underfoot === true && (
+                <p className="small muted">{t("mapHiddenUnderfoot")}</p>
+              )}
               {s.map_id && (
                 <button
                   className="link-button"

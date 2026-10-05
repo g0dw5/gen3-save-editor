@@ -16,7 +16,7 @@ def reward(item):
 def marker(identifier, kind, x, y, rewards):
     return {"id": identifier, "kind": kind, "x": x, "y": y, "elevation": 3,
             "local_id": 1, "graphics_id": 999 if identifier == "unknown" else 1, "movement_type": 0,
-            "flag": 100, "offset": 256, "script": 512,
+            "underfoot": identifier == "hidden", "flag": 100, "offset": 256, "script": 512,
             "rewards": rewards, "stopped_at": []}
 
 
@@ -47,6 +47,10 @@ def respond(route):
         data = {"url": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='32'><rect width='16' height='32' fill='%23e9a76e'/></svg>"}
     elif command == "species":
         data = {"species": CATALOG["species"][0], "evolutions": [], "learnset": [], "encounters": []}
+    elif command == "acquisition":
+        data = {"target": request["payload"], "sources": [], "partial": True, "clock": None}
+    elif command == "map_navigation":
+        data = {"map_id": request["payload"]["id"], "outgoing": [], "incoming": [], "approaches": [], "truncated": False, "diagnostics": []}
     elif command == "sprite":
         data = {"url": ""}
     else:
@@ -83,7 +87,7 @@ if __name__ == "__main__":
         explorer.get_by_role("checkbox", name="Hidden items").uncheck()
         expect(explorer.locator(".map-marker.layer-hidden")).to_have_count(0)
         explorer.locator(".map-marker.layer-gift").click()
-        expect(explorer.locator(".map-marker-details")).to_contain_text("Potion × 1")
+        expect(explorer.locator(".map-marker-details")).to_contain_text(re.compile(r"Potion.*× 1"))
         explorer.get_by_role("checkbox", name="Dialogue rewards").uncheck()
         expect(explorer.locator(".map-marker")).to_have_count(1)
         explorer.get_by_role("checkbox", name="NPCs / objects").check()
@@ -93,7 +97,8 @@ if __name__ == "__main__":
         search.fill("Moon")
         expect(explorer.locator(".map-marker")).to_have_count(1)
         explorer.locator(".map-marker").click()
-        expect(explorer.locator(".map-marker-details")).to_contain_text("Moon Stone × 1")
+        expect(explorer.locator(".map-marker-details")).to_contain_text(re.compile(r"Moon Stone.*× 1"))
+        expect(explorer.locator(".map-marker-details")).to_contain_text("Stand on this tile and use the Itemfinder")
         explorer.get_by_label("Grid", exact=True).check()
         expect(explorer.locator(".map-grid")).to_be_visible()
         search.fill("")

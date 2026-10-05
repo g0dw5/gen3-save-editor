@@ -26,7 +26,12 @@ NPC／地图对象使用当前 ROM 的地图小人图像，按原始尺寸随地
 - Object templates: 24 bytes; signed x/y at +4/+6, elevation +8, movement +9,
   script pointer +16, visibility flag +20. Movement 0x4C starts invisible.
 - Background events: 12 bytes; x/y +0/+2, elevation +4, kind +5. Kind 7 stores
-  item ID at +8 and hidden-item index at +10. The collection flag is index +0x1F4.
+  item ID at +8. Verified Emerald-layout profiles use a 16-bit index at +10
+  and collection flag index +0x1F4. Mercury 1.2 instead packs an 8-bit index,
+  7-bit quantity and underfoot bit into the upper half of the word at +8;
+  its flag base is selected from a region list in the currently loaded ROM.
+  Underfoot items require the Itemfinder and always give one item. See
+  [native protocol verification](../verification/event-state-20261005.md).
   This union is **not** a script pointer. Secret bases are not hidden items.
 - Coordinate events: 16 bytes, script +12. Their trigger variable/value is
   retained as a reward condition.

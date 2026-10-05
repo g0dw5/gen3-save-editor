@@ -294,6 +294,7 @@ export interface MapMarker {
   local_id: number | null;
   graphics_id: number | null;
   movement_type: number | null;
+  underfoot: boolean | null;
   flag: number | null;
   offset: number;
   script: number | null;
@@ -471,6 +472,7 @@ export interface QueryTarget {
   id: number;
 }
 export interface AcquisitionSource {
+  underfoot: boolean | null;
   in_scenario: boolean | null;
   kind: string;
   map_id: string | null;

@@ -146,6 +146,10 @@ ROM 资料浮窗支持宝可梦、道具和招式的来源跳转、地图格位�
 不会代入设备时间。只读命令行：`gen3 game-clock ROM [SAVE]`。
 详见[时钟验证](docs/verification/mercury-clock-20261005.md)和[验证与当前缺口](docs/verification/query-collection-20261005.md)。
 
+五份 ROM 的已验证持久化事件范围支持隐藏道具领取叠加；水银按 ROM 区域列表
+实时计算领取标记，地图与收集 HTML 会提示脚下探测器取物。普通 NPC 领奖和完整
+任务／刷新机制仍有缺口，见[事件验证](docs/verification/event-state-20261005.md)。
+
 水银 1.2 使用本作扩展背包及原生地点名表。地图中已验证的原生静态布局错乱、
 无法确定的图层行为会显示提示；解析出地图记录不代表已证明正常入口或可达性。
 验证范围见[水银显示与背包](docs/verification/mercury-display-storage-20261005.md)。

@@ -37,7 +37,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Bounded `script_report`; [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers and custom exchanges are not comprehensively indexed. |
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. No verified probability under all ability modifiers. |
-| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | U | U | U | Native BW/DP SB1 addressing and direct pickup/hidden receipt protocols; unknown guards remain tri-state. Other layouts and complete story dependencies await proof. NPC visibility and bag absence are not receipt evidence. |
+| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) verified across five fingerprints. BW/DP ordinary pickup receipts verified; other pickup/NPC receipt protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
 | Effective game clock, weekday, next event / 有效时钟与刷新 | U | U | U | U | P | Mercury virtual SAVE clock, native weekday, speed, forced-night state and jump menu verified within [bounded scope](verification/mercury-clock-20261005.md); hardware RTC and all weekday refresh remain unresolved. No device-time assumption. |
 | Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | P | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury executes its native constructor for explicit zero-context scenarios; independent CPU comparisons are recorded below, while full setup remains unknown. |
 | Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution with party/scenario. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
@@ -76,7 +76,7 @@ flows. Entrance/planning rows, originally U at the audit baseline, are now **P f
 it does not certify current accessibility, complete tasks or all source types.
 BW/DP receipt overlays are **P**: direct item-ball/hidden protocols and native
 flag/variable addresses are verified, while generic NPC receipt inference is not.
-Other ROM receipt overlays remain U and explicitly unknown. Shop lists are
+Other ROM overlays were U at this increment; the later event-state increment below verifies persistent ranges and hidden-item receipts while leaving ordinary pickup/NPC protocols unresolved. Shop lists are
 bounded, ROM-backed script records, not a claim about all native/custom shops.
 
 | Exact input | Maps | Warps | Connections | Unresolved links | Maps with exterior chains | Positioned shop rows |
@@ -120,8 +120,9 @@ page executes its exact ROM constructor in bounded, isolated RAM; 742 trainers,
 two seeds, 1,484 scenarios and 3,784 individuals match an independent Unicorn
 execution, including 71,896 getter comparisons. This is a zero-context ordinary
 scenario, not the entire battle setup, script replacements or facilities.
-FireRed/custom hidden-item quantity and receipt indexes are now deliberately
-unknown rather than silently decoded with Emerald's packing.
+At this increment, FireRed/custom hidden-item quantity and receipt indexes were
+left unknown. The later event-state increment validates Mercury packing and its
+runtime region-dependent flag bases, rather than reusing Emerald packing.
 
 The matrix above includes the current increments. Entrance, acquisition,
 planning and Mercury trainer increments remain partial; no cell is promoted to full
@@ -163,3 +164,16 @@ Final regression for this increment: 88 public core tests passed (18 opt-in
 ignored); both five-ROM local query checks and the five-ROM actual query/map UI
 passed. Mercury's saved-clock English/Chinese planning/HTML flow and existing
 inventory/location/map-warning UI regression passed without SAVE writes.
+
+## Persistent event increment / 持久化事件增量
+
+All five event/receipt rows are **P**: configured persistent flag/variable ranges
+and native hidden-item protocols now have independent CPU evidence and shared
+SAV queries. Mercury region-dependent hidden flags and packed quantities come
+from runtime ROM records. Pickup receipt is still enabled only for BW/DP; NPC
+visibility, full quest graphs and recurring-item resets remain separate gaps.
+See [scope and evidence](verification/event-state-20261005.md).
+
+五份 ROM 都能在已验证范围内读取剧情条件与隐藏道具领取状态；整体仍为部分验证。
+水银按 ROM 区域列表选择隐藏道具标记基址，并展示脚下取物说明。普通拾取与 NPC
+奖励领取协议、完整剧情依赖及刷新机制继续保留各自缺口。

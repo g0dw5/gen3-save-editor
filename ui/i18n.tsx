@@ -1,5 +1,7 @@
 import { createContext, useContext } from "react";
 export const en = {
+  mapHiddenUnderfoot:
+    "Stand on this tile and use the Itemfinder; this is an underfoot hidden item.",
   mapUnknownLayerType:
     "Some cells use a layer type whose native routine retains the previous screen contents. Their static appearance cannot be determined; those cells use the backdrop color.",
   mapNativeLayoutMismatch:
@@ -840,6 +842,7 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  mapHiddenUnderfoot: "这是脚下的隐藏道具：站在该格位使用探测器。",
   mapUnknownLayerType:
     "部分格块使用了原生绘制例程不更新画面的图层类型，静态样貌无法确定；这些格块暂以背景色显示。",
   mapNativeLayoutMismatch:
