@@ -77,14 +77,15 @@ pub fn preview(rom: &Rom, request: &Request) -> Result<Preview> {
     })
 }
 
-struct Sandbox<'a> {
+/// Bounded read-only ROM execution shared by trainer and teaching queries.
+pub(crate) struct Sandbox<'a> {
     rom: &'a [u8],
     ewram: Vec<u8>,
     iwram: Vec<u8>,
     invalid: Option<u32>,
 }
 impl<'a> Sandbox<'a> {
-    fn new(rom: &'a [u8]) -> Self {
+    pub(crate) fn new(rom: &'a [u8]) -> Self {
         Self {
             rom,
             ewram: vec![0; 0x40000],
@@ -92,7 +93,13 @@ impl<'a> Sandbox<'a> {
             invalid: None,
         }
     }
-    fn call(&mut self, start: u32, args: [u32; 4], stack: [u32; 2], limit: usize) -> Result<u32> {
+    pub(crate) fn call(
+        &mut self,
+        start: u32,
+        args: [u32; 4],
+        stack: [u32; 2],
+        limit: usize,
+    ) -> Result<u32> {
         let sp = 0x03007e00;
         self.w32(sp, stack[0]);
         self.w32(sp + 4, stack[1]);

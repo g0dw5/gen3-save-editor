@@ -2023,6 +2023,205 @@ fn npc_trade_fixture(p: profile::Profile) -> (Rom, crate::world::Map) {
     (r, map)
 }
 
+fn npc_tutor_fixture(p: profile::Profile) -> (Rom, crate::world::Map) {
+    let (mut r, map) = npc_trade_fixture(p);
+    let rules = r.profile.tutor_scripts.unwrap();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    put32(
+        b,
+        rules.specials + rules.special as usize * 4,
+        0x08000001 + rules.code as u32,
+    );
+    if let crate::script_teaching::TutorParameter::Index { getter, .. } = rules.parameter {
+        // Native Thumb getter returns the synthetic move 2. No catalogs are injected.
+        let o = (getter - 0x08000000) as usize;
+        b[o..o + 4].copy_from_slice(&[2, 0x20, 0x70, 0x47]);
+    }
+    let parameter = if matches!(
+        rules.parameter,
+        crate::script_teaching::TutorParameter::MoveId
+    ) {
+        2
+    } else {
+        1
+    };
+    // Conditional offer, followed by a native call; the flag is an access guard,
+    // not a teaching receipt, despite also being the object's visibility flag.
+    b[0x26000..0x26016].copy_from_slice(&[
+        0x2b,
+        0x17,
+        1,
+        6,
+        1,
+        0x15,
+        0x60,
+        2,
+        8,
+        0x16,
+        5,
+        0x80,
+        parameter,
+        0,
+        0x25,
+        rules.special as u8,
+        (rules.special >> 8) as u8,
+        2,
+        0,
+        0,
+        0,
+        2,
+    ]);
+    put16(b, 0x25114, 0x117);
+    (r, map)
+}
+#[test]
+fn tutor_sources_preserve_native_selector_guards_tiles_and_read_only_queries() {
+    use crate::acquisition::{AcquisitionIndex, Target, TargetKind};
+    for p in profile::PROFILES {
+        let (mut r, map) = npc_tutor_fixture(p);
+        let original = r.data.clone();
+        let report = r.map_events(&map).unwrap();
+        let marker = &report.markers[0];
+        assert_eq!(marker.kind, "npc");
+        assert_eq!((marker.x, marker.y), (3, 2));
+        assert_eq!(marker.teaching.len(), 1);
+        assert_eq!(marker.teaching[0].move_id, 2);
+        assert!(marker.teaching[0]
+            .conditions
+            .iter()
+            .any(|c| c.kind == "flag" && c.id == 0x117 && !c.taken));
+        assert!(report.unplaced_teaching.is_empty());
+        assert_eq!(marker.receipt_flag, None);
+        let index = AcquisitionIndex {
+            world: crate::world::World {
+                maps: vec![map.clone()],
+                map_events: vec![report],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: crate::world::TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: vec![],
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        let target = Target {
+            kind: TargetKind::Move,
+            id: 2,
+        };
+        let query = index.query(&r, None, target.clone()).unwrap();
+        assert_eq!(query.sources[0].kind, "move_tutor");
+        assert_eq!(query.sources[0].status, "unknown");
+        assert_eq!(
+            query.sources[0].teaching_source.as_ref().unwrap().move_id,
+            2
+        );
+        let save = Save::open(save_bytes(&r), p.save).unwrap();
+        let before = save.data.clone();
+        let saved_query = index.query(&r, Some(&save), target).unwrap();
+        assert_ne!(saved_query.sources[0].status, "completed");
+        assert!(saved_query.sources[0].partial);
+        assert_eq!(saved_query.sources[0].repeatable, None);
+        assert_eq!(save.data, before);
+        assert_eq!(r.data, original);
+        let rules = r.profile.tutor_scripts.unwrap();
+        if let crate::script_teaching::TutorParameter::Index { count, .. } = rules.parameter {
+            assert_eq!(r.tutor_move(256).unwrap(), 2);
+            assert_eq!(r.tutor_move(count).unwrap_err().code, "tutor_index");
+        }
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        put32(b, rules.specials + rules.special as usize * 4, 0x08028001);
+        let failed = r.map_events(&map).unwrap();
+        assert!(failed.markers[0].teaching.is_empty());
+        assert!(failed.markers[0].stopped_at.contains(&0x2600e));
+        // A map-level invocation cannot borrow a nearby NPC's tile.
+        let (r, mut map) = npc_tutor_fixture(p);
+        map.events = None;
+        let unplaced = r.map_events(&map).unwrap();
+        assert!(unplaced.markers.is_empty());
+        assert_eq!(unplaced.unplaced_teaching.len(), 1);
+    }
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_TUTOR_PROBES native lookup/menu evidence"]
+fn local_teaching_sources_match_native_getters_and_crosslinks() {
+    use crate::acquisition::{AcquisitionIndex, Target, TargetKind};
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_TUTOR_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        assert_eq!(probes[key]["md5"], r.profile.md5);
+        let rows = probes[key]["rows"].as_array().unwrap();
+        for row in rows {
+            let index = row["parameter"].as_u64().unwrap() as u16;
+            let native = row["move_id"].as_u64().unwrap() as u16;
+            assert_eq!(r.tutor_move(index).unwrap(), native);
+            // Independently validate the ordinary learnset table against native lookup.
+            if index < r.profile.teaching.tutor_count as u16 {
+                assert_eq!(
+                    u16(&r.data, r.profile.tutor_moves + index as usize * 2).unwrap(),
+                    native
+                );
+            }
+        }
+        for row in probes[key]["direct_compatibility"].as_array().unwrap() {
+            let move_id = row["parameter"].as_u64().unwrap() as u16;
+            assert_eq!(r.tutor_move(move_id).unwrap(), move_id);
+        }
+        let index = AcquisitionIndex::build(&r).unwrap();
+        let offers: Vec<_> = index
+            .world
+            .map_events
+            .iter()
+            .flat_map(|r| {
+                r.markers
+                    .iter()
+                    .flat_map(|m| &m.teaching)
+                    .chain(&r.unplaced_teaching)
+            })
+            .collect();
+        assert!(
+            !offers.is_empty(),
+            "{key}: teaching references must be discovered"
+        );
+        for offer in &offers {
+            assert_eq!(r.tutor_move(offer.parameter).unwrap(), offer.move_id);
+            let query = index
+                .query(
+                    &r,
+                    None,
+                    Target {
+                        kind: TargetKind::Move,
+                        id: offer.move_id,
+                    },
+                )
+                .unwrap();
+            assert!(query.sources.iter().any(|s| s.kind == "move_tutor"
+                && s.offset == offer.offset
+                && s.teaching_source.as_ref().unwrap() == *offer));
+            assert_eq!(query.sources[0].kind, "move_tutor");
+            assert!(query
+                .sources
+                .iter()
+                .filter(|s| s.kind == "move_tutor")
+                .all(|s| s.status == "unknown" && s.partial && s.receipt_flag.is_none()));
+        }
+        eprintln!(
+            "{key}: {} native indexed getters and {} parsed teaching references",
+            rows.len(),
+            offers.len()
+        );
+    }
+}
+
 #[test]
 fn npc_trade_sources_use_native_dispatch_runtime_records_and_mode_guards() {
     for p in profile::PROFILES {
@@ -3941,6 +4140,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
                 script: None,
                 stopped_at: vec![],
                 pokemon: vec![],
+                teaching: vec![],
                 rewards: vec![ItemReward {
                     item: 1,
                     quantity: Some(1),
@@ -3959,6 +4159,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
                     markers,
                     unplaced_rewards: vec![],
                     unplaced_pokemon: vec![],
+                    unplaced_teaching: vec![],
                     stopped_at: vec![],
                 }],
                 encounters: vec![],
@@ -4439,11 +4640,13 @@ fn gift_receipt_queries_and_plans_use_the_qualified_reward_not_visibility() {
                 offset: 80,
                 script: Some(90),
                 pokemon: vec![],
+                teaching: vec![],
                 rewards: vec![reward],
                 stopped_at: vec![],
             }],
             unplaced_rewards: vec![],
             unplaced_pokemon: vec![],
+            unplaced_teaching: vec![],
             stopped_at: vec![],
         }];
         let target = Target {

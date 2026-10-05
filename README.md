@@ -213,3 +213,5 @@ Mercury 1.2 uses its native expanded inventory and section-name table. Static ma
 with independently reproduced native layout mismatches or unresolved layer types
 show warnings; a parsed map entry is not proof of a normally accessible area.
 Validation scope: [Mercury display/storage](docs/verification/mercury-display-storage-20261005.md).
+
+Parsed tutor offers now link move queries to NPC tiles, exterior entrances and back navigation. Dark Phantom BW/DP uses the corrected native tutor table; payment, one-time limits and special eligibility remain unresolved. See [teaching evidence](docs/verification/tutor-sources-20261006.md).

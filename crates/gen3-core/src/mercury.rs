@@ -95,6 +95,16 @@ const MERCURY_SAVE: SaveLayout = SaveLayout {
 };
 
 pub const PROFILE: Profile = Profile {
+    tutor_scripts: Some(crate::script_teaching::TutorScriptRules {
+        specials: 0x15fd60,
+        special: 0x18d,
+        code: 0x12781c,
+        variable: 0x8005,
+        parameter: crate::script_teaching::TutorParameter::Index {
+            count: 154,
+            getter: 0x08120ba8,
+        },
+    }),
     script_pokemon: crate::script_pokemon::PokemonScriptRules {
         wild: crate::script_pokemon::WildCommand::MercuryDouble,
         egg_level_instruction: 0x1d1b31e,

@@ -90,7 +90,7 @@ do not point to static descriptors and remain unavailable in the UI.
 
 Enabled now: exact-ROM identification; species/stats, abilities, moves and
 descriptions, items, natures/types, permanent evolution and battle-form links;
-complete level-up, egg, TM/HM and tutor move sources; ROM experience thresholds;
+parsed level-up, egg, TM/HM and ordinary tutor compatibility sources; ROM experience thresholds;
 normal/shiny front pictures and PID-dependent Unown/Spinda appearance; maps,
 events, wild encounters, trainer rosters, portraits and static NPC art.
 The split TM item ranges are configuration only; compatibility values come
@@ -159,7 +159,7 @@ extracted assets are committed.
 `cargo test -p gen3-core` exercises public fixtures. The ignored exact-ROM
 test `mercury::tests::exact_rom_12_regression` runs with
 `GEN3_ROM_MERCURY12` pointed to the user's ROM. It verifies fingerprint,
-table sizes and sample contents, complete machine/egg/tutor sources,
+table sizes and sample contents, bounded machine/egg/ordinary tutor sources,
 experience thresholds, maps/encounters/trainers, representative map images,
 all roster portraits and static NPC graphics, invalid-save rejection, the
 changed-byte fingerprint rejection, and PNG rendering of both
@@ -219,3 +219,5 @@ Further progression, Pokédex and story-state semantics remain unverified.
 | Parasite storage | RAM `0x0203B174`, tails of logical sections 0/4/13, then flash sectors 30/31 |
 | Bag quantities | Plain u16, native getter/setter `0x99DD8` / `0x99DDC` |
 | Extended map layers | `DrawMetatile 0x5A9B4` hook `0x1C8BDA0`; attributes `Tileset+20`, bits 28–30; base stride stays 16 bytes |
+
+Teaching coverage clarification (2026-10-06): Mercury 1.2 has additional native tutor lookup cases beyond the ordinary 145-entry bitset. Lookup is verified, while special eligibility/payment and complete obtainable-source coverage remain pending. The earlier word “complete” did not establish these behaviors. See [current evidence](../verification/tutor-sources-20261006.md).

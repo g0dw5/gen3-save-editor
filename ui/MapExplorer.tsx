@@ -36,6 +36,7 @@ export function MapExplorer({
   onMap,
   onItem,
   onSpecies,
+  onMove,
 }: {
   map: GameMap;
   image: string;
@@ -48,6 +49,7 @@ export function MapExplorer({
   onMap?: (id: string, focus?: MapFocus) => void;
   onItem?: (id: number) => void;
   onSpecies?: (id: number) => void;
+  onMove?: (id: number) => void;
 }) {
   const { t } = useI18n();
   const [enabled, setEnabled] = useState({
@@ -118,6 +120,11 @@ export function MapExplorer({
     [
       ...new Set([
         ...marker.rewards.map((r) => items.get(r.item)?.name ?? `#${r.item}`),
+        ...(marker.teaching ?? []).map(
+          (offer) =>
+            catalog.moves.find((m) => m.id === offer.move_id)?.name ??
+            `#${offer.move_id}`,
+        ),
         ...(marker.pokemon ?? []).map(
           (p) =>
             catalog.species.find((s) => s.id === p.species)?.name ??
@@ -439,6 +446,22 @@ export function MapExplorer({
               {!!marker.pokemon?.length && (
                 <p className="small muted">{t("acqScriptSourceHelp")}</p>
               )}
+              {(marker.teaching ?? []).map((offer, i) => (
+                <p key={`teaching-${offer.offset}-${i}`}>
+                  {t("move_tutor")} ·{" "}
+                  <button
+                    className="link-button"
+                    onClick={() => onMove?.(offer.move_id)}
+                  >
+                    {catalog.moves.find((m) => m.id === offer.move_id)?.name ??
+                      `#${offer.move_id}`}{" "}
+                    ↗
+                  </button>
+                </p>
+              ))}
+              {!!marker.teaching?.length && (
+                <p className="small muted">{t("tutorSourceHelp")}</p>
+              )}
               {marker.rewards.length ? (
                 marker.rewards.map((r, i) => (
                   <p key={`${r.offset}-${i}`}>
@@ -455,7 +478,7 @@ export function MapExplorer({
                         : ""}
                   </p>
                 ))
-              ) : !marker.pokemon?.length ? (
+              ) : !marker.pokemon?.length && !marker.teaching?.length ? (
                 <p>{t("mapNoReward")}</p>
               ) : null}
               {marker.rewards.some((r) => r.conditions.length > 0) && (
@@ -484,6 +507,9 @@ export function MapExplorer({
                 </code>
                 {!!marker.pokemon?.length && (
                   <pre>{JSON.stringify(marker.pokemon, null, 2)}</pre>
+                )}
+                {!!marker.teaching?.length && (
+                  <pre>{JSON.stringify(marker.teaching, null, 2)}</pre>
                 )}
                 {marker.rewards
                   .filter((r) => r.receipt)
@@ -548,6 +574,25 @@ export function MapExplorer({
               />
             </div>
           ))}
+        </details>
+      )}
+      {!!report?.unplaced_teaching?.length && (
+        <details>
+          <summary>{t("mapUnplacedTeaching")}</summary>
+          <p className="small muted">{t("mapUnplacedHelp")}</p>
+          {report.unplaced_teaching.map((offer, i) => (
+            <p key={i}>
+              <button
+                className="link-button"
+                onClick={() => onMove?.(offer.move_id)}
+              >
+                {catalog.moves.find((m) => m.id === offer.move_id)?.name ??
+                  `#${offer.move_id}`}{" "}
+                ↗
+              </button>
+            </p>
+          ))}
+          <p className="small muted">{t("tutorSourceHelp")}</p>
         </details>
       )}
       {report &&

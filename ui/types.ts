@@ -307,6 +307,12 @@ export interface PokemonSource {
     level_rule: "offered_pokemon";
   } | null;
 }
+export interface TeachingSource {
+  move_id: number;
+  parameter: number;
+  offset: number;
+  conditions: ItemReward["conditions"];
+}
 export interface MapMarker {
   id: string;
   kind: "pickup" | "hidden" | "gift" | "npc" | "event";
@@ -323,6 +329,7 @@ export interface MapMarker {
   script: number | null;
   rewards: ItemReward[];
   pokemon: PokemonSource[];
+  teaching?: TeachingSource[];
   stopped_at: number[];
 }
 export interface MapEventReport {
@@ -330,6 +337,7 @@ export interface MapEventReport {
   markers: MapMarker[];
   unplaced_rewards: ItemReward[];
   unplaced_pokemon: PokemonSource[];
+  unplaced_teaching?: TeachingSource[];
   stopped_at: number[];
 }
 export interface GameMap {
@@ -523,6 +531,7 @@ export interface AcquisitionSource {
   receipt: ReceiptEvidence | null;
   script_source: PokemonSource | null;
   trade_context: { party_levels: number[]; box_levels: number[] } | null;
+  teaching_source?: TeachingSource | null;
   repeatable: boolean | null;
   offset: number;
   partial: boolean;

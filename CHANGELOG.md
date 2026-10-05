@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Correct Dark Phantom BW/DP tutor lookup to the table used by native code (six
+  changed slots), and connect parsed teaching offers to move queries, NPC tiles,
+  exterior entrances and return navigation across all five fingerprints. Execute
+  indexed move selection from current ROM code, including Mercury special cases;
+  keep payment, eligibility, receipt and repeat limits explicitly unresolved.
+- 修正漆黑 BW／DP 教招表地址（6 个槽位与旧表不同），五份指纹的已解析教学报价
+  接入招式查询、NPC 格位、外部入口和返回。索引取招执行当前 ROM 原生代码，覆盖
+  水银特殊取招；费用、资格、领取和次数限制继续明确保留未知。
+
 - Index bounded NPC trade quotes from the current ROM and connect requested/
   received Pokémon, held items, NPC tiles and entrance navigation. SAV queries
   distinguish matching non-egg party/box donors and retain unknown completion

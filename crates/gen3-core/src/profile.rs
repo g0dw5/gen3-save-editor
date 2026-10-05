@@ -54,6 +54,7 @@ pub struct HiddenItemRules {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct Profile {
+    pub tutor_scripts: Option<crate::script_teaching::TutorScriptRules>,
     pub script_pokemon: crate::script_pokemon::PokemonScriptRules,
     pub native_trainers: Option<crate::native_trainer::NativeTrainerRules>,
     pub clock: Option<crate::clock::ClockRules>,
@@ -283,6 +284,16 @@ pub const EMERALD: SaveLayout = SaveLayout {
     skip_unoccupied_box_records: false,
 };
 pub const BW: Profile = Profile {
+    tutor_scripts: Some(crate::script_teaching::TutorScriptRules {
+        specials: 0x1dba64,
+        special: 0x1dd,
+        code: 0x1b892c,
+        variable: 0x8005,
+        parameter: crate::script_teaching::TutorParameter::Index {
+            count: 32,
+            getter: 0x081b2360,
+        },
+    }),
     script_pokemon: crate::script_pokemon::PokemonScriptRules {
         wild: crate::script_pokemon::WildCommand::Literal,
         egg_level_instruction: 0x70978,
@@ -428,7 +439,7 @@ pub const BW: Profile = Profile {
     },
     tm_moves: 0x1ca0000,
     tm_bits: 0x31e898,
-    tutor_moves: 0x61500c,
+    tutor_moves: 0x1ca00c0,
     tutor_bits: 0x615048,
     sprites: 0x30a18c,
     palettes: 0x303678,
@@ -529,6 +540,13 @@ pub const DP: Profile = Profile {
     ..BW
 };
 pub const ROCKET: Profile = Profile {
+    tutor_scripts: Some(crate::script_teaching::TutorScriptRules {
+        specials: 0x22b620,
+        special: 0x1dd,
+        code: 0x2070d8,
+        variable: 0x8005,
+        parameter: crate::script_teaching::TutorParameter::MoveId,
+    }),
     script_pokemon: crate::script_pokemon::PokemonScriptRules {
         wild: crate::script_pokemon::WildCommand::RocketExtended,
         egg_level_instruction: 0x9e960,

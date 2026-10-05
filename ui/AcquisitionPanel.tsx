@@ -200,6 +200,9 @@ export function AcquisitionPanel({
                 onSpecies={(id) => onTarget({ kind: "species", id })}
                 onItem={(id) => onTarget({ kind: "item", id })}
               />
+              {s.teaching_source && (
+                <p className="small muted">{t("tutorSourceHelp")}</p>
+              )}
               {s.receipt && (
                 <p className="small muted">{t("acqGiftReceiptHelp")}</p>
               )}

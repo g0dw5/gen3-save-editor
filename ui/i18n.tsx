@@ -77,6 +77,10 @@ export const en = {
   acqEvolution: "Evolve from",
   acqBreeding: "Breeding candidate",
   acqMachine: "Move machine",
+  move_tutor: "Move tutor NPC",
+  tutorSourceHelp:
+    "This script opens teaching for this move. Compatibility, payment, one-time limits and current access may require additional checks; an offer is not proof that teaching is currently possible or completed.",
+  mapUnplacedTeaching: "Teaching offers without a verified tile",
   acqSearch: "Filter sources / maps / Pokémon",
   acqNoSource: "No source was found within the parsed coverage.",
   acqNoTile: "Exact tile unresolved",
@@ -938,6 +942,10 @@ export const zh: Record<Key, string> = {
   acqEvolution: "从前置宝可梦进化",
   acqBreeding: "孵蛋候选",
   acqMachine: "招式学习器",
+  move_tutor: "招式教学 NPC",
+  tutorSourceHelp:
+    "此脚本打开对应招式教学。能否学会、费用、次数限制及当前可达条件仍可能需要额外核对；教学报价不等于当前可教或已完成。",
+  mapUnplacedTeaching: "格位待确定的招式教学",
   acqSearch: "筛选来源／地图／宝可梦",
   acqNoSource: "当前解析范围内未发现来源。",
   acqNoTile: "精确格位待解析",

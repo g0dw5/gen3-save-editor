@@ -621,12 +621,13 @@ export function ReferenceWindow({
                             <td>
                               <button
                                 className="link-button"
-                                onClick={() => {
-                                  setTab("moves");
-                                  setSelected(s.move_id);
-                                }}
+                                onClick={() =>
+                                  goTarget({ kind: "move", id: s.move_id })
+                                }
                               >
-                                {catalog.moves[s.move_id]?.name ?? s.move_id}
+                                {catalog.moves.find(
+                                  (move) => move.id === s.move_id,
+                                )?.name ?? s.move_id}
                               </button>
                             </td>
                             <td>
@@ -818,6 +819,7 @@ export function ReferenceWindow({
                     onMap={goMap}
                     onItem={(id) => goTarget({ kind: "item", id })}
                     onSpecies={(id) => goTarget({ kind: "species", id })}
+                    onMove={(id) => goTarget({ kind: "move", id })}
                   />
                 ) : mapImageError ? (
                   <p className="warning-text">{t("mapImageUnavailable")}</p>

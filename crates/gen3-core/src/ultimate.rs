@@ -58,6 +58,16 @@ pub const POCKETS: [Pocket; 6] = [
 ];
 
 pub const PROFILE: Profile = Profile {
+    tutor_scripts: Some(crate::script_teaching::TutorScriptRules {
+        specials: 0x1dba64,
+        special: 0x1dd,
+        code: 0x1b892c,
+        variable: 0x8005,
+        parameter: crate::script_teaching::TutorParameter::Index {
+            count: 127,
+            getter: 0x081b2360,
+        },
+    }),
     script_pokemon: crate::script_pokemon::PokemonScriptRules {
         wild: crate::script_pokemon::WildCommand::Literal,
         egg_level_instruction: 0x70978,
