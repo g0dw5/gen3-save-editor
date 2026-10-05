@@ -110,4 +110,13 @@ The shared CPU corrects only odd Thumb halfword loads whose upstream interpreter
 loses the GBA address/rotation behavior. This is instruction semantics, not an
 adapter-specific function hook. mGBA full-record and halfword tests establish the
 bounded correction; ARM halfword conformance is not implied. Full daycare live
-state, production/access and collection dependencies remain separate gaps.
+state, complete service setup/access and collection dependencies remain separate gaps.
+
+`breeding_production.rs` observes the complete ordinary step before its native
+comparison, without replacing functions. It projects each ordinary bag's ordered
+slots into disposable descriptors with the correct security key, and reads the
+modifier operand and roll parameters from ROM. The verified instruction sequence
+defines the theoretical count across all 16-bit draws; unknown patterns fail.
+Native pending-availability differences stay in adapter rules, not ROM-name checks.
+Production state is an explicit simulation, separate from live daycare state and
+the receipt scenario. UI item overrides never call save editing APIs.

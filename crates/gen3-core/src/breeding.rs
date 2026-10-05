@@ -26,6 +26,7 @@ pub struct BreedingRules {
     pub specials: usize,
     pub receive_special: u16,
     pub receive_code: usize,
+    pub production: Option<crate::breeding_production::Rules>,
 }
 pub const EMERALD: BreedingRules = BreedingRules {
     compatibility: 0x08070d4c,
@@ -41,6 +42,7 @@ pub const EMERALD: BreedingRules = BreedingRules {
     specials: 0x1dba64,
     receive_special: 0xbb,
     receive_code: 0x70aa8,
+    production: Some(crate::breeding_production::EMERALD),
 };
 pub const ROCKET: BreedingRules = BreedingRules {
     compatibility: 0x0809ed3c,
@@ -56,6 +58,7 @@ pub const ROCKET: BreedingRules = BreedingRules {
     specials: 0x22b620,
     receive_special: 0xbb,
     receive_code: 0x9ea90,
+    production: Some(crate::breeding_production::ROCKET),
 };
 pub const MERCURY: BreedingRules = BreedingRules {
     compatibility: 0x0804654c,
@@ -71,6 +74,11 @@ pub const MERCURY: BreedingRules = BreedingRules {
     specials: 0x15fd60,
     receive_special: 0xb8,
     receive_code: 0x462ac,
+    production: Some(crate::breeding_production::MERCURY),
+};
+pub const ULTIMATE: BreedingRules = BreedingRules {
+    production: Some(crate::breeding_production::ULTIMATE),
+    ..EMERALD
 };
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -117,6 +125,10 @@ pub struct Request {
     pub seed: u32,
     /// A query scenario, not a prediction of the game's next pending personality.
     pub offspring_pid: u32,
+    /// None projects the ordinary SAV bag, or an empty bag without a SAV.
+    /// An override is only a RAM query scenario, never a save edit.
+    #[serde(default)]
+    pub production_item: Option<bool>,
 }
 #[derive(Debug, Serialize)]
 pub struct Preview {
@@ -130,6 +142,7 @@ pub struct Preview {
     pub partial: bool,
     pub scenario: &'static str,
     pub rng_after: u32,
+    pub production: Option<crate::breeding_production::Preview>,
     #[cfg(test)]
     #[serde(skip)]
     pub(crate) child_raw: Option<Vec<u8>>,
@@ -295,6 +308,7 @@ fn preview_parents(
             return Err(err("breeding_parent_changed", slot));
         }
     }
+    let production = crate::breeding_production::preview(rom, save, request, &raws)?;
     Ok(Preview {
         rom_md5: rom.profile.md5,
         parents,
@@ -305,6 +319,7 @@ fn preview_parents(
         partial: true,
         scenario: "ordinary_daycare_simulation",
         rng_after: ram.r32(rules.rng),
+        production,
         #[cfg(test)]
         child_raw,
     })
@@ -362,6 +377,7 @@ mod tests {
             parents: [Parent::Stored { location }, Parent::Stored { location }],
             seed: 0,
             offspring_pid: 24,
+            production_item: None,
         };
         assert_eq!(
             preview(&rom, None, &duplicate).unwrap_err().code,
@@ -434,6 +450,7 @@ mod tests {
                     ],
                     seed: row["seed"].as_u64().unwrap() as u32,
                     offspring_pid: row["offspring_pid"].as_u64().unwrap() as u32,
+                    production_item: None,
                 };
                 let result = preview_parents(&rom, None, &request, raws).unwrap();
                 assert_eq!(

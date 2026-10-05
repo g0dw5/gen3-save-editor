@@ -142,6 +142,18 @@ impl<'a> Sandbox<'a> {
         stack: [u32; 2],
         limit: usize,
     ) -> Result<u32> {
+        Ok(self.observe(start, args, stack, limit, 0x0f000000)?[0])
+    }
+    /// Stop before a verified instruction and inspect registers without replacing
+    /// a native function or changing its control flow. A premature return fails.
+    pub(crate) fn observe(
+        &mut self,
+        start: u32,
+        args: [u32; 4],
+        stack: [u32; 2],
+        limit: usize,
+        stop: u32,
+    ) -> Result<[u32; 16]> {
         let sp = 0x03007e00;
         self.w32(sp, stack[0]);
         self.w32(sp + 4, stack[1]);
@@ -155,8 +167,11 @@ impl<'a> Sandbox<'a> {
         }
         for _ in 0..limit {
             let pc = cpu.reg_get(Mode::User, reg::PC);
+            if pc == stop {
+                return Ok(std::array::from_fn(|i| cpu.reg_get(Mode::User, i as u8)));
+            }
             if pc == 0x0f000000 {
-                return Ok(cpu.reg_get(Mode::User, 0));
+                return Err(err("native_observation_missing", format!("{stop:08X}")));
             }
             if !self.step_unaligned_thumb_halfword(&mut cpu) && !cpu.step(self) {
                 return Err(err("trainer_native_instruction", format!("{pc:08X}")));
@@ -211,6 +226,29 @@ impl Memory for Sandbox<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn observations_preserve_native_execution_and_reject_missing_checkpoints() {
+        let code = [7, 0x20, 13, 0x24, 0x70, 0x47]; // MOVS r0,#7; MOVS r4,#13; BX lr
+        let mut ram = Sandbox::new(&code);
+        let regs = ram
+            .observe(0x08000000, [0; 4], [0; 2], 10, 0x08000004)
+            .unwrap();
+        assert_eq!((regs[0], regs[4], regs[15]), (7, 13, 0x08000004));
+        assert_eq!(ram.call(0x08000000, [0; 4], [0; 2], 10).unwrap(), 7);
+        assert_eq!(
+            ram.observe(0x08000000, [0; 4], [0; 2], 10, 0x08000008)
+                .unwrap_err()
+                .code,
+            "native_observation_missing"
+        );
+        assert_eq!(
+            ram.observe(0x08000000, [0; 4], [0; 2], 1, 0x08000004)
+                .unwrap_err()
+                .code,
+            "trainer_native_limit"
+        );
+        assert_eq!(code, [7, 0x20, 13, 0x24, 0x70, 0x47]);
+    }
     #[test]
     fn gba_thumb_odd_halfword_loads_rotate_or_sign_extend_without_changing_flags() {
         for instruction in [0x8808u16, 0x5a88, 0x5e88] {

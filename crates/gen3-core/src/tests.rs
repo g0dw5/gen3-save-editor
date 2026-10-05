@@ -5580,7 +5580,10 @@ fn stored_breeding_queries_leave_save_and_parent_history_unchanged() {
         rules.compatibility = 0x08021000;
         std::sync::Arc::make_mut(&mut r.data)[0x21000..0x21004]
             .copy_from_slice(&[0, 0x20, 0x70, 0x47]); // MOVS r0,#0; BX lr
-        r.profile.breeding = Some(rules);
+        r.profile.breeding = Some(crate::breeding::BreedingRules {
+            production: None,
+            ..rules
+        });
         let save = Save::open(save_bytes(&r), r.profile.save).unwrap();
         let request: crate::breeding::Request = serde_json::from_value(serde_json::json!({"parents":[
             {"kind":"stored","location":{"kind":"party","slot":0}},
@@ -5592,5 +5595,131 @@ fn stored_breeding_queries_leave_save_and_parent_history_unchanged() {
         assert_eq!(preview.parents[0].pid, 12345);
         assert_eq!(save.data, before);
         assert_eq!(*r.data, *rom_before);
+    }
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_PRODUCTION_PROBES independent mGBA evidence"]
+fn local_breeding_production_matches_native_rolls_bag_and_steps() {
+    use crate::breeding::{Gender, Parent, Request};
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_PRODUCTION_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let rom =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        let native = &probes[key];
+        assert_eq!(native["md5"], rom.profile.md5);
+        assert_eq!(native["engine"], "mGBA ARM7");
+        let production = rom.profile.breeding.unwrap().production.unwrap();
+        let (scale, divisor) =
+            crate::breeding_production::roll_parameters(&rom, production).unwrap();
+        let rolls = native["rolls"].as_array().unwrap();
+        assert_eq!(rolls.len(), 65536);
+        for (draw, roll) in rolls.iter().enumerate() {
+            assert_eq!(
+                draw as u32 * scale / divisor,
+                roll.as_u64().unwrap() as u32,
+                "{key}: {draw}"
+            );
+        }
+        let rom_before = rom.data.clone();
+        for row in native["rows"].as_array().unwrap() {
+            let parents: [Vec<u8>; 2] = serde_json::from_value(row["parents"].clone()).unwrap();
+            let mut bytes = save_bytes(&rom);
+            let security_key = row["key"].as_u64().unwrap() as u32;
+            for bank in 0..2 {
+                let base = bank * 14 * 4096 + 10 * 4096;
+                put32(&mut bytes, base + rom.profile.save.key, security_key);
+                let checksum = if rom.profile.save.sector_checksum
+                    == profile::SectorChecksum::NativeConstantOne
+                {
+                    1
+                } else {
+                    sector_checksum(&bytes[base..base + rom.profile.save.sizes[0]])
+                };
+                put16(&mut bytes, base + 0xff6, checksum);
+            }
+            let mut save = Save::open(bytes, rom.profile.save).unwrap();
+            let item = native["modifier_item"].as_u64().map(|i| i as u16);
+            let present = row["modifier_present"].as_bool().unwrap();
+            if let Some(item) = item {
+                let pocket = rom
+                    .profile
+                    .save
+                    .pockets
+                    .iter()
+                    .find(|p| p.category == rom.item(item).unwrap().pocket)
+                    .unwrap();
+                save.edit_bag(
+                    pocket.id,
+                    0,
+                    if present { item } else { 0 },
+                    u16::from(present),
+                    &rom,
+                    Policy::Free,
+                )
+                .unwrap();
+            }
+            let before = save.data.clone();
+            let mut request = Request {
+                parents: [
+                    Parent::Simulated {
+                        species: 25,
+                        gender: Gender::Female,
+                        held_item: 0,
+                        trainer_id: 1,
+                    },
+                    Parent::Simulated {
+                        species: 25,
+                        gender: Gender::Male,
+                        held_item: 0,
+                        trainer_id: 2,
+                    },
+                ],
+                seed: row["seed"].as_u64().unwrap() as u32,
+                offspring_pid: 24,
+                production_item: None,
+            };
+            let expected = |result: crate::breeding_production::Preview| {
+                assert_eq!(result.modifier_item, item);
+                assert_eq!(result.modifier_present, item.map(|_| present));
+                assert_eq!(
+                    result.threshold as u64,
+                    row["threshold"].as_u64().unwrap(),
+                    "{key}"
+                );
+                assert_eq!(
+                    result.numerator as u64,
+                    row["numerator"].as_u64().unwrap(),
+                    "{key}"
+                );
+                assert_eq!(result.scenario_roll as u64, row["roll"].as_u64().unwrap());
+                assert_eq!(result.scenario_passed, row["passed"].as_bool().unwrap());
+                assert_eq!(result.denominator, 65536);
+                assert_eq!(result.interval_steps, 256);
+            };
+            expected(
+                crate::breeding_production::preview(&rom, Some(&save), &request, &parents)
+                    .unwrap()
+                    .unwrap(),
+            );
+            if item.is_some() {
+                request.production_item = Some(present);
+                expected(
+                    crate::breeding_production::preview(&rom, None, &request, &parents)
+                        .unwrap()
+                        .unwrap(),
+                );
+            }
+            assert_eq!(save.data, before);
+        }
+        assert_eq!(*rom.data, *rom_before);
+        eprintln!(
+            "{key}: all 65536 native draws and {} keyed SAV/override scenarios",
+            native["rows"].as_array().unwrap().len()
+        );
     }
 }

@@ -24,6 +24,7 @@ int start(const char *path) {
     return 1;
 }
 void finish(void) { if(core){core->deinit(core);core=NULL;} }
+void resetfixture(void) { if(core)core->reset(core); }
 void readbytes(unsigned address,unsigned char *bytes,unsigned length) {
     for(unsigned i=0;i<length;i++)bytes[i]=core->busRead8(core,address+i);
 }
@@ -32,7 +33,7 @@ int writebytes(unsigned address,const unsigned char *bytes,unsigned length) {
     for(unsigned i=0;i<length;i++)core->busWrite8(core,address+i,bytes[i]);
     return 1;
 }
-int callfunc(unsigned address,unsigned r0,unsigned r1,unsigned r2,unsigned r3,unsigned *output) {
+int calluntil(unsigned address,unsigned r0,unsigned r1,unsigned r2,unsigned r3,unsigned stop,unsigned *output) {
     struct ARMCore *cpu=core->cpu,saved=*cpu;
     _ARMSetMode(cpu,MODE_THUMB);
     cpu->cpsr.i=1;
@@ -41,8 +42,30 @@ int callfunc(unsigned address,unsigned r0,unsigned r1,unsigned r2,unsigned r3,un
     cpu->gprs[13]=0x03007e00;cpu->gprs[14]=0x03007f01;cpu->gprs[15]=address;
     ThumbWritePC(cpu);
     unsigned steps=0;
-    while(cpu->gprs[15]!=0x03007f02 && steps++<1000000)core->step(core);
-    int ok=cpu->gprs[15]==0x03007f02;
-    *output=cpu->gprs[0];*cpu=saved;
+    unsigned target=stop ? stop+2 : 0x03007f02;
+    while(cpu->gprs[15]!=target && cpu->gprs[15]!=0x03007f02 && steps++<1000000)core->step(core);
+    int ok=cpu->gprs[15]==target;
+    for(unsigned i=0;i<16;i++)output[i]=cpu->gprs[i];
+    /* The board retains active-region and timing state. Keep those coherent
+     * when restoring registers after an observation inside ROM (no return BX).
+     * Restoring stale CPU memory caches would fetch the next call from BIOS. */
+    struct ARMMemory memory=cpu->memory;
+    int32_t cycles=cpu->cycles,nextEvent=cpu->nextEvent;
+    *cpu=saved;
+    cpu->memory=memory;cpu->cycles=cycles;cpu->nextEvent=nextEvent;
     return ok;
+}
+int callfunc(unsigned address,unsigned r0,unsigned r1,unsigned r2,unsigned r3,unsigned *output) {
+    unsigned regs[16];
+    int ok=calluntil(address,r0,r1,r2,r3,0,regs);
+    *output=regs[0];
+    return ok;
+}
+int allrolls(unsigned address,unsigned stop,unsigned *output) {
+    for(unsigned value=0;value<65536;value++) {
+        unsigned regs[16];
+        if(!calluntil(address,value,0,0,0,stop,regs))return 0;
+        output[value]=regs[0];
+    }
+    return 1;
 }

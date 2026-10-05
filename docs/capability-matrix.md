@@ -35,7 +35,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Pickup, hidden items, dialogue rewards / 拾取与奖励 | P | P | P | P | P | [map events](research/map-events.md): BW/DP 707 maps, 122 balls, 112 hidden items. Bounded scripts retain stop evidence; ordinary/hidden and qualified NPC receipt protocols have five-fingerprint evidence below. Custom commands, complete resource/runtime guards and access remain partial. |
 | Random encounters, probability, time tables / 随机相遇 | P | P | P | P | P | `world.rs`; [time selection](research/encounter-time-selection.md), Mercury native selector. Slot weights are separate from encounter frequency; no full weekday/clock-state validation. |
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Shared typed map-script sources and [bounded NPC trade quotes](verification/npc-trades-20261006.md); [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers, actual delivery and custom exchanges are not comprehensively indexed. |
-| Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). [Native ordinary daycare scenarios](verification/breeding-20261006.md) execute compatibility/full receipt across five fingerprints with stored/simulated parents and offspring/NPC/map navigation; Rocket/Mercury service references, full production/inheritance/hatching/access remain unknown. Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
+| Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). [Native ordinary daycare scenarios](verification/breeding-20261006.md) execute compatibility/full receipt across five fingerprints with stored/simulated parents and offspring/NPC/map navigation. [Ordinary production checks](verification/breeding-production-20261006.md) execute native step/item branches with explicit bag scenarios. Rocket/Mercury service references and complete setup/inheritance/hatching/access remain unknown. Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. Native ordinary single-wild item selection has five-fingerprint evidence, including tested lead abilities and exceptional layout branches; full encounter modifiers and facilities remain unresolved. See [wild-item evidence](verification/wild-held-20261006.md). |
 | SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. [Bounded NPC success/receipt protocols](verification/npc-receipts-20261006.md) cover 80 reward rows. Compound/custom pickups, unqualified NPC protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
 | Item/money prerequisites / 道具与金钱前置条件 | P | P | P | P | P | [Native holdings and Boolean branch verification](verification/resource-conditions-20261006.md), required-item cross-links, readable query/map/planning/HTML conditions. Mercury ordinary checks use the first matching slot; other four retain unknown facility-bag context. Spending, complete eligibility and access remain unverified. |
@@ -302,9 +302,27 @@ compatibility/receipt scenarios (171 generated records) matching mGBA and 120 GB
 halfword microcases. Stored/simulated parents, child/move links and located
 receiving NPC/map/back are a read-only shared workflow. BW/DP have two receiving
 paths each, Ultimate six; Rocket/Mercury currently have no located service and
-show explicit uncertainty. Full production/charm rates, live pending eggs,
+show explicit uncertainty. Complete production/charm context, live pending eggs,
 complete inheritance/forms and collection dependency planning remain gaps.
 See [scope, CPU correction and evidence](verification/breeding-20261006.md).
 
 本增量未将孵蛋候选或模拟后代视作可达、已捕获、当前有蛋可领。没有新增 SAV 编辑
-动作，也未重新打包；不同版本服务引用与完整产蛋／遗传／孵化依赖继续需要验证。
+动作；不同版本服务引用与完整产蛋／遗传／孵化依赖继续需要验证。本地测试包已按
+用户明确请求单独交付，未公开发布。
+
+## Ordinary production increment / 普通产蛋检查增量
+
+All five breeding rows remain **P**. Native ordinary step comparisons, modifier
+checks, ordinary keyed-bag projections and explicit item simulations now join
+parent → production scenario → required item → acquisition/map/back. Independent
+mGBA evidence covers 270 complete steps, 30 pending/step gates and 327,680 native
+roll results; Rust verifies every draw and projected/override scenario. Mercury
+uses a persistent availability flag rather than populating the legacy pending
+personality slot. Full live daycare state, custom service setup, inheritance,
+hatching and service access remain separate gaps. Ultimate's tested ordinary
+branch lacks the modifier check; this does not assert game-wide absence.
+See [scope and reproduction](verification/breeding-production-20261006.md).
+
+界面区分配对兼容性与产蛋概率，普通背包投影与道具模拟不会改动 SAV。漆黑
+BW／DP 的不兼容亲本道具分支按原生证据明示，不认定已获得或正常可获得后代。
+本增量不生成个体，不修改图鉴或剧情，不递增版本，不另行打包或发布。

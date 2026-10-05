@@ -230,6 +230,8 @@ obtainability. See [native evidence and limits](docs/verification/wild-held-2026
 
 Pokémon acquisition includes a read-only native daycare preview. Choose saved
 parents or explicit simulated parents, follow the resulting offspring and located
-receiving NPC/map links. This is one receipt scenario, not production probability
-or the next real egg; Rocket/Mercury service locations and full breeding coverage
+receiving NPC/map links. A separate ordinary production check projects the SAV bag
+or an explicit item scenario, with current-ROM probabilities and a required-item
+link. Neither predicts the next real egg; Rocket/Mercury service locations and full breeding coverage
 remain unresolved. See [native daycare evidence](docs/verification/breeding-20261006.md).
+Production assumptions and exhaustive native evidence are [documented separately](docs/verification/breeding-production-20261006.md).

@@ -95,7 +95,10 @@ export interface Catalog {
       native_predicates: number[];
       forced_night_flag: number | null;
     } | null;
-    breeding?: { pending_width: number } | null;
+    breeding?: {
+      pending_width: number;
+      production?: { modifier: unknown | null } | null;
+    } | null;
     native_trainers?: { constructor: number } | null;
     fishing_rods?: number[];
     save?: { pockets: { id: string; category: number }[] };

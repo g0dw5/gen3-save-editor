@@ -25,6 +25,15 @@ interface Preview {
   offspring_pid: number;
   rng_after: number;
   partial: boolean;
+  production?: {
+    bag_context: string;
+    modifier_item: number | null;
+    modifier_present: boolean | null;
+    interval_steps: number;
+    numerator: number;
+    denominator: number;
+    percent: number;
+  } | null;
 }
 function genders(ratio: number): Gender[] {
   return ratio === 255
@@ -69,6 +78,7 @@ export function BreedingPanel({
   const [open, setOpen] = useState(false);
   const [seed, setSeed] = useState(42);
   const [pid, setPid] = useState(24);
+  const [productionItem, setProductionItem] = useState("current");
   const [result, setResult] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const [services, setServices] = useState<AcquisitionSource[] | null>(null);
@@ -80,6 +90,7 @@ export function BreedingPanel({
     setBusy(false);
     setSeed(42);
     setPid(24);
+    setProductionItem("current");
     return () => {
       revision.current++;
     };
@@ -117,6 +128,8 @@ export function BreedingPanel({
     setResult(null);
     try {
       const value = await api<Preview>("breeding_preview", {
+        production_item:
+          productionItem === "current" ? undefined : productionItem === "yes",
         parents: parents.map((p, i) =>
           p.source === "simulated"
             ? {
@@ -251,6 +264,25 @@ export function BreedingPanel({
           />
         </label>
       </details>
+      {catalog.profile.breeding?.production?.modifier != null && (
+        <label className="field">
+          <span>{t("breedProductionItem")}</span>
+          <select
+            aria-label={t("breedProductionItem")}
+            value={productionItem}
+            onChange={(e) => {
+              invalidate();
+              setProductionItem(e.target.value);
+            }}
+          >
+            <option value="current">
+              {t(save ? "breedProductionSaved" : "breedProductionEmpty")}
+            </option>
+            <option value="yes">{t("breedProductionWith")}</option>
+            <option value="no">{t("breedProductionWithout")}</option>
+          </select>
+        </label>
+      )}
       <button
         disabled={
           busy ||
@@ -276,6 +308,58 @@ export function BreedingPanel({
             )}
           </p>
           <p className="small muted">{t("breedNotRate")}</p>
+          {result.production && (
+            <article className="encounter-card">
+              <strong>{t("breedProductionTitle")}</strong>
+              <p>
+                {t("breedProductionChance")} ·{" "}
+                {result.production.percent.toFixed(2)}%{" · "}
+                {t("breedProductionInterval")} ·{" "}
+                {result.production.interval_steps} {t("breedProductionSteps")}
+              </p>
+              <p className="small muted">{t("breedProductionScope")}</p>
+              <p className="small">
+                {t(
+                  result.production.bag_context === "ordinary_save_projection"
+                    ? "breedProductionSaved"
+                    : result.production.bag_context === "empty_bag_simulation"
+                      ? "breedProductionEmpty"
+                      : "breedProductionOverride",
+                )}
+              </p>
+              {result.production.modifier_item !== null && (
+                <p>
+                  <button
+                    className="link-button"
+                    onClick={() =>
+                      onTarget({
+                        kind: "item",
+                        id: result.production!.modifier_item!,
+                      })
+                    }
+                  >
+                    {catalog.items.find(
+                      (i) => i.id === result.production!.modifier_item,
+                    )?.name ?? "?"}{" "}
+                    ↗
+                  </button>
+                  {" · "}
+                  {t(
+                    result.production.modifier_present
+                      ? "breedProductionPresent"
+                      : "breedProductionMissing",
+                  )}
+                </p>
+              )}
+              {result.production.modifier_item === null && (
+                <p className="small muted">{t("breedProductionNoModifier")}</p>
+              )}
+              {result.compatibility === 0 &&
+                result.production.numerator > 0 && (
+                  <p className="small">{t("breedProductionIncompatible")}</p>
+                )}
+            </article>
+          )}
           {result.child && (
             <>
               <p>
@@ -346,12 +430,12 @@ export function BreedingPanel({
                   ))}
                 </tbody>
               </table>
-              <details>
-                <summary>{t("breedEvidence")}</summary>
-                <pre>{JSON.stringify(result, null, 2)}</pre>
-              </details>
             </>
           )}
+          <details>
+            <summary>{t("breedEvidence")}</summary>
+            <pre>{JSON.stringify(result, null, 2)}</pre>
+          </details>
         </section>
       )}
       <h4>{t("breedServices")}</h4>

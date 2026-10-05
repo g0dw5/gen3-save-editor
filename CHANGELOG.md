@@ -10,14 +10,24 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Preview ordinary daycare production with the current ROM's native step/item
+  branches, an ordinary SAV-bag projection or explicit item simulation, and
+  links to required-item acquisition. Verify 270 complete steps, 30 gate cases
+  and every 16-bit roll across five fingerprints. Keep live pending eggs,
+  service setup/access and complete inheritance/hatching unresolved.
+- 原生寄养预览加入普通产蛋检查：运行当前 ROM 的步数与道具分支，支持普通
+  存档背包投影／明确的道具模拟，并跳转所需道具的获取途径。五份指纹通过
+  270 次完整步数执行、30 个门控情景及全部 16 位随机抽值；实际待领蛋、
+  服务初始化／可达性和完整遗传／孵化继续保留未知。
+
 - Add read-only native daycare scenarios with stored/simulated parents, offspring
   links and located receiving NPC/map navigation. Verify 210 scenarios across five
   fingerprints with mGBA, and correct shared odd Thumb halfword loads using 120
-  independent microcases. Keep production, next real eggs, complete inheritance
+  independent microcases. Keep complete production context, next real eggs, complete inheritance
   and Rocket/Mercury service references explicitly unresolved.
 - 新增只读原生寄养情景：选择存档／模拟亲本，跳转后代资料与已定位领蛋 NPC、地图。
   五份指纹的 210 个情景对照 mGBA；以 120 个独立微测试修正共享 CPU 的奇地址
-  Thumb 半字读取。产蛋、下一颗真实蛋、完整遗传及西班牙火箭队／水银服务引用仍
+  Thumb 半字读取。完整产蛋情景、下一颗真实蛋、完整遗传及西班牙火箭队／水银服务引用仍
   明确保留未知，不生成或改动存档中的蛋。
 
 - Connect wild held-item sources to referenced encounter maps, levels, slots and

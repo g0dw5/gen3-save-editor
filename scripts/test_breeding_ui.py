@@ -8,7 +8,7 @@ from test_editor_navigation import pokemon
 def main():
     expect.set_options(timeout=30000)
     catalog=copy.deepcopy(CATALOG)
-    catalog['profile']['breeding']={'pending_width':2}
+    catalog['profile']['breeding']={'pending_width':2,'production':{'modifier':{}}}
     catalog['profile']['capabilities']=dict(world=True,save_edit=True,dex=True)
     catalog['items']=[dict(id=0,name='',tm_move=None),dict(id=1,name='ROM incense',tm_move=None)]
     maps=[dict(id='0-0',name='Daycare meadow',region=1,width=4,height=4,map_type=4)]
@@ -29,7 +29,9 @@ def main():
         elif cmd=='daycare_sources':data=[source]
         elif cmd=='breeding_preview':
             assert p['offspring_pid']>0 and p['offspring_pid']<=65535
-            data=dict(rom_md5=catalog['profile']['md5'],parents=[child,child],compatibility=50,child=child,seed=p['seed'],offspring_pid=p['offspring_pid'],rng_after=123,partial=True)
+            boosted=p.get('production_item',False)
+            production=dict(bag_context='simulated_item_override' if 'production_item' in p else 'ordinary_save_projection',modifier_item=1,modifier_present=boosted,interval_steps=256,numerator=52428 if boosted else 32768,denominator=65536,percent=79.999 if boosted else 50.0)
+            data=dict(rom_md5=catalog['profile']['md5'],parents=[child,child],compatibility=50,child=child,seed=p['seed'],offspring_pid=p['offspring_pid'],rng_after=123,partial=True,production=production)
         elif cmd=='map_navigation':data=dict(map_id=p['id'],outgoing=[],incoming=[],approaches=[],truncated=False,diagnostics=[])
         elif cmd in ('map_image','sprite','object_sprite','trainer_sprite'):data=dict(url='')
         else:raise AssertionError(req)
@@ -44,6 +46,17 @@ def main():
         pane.get_by_role('button',name='Preview ordinary egg receipt',exact=True).click()
         expect(pane).to_contain_text('native compatibility check accepts')
         expect(pane).to_contain_text('not the chance of producing an egg')
+        expect(pane).to_contain_text('50.00%')
+        pane.get_by_label('Production-boosting item scenario',exact=True).select_option('yes')
+        expect(pane.locator('.breeding-result')).to_have_count(0)
+        pane.get_by_role('button',name='Preview ordinary egg receipt',exact=True).click()
+        expect(pane).to_contain_text('80.00%')
+        assert requests[-1]['payload']['production_item'] is True
+        pane.get_by_role('button',name='ROM incense ↗',exact=True).click()
+        expect(page.locator('.reference-detail h2')).to_contain_text('ROM incense')
+        page.get_by_role('button',name='Back to previous reference',exact=False).click()
+        pane.locator('summary').first.click()
+        pane.get_by_role('button',name='Preview ordinary egg receipt',exact=True).click()
         expect(pane).to_contain_text('another Pokémon')
         pane.get_by_role('button',name='Test species 2 ↗',exact=True).click()
         expect(page.locator('.reference-detail h2')).to_contain_text('Test species 2')
