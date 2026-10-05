@@ -10,16 +10,25 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Verify ordinary item-ball receipt branches across all five exact ROMs and
+  overlay 1,956 qualified script records in acquisition/collection queries.
+  Keep receipt evidence separate from object visibility; compound scripts,
+  dynamic quantities and out-of-range flags stay undetermined. Explain missing
+  receipt evidence in both languages and avoid unproven one-time-only claims.
+- 五份精确 ROM 的普通道具球领取分支通过原生验证，1,956 条符合协议的脚本记录
+  接入获取途径与收集建议。领取证据与对象可见性分开；复杂脚本、动态数量和未验证
+  标记保持未知，补充中英文说明，不再未经证明就宣称只能领取一次。
+
 - Read native persistent event ranges for all five exact ROMs, including Ultimate's
   segmented flags and Mercury's extensions. Overlay verified hidden-item receipt
   state on acquisition/collection queries. Decode Mercury region-dependent hidden
   flags and packed quantities from ROM; explain underfoot pickup in maps, sources,
-  planning and HTML. Unknown/native reward paths stay undetermined; ordinary
-  pickup/NPC receipt protocols and full refresh rules still need separate proof.
+  planning and HTML. Unknown/native reward paths stay undetermined; NPC/compound
+  pickup receipt protocols and full refresh rules still need separate proof.
 - 五份精确 ROM 的存档事件条件改为按原生持久化范围读取，补齐隐藏道具领取叠加。
   水银实时读取 ROM 区域列表选择标记基址，解析数量与脚下探测器取物，并贯通地图、
   获取途径、收集建议和 HTML。未解析奖励路径保持未知，不把 NPC 消失等同已领奖；
-  其他普通拾取／NPC 领取协议及完整刷新规则仍待验证。
+  复杂拾取／NPC 领取协议及完整刷新规则仍待验证。
 
 - Read Mercury 1.2's native virtual clock from SAVE extensions: date, independent
   weekday, time, speed and forced-night override. Annotate acquisition queries,

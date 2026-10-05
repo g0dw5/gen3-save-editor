@@ -3448,6 +3448,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
                 movement_type: None,
                 underfoot: None,
                 flag: Some(1),
+                receipt_flag: (kind != "gift").then_some(1),
                 offset: 0,
                 script: None,
                 stopped_at: vec![],
@@ -3508,6 +3509,69 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
         let gift = report.sources.iter().find(|s| s.kind == "gift").unwrap();
         assert_ne!(gift.status, "completed");
         assert_eq!(gift.receipt_flag, None);
+        assert_eq!(pickup.repeatable, None);
+        let plan = index
+            .collection(
+                &r,
+                &save,
+                crate::collection::CollectionRequest {
+                    basis: crate::collection::CollectionBasis::Individuals,
+                    families: true,
+                    include_unknown_rewards: true,
+                },
+            )
+            .unwrap();
+        assert!(plan
+            .regions
+            .iter()
+            .flat_map(|region| &region.tasks)
+            .all(|task| {
+                task.source
+                    .as_ref()
+                    .is_none_or(|s| !matches!(s.kind.as_str(), "hidden" | "pickup"))
+            }));
+        // Even a set visibility bit is insufficient for a compound/unverified pickup.
+        index.world.map_events[0].markers[1].receipt_flag = None;
+        let unverified = index
+            .query(
+                &r,
+                Some(&save),
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            unverified
+                .sources
+                .iter()
+                .find(|s| s.kind == "pickup")
+                .unwrap()
+                .status,
+            "unknown"
+        );
+        // A receipt ID outside the native-verified persistence ranges stays unknown.
+        index.world.map_events[0].markers[0].receipt_flag = Some(0xffff);
+        let outside = index
+            .query(
+                &r,
+                Some(&save),
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            outside
+                .sources
+                .iter()
+                .find(|s| s.kind == "hidden")
+                .unwrap()
+                .status,
+            "unknown"
+        );
         // A native/unknown stop may alter later guards; do not turn incomplete traversal into a blocked claim.
         index.world.map_events[0].markers[2].stopped_at.push(0xdead);
         index.world.map_events[0].markers[2].rewards[0]
@@ -3550,5 +3614,126 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
             )
             .unwrap();
         assert!(without_save.sources.iter().all(|s| s.status == "unknown"));
+    }
+}
+
+#[test]
+fn pickup_receipts_require_complete_ordinary_scripts_per_adapter() {
+    use crate::world::Map;
+    let ordinary = [0x1a, 0, 0x80, 1, 0, 0x1a, 1, 0x80, 2, 0, 9, 1, 2];
+    for profile in profile::PROFILES {
+        let mut r = adapter_rom(profile);
+        let ev = 0x25000;
+        let objects = 0x25100;
+        let script = 0x25300;
+        {
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            b[ev] = 1;
+            put32(b, ev + 4, 0x08000000 + objects as u32);
+            b[objects] = 1;
+            put16(b, objects + 20, 1);
+            put32(b, objects + 16, 0x08000000 + script as u32);
+        }
+        let map = Map {
+            id: "0-0".into(),
+            group: 0,
+            number: 0,
+            name: "Synthetic".into(),
+            region: 0,
+            width: 4,
+            height: 4,
+            map_type: 1,
+            header: 0,
+            layout: 0,
+            invalid_events: false,
+            events: Some(ev),
+            scripts: vec![],
+            objects: vec![],
+        };
+        // Same reward can exist in a compound script without owning its object's flag.
+        let mut reassigned = vec![0x16, 0x0f, 0x80, 2, 0];
+        reassigned.extend(ordinary);
+        let mut native_prelude = vec![0x25, 0, 0];
+        native_prelude.extend(ordinary);
+        let mut extra_effect = ordinary[..12].to_vec();
+        extra_effect.extend([0x29, 2, 0, 2]);
+        let mut dynamic_quantity = ordinary.to_vec();
+        dynamic_quantity[8..10].copy_from_slice(&0x8002u16.to_le_bytes());
+        let mut gift = ordinary.to_vec();
+        gift[11] = 0;
+        for (code, receipt) in [
+            (ordinary.to_vec(), Some(1)),
+            (reassigned, None),
+            (native_prelude, None),
+            (extra_effect, None),
+            (dynamic_quantity, None),
+            (gift, None),
+        ] {
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            b[script..script + 64].fill(0);
+            b[script..script + code.len()].copy_from_slice(&code);
+            let report = r.map_events(&map).unwrap();
+            assert_eq!(report.markers[0].receipt_flag, receipt, "{}", profile.id);
+        }
+        std::sync::Arc::make_mut(&mut r.data)[script..script + 13].copy_from_slice(&ordinary);
+        let mut layout = r.profile.event_state.unwrap();
+        layout.pickup_receipt = false;
+        r.profile.event_state = Some(layout);
+        assert_eq!(r.map_events(&map).unwrap().markers[0].receipt_flag, None);
+        // Explicit constant assignments share the same verified native semantics.
+        layout.pickup_receipt = true;
+        r.profile.event_state = Some(layout);
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[script] = 0x16;
+        b[script + 5] = 0x16;
+        assert_eq!(r.map_events(&map).unwrap().markers[0].receipt_flag, Some(1));
+        std::sync::Arc::make_mut(&mut r.data)[objects + 20..objects + 22].fill(0);
+        assert_eq!(r.map_events(&map).unwrap().markers[0].receipt_flag, None);
+    }
+}
+
+#[test]
+#[ignore = "requires all five private ROM paths and GEN3_PICKUP_PROBES native vectors"]
+fn local_pickup_receipts_match_native_protocol() {
+    let vectors: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_PICKUP_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        let proof = &vectors[key];
+        assert_eq!(r.profile.md5, proof["md5"].as_str().unwrap());
+        let world = r.world().unwrap();
+        let mut actual = std::collections::BTreeMap::new();
+        for report in &world.map_events {
+            for marker in &report.markers {
+                if marker.kind == "pickup" {
+                    if let Some(flag) = marker.receipt_flag {
+                        actual.insert((report.map_id.clone(), marker.offset), flag);
+                    }
+                }
+            }
+        }
+        let expected: std::collections::BTreeMap<_, _> = proof["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| {
+                (
+                    (
+                        row["map_id"].as_str().unwrap().to_owned(),
+                        row["marker_offset"].as_u64().unwrap() as usize,
+                    ),
+                    row["receipt_flag"].as_u64().unwrap() as u16,
+                )
+            })
+            .collect();
+        assert_eq!(actual, expected, "{key}");
+        eprintln!(
+            "{key}: {} ordinary receipts match native capacity branches",
+            actual.len()
+        );
     }
 }

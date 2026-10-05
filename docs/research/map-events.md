@@ -37,6 +37,9 @@ NPC／地图对象使用当前 ROM 的地图小人图像，按原始尺寸随地
   retained as a reward condition.
 - Object visibility flags are not automatically interpreted as NPC gift receipt
   flags. The latter require inspecting the actual reward branch and save state.
+- Qualified complete ordinary item-ball scripts have separately verified
+  `receipt_flag` evidence in all five profiles. Compound scripts and missing
+  flags remain unknown; see [native pickup branches](../verification/pickup-receipts-20261005.md).
 - Standard script 0 gives an item; standard script 1 picks up an item ball.
   Standard script 7 gives a decoration, whose ID belongs to a different catalog.
 

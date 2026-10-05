@@ -192,6 +192,11 @@ export function AcquisitionPanel({
               {s.underfoot === true && (
                 <p className="small muted">{t("mapHiddenUnderfoot")}</p>
               )}
+              {save &&
+                ["pickup", "hidden"].includes(s.kind) &&
+                s.receipt_flag == null && (
+                  <p className="small muted">{t("acqReceiptUnknown")}</p>
+                )}
               {s.map_id && (
                 <button
                   className="link-button"

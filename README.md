@@ -32,10 +32,13 @@ an explicit simulated hour or all periods as needed. Hardware RTC mode remains
 unresolved; device time is never substituted. See [clock verification](docs/verification/mercury-clock-20261005.md).
 The read-only CLI supports `gen3 game-clock ROM [SAVE]`.
 
-Verified persistent event ranges now support hidden-item receipt overlays for all
-five exact profiles. Mercury's region-dependent hidden flags and underfoot pickup
+Verified persistent event ranges now support hidden-item and qualified ordinary
+item-ball receipt overlays for all five exact profiles. Compound/NPC reward
+scripts remain unresolved unless their receipt protocol is independently proven.
+Mercury's region-dependent hidden flags and underfoot pickup
 are read from native ROM rules. Ordinary NPC receipts and complete quest/refresh
-coverage remain partial. See [event verification](docs/verification/event-state-20261005.md).
+coverage remain partial. See [event verification](docs/verification/event-state-20261005.md)
+and [ordinary pickup verification](docs/verification/pickup-receipts-20261005.md).
 
 ## Cheat codes
 

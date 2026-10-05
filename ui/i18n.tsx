@@ -88,6 +88,9 @@ export const en = {
     "Egg groups suggest a candidate. Parent, incense, special baby and daycare access requirements are not fully verified.",
   acqRepeatable: "Repeatable source",
   acqOneTime: "Single receipt",
+  acqReceiptUnknown:
+    "The receipt protocol is not verified for this event. A visibility flag does not prove that you collected its reward.",
+  acqReceiptEvidence: "Verified receipt flag",
   acqConditions: "Prerequisite checks",
   acqConditionsMet: "known conditions met",
   acqMore: "Show more",
@@ -925,6 +928,9 @@ export const zh: Record<Key, string> = {
     "蛋组仅提供候选；亲本、熏香、特殊幼体与培育屋可用条件尚未完整验证。",
   acqRepeatable: "可重复获取来源",
   acqOneTime: "一次性领取",
+  acqReceiptUnknown:
+    "尚未确认此事件的领取规则，不能仅凭对象的消失标记判断已经领奖。",
+  acqReceiptEvidence: "已验证的领取标记",
   acqConditions: "前置条件检查",
   acqConditionsMet: "项已知条件满足",
   acqMore: "显示更多",

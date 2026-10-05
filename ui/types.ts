@@ -296,6 +296,7 @@ export interface MapMarker {
   movement_type: number | null;
   underfoot: boolean | null;
   flag: number | null;
+  receipt_flag: number | null;
   offset: number;
   script: number | null;
   rewards: ItemReward[];

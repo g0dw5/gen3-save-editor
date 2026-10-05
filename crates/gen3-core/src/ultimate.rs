@@ -104,7 +104,7 @@ pub const PROFILE: Profile = Profile {
             block: crate::event_state::EventBlock::Main,
             offset: 0x139c,
         }],
-        pickup_receipt: false,
+        pickup_receipt: true,
     }),
     id: "ultimate-emerald-55",
     label: "究极绿宝石 5.5 · 失落之古遗",

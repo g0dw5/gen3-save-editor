@@ -16,7 +16,8 @@ def reward(item):
 def marker(identifier, kind, x, y, rewards):
     return {"id": identifier, "kind": kind, "x": x, "y": y, "elevation": 3,
             "local_id": 1, "graphics_id": 999 if identifier == "unknown" else 1, "movement_type": 0,
-            "underfoot": identifier == "hidden", "flag": 100, "offset": 256, "script": 512,
+            "underfoot": identifier == "hidden", "flag": 100,
+            "receipt_flag": 100 if kind in ("pickup", "hidden") else None, "offset": 256, "script": 512,
             "rewards": rewards, "stopped_at": []}
 
 

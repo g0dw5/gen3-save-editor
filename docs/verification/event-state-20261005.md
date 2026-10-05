@@ -107,6 +107,9 @@ GEN3_EVENT_PROBES=/private/events.json cargo test -p gen3-core local_event_state
 This establishes selected persistent addressing and hidden-item protocols, not a
 complete quest graph, all reward scripts, current map reachability, recurring-item
 resets, temporary runtime variables or quest-log playback. Ordinary pickup and
-NPC gift receipts still need per-ROM protocol proof as described above. This
+NPC gift receipts still need per-ROM protocol proof as described above. Ordinary
+item-ball qualification is now extended by the later
+[pickup increment](pickup-receipts-20261005.md); the remaining pickup gap concerns
+compound/custom scripts rather than all three newer profiles. This
 increment changes no SAVE mutation/export path and claims no new emulator edit
 round trip. Existing edit safety regressions remain required.

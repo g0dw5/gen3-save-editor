@@ -155,7 +155,7 @@ pub const PROFILE: Profile = Profile {
                 offset: 0x200,
             },
         ],
-        pickup_receipt: false,
+        pickup_receipt: true,
     }),
     id: "mercury-fc-1.2",
     label: "宝可梦水银 FC · 1.2",

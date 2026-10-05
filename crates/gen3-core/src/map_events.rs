@@ -34,6 +34,8 @@ pub struct MapMarker {
     pub underfoot: Option<bool>,
     /// Object visibility flag, or hidden-item collection flag. Not a gift receipt.
     pub flag: Option<u16>,
+    /// Separately proven receipt protocol; visibility alone is not evidence.
+    pub receipt_flag: Option<u16>,
     pub offset: usize,
     pub script: Option<usize>,
     pub rewards: Vec<ItemReward>,
@@ -98,6 +100,25 @@ fn resolve(s: &State, v: u16) -> Option<u16> {
     }
 }
 impl Rom {
+    /// A complete ordinary item-ball script, with no prelude, extra effects or
+    /// changed LAST_TALKED identity. Command semantics are verified per adapter;
+    /// item IDs and quantities still come from the current ROM's script bytes.
+    fn ordinary_pickup_receipt(&self, root: usize) -> bool {
+        if !self.profile.event_state.is_some_and(|l| l.pickup_receipt) {
+            return false;
+        }
+        let Ok(code) = bytes(&self.data, root, 13) else {
+            return false;
+        };
+        matches!(code[0], 0x16 | 0x1a)
+            && code[1..3] == [0x00, 0x80]
+            && u16(code, 3).is_ok_and(|v| v > 0 && v < 0x4000)
+            && matches!(code[5], 0x16 | 0x1a)
+            && code[6..8] == [0x01, 0x80]
+            && u16(code, 8).is_ok_and(|v| v > 0 && v < 0x4000)
+            && code[10..13] == [0x09, 0x01, 0x02]
+    }
+
     pub(crate) fn item_script(&self, root: usize) -> Result<(Vec<ItemReward>, Vec<usize>)> {
         let b = &self.data;
         let mut pending = VecDeque::from([State {
@@ -460,6 +481,7 @@ impl Rom {
                         movement_type: None,
                         underfoot: None,
                         flag: None,
+                        receipt_flag: None,
                         offset: o,
                         script: None,
                         rewards: Vec::new(),
@@ -499,6 +521,7 @@ impl Rom {
                                 u16(b, o + 10)?
                             };
                             marker.flag = base.checked_add(index);
+                            marker.receipt_flag = marker.flag;
                             if rules.packed {
                                 marker.underfoot = Some(b[o + 11] & 0x80 != 0);
                                 // Native underfoot consumer forces one, ignoring the packed quantity.
@@ -553,6 +576,9 @@ impl Rom {
                         }
                         if marker.rewards.iter().any(|r| r.via == "pickup") {
                             marker.kind = "pickup";
+                            if count_off == 0 && self.ordinary_pickup_receipt(script) {
+                                marker.receipt_flag = marker.flag;
+                            }
                         } else if !marker.rewards.is_empty() {
                             marker.kind = "gift";
                         }

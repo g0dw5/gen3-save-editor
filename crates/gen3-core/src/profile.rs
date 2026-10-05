@@ -40,7 +40,7 @@ impl SplitText {
 pub struct EventStateLayout {
     pub flags: &'static [crate::event_state::EventRange],
     pub variables: &'static [crate::event_state::EventRange],
-    /// Verified standard item-ball script owns the object visibility flag.
+    /// Native-verified ordinary item-ball protocol; individual scripts must also qualify.
     pub pickup_receipt: bool,
 }
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -528,7 +528,7 @@ pub const ROCKET: Profile = Profile {
             block: crate::event_state::EventBlock::Main,
             offset: 0x1f6c,
         }],
-        pickup_receipt: false,
+        pickup_receipt: true,
     }),
     nature_names: 0xd052ec,
     nature_effects: 0x5b335c,

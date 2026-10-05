@@ -37,7 +37,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Bounded `script_report`; [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers and custom exchanges are not comprehensively indexed. |
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. No verified probability under all ability modifiers. |
-| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) verified across five fingerprints. BW/DP ordinary pickup receipts verified; other pickup/NPC receipt protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
+| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. Compound/custom pickup, NPC receipt protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
 | Effective game clock, weekday, next event / 有效时钟与刷新 | U | U | U | U | P | Mercury virtual SAVE clock, native weekday, speed, forced-night state and jump menu verified within [bounded scope](verification/mercury-clock-20261005.md); hardware RTC and all weekday refresh remain unresolved. No device-time assumption. |
 | Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | P | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury executes its native constructor for explicit zero-context scenarios; independent CPU comparisons are recorded below, while full setup remains unknown. |
 | Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution with party/scenario. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
@@ -170,10 +170,27 @@ inventory/location/map-warning UI regression passed without SAVE writes.
 All five event/receipt rows are **P**: configured persistent flag/variable ranges
 and native hidden-item protocols now have independent CPU evidence and shared
 SAV queries. Mercury region-dependent hidden flags and packed quantities come
-from runtime ROM records. Pickup receipt is still enabled only for BW/DP; NPC
+from runtime ROM records. At this increment pickup receipt was enabled only for BW/DP; NPC
 visibility, full quest graphs and recurring-item resets remain separate gaps.
 See [scope and evidence](verification/event-state-20261005.md).
 
 五份 ROM 都能在已验证范围内读取剧情条件与隐藏道具领取状态；整体仍为部分验证。
 水银按 ROM 区域列表选择隐藏道具标记基址，并展示脚下取物说明。普通拾取与 NPC
 奖励领取协议、完整剧情依赖及刷新机制继续保留各自缺口。
+
+## Ordinary pickup increment / 普通道具球增量
+
+Native receipt control branches now qualify ordinary item-ball scripts in all five
+profiles: BW 122, DP 122, Rocket 804, Ultimate 402 and Mercury 506 records.
+The **3,912** isolated native cases inject bag-space outcomes and execute the
+actual command/flag/object handlers; the independent Rust reader matches every
+qualified record. Extra script effects, reassigned NPC identity, dynamic/zero
+quantities and missing flags retain unknown receipt state. Collection filtering
+uses proven receipts; no source promises single-time-only without reset evidence.
+Native bag insertion, current map access, full quest logs and NPC receipts are not
+certified by this experiment. All rows remain **P** within their documented scope.
+See [verification and remaining boundaries](verification/pickup-receipts-20261005.md).
+
+五份 ROM 的普通道具球已按独立原生证据接入领取查询与收集建议，判定领取标记
+不再只依赖对象可见性。复杂事件、共享标记／剧情初始化、当前地图可达性和完整
+任务依赖继续保留边界，未扩大为完整任务支持。

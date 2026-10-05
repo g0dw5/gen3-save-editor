@@ -227,15 +227,9 @@ impl AcquisitionIndex {
                             .iter()
                             .map(|c| check(state.as_ref(), c))
                             .collect();
-                        // Flag addressing alone does not prove that an NPC's visibility bit is a receipt.
-                        let pickup_verified =
-                            rom.profile.event_state.is_some_and(|l| l.pickup_receipt);
-                        if reward.via == "hidden" || (reward.via == "pickup" && pickup_verified) {
-                            s.receipt_flag = marker.and_then(|m| m.flag);
-                            // Hidden-item flags may be cleared by refresh mechanisms; do not promise one-time-only.
-                            if reward.via == "pickup" {
-                                s.repeatable = Some(false);
-                            }
+                        if matches!(reward.via, "hidden" | "pickup") {
+                            s.receipt_flag = marker.and_then(|m| m.receipt_flag);
+                            // Receipt protocols do not prove the absence of flag-reset scripts.
                         } else if reward.via == "shop" {
                             s.repeatable = Some(true);
                         }
@@ -245,7 +239,9 @@ impl AcquisitionIndex {
                         s.partial = marker.is_none_or(|m| !m.stopped_at.is_empty())
                             || !report.stopped_at.is_empty()
                             || rom.profile.event_state.is_none()
-                            || (reward.via == "pickup" && !pickup_verified);
+                            || (matches!(reward.via, "hidden" | "pickup")
+                                && (s.receipt_flag.is_none()
+                                    || (save.is_some() && receipt.is_none())));
                         s.status = if receipt == Some(1) {
                             "completed"
                         } else if !s.partial

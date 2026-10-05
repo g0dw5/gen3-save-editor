@@ -443,6 +443,9 @@ export function MapExplorer({
                   {marker.flag !== null
                     ? ` · Flag 0x${marker.flag.toString(16)}`
                     : ""}
+                  {marker.receipt_flag != null
+                    ? ` · ${t("acqReceiptEvidence")} 0x${marker.receipt_flag.toString(16)}`
+                    : ""}
                 </code>
               </details>
             </div>
