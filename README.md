@@ -12,7 +12,7 @@ Tauri supplies native file dialogs. ROM data and artwork are read at runtime.
 workspace. Core regression tests
 run against generated fixtures and optionally your exact ROMs. See
 [verification and remaining work](docs/IMPLEMENTATION.md) before using a build.
-Mercury FC 1.1 / 1.2 ROM reference and save editing are available on the development
+Mercury FC 1.2 ROM reference and save editing are available on the development
 branch. Its expanded Pokédex flags and cheat catalog are still under study.
 
 ## Cheat codes
@@ -44,7 +44,6 @@ See [usage, formats, limitations and developer tests](docs/cheats.md).
 | Dark Phantom 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | 33,554,188 |
 | Team Rocket 2.1 Chinese | `59c658a1081f542086de1060bb65f0b3` | 33,554,432 |
 | Ultimate Emerald 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | 33,554,432 |
-| Mercury FC 1.1 (development branch) | `7e0898caf6e7d41e8c59f838e8e595f1` | 33,554,432 |
 | Mercury FC 1.2 (development branch) | `f323df1792ac68462a34b42fe8571533` | 33,554,432 |
 
 Use a 128 KiB `.sav`/`.srm` battery save (Mercury also accepts its 16-byte RTC

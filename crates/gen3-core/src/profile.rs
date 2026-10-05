@@ -655,13 +655,12 @@ pub const ROCKET: Profile = Profile {
         ..EMERALD
     },
 };
-pub const PROFILES: [Profile; 6] = [
+pub const PROFILES: [Profile; 5] = [
     BW,
     DP,
     ROCKET,
     crate::ultimate::PROFILE,
     crate::mercury::PROFILE,
-    crate::mercury::PROFILE_12,
 ];
 pub fn identify(data: &[u8]) -> Result<Profile> {
     let md5 = hash(data);

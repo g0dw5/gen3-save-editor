@@ -13,7 +13,6 @@ from pathlib import Path
 from verify_rocket_battle_forms import Native, PARTY
 
 FINGERPRINTS = {
-    "7e0898caf6e7d41e8c59f838e8e595f1": "mercury-fc-1.1",
     "f323df1792ac68462a34b42fe8571533": "mercury-fc-1.2",
 }
 

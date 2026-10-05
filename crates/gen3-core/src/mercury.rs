@@ -1,4 +1,4 @@
-//! Exact-ROM adapters for Pokémon Mercury FC 1.1 and 1.2.
+//! Exact-ROM adapter for Pokémon Mercury FC 1.2.
 //!
 //! ROM tables and save layouts are specific to this FireRed/CFRU build. In
 //! particular, they do not borrow Emerald offsets or world pointers.
@@ -91,9 +91,9 @@ const MERCURY_SAVE: SaveLayout = SaveLayout {
 };
 
 pub const PROFILE: Profile = Profile {
-    id: "mercury-fc-1.1",
-    label: "宝可梦水银 FC · 1.1",
-    md5: "7e0898caf6e7d41e8c59f838e8e595f1",
+    id: "mercury-fc-1.2",
+    label: "宝可梦水银 FC · 1.2",
+    md5: "f323df1792ac68462a34b42fe8571533",
     size: 33_554_432,
     formats: RomFormats {
         trainers: TrainerFormat::FireRed,
@@ -118,42 +118,42 @@ pub const PROFILE: Profile = Profile {
     trainer_exclusions: &[],
     max_level: 100,
     experience_table: Some(Table {
-        offset: 0x1dfe8cc,
+        offset: 0x1e052c8,
         count: 6,
         stride: 1024,
     }),
     battle_forms: Some(BattleFormRules::CfruEvolutionMethods),
     storage_forms: None,
     form_families: None,
-    nature_names: 0x1ff3ab8,
+    nature_names: 0x1ff2888,
     nature_effects: 0x252b48,
     nature_product_u16: false,
     type_names: Table {
-        offset: 0x1db1998,
+        offset: 0x1db5da4,
         count: 24,
         stride: 7,
     },
     move_names: SplitText {
-        first: 0x1d8fc34,
+        first: 0x1d93f34,
         second: 0,
         split: 1015,
         stride: 13,
     },
-    move_descriptions: 0x1cc8e08,
+    move_descriptions: 0x1cc8ebc,
     ability_names: SplitText {
-        first: 0x1d87140,
+        first: 0x1d8b430,
         second: 0,
         split: 300,
         stride: 13,
     },
     ability_descriptions: SplitText {
-        first: 0x1c93dfc,
+        first: 0x1c93eb8,
         second: 0,
         split: 300,
         stride: 4,
     },
     mail_items: [0, 0],
-    national_dex: 0x17e7a64,
+    national_dex: 0x17e7a78,
     species: Table {
         offset: 0x141b350,
         count: 1554,
@@ -165,7 +165,7 @@ pub const PROFILE: Profile = Profile {
         stride: 28,
     },
     moves: Table {
-        offset: 0x1df68e3,
+        offset: 0x1dfd2df,
         count: 1015,
         stride: 12,
     },
@@ -211,13 +211,13 @@ pub const PROFILE: Profile = Profile {
         shared_lists: None,
         egg_words: 14066,
     },
-    tm_moves: 0x17e87aa,
+    tm_moves: 0x17e87be,
     tm_bits: 0x1400494,
-    tutor_moves: 0x17e8686,
+    tutor_moves: 0x17e869a,
     tutor_bits: 0x14065b4,
     sprites: 0x17bb0a4,
-    palettes: 0x17d64cc,
-    shiny_palettes: 0x17e49d4,
+    palettes: 0x17d64e0,
+    shiny_palettes: 0x17e49e8,
     sprite_rules: SpriteRules {
         unown_species: 201,
         unown_b_sprite: 413,
@@ -239,7 +239,7 @@ pub const PROFILE: Profile = Profile {
     region_count: 256,
     wild: 0xcf915c,
     wild_selection: None,
-    wild_time_tables: Some([0x1e40da0, 0x1e395b4, 0x1e3eea4, 0x1e3ce10]),
+    wild_time_tables: Some([0x1e4779c, 0x1e3ffb0, 0x1e458a0, 0x1e4380c]),
     feebas: None,
     fishing_rods: [262, 263, 264],
     trainers: Table {
@@ -264,7 +264,7 @@ pub const PROFILE: Profile = Profile {
         stride: 4,
     }],
     object_palettes: Table {
-        offset: 0x1e07684,
+        offset: 0x1e0e080,
         count: 341,
         stride: 8,
     },
@@ -283,55 +283,9 @@ pub const PROFILE: Profile = Profile {
     save: MERCURY_SAVE,
 };
 
-/// Independently fingerprinted 1.2 build. The retained addresses were compared
-/// against 1.1; relocated tables were located through native pointers and data.
-pub const PROFILE_12: Profile = Profile {
-    id: "mercury-fc-1.2",
-    label: "宝可梦水银 FC · 1.2",
-    md5: "f323df1792ac68462a34b42fe8571533",
-    experience_table: Some(Table {
-        offset: 0x1e052c8,
-        count: 6,
-        stride: 1024,
-    }),
-    nature_names: 0x1ff2888,
-    type_names: Table {
-        offset: 0x1db5da4,
-        ..PROFILE.type_names
-    },
-    move_names: SplitText {
-        first: 0x1d93f34,
-        ..PROFILE.move_names
-    },
-    move_descriptions: 0x1cc8ebc,
-    ability_names: SplitText {
-        first: 0x1d8b430,
-        ..PROFILE.ability_names
-    },
-    ability_descriptions: SplitText {
-        first: 0x1c93eb8,
-        ..PROFILE.ability_descriptions
-    },
-    national_dex: 0x17e7a78,
-    moves: Table {
-        offset: 0x1dfd2df,
-        ..PROFILE.moves
-    },
-    tm_moves: 0x17e87be,
-    tutor_moves: 0x17e869a,
-    palettes: 0x17d64e0,
-    shiny_palettes: 0x17e49e8,
-    wild_time_tables: Some([0x1e4779c, 0x1e3ffb0, 0x1e458a0, 0x1e4380c]),
-    object_palettes: Table {
-        offset: 0x1e0e080,
-        ..PROFILE.object_palettes
-    },
-    ..PROFILE
-};
-
 #[cfg(test)]
 mod tests {
-    use super::{PROFILE, PROFILE_12};
+    use super::PROFILE;
     use crate::{
         cheats::CheatRom,
         pokemon::{self, PokemonPatch, Policy},
@@ -341,15 +295,22 @@ mod tests {
     };
 
     #[test]
+    #[ignore = "requires the removed 1.1 ROM via GEN3_ROM_MERCURY11"]
+    fn removed_11_rom_is_rejected() {
+        let bytes = std::fs::read(std::env::var("GEN3_ROM_MERCURY11").unwrap()).unwrap();
+        assert_eq!(Rom::open(bytes).err().unwrap().code, "unsupported_rom");
+    }
+
+    #[test]
     #[ignore = "requires exact ROM and in-game Mercury save"]
     fn exact_save_layout_regression() {
-        let rom =
-            Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY").unwrap()).unwrap()).unwrap();
-        let original = std::fs::read(std::env::var("GEN3_SAVE_MERCURY").unwrap()).unwrap();
+        let rom = Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap())
+            .unwrap();
+        let original = std::fs::read(std::env::var("GEN3_SAVE_MERCURY12").unwrap()).unwrap();
         let save = Save::open(original.clone(), rom.profile.save).unwrap();
         assert_eq!(save.active_slot, 1);
         assert_eq!(save.party_count(), 0);
-        assert_eq!(save.trainer(&rom).unwrap().tid, 12549);
+        assert_eq!(save.trainer(&rom).unwrap().tid, 33272);
         assert_eq!(save.bag().unwrap().len(), 216);
         let boxes = save.boxes(&rom).unwrap();
         assert_eq!(boxes.len(), 14);
@@ -360,19 +321,9 @@ mod tests {
         assert_eq!(save.data, original);
         let mut session = Session::new(rom.clone());
         session.load(original.clone(), None).unwrap();
-        assert_eq!(session.snapshot().unwrap().trainer.tid, 12549);
+        assert_eq!(session.snapshot().unwrap().trainer.tid, 33272);
         let raw = Save::open(original[..0x20000].to_vec(), rom.profile.save).unwrap();
-        assert_eq!(raw.trainer(&rom).unwrap().tid, 12549);
-    }
-
-    #[test]
-    #[ignore = "requires exact ROM and in-game Mercury save"]
-    fn exact_save_edit_probe() {
-        check_save_edit(
-            "GEN3_ROM_MERCURY",
-            "GEN3_SAVE_MERCURY",
-            "GEN3_SAVE_MERCURY_PROBE",
-        );
+        assert_eq!(raw.trainer(&rom).unwrap().tid, 33272);
     }
 
     #[test]
@@ -438,12 +389,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires native in-game resave of the Mercury edit probe"]
-    fn exact_native_resave_regression() {
-        check_native_resave("GEN3_ROM_MERCURY", "GEN3_SAVE_MERCURY_NATIVE");
-    }
-
-    #[test]
     #[ignore = "requires native in-game resave of the Mercury 1.2 edit probe"]
     fn exact_native_resave_12_regression() {
         check_native_resave("GEN3_ROM_MERCURY12", "GEN3_SAVE_MERCURY12_NATIVE");
@@ -493,15 +438,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires exact local ROM via GEN3_ROM_MERCURY"]
-    fn exact_rom_regression() {
-        check_rom(PROFILE, "GEN3_ROM_MERCURY", 737);
-    }
-
-    #[test]
     #[ignore = "requires exact local ROM via GEN3_ROM_MERCURY12"]
     fn exact_rom_12_regression() {
-        check_rom(PROFILE_12, "GEN3_ROM_MERCURY12", 739);
+        check_rom(PROFILE, "GEN3_ROM_MERCURY12", 739);
     }
 
     fn check_rom(profile: crate::profile::Profile, key: &str, trainer_locations: usize) {

@@ -1,6 +1,10 @@
-# Pokémon Mercury FC 1.1 / 1.2 / 宝可梦水银 FC
+# Pokémon Mercury FC 1.2 / 宝可梦水银 FC
 
-The original 1.1 profile recognizes a user-supplied 32 MiB ROM: MD5
+Only 1.2 is supported by the app and CLI. Version 1.1 has been removed from
+the adapter registry and is rejected. The 1.1 addresses and earlier comparisons
+below remain as historical reverse-engineering evidence, not supported configuration.
+
+The historical 1.1 build was a user-supplied 32 MiB ROM: MD5
 `7e0898caf6e7d41e8c59f838e8e595f1`, SHA-256
 `131b009df7ab252deff0d6a0518ab82f88e82c940ee68d50d31033a899f7e3dd`.
 Its GBA header identifies `POKEMON FIRE` / `BPRE`. It is based on FireRed with
@@ -151,8 +155,8 @@ extracted assets are committed.
 ## Regression procedure
 
 `cargo test -p gen3-core` exercises public fixtures. The ignored exact-ROM
-test `mercury::tests::exact_rom_regression` runs with
-`GEN3_ROM_MERCURY` pointed to the user's ROM. It verifies fingerprint,
+test `mercury::tests::exact_rom_12_regression` runs with
+`GEN3_ROM_MERCURY12` pointed to the user's ROM. It verifies fingerprint,
 table sizes and sample contents, complete machine/egg/tutor sources,
 experience thresholds, maps/encounters/trainers, representative map images,
 all roster portraits and static NPC graphics, invalid-save rejection, the
@@ -161,11 +165,12 @@ normal and shiny front sprites for every stat-valid species. Existing exact-ROM
 regressions for BW, DP, Rocket and Ultimate Emerald are run separately with
 their local ROM files. No private ROM, save, or extracted asset is committed.
 
-The corresponding 1.2 test uses `GEN3_ROM_MERCURY12`. Supply an absolute
+Supply an absolute
 `GEN3_MERCURY_PROBES` directory to produce synthetic individual probe JSON;
 pass the matching file to `verify_mercury_native.py --rom … --probes …`.
-Save probes use `GEN3_SAVE_MERCURY` / `GEN3_SAVE_MERCURY12` and write a test
-copy only when `GEN3_SAVE_MERCURY_PROBE` / `GEN3_SAVE_MERCURY12_PROBE` is set.
+Save probes use `GEN3_SAVE_MERCURY12` and write a test copy only when
+`GEN3_SAVE_MERCURY12_PROBE` is set. The removed-ROM rejection test uses
+`GEN3_ROM_MERCURY11` and does not parse or enable that version.
 The public save matrix covers both profiles, individual field ownership,
 party/storage transfers, undo/export validation and inventory sector boundaries.
 Additional CFRU checks preserve Gigantamax and hidden-ability flags, including

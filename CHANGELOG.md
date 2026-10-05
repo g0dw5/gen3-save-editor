@@ -10,14 +10,17 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
-- Add exact-ROM Mercury FC 1.1 / 1.2 reference: species, moves, items,
+- Remove Mercury FC 1.1 support; list and accept only the verified 1.2 fingerprint.
+- 移除水银 FC 1.1 支持；首页及 ROM 加载只接受已验证的 1.2 指纹。
+
+- Add exact-ROM Mercury FC 1.2 reference: species, moves, items,
   descriptions, evolutions and battle forms, complete move sources, native
   experience thresholds, appearance, maps, timed encounters, trainers and
   ROM-rendered map/NPC artwork. Add core save editing verified against native
   routines, private-copy round trips and a complete 1.2 mGBA load/resave/reopen.
   Expanded Pokédex flags and cheats remain pending
   verification; no ROM bytes or extracted assets are bundled.
-- 新增宝可梦水银 FC 1.1 / 1.2 的精确指纹资料：宝可梦、招式／道具及说明、进化与
+- 新增宝可梦水银 FC 1.2 的精确指纹资料：宝可梦、招式／道具及说明、进化与
   对战形态、完整招式来源、ROM 原生经验表、外观、地图、分时段相遇、训练家，
   以及从 ROM 渲染的地图和 NPC。核心存档编辑经过原生函数对照、副本读写回读及
   1.2 mGBA 加载、游戏再次保存和回读验证；扩展图鉴位与金手指暂不开放。
