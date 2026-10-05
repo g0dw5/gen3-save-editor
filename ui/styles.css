@@ -2427,3 +2427,74 @@ summary {
   max-height: 280px;
   overflow: auto;
 }
+
+.map-navigation {
+  margin-block: 16px;
+  border-top: 1px solid var(--border);
+}
+.map-navigation .reference-line {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.nav-path {
+  padding: 8px 0;
+  line-height: 1.8;
+}
+.reference-back {
+  margin: 8px 12px;
+}
+.layer-warp {
+  color: #fff;
+  background: #235aa1;
+}
+.map-focus {
+  z-index: 8;
+  color: #fff;
+  background: #d94523;
+  outline: 3px solid #ffe291;
+  pointer-events: auto;
+}
+.acquisition-search {
+  width: 100%;
+  margin: 8px 0;
+  min-height: 36px;
+}
+.source-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.source-status {
+  border-radius: 6px;
+  padding: 3px 6px;
+  background: var(--surface);
+}
+.status-completed {
+  color: #317754;
+}
+.status-blocked {
+  color: #b45b16;
+}
+.acquisition-panel .encounter-card details {
+  margin-top: 6px;
+}
+.collection-panel {
+  overflow: auto;
+  padding: 16px;
+  max-height: 68vh;
+}
+.collection-panel > details {
+  border: 1px solid var(--border);
+  padding: 10px;
+  margin-block: 8px;
+  border-radius: 8px;
+}
+.collection-panel summary {
+  cursor: pointer;
+}
+.collection-panel .map-tools {
+  flex-wrap: wrap;
+}
+.map-marker.map-focus {
+  z-index: 20;
+}

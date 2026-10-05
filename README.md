@@ -15,6 +15,17 @@ run against generated fixtures and optionally your exact ROMs. See
 Mercury FC 1.2 ROM reference and save editing are available on the development
 branch. Its expanded Pokédex flags and cheat catalog are still under study.
 
+## Queries and collection planning
+
+ROM reference windows link Pokémon, item and move sources to map tiles,
+connected maps and exterior entrance chains. Read-only **Collection planning**
+uses an opened SAV: choose Pokédex ownership or existing individuals, optionally
+group permanent evolution families, and export a standalone HTML suggestion.
+Receipt status is independent of inventory; unknown rewards are opt-in.
+Coverage is partial: script prerequisites, dynamic access and special sources
+may remain undetermined. Mercury currently supports individual-based planning,
+not unverified expanded Pokédex flags. See the [exact-ROM capability matrix](docs/capability-matrix.md).
+
 ## Cheat codes
 
 Open an exact-match ROM first, then use **Cheats** in the toolbar; no save is
@@ -53,7 +64,7 @@ and exports apply only to save files.
 
 ## Workspace
 
-The same editor supports all four exact ROMs. Rocket adds its packed nature,
+The same editor registers five exact ROMs across four games. Rocket adds its packed nature,
 third ability, nine inventory pockets, level cap, graphics and expanded ROM tables
 through reusable adapter components. ROM reference windows remain read-only.
 See [coverage, verification and extension rules](docs/multi-rom-adapters.md).

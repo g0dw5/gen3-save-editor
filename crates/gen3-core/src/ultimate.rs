@@ -58,6 +58,8 @@ pub const POCKETS: [Pocket; 6] = [
 ];
 
 pub const PROFILE: Profile = Profile {
+    clock: None,
+    event_state: None,
     id: "ultimate-emerald-55",
     label: "究极绿宝石 5.5 · 失落之古遗",
     md5: "17ce9785b33319b3dbda9a5d37c57ec1",

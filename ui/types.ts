@@ -90,6 +90,11 @@ export interface Catalog {
     size: number;
     max_level?: number;
     sprite_rules?: { unown_species: number };
+    clock?: {
+      starts: number[];
+      native_predicates: number[];
+      forced_night_flag: number | null;
+    } | null;
     fishing_rods?: number[];
     save?: { pockets: { id: string; category: number }[] };
     feebas?: { map_id: string } | null;
@@ -403,7 +408,13 @@ export interface World {
   trainers: Opponent[];
 }
 export type RefTab =
-  "species" | "moves" | "items" | "abilities" | "maps" | "trainers";
+  | "species"
+  | "moves"
+  | "items"
+  | "abilities"
+  | "maps"
+  | "trainers"
+  | "collection";
 export interface RefWindow {
   id: number;
   tab: RefTab;
@@ -424,4 +435,97 @@ export interface FishingReport {
   percent: number;
   seed: number | null;
   spots: { x: number; y: number; spot_id: number }[];
+}
+
+export interface MapLink {
+  from: string;
+  to: string | null;
+  kind: "warp" | "connection";
+  x: number | null;
+  y: number | null;
+  target_x: number | null;
+  target_y: number | null;
+  warp_index: number | null;
+  target_warp: number | null;
+  direction: number | null;
+  displacement: number | null;
+  offset: number;
+  unresolved: string | null;
+}
+export interface MapNavigation {
+  map_id: string;
+  outgoing: MapLink[];
+  incoming: MapLink[];
+  approaches: MapLink[][];
+  truncated: boolean;
+  diagnostics: string[];
+}
+export interface MapFocus {
+  x: number;
+  y: number;
+}
+
+export interface QueryTarget {
+  kind: "species" | "item" | "move";
+  id: number;
+}
+export interface AcquisitionSource {
+  in_scenario: boolean | null;
+  kind: string;
+  map_id: string | null;
+  region: number | null;
+  x: number | null;
+  y: number | null;
+  related: QueryTarget[];
+  quantity: number | null;
+  min_level: number | null;
+  max_level: number | null;
+  encounter_percent: number | null;
+  held_percent: number | null;
+  periods: string[];
+  conditions: {
+    condition: ItemReward["conditions"][number];
+    satisfied: boolean | null;
+    actual: number | null;
+  }[];
+  requirements: { kind: string; value: number }[];
+  evolution: SpeciesDetail["evolutions"][number] | null;
+  status: "completed" | "available" | "blocked" | "unknown";
+  receipt_flag: number | null;
+  repeatable: boolean | null;
+  offset: number;
+  partial: boolean;
+}
+export interface ClockReport {
+  source: "scenario" | "unresolved";
+  effective_hour: number | null;
+  weekday: number | null;
+  period: string | null;
+  next_period_hour: number | null;
+  current_clock_verified: boolean;
+  forced_night_state_verified: boolean;
+}
+export interface AcquisitionReport {
+  clock: ClockReport | null;
+  target: QueryTarget;
+  sources: AcquisitionSource[];
+  partial: boolean;
+}
+
+export interface CollectionTask {
+  target: QueryTarget;
+  family: number[];
+  existing_family_members: number[];
+  source: AcquisitionSource | null;
+  alternatives: number;
+}
+export interface CollectionPlan {
+  rom_md5: string;
+  basis: "dex" | "individuals";
+  families: boolean;
+  owned_count: number;
+  missing_count: number;
+  regions: { region: number | null; tasks: CollectionTask[] }[];
+  entrances: { map_id: string; chains: MapLink[][]; truncated: boolean }[];
+  partial: boolean;
 }

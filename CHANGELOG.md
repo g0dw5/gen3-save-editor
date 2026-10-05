@@ -10,6 +10,16 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Audit actual capabilities across all five exact fingerprints. Add runtime
+  acquisition queries, static map entrances/connections and target-tile navigation,
+  reference back navigation, SAV receipt overlays with verified rules, and regional
+  collection suggestions with standalone HTML export. Unknown conditions remain
+  explicit; planning and ROM references never write save or ROM data.
+- 审计五份精确 ROM 的实际能力；新增实时来源查询、静态入口／连接与目标格位
+  定位、资料返回、按已验证规则叠加 SAV 领取状态，以及区域收集建议和独立 HTML
+  导出。未知条件明确保留，规划和 ROM 资料均不写入 ROM 或存档。
+
+
 - Remove Mercury FC 1.1 support; list and accept only the verified 1.2 fingerprint.
 - 移除水银 FC 1.1 支持；首页及 ROM 加载只接受已验证的 1.2 指纹。
 

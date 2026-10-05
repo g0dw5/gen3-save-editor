@@ -46,6 +46,10 @@ if __name__ == "__main__":
             result["data"] = {"catalog": CATALOG, "save": None}
         elif command == "world":
             result["data"] = WORLD
+        elif command == "acquisition":
+            result["data"] = {"target": payload, "sources": [], "partial": True, "clock": None}
+        elif command == "map_navigation":
+            result["data"] = {"map_id": payload["id"], "outgoing": [], "incoming": [], "approaches": [], "truncated": False, "diagnostics": []}
         elif command == "species":
             if hold_species[0]:
                 hold_species[0] = False

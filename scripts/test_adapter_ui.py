@@ -51,6 +51,8 @@ def main():
         elif command == 'world':
             worlds.append(route)
             return
+        elif command == 'acquisition': data = {'target': req['payload'], 'sources': [], 'partial': True, 'clock': None}
+        elif command == 'map_navigation': data = {'map_id': req['payload']['id'], 'outgoing': [], 'incoming': [], 'approaches': [], 'truncated': False, 'diagnostics': []}
         elif command == 'species':
             data = {'species': species(req['payload']['id']), 'evolutions': [], 'learnset': [], 'encounters': [],
                     'encounters_verified': current[0]['profile']['capabilities']['world'],

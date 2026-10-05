@@ -49,6 +49,8 @@ def main():
         if command == 'state': data = {'catalog':catalog, 'save':save}
         elif command == 'world': data = WORLD
         elif command == 'sprite': data = {'url':''}
+        elif command == 'acquisition': data = {'target': req['payload'], 'sources': [], 'partial': True, 'clock': None}
+        elif command == 'map_navigation': data = {'map_id': req['payload']['id'], 'outgoing': [], 'incoming': [], 'approaches': [], 'truncated': False, 'diagnostics': []}
         elif command == 'species':
             data = {'species':species(payload['id']), 'evolutions':[], 'learnset':[], 'encounters':[]}
         elif command == 'action':

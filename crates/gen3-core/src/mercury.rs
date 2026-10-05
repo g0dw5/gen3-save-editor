@@ -91,6 +91,12 @@ const MERCURY_SAVE: SaveLayout = SaveLayout {
 };
 
 pub const PROFILE: Profile = Profile {
+    clock: Some(crate::clock::ClockRules {
+        starts: [4, 8, 17, 20],
+        native_predicates: [0x1d20de0, 0x1d20df8, 0x1d20814],
+        forced_night_flag: Some(0x1041),
+    }),
+    event_state: None,
     id: "mercury-fc-1.2",
     label: "宝可梦水银 FC · 1.2",
     md5: "f323df1792ac68462a34b42fe8571533",

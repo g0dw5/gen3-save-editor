@@ -21,6 +21,10 @@ pub struct Request {
 #[derive(Default)]
 pub struct App {
     pub session: Option<Session>,
+    pub(crate) acquisition_cache: Option<(
+        std::sync::Arc<Vec<u8>>,
+        crate::acquisition::AcquisitionIndex,
+    )>,
     pub(crate) editor_cheat_cache: Option<(std::sync::Arc<Vec<u8>>, crate::cheats::CheatRom)>,
 }
 fn required(v: &Value, key: &str) -> Result<String> {
@@ -89,6 +93,7 @@ impl App {
                 let catalog = session.rom.catalog()?;
                 self.session = Some(session);
                 self.editor_cheat_cache = None;
+                self.acquisition_cache = None;
                 Ok(json!({"catalog":catalog,"save":null}))
             }
             "open_save" => {
@@ -156,9 +161,47 @@ impl App {
                 let id = serde_json::from_value(p["id"].clone())?;
                 Ok(serde_json::to_value(self.session()?.rom.detail(id)?)?)
             }
-            "world" => {
-                let r = &self.session()?.rom;
-                Ok(serde_json::to_value(r.world()?)?)
+            "world" | "acquisition" | "collection" => {
+                let session = self.session()?;
+                if self
+                    .acquisition_cache
+                    .as_ref()
+                    .is_none_or(|(data, _)| !std::sync::Arc::ptr_eq(data, &session.rom.data))
+                {
+                    let index = crate::acquisition::AcquisitionIndex::build(&session.rom)?;
+                    self.acquisition_cache = Some((session.rom.data.clone(), index));
+                }
+                let index = &self.acquisition_cache.as_ref().unwrap().1;
+                if input.command == "world" {
+                    Ok(serde_json::to_value(&index.world)?)
+                } else if input.command == "collection" {
+                    let request = serde_json::from_value(p)?;
+                    let session = self.session()?;
+                    Ok(serde_json::to_value(index.collection(
+                        &session.rom,
+                        session.save_ref()?,
+                        request,
+                    )?)?)
+                } else {
+                    #[derive(Deserialize)]
+                    #[serde(deny_unknown_fields)]
+                    struct Input {
+                        kind: crate::acquisition::TargetKind,
+                        id: u16,
+                        hour: Option<u8>,
+                    }
+                    let query: Input = serde_json::from_value(p)?;
+                    let session = self.session()?;
+                    Ok(serde_json::to_value(index.query_scenario(
+                        &session.rom,
+                        session.save.as_ref(),
+                        crate::acquisition::Target {
+                            kind: query.kind,
+                            id: query.id,
+                        },
+                        query.hour,
+                    )?)?)
+                }
             }
             "trainer_ev_preview" => {
                 let request: crate::ultimate_ev::TrainerEvRequest = serde_json::from_value(p)?;
@@ -194,9 +237,20 @@ impl App {
                     p.condition,
                 )?)?)
             }
+            "clock_query" => Ok(serde_json::to_value(
+                self.session()?
+                    .rom
+                    .clock_query(serde_json::from_value(p)?)?,
+            )?),
             "fishing_spots" => {
                 let s = self.session()?;
                 Ok(serde_json::to_value(s.rom.fishing_spots(s.save.as_ref())?)?)
+            }
+            "map_navigation" => {
+                let id = required(&p, "id")?;
+                Ok(serde_json::to_value(
+                    self.session()?.rom.map_navigation(&id)?,
+                )?)
             }
             "map_report" => {
                 let id = required(&p, "id")?;

@@ -810,7 +810,7 @@ impl Rom {
                 None => true,
             },
             battle_forms: self.battle_forms(id)?,
-            encounters_verified: self.profile.capabilities.world,
+            encounters_verified: false,
             species: self.valid_species(id)?,
             evolutions: self.evolutions(id)?,
             learnset: self.learnset(id)?,

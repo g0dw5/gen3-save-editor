@@ -49,6 +49,7 @@ pub struct MapEventReport {
 struct State {
     pc: usize,
     vars: BTreeMap<u16, u16>,
+    flags: BTreeMap<u16, bool>,
     stack: Vec<usize>,
     conditions: Vec<EventCondition>,
     comparison: Option<(&'static str, u16, u16)>,
@@ -302,9 +303,15 @@ impl Rom {
                         s.comparison =
                             v.map(|v| (if id < 0x8000 { "variable" } else { "unknown" }, id, v));
                     }
+                    0x29 | 0x2a => {
+                        s.flags.insert(u16(b, pc + 1)?, op == 0x29);
+                    }
                     0x2b => {
                         s.comparison = Some(("flag", u16(b, pc + 1)?, 1));
-                        s.known_comparison = None;
+                        s.known_comparison =
+                            s.flags
+                                .get(&u16(b, pc + 1)?)
+                                .map(|v| if *v { 1 } else { 0 });
                     }
                     0x1b..=0x20 | 0x60 => {
                         s.comparison = None;
@@ -312,6 +319,7 @@ impl Rom {
                     }
                     0x23 | 0x25 | 0x26 => {
                         s.vars.clear();
+                        s.flags.clear();
                         s.comparison = None;
                         s.known_comparison = None;
                         // Dynamic/native rewards cannot be inferred from an item table.
@@ -324,6 +332,36 @@ impl Rom {
                             if op == 0x49 { "pc" } else { "gift" },
                         ));
                         s.vars.remove(&0x800d);
+                    }
+                    0x86 => {
+                        // Item lists, unlike decoration shops, terminate with item ID zero.
+                        if let Ok(table) = pointer(b, pc + 1) {
+                            let mut terminated = false;
+                            for i in 0..256 {
+                                let Some(item) = u16(b, table + i * 2).ok() else {
+                                    break;
+                                };
+                                if item == 0 {
+                                    terminated = true;
+                                    break;
+                                }
+                                if self.item(item).is_err() {
+                                    break;
+                                }
+                                rewards.insert(ItemReward {
+                                    item,
+                                    quantity: None,
+                                    offset: pc,
+                                    via: "shop",
+                                    conditions: s.conditions.clone(),
+                                });
+                            }
+                            if !terminated {
+                                stopped.insert(pc);
+                            }
+                        } else {
+                            stopped.insert(pc);
+                        }
                     }
                     0x42 => {
                         s.vars.remove(&u16(b, pc + 1)?);
@@ -358,6 +396,7 @@ impl Rom {
                             taken: true,
                         });
                         s.vars.clear();
+                        s.flags.clear();
                         s.comparison = None;
                         s.known_comparison = None;
                         if op == 0x5c && matches!(b[pc + 1], 1 | 2 | 6 | 8) {

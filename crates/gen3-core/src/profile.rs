@@ -31,7 +31,17 @@ impl SplitText {
     }
 }
 #[derive(Clone, Copy, Debug, Serialize)]
+pub struct EventStateLayout {
+    pub flags: usize,
+    pub flag_limit: u16,
+    pub variables: usize,
+    pub variable_count: u16,
+}
+#[derive(Clone, Copy, Debug, Serialize)]
 pub struct Profile {
+    pub clock: Option<crate::clock::ClockRules>,
+    /// Native-verified SB1 flag/variable addressing; never inferred from item ownership.
+    pub event_state: Option<EventStateLayout>,
     pub formats: crate::adapter::RomFormats,
     pub capabilities: crate::adapter::Capabilities,
     pub ability_count: u16,
@@ -251,6 +261,13 @@ pub const EMERALD: SaveLayout = SaveLayout {
     skip_unoccupied_box_records: false,
 };
 pub const BW: Profile = Profile {
+    clock: None,
+    event_state: Some(EventStateLayout {
+        flags: 0x1270,
+        flag_limit: 0x4000,
+        variables: 0x139c,
+        variable_count: 0x100,
+    }),
     nature_names: 0x61cb50,
     nature_effects: 0x31e818,
     nature_product_u16: true,
@@ -455,6 +472,8 @@ pub const DP: Profile = Profile {
     ..BW
 };
 pub const ROCKET: Profile = Profile {
+    clock: None,
+    event_state: None,
     nature_names: 0xd052ec,
     nature_effects: 0x5b335c,
     nature_product_u16: false,

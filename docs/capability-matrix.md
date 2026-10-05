@@ -67,3 +67,48 @@ private file paths are not release inputs. Missing evidence is retained as a gap
 
 每阶段交付可操作的流程；未知脚本、动态布局和当前可达性始终保留提示。不存在
 全局最短路线证明时仅称建议路线。默认不生成个体、不改图鉴和剧情标记。
+
+## Query closure increment / 本轮闭环增量
+
+Shared modules `navigation.rs`, `acquisition.rs`, `collection.rs`, `clock.rs`
+add usable query → tile → entrance → return and SAV → regional suggestion → HTML
+flows. This advances the baseline U entrance/planning rows to **P for all five**;
+it does not certify current accessibility, complete tasks or all source types.
+BW/DP receipt overlays are **P**: direct item-ball/hidden protocols and native
+flag/variable addresses are verified, while generic NPC receipt inference is not.
+Other ROM receipt overlays remain U and explicitly unknown. Shop lists are
+bounded, ROM-backed script records, not a claim about all native/custom shops.
+
+| Exact input | Maps | Warps | Connections | Unresolved links | Maps with exterior chains | Positioned shop rows |
+|---|---:|---:|---:|---:|---:|---:|
+| BW | 707 | 1,808 | 204 | 58 | 474 | 415 |
+| DP | 707 | 1,808 | 204 | 58 | 474 | 415 |
+| Rocket | 1,363 | 3,790 | 445 | 69 | 1,053 | 987 |
+| Ultimate | 922 | 3,023 | 292 | 63 | 628 | 1,200 |
+| Mercury 1.2 | 871 | 2,866 | 244 | 61 | 535 | 1,470 |
+
+Counts describe parsed references, not unique physical entrances or shops.
+Ultimate reports three invalid static connection/event diagnostics and one
+out-of-layout destination; unresolved links are retained. Paths are bounded,
+cycle-safe static alternatives and make no single-direction/story-access claim.
+
+`local_query_` opt-in tests passed on all five ROMs. Private BW, Rocket and
+Mercury 1.2 SAVs also passed planning/read-only comparisons. DP and Ultimate had
+ROM-only queries in this increment; no new edited SAV game round trip is claimed.
+The browser fixture checks target tile, exterior entrance, back navigation,
+map reward → item, planning, compact window and escaped standalone HTML export.
+It caught and fixed a focus-marker hit-testing problem.
+
+`scripts/verify_query_rules.py`: BW and DP each match **56 native flag/variable
+reads**, with synthetic SB1 bytes unchanged. Mercury 1.2 matches **72 native
+period-predicate results** across all 24 hours. These are query scenarios with
+forced-night flag `0x1041` modeled unset, not effective-time decoding. A previous
+Mercury research table described the 1.1 selector's literal pool at `0x1D65828`;
+the 1.2 header-selection entry is `0x1D69AC0`, with predicates at `0x1D20DE0`,
+`0x1D20DF8`, `0x1D20814`. Virtual clock persistence, jump-time state and weekday
+refresh remain unresolved. The UI never substitutes the device's clock.
+
+收集家族只用永久进化边，不用名称推测或战斗变身关联。按图鉴判断时，图鉴的
+共同编号只能证明该物种曾获得，不证明每种独立形态都持有；按现有个体可区分
+存档里的种类。已有家族成员不等于所有分支已完成。隐藏条件、交换、游走、原生
+奖励、剧情依赖、跨地区解锁和设施仍有缺口；生成的 HTML 明示这些边界。

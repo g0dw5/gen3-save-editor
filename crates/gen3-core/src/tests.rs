@@ -2919,3 +2919,130 @@ fn local_ultimate_adapter_regression() {
         std::fs::write(path, serde_json::to_vec(&probes).unwrap()).unwrap();
     }
 }
+
+#[test]
+#[ignore = "requires five exact local ROMs; optional private saves for planning"]
+fn local_query_acquisition_and_collection_all_profiles() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        collection::{CollectionBasis, CollectionRequest},
+    };
+    for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{name}")).unwrap()).unwrap())
+                .unwrap();
+        let index = AcquisitionIndex::build(&r).unwrap();
+        let item = index
+            .world
+            .map_events
+            .iter()
+            .flat_map(|m| m.markers.iter())
+            .flat_map(|m| m.rewards.iter())
+            .next()
+            .unwrap()
+            .item;
+        let report = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Item,
+                    id: item,
+                },
+            )
+            .unwrap();
+        assert!(!report.sources.is_empty(), "{name}");
+        assert!(report.sources.iter().all(|s| s.status == "unknown"));
+        for s in report.sources.iter().filter(|s| s.x.is_some()) {
+            let map = index
+                .world
+                .maps
+                .iter()
+                .find(|m| Some(&m.id) == s.map_id.as_ref())
+                .unwrap();
+            // Initial event locations outside a dynamic layout must not be normalized.
+            assert!(s.x.unwrap().abs() < 32767 && map.width > 0);
+        }
+        let species = index.world.encounters.first().unwrap().species;
+        let mon = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Species,
+                    id: species,
+                },
+            )
+            .unwrap();
+        assert!(mon.sources.iter().any(|s| s.map_id.is_some()), "{name}");
+        let move_id = index.learnsets.values().flatten().next().unwrap().move_id;
+        assert!(!index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Move,
+                    id: move_id
+                }
+            )
+            .unwrap()
+            .sources
+            .is_empty());
+        let shops = index
+            .world
+            .map_events
+            .iter()
+            .flat_map(|m| m.markers.iter())
+            .flat_map(|m| m.rewards.iter())
+            .filter(|r| r.via == "shop")
+            .count();
+        if let Ok(path) = std::env::var(format!("GEN3_SAVE_{name}")) {
+            let original = std::fs::read(path).unwrap();
+            let s = Save::open(original.clone(), r.profile.save).unwrap();
+            s.validate(&r).unwrap();
+            let plan = index
+                .collection(
+                    &r,
+                    &s,
+                    CollectionRequest {
+                        basis: CollectionBasis::Individuals,
+                        families: true,
+                        include_unknown_rewards: true,
+                    },
+                )
+                .unwrap();
+            assert_eq!(s.data, original, "planning must be read-only");
+            assert!(plan.missing_count > 0);
+            if r.profile.save.dex.is_none() {
+                assert_eq!(
+                    index
+                        .collection(
+                            &r,
+                            &s,
+                            CollectionRequest {
+                                basis: CollectionBasis::Dex,
+                                families: true,
+                                include_unknown_rewards: false
+                            }
+                        )
+                        .err()
+                        .unwrap()
+                        .code,
+                    "collection_dex_unverified"
+                );
+            }
+            eprintln!("{name}: {} species, {} shop rows, {} missing family goals, {} regions, {} entrance reports",index.species.len(),shops,plan.missing_count,plan.regions.len(),plan.entrances.len());
+        } else {
+            eprintln!(
+                "{name}: {} species, {} shop rows; ROM-only queries passed",
+                index.species.len(),
+                shops
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn query_fixture_rom() -> Rom {
+    rom()
+}

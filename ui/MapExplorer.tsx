@@ -7,10 +7,13 @@ import {
   Users,
   CircleDot,
   Fish,
+  DoorOpen,
 } from "lucide-react";
 import { useI18n } from "./i18n";
 import { useRomCharacterImage } from "./romCharacterImage";
 import type {
+  MapFocus,
+  MapNavigation,
   Catalog,
   GameMap,
   MapEventReport,
@@ -26,12 +29,20 @@ export function MapExplorer({
   report,
   catalog,
   fishing,
+  focus,
+  navigation,
+  onMap,
+  onItem,
 }: {
   map: GameMap;
   image: string;
   report?: MapEventReport;
   catalog: Catalog;
   fishing?: FishingReport | null;
+  focus?: MapFocus;
+  navigation?: MapNavigation | null;
+  onMap?: (id: string, focus?: MapFocus) => void;
+  onItem?: (id: number) => void;
 }) {
   const { t } = useI18n();
   const [enabled, setEnabled] = useState({
@@ -66,10 +77,23 @@ export function MapExplorer({
       }),
     );
   };
+  const [showWarps, setShowWarps] = useState(true);
+  const focusPin = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    setQuery("");
+    if (focus) {
+      setSelected(`${focus.x},${focus.y}`);
+      requestAnimationFrame(() =>
+        focusPin.current?.scrollIntoView({ block: "center", inline: "center" }),
+      );
+    }
+  }, [map.id, focus]);
   const [grid, setGrid] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
-  useEffect(() => setSelected(null), [map.id]);
+  useEffect(() => {
+    if (!focus) setSelected(null);
+  }, [map.id, focus]);
   const label = (kind: string) =>
     t(
       (
@@ -139,6 +163,15 @@ export function MapExplorer({
             </label>
           );
         })}
+        <label className="map-layer">
+          <input
+            type="checkbox"
+            checked={showWarps}
+            onChange={(e) => setShowWarps(e.target.checked)}
+          />
+          <DoorOpen size={15} />
+          {t("navWarps")}
+        </label>
         {fishing && (
           <label className="map-layer layer-fishing">
             <input
@@ -238,6 +271,60 @@ export function MapExplorer({
               }}
             />
           )}
+          {showWarps &&
+            navigation?.outgoing
+              .filter(
+                (e) =>
+                  e.kind === "warp" &&
+                  e.x !== null &&
+                  e.y !== null &&
+                  e.x >= 0 &&
+                  e.y >= 0 &&
+                  e.x < map.width &&
+                  e.y < map.height,
+              )
+              .map((edge) => (
+                <button
+                  key={`warp-${edge.offset}`}
+                  className="map-marker layer-warp"
+                  style={{
+                    left: `${(100 * (edge.x! + 0.5)) / map.width}%`,
+                    top: `${(100 * (edge.y! + 0.5)) / map.height}%`,
+                  }}
+                  title={`${t("navWarp")} → ${edge.to ? edge.to : t("navDynamic")}`}
+                  aria-label={`${t("navWarp")} (${edge.x}, ${edge.y})`}
+                  onClick={() => {
+                    if (edge.to)
+                      onMap?.(
+                        edge.to,
+                        edge.target_x !== null && edge.target_y !== null
+                          ? { x: edge.target_x, y: edge.target_y }
+                          : undefined,
+                      );
+                  }}
+                >
+                  <DoorOpen size={14} />
+                </button>
+              ))}
+          {focus &&
+            focus.x >= 0 &&
+            focus.y >= 0 &&
+            focus.x < map.width &&
+            focus.y < map.height && (
+              <button
+                ref={focusPin}
+                className="map-marker map-focus selected"
+                style={{
+                  left: `${(100 * (focus.x + 0.5)) / map.width}%`,
+                  top: `${(100 * (focus.y + 0.5)) / map.height}%`,
+                }}
+                title={t("navTarget")}
+                aria-label={t("navTarget")}
+                onClick={() => setSelected(`${focus.x},${focus.y}`)}
+              >
+                <MapPin size={18} />
+              </button>
+            )}
           {fishVisible.map((spot) => {
             const key = `${spot.x},${spot.y}`;
             return (
@@ -308,14 +395,21 @@ export function MapExplorer({
                 {marker.x}, {marker.y})
               </strong>
               {marker.rewards.length ? (
-                [
-                  ...new Set(
-                    marker.rewards.map(
-                      (r) =>
-                        `${items.get(r.item)?.name ?? `#${r.item}`} × ${r.quantity ?? "?"}`,
-                    ),
-                  ),
-                ].map((name) => <p key={name}>{name}</p>)
+                marker.rewards.map((r, i) => (
+                  <p key={`${r.offset}-${i}`}>
+                    <button
+                      className="link-button"
+                      onClick={() => onItem?.(r.item)}
+                    >
+                      {items.get(r.item)?.name ?? `#${r.item}`} ↗
+                    </button>
+                    {r.quantity !== null
+                      ? ` × ${r.quantity}`
+                      : r.via === "shop"
+                        ? ` · ${t("acqShop")}`
+                        : ""}
+                  </p>
+                ))
               ) : (
                 <p>{t("mapNoReward")}</p>
               )}
