@@ -6012,3 +6012,216 @@ fn local_collection_preparation_all_fingerprints() {
         eprintln!("{key}: {chains} directed preparation chains ({possessed} from current individuals), {} goals; ROM/SAV unchanged",plan.missing_count);
     }
 }
+
+fn synthetic_daycare_main(save: &mut Save, main: &[u8]) {
+    let mut cursor = 0;
+    for id in 1..=4 {
+        let section = save.sections[id];
+        let length = save.layout.sizes[id];
+        save.data[section..section + length].copy_from_slice(&main[cursor..cursor + length]);
+        let checksum = if save.layout.sector_checksum == profile::SectorChecksum::NativeConstantOne
+        {
+            1
+        } else {
+            sector_checksum(&save.data[section..section + length])
+        };
+        put16(&mut save.data, section + 0xff6, checksum);
+        cursor += length;
+    }
+    assert_eq!(cursor, main.len());
+}
+
+#[test]
+fn saved_daycare_is_optional_and_deposited_parent_requests_are_bounded() {
+    let mut r = rom();
+    let save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+    let before = save.data.clone();
+    assert!(crate::daycare_state::snapshot(&r, &save).unwrap().is_none());
+    r.profile.breeding = Some(crate::breeding::EMERALD);
+    assert_eq!(
+        crate::daycare_state::parent_raw(&r, &save, 2)
+            .unwrap_err()
+            .code,
+        "daycare_parent_slot"
+    );
+    let mut request:crate::breeding::Request=serde_json::from_value(serde_json::json!({"parents":[{"kind":"deposited","slot":0},{"kind":"deposited","slot":0}],"offspring_pid":24})).unwrap();
+    assert_eq!(
+        crate::breeding::preview(&r, Some(&save), &request)
+            .unwrap_err()
+            .code,
+        "breeding_parent"
+    );
+    request.parents[1] = crate::breeding::Parent::Simulated {
+        species: 1,
+        gender: crate::breeding::Gender::Male,
+        held_item: 0,
+        trainer_id: 1,
+    };
+    assert_eq!(
+        crate::breeding::preview(&r, None, &request)
+            .unwrap_err()
+            .code,
+        "save_required"
+    );
+    assert!(serde_json::from_value::<crate::breeding::Request>(serde_json::json!({"parents":[{"kind":"deposited","slot":null},{"kind":"deposited","slot":1}],"offspring_pid":24})).is_err());
+    assert_eq!(save.data, before);
+}
+
+#[test]
+#[ignore = "requires five exact private ROMs and GEN3_DAYCARE_STATE_PROBES mGBA native vectors"]
+fn local_saved_daycare_matches_native_state_and_deposited_parent_records() {
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_DAYCARE_STATE_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        let native = &probes[key];
+        assert_eq!(native["engine"], "mGBA ARM7");
+        assert_eq!(native["md5"], r.profile.md5);
+        let breeding = r.profile.breeding.unwrap();
+        let rules = breeding.saved.unwrap();
+        let rom_before = r.data.clone();
+        for row in native["rows"].as_array().unwrap() {
+            let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+            let mut main = save.logical(1..=4);
+            let raws: Vec<Vec<u8>> = serde_json::from_value(row["parents"].clone()).unwrap();
+            let steps = row["steps"].as_u64().unwrap() as u32;
+            let pending = row["pending"].as_u64().unwrap() as u32;
+            for (slot, raw) in raws.iter().enumerate() {
+                let at = breeding.daycare + slot * breeding.parent_stride;
+                main[at..at + 80].copy_from_slice(raw);
+                put32(&mut main, at + rules.parent_steps, steps);
+            }
+            if breeding.pending_width == 2 {
+                put16(
+                    &mut main,
+                    breeding.daycare + breeding.pending_pid,
+                    pending as u16,
+                );
+            } else {
+                put32(&mut main, breeding.daycare + breeding.pending_pid, pending);
+            }
+            if let Some(flag) = row["flag"].as_u64() {
+                let id = flag as u16;
+                let range = r
+                    .profile
+                    .event_state
+                    .unwrap()
+                    .flags
+                    .iter()
+                    .find(|v| id >= v.first && id - v.first < v.count)
+                    .unwrap();
+                assert!(matches!(range.block, crate::event_state::EventBlock::Main));
+                let bit = (id - range.first) as usize;
+                main[range.offset + bit / 8] |=
+                    u8::from(row["flag_set"].as_bool().unwrap()) << (bit % 8);
+            }
+            synthetic_daycare_main(&mut save, &main);
+            save.validate(&r).unwrap();
+            let before = save.data.clone();
+            let state = crate::daycare_state::snapshot(&r, &save).unwrap().unwrap();
+            assert_eq!(
+                state.native_service_state,
+                Some(row["native_state"].as_u64().unwrap() as u32)
+            );
+            assert_eq!(state.egg_available, row["available"] == 1);
+            assert_eq!(state.legacy_pending_value, pending);
+            assert_eq!(
+                serde_json::to_value(state.compatibility).unwrap(),
+                row["compatibility"]
+            );
+            for (slot, parent) in state.parents.iter().enumerate() {
+                assert_eq!(parent.present, row["presence"][slot] == 1);
+                assert!(parent.issue.is_none());
+                assert_eq!(parent.accumulated_steps, steps);
+                if parent.present {
+                    assert_eq!(
+                        crate::daycare_state::parent_raw(&r, &save, slot).unwrap(),
+                        raws[slot]
+                    );
+                    assert_eq!(
+                        serde_json::to_value(parent.pokemon.as_ref().unwrap()).unwrap(),
+                        serde_json::to_value(pokemon::decode(&raws[slot], &r).unwrap()).unwrap()
+                    );
+                } else {
+                    assert!(parent.pokemon.is_none());
+                }
+            }
+            if state.status == "two_parents" && pending == 0 {
+                let phase = native["phases"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .find(|p| p["steps"] == row["steps"])
+                    .unwrap();
+                assert_eq!(
+                    state.next_check_steps,
+                    Some(phase["next_check"].as_u64().unwrap() as u16)
+                );
+            } else {
+                assert!(state.next_check_steps.is_none());
+            }
+            assert_eq!(save.data, before);
+        }
+        // The original deposited boxed records are used for preview, not a
+        // reconstruction from decoded fields; this preserves PID/history/moves.
+        let row = native["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| {
+                row["presence"] == serde_json::json!([1, 1])
+                    && row["pending"] == 0
+                    && row["flag_set"] == false
+            })
+            .unwrap();
+        let raws: Vec<Vec<u8>> = serde_json::from_value(row["parents"].clone()).unwrap();
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let mut main = save.logical(1..=4);
+        for (i, raw) in raws.iter().enumerate() {
+            main[breeding.daycare + i * breeding.parent_stride
+                ..breeding.daycare + i * breeding.parent_stride + 80]
+                .copy_from_slice(raw);
+        }
+        synthetic_daycare_main(&mut save, &main);
+        let before = save.data.clone();
+        let request = crate::breeding::Request {
+            parents: [
+                crate::breeding::Parent::Deposited { slot: 0 },
+                crate::breeding::Parent::Deposited { slot: 1 },
+            ],
+            seed: 42,
+            offspring_pid: 24,
+            production_item: None,
+        };
+        let preview = crate::breeding::preview(&r, Some(&save), &request).unwrap();
+        assert!(preview.child.as_ref().unwrap().egg);
+        assert_eq!(
+            preview.parents[0].pid,
+            pokemon::decode(&raws[0], &r).unwrap().pid
+        );
+        assert_eq!(save.data, before);
+        // An occupied corrupt record is never sent through the native repair path.
+        if r.profile.save.pokemon_codec.plain_substructures() {
+            // These engines ignore the legacy individual checksum. Corrupt the
+            // actual species field, rather than inventing a checksum requirement.
+            put16(&mut main, breeding.daycare + 32, u16::MAX);
+        } else {
+            main[breeding.daycare + 28] ^= 1;
+        }
+        synthetic_daycare_main(&mut save, &main);
+        let before = save.data.clone();
+        let state = crate::daycare_state::snapshot(&r, &save).unwrap().unwrap();
+        assert_eq!(state.status, "unknown");
+        assert!(state.parents[0].issue.is_some());
+        assert!(state.native_service_state.is_none());
+        assert!(state.compatibility.is_none());
+        assert!(crate::daycare_state::parent_raw(&r, &save, 0).is_err());
+        assert_eq!(save.data, before);
+        assert_eq!(*r.data, *rom_before);
+        eprintln!("{key}: {} native saved-state cases, 8 phases, deposited preview and corrupt-record safety passed",native["rows"].as_array().unwrap().len());
+    }
+}

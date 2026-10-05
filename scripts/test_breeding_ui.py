@@ -8,7 +8,7 @@ from test_editor_navigation import pokemon
 def main():
     expect.set_options(timeout=30000)
     catalog=copy.deepcopy(CATALOG)
-    catalog['profile']['breeding']={'pending_width':2,'production':{'modifier':{}}}
+    catalog['profile']['breeding']={'pending_width':2,'production':{'modifier':{}},'saved':{}}
     catalog['profile']['capabilities']=dict(world=True,save_edit=True,dex=True)
     catalog['items']=[dict(id=0,name='',tm_move=None),dict(id=1,name='ROM incense',tm_move=None)]
     maps=[dict(id='0-0',name='Daycare meadow',region=1,width=4,height=4,map_type=4)]
@@ -18,6 +18,8 @@ def main():
     world=dict(maps=maps,map_events=[dict(map_id='0-0',markers=[marker],unplaced_rewards=[],unplaced_pokemon=[],unplaced_teaching=[],unplaced_daycare=[],stopped_at=[])],encounters=[],trainers=[],trainer_locations=dict(locations=[]),map_groups=[])
     source=dict(kind='daycare',map_id='0-0',x=2,y=3,offset=100,conditions=[dict(condition=condition,actual=0,satisfied=False,unresolved=None)],status='unknown',partial=True)
     child=pokemon(2,dict(kind='party',slot=0))['pokemon'];child['egg']=True
+    deposited=copy.deepcopy(child);deposited.update(species=1,egg=False)
+    daycare=dict(rom_md5=catalog['profile']['md5'],source='saved_ordinary_daycare',status='two_parents',parents=[dict(slot=i,present=True,pokemon=deposited,accumulated_steps=254,issue=None) for i in range(2)],egg_available=False,compatibility=50,next_check_steps=1,native_service_state=3,legacy_pending_value=0,partial=True)
     save=dict(trainer={'name':'TEST'},pokemon=[pokemon(1,dict(kind='party',slot=0))],boxes=[dict(index=i,name=f'Box {i}',count=0,wallpaper=0) for i in range(14)],bag=[],dex=[],active_slot=0,counter=1,backup_valid=True,dirty=False,can_undo=False,can_redo=False,changes=[])
     requests=[];errors=[]
     def respond(route):
@@ -27,6 +29,7 @@ def main():
         elif cmd=='species':data=dict(species=catalog['species'][p['id']-1],evolutions=[],learnset=[],encounters=[],origins={})
         elif cmd=='acquisition':data=dict(target=p,sources=[],partial=True,clock=None)
         elif cmd=='daycare_sources':data=[source]
+        elif cmd=='daycare_state':data=daycare
         elif cmd=='breeding_preview':
             assert p['offspring_pid']>0 and p['offspring_pid']<=65535
             boosted=p.get('production_item',False)
@@ -43,6 +46,14 @@ def main():
         page.goto(os.environ.get('GEN3_UI_URL','http://127.0.0.1:5173'));page.get_by_role('button',name='ROM reference',exact=True).click()
         pane=page.locator('.breeding-panel');pane.locator('summary').first.click()
         expect(pane).to_contain_text('Daycare meadow')
+        expect(pane.locator('.daycare-state')).to_contain_text('Two Pokémon deposited')
+        expect(pane.locator('.daycare-state')).to_contain_text('1 ordinary field steps until the next production check')
+        pane.get_by_role('button',name='Use both deposited parents for a read-only scenario',exact=True).click()
+        pane.get_by_role('button',name='Preview ordinary egg receipt',exact=True).click()
+        expect(pane.locator('.breeding-result')).to_be_visible()
+        assert requests[-1]['payload']['parents'] == [dict(kind='deposited',slot=0),dict(kind='deposited',slot=1)]
+        for selector in pane.get_by_role('combobox',name='Parent source',exact=True).all():
+            selector.click();page.get_by_role('option',name='Set a simulated parent',exact=True).click()
         pane.get_by_role('button',name='Preview ordinary egg receipt',exact=True).click()
         expect(pane).to_contain_text('native compatibility check accepts')
         expect(pane).to_contain_text('not the chance of producing an egg')
@@ -73,6 +84,10 @@ def main():
         page.get_by_role('button',name='简体中文',exact=True).click()
         pane.locator('summary').first.click();expect(pane).to_contain_text('不会添加蛋或改动 SAV')
         expect(pane).to_contain_text('不能证明当前可达')
+        expect(pane.locator('.daycare-state')).to_contain_text('已寄养两只宝可梦')
+        daycare.update(status='egg_available',egg_available=True,next_check_steps=None,native_service_state=1,legacy_pending_value=0)
+        pane.locator('summary').first.click();pane.locator('summary').first.click()
+        expect(pane.locator('.daycare-state')).to_contain_text('ROM 的保存状态标记有蛋待领取')
         page.set_viewport_size(dict(width=720,height=800));expect(pane.get_by_role('button',name='预览普通领蛋结果',exact=True)).to_be_visible()
         pane.get_by_role('button',name='预览普通领蛋结果',exact=True).click();expect(pane.get_by_role('columnheader',name='个体值',exact=True)).to_be_visible()
         if os.environ.get('GEN3_UI_ARTIFACT_DIR'):

@@ -1,6 +1,33 @@
 import { createContext, useContext } from "react";
 export const en = {
   breedTitle: "Native daycare egg preview",
+  daycareSavedTitle: "Saved ordinary daycare",
+  daycareSavedHelp:
+    "Read from this SAV using the ROM's native state routines. This is the saved ordinary two-slot daycare, not the emulator's live state or every custom service. An egg marker does not prove NPC access, party space or actual delivery. Pokémon data is stored at deposit; accumulated steps are separate.",
+  daycareSaved_empty: "No Pokémon stored in these ordinary daycare slots.",
+  daycareSaved_one_parent: "One Pokémon deposited.",
+  daycareSaved_two_parents: "Two Pokémon deposited; eligibility is separate.",
+  daycareSaved_egg_available:
+    "The ROM's saved state marks an egg available to collect.",
+  daycareSaved_unknown:
+    "The saved ordinary daycare state could not be determined.",
+  daycareSavedUnknown: "Saved ordinary daycare state is unavailable.",
+  daycareSavedEmptySlot: "Empty slot",
+  daycareSavedInvalidParent:
+    "Individual data cannot be verified; see evidence.",
+  daycareStoredLevel: "Level at deposit",
+  daycareAccumulatedSteps: "Accumulated daycare steps",
+  daycareNextCheck:
+    "{steps} ordinary field steps until the next production check, based on the saved counter. This is not the number of steps until an egg is produced; current field/script behavior may differ.",
+  daycareSavedIncompatible:
+    "The native base compatibility is zero. Item branches and custom services are separate; this does not establish an obtainable offspring.",
+  daycareUseDeposited: "Use both deposited parents for a read-only scenario",
+  daycareDeposited: "Deposited parent",
+  daycare_state_unverified: "This ROM's saved daycare layout is not verified.",
+  daycare_parent_slot: "Choose an existing ordinary daycare slot.",
+  daycare_state_rule: "The native saved daycare state could not be verified.",
+  daycare_state_changed:
+    "Native state observation changed its disposable saved block; the query was rejected.",
   breedHelp:
     "Choose two saved individuals or simulated parents. The current ROM runs its ordinary compatibility and egg-receipt routines in isolated RAM. This query never adds an egg or changes your SAV.",
   breedParent: "Parent",
@@ -965,6 +992,29 @@ export const en = {
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
   breedTitle: "原生寄养孵蛋预览",
+  daycareSavedTitle: "已保存的普通寄养状态",
+  daycareSavedHelp:
+    "从本份 SAV 执行 ROM 原生状态例程读取。这是保存时的普通双栏寄养记录，不是模拟器实时状态，也不覆盖所有自定义服务。有蛋标记不证明 NPC 可达、同行有空位或实际能发放；个体数据为寄养时的记录，累计步数单独显示。",
+  daycareSaved_empty: "这两个普通寄养栏位没有宝可梦。",
+  daycareSaved_one_parent: "已寄养一只宝可梦。",
+  daycareSaved_two_parents: "已寄养两只宝可梦；配对资格需另行确认。",
+  daycareSaved_egg_available: "ROM 的保存状态标记有蛋待领取。",
+  daycareSaved_unknown: "无法确定保存的普通寄养状态。",
+  daycareSavedUnknown: "暂无法读取保存的普通寄养状态。",
+  daycareSavedEmptySlot: "空栏位",
+  daycareSavedInvalidParent: "无法验证个体数据，请展开证据。",
+  daycareStoredLevel: "寄养时等级",
+  daycareAccumulatedSteps: "累计寄养步数",
+  daycareNextCheck:
+    "按保存计数，还有 {steps} 次普通场景步数到下一次产蛋检查。这不是必定产蛋所需步数；实际场景或脚本的计步可能不同。",
+  daycareSavedIncompatible:
+    "原生基础兼容性为零；道具分支及自定义服务需单独确认，不能据此认定可获得后代。",
+  daycareUseDeposited: "使用两只实际寄养亲本进行只读模拟",
+  daycareDeposited: "实际寄养亲本",
+  daycare_state_unverified: "本 ROM 的寄养保存布局尚未验证。",
+  daycare_parent_slot: "请选择有效的普通寄养栏位。",
+  daycare_state_rule: "无法验证原生寄养保存状态。",
+  daycare_state_changed: "原生读取改变了隔离内存中的保存块，已拒绝此查询。",
   breedHelp:
     "选择存档中的两个个体，或设置模拟亲本。当前 ROM 的普通配对检查和领蛋例程在隔离内存中运行；查询不会添加蛋或改动 SAV。",
   breedParent: "亲本",

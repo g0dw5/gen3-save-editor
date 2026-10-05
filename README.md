@@ -241,3 +241,10 @@ or an explicit item scenario, with current-ROM probabilities and a required-item
 link. Neither predicts the next real egg; Rocket/Mercury service locations and full breeding coverage
 remain unresolved. See [native daycare evidence](docs/verification/breeding-20261006.md).
 Production assumptions and exhaustive native evidence are [documented separately](docs/verification/breeding-production-20261006.md).
+
+With a SAV loaded, the preview also shows the saved ordinary daycare's deposited
+individuals, native egg-availability marker and distance to the next ordinary
+production check. Deposited parents can be used directly in a read-only scenario;
+their original records are preserved. This is a saved snapshot, not live emulator
+state or a forecast of the next egg. Mercury's additional custom service record
+remains unresolved. See [saved-state evidence](docs/verification/daycare-state-20261006.md).

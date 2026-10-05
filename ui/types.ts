@@ -98,6 +98,7 @@ export interface Catalog {
     breeding?: {
       pending_width: number;
       production?: { modifier: unknown | null } | null;
+      saved?: object | null;
     } | null;
     native_trainers?: { constructor: number } | null;
     fishing_rods?: number[];
@@ -592,6 +593,24 @@ export interface CollectionTask {
   source: AcquisitionSource | null;
   alternatives: number;
   preparation?: CollectionPreparation | null;
+}
+export interface SavedDaycareState {
+  rom_md5: string;
+  source: string;
+  status: string;
+  parents: {
+    slot: number;
+    present: boolean;
+    pokemon: Pokemon | null;
+    accumulated_steps: number;
+    issue: string | null;
+  }[];
+  egg_available: boolean;
+  compatibility: number | null;
+  next_check_steps: number | null;
+  native_service_state: number | null;
+  legacy_pending_value: number;
+  partial: boolean;
 }
 export interface CollectionPreparation {
   origin: number;

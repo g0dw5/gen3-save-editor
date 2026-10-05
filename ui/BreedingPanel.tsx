@@ -12,6 +12,7 @@ import type {
   Pokemon,
   QueryTarget,
   Snapshot,
+  SavedDaycareState,
 } from "./types";
 
 type Gender = "male" | "female" | "genderless";
@@ -82,6 +83,8 @@ export function BreedingPanel({
   const [result, setResult] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const [services, setServices] = useState<AcquisitionSource[] | null>(null);
+  const [savedState, setSavedState] = useState<SavedDaycareState | null>(null);
+  const [stateLoading, setStateLoading] = useState(false);
   const revision = useRef(0);
   useEffect(() => {
     revision.current++;
@@ -110,6 +113,30 @@ export function BreedingPanel({
       active = false;
     };
   }, [open, catalog.profile.md5, save, onError]);
+  useEffect(() => {
+    let active = true;
+    setSavedState(null);
+    setStateLoading(false);
+    if (open && save && catalog.profile.breeding?.saved) {
+      setStateLoading(true);
+      api<SavedDaycareState | null>("daycare_state")
+        .then((s) => {
+          if (active && s?.rom_md5 === catalog.profile.md5) setSavedState(s);
+        })
+        .catch((e) => {
+          if (active) onError(e);
+        })
+        .finally(() => {
+          if (active) setStateLoading(false);
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [open, catalog.profile.md5, save, onError]);
+  const current =
+    savedState?.rom_md5 === catalog.profile.md5 ? savedState : null;
+  const deposited = current?.parents.filter((p) => p.pokemon && !p.issue) ?? [];
   const stored = (save?.pokemon ?? []).filter(
     (m) => m.pokemon.species > 0 && !m.pokemon.egg,
   );
@@ -139,7 +166,9 @@ export function BreedingPanel({
                 held_item: p.item,
                 trainer_id: i + 1,
               }
-            : { kind: "stored", location: fromKey(p.source) },
+            : p.source.startsWith("deposited:")
+              ? { kind: "deposited", slot: Number(p.source.split(":")[1]) }
+              : { kind: "stored", location: fromKey(p.source) },
         ),
         seed,
         offspring_pid: pid,
@@ -161,6 +190,81 @@ export function BreedingPanel({
     >
       <summary>{t("breedTitle")}</summary>
       <p className="small muted">{t("breedHelp")}</p>
+      {save && catalog.profile.breeding?.saved && (
+        <section className="daycare-state small">
+          <h4>{t("daycareSavedTitle")}</h4>
+          <p className="muted">{t("daycareSavedHelp")}</p>
+          {stateLoading ? (
+            <p>{t("loading")}</p>
+          ) : current ? (
+            <>
+              <p>{t(`daycareSaved_${current.status}`)}</p>
+              {current.parents.map((parent) => (
+                <p key={parent.slot}>
+                  {t("breedParent")} {parent.slot + 1}:{" "}
+                  {parent.pokemon ? (
+                    <>
+                      <button
+                        className="link-button"
+                        onClick={() =>
+                          onTarget({
+                            kind: "species",
+                            id: parent.pokemon!.species,
+                          })
+                        }
+                      >
+                        {speciesName(parent.pokemon.species)} ↗
+                      </button>{" "}
+                      · {t("daycareStoredLevel")} {parent.pokemon.level} ·{" "}
+                      {t("daycareAccumulatedSteps")} {parent.accumulated_steps}
+                    </>
+                  ) : (
+                    t(
+                      parent.present
+                        ? "daycareSavedInvalidParent"
+                        : "daycareSavedEmptySlot",
+                    )
+                  )}
+                </p>
+              ))}
+              {current.next_check_steps != null && (
+                <p>
+                  {t("daycareNextCheck").replace(
+                    "{steps}",
+                    String(current.next_check_steps),
+                  )}
+                </p>
+              )}
+              {current.compatibility === 0 && (
+                <p className="muted">{t("daycareSavedIncompatible")}</p>
+              )}
+              {deposited.length === 2 && (
+                <button
+                  onClick={() => {
+                    invalidate();
+                    setParents(
+                      deposited.map((p) => ({
+                        source: `deposited:${p.slot}`,
+                        species: p.pokemon!.species,
+                        gender: "female",
+                        item: 0,
+                      })),
+                    );
+                  }}
+                >
+                  {t("daycareUseDeposited")}
+                </button>
+              )}
+              <details>
+                <summary>{t("evidence")}</summary>
+                <pre>{JSON.stringify(current, null, 2)}</pre>
+              </details>
+            </>
+          ) : (
+            <p>{t("daycareSavedUnknown")}</p>
+          )}
+        </section>
+      )}
       <div className="breeding-parents">
         {parents.map((p, i) => (
           <fieldset key={i}>
@@ -173,6 +277,10 @@ export function BreedingPanel({
               onChange={(source) => update(i, { source })}
               options={[
                 { value: "simulated", label: t("breedSimulated") },
+                ...deposited.map((p) => ({
+                  value: `deposited:${p.slot}`,
+                  label: `${t("daycareDeposited")} ${p.slot + 1} · ${speciesName(p.pokemon!.species)}`,
+                })),
                 ...stored.map((m) => ({
                   value: locationKey(m.location),
                   label: `${m.location.kind === "party" ? t("party") : `${t("box")} ${m.location.box_index + 1}`} · ${m.location.slot + 1} · ${m.pokemon.nickname || speciesName(m.pokemon.species)}`,

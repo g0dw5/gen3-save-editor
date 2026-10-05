@@ -297,6 +297,12 @@ See [scope and reproduction](verification/wild-held-20261006.md).
 
 ## Native daycare increment / 原生寄养增量
 
+The [saved ordinary daycare increment](verification/daycare-state-20261006.md)
+adds native saved presence, availability, service status and next ordinary check
+phase across five fingerprints, with deposited-parent scenario selection.
+It does not resolve custom service access, live RNG or complete inheritance and
+hatching. Overall breeding coverage remains **P**.
+
 All breeding/acquisition rows remain **P**. Five fingerprints have 210 ordinary
 compatibility/receipt scenarios (171 generated records) matching mGBA and 120 GBA
 halfword microcases. Stored/simulated parents, child/move links and located

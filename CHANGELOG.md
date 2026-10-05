@@ -10,6 +10,17 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Read ordinary daycare snapshots from SAV using each current ROM's native
+  getters: deposited individuals, saved egg availability and the next ordinary
+  production-check phase. Use exact deposited records in read-only scenarios.
+  Verify 576 saved states and 40 sequential phases across five fingerprints;
+  Mercury availability follows its patched flag rather than the legacy field.
+  Keep custom services, live RNG and complete inheritance/hatching unresolved.
+- 普通寄养支持只读存档快照：按当前 ROM 原生读取亲本、待领蛋状态及下一次普通
+  产蛋检查的步数，可用实际寄养记录进行情景预览。五份指纹验证 576 个保存状态和
+  40 个连续步数情景；水银按补丁标记判断待领蛋。自定义服务、实时随机状态及完整
+  遗传／孵化仍有缺口，不生成蛋或修改寄养数据。
+
 - Expand collection suggestions with bounded, directed permanent-evolution
   preparation chains, actual non-egg ancestor counts, referenced ancestor
   maps/entrances and item/move links, shared with standalone HTML. Correct missing

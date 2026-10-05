@@ -27,6 +27,7 @@ pub struct BreedingRules {
     pub receive_special: u16,
     pub receive_code: usize,
     pub production: Option<crate::breeding_production::Rules>,
+    pub saved: Option<crate::daycare_state::Rules>,
 }
 pub const EMERALD: BreedingRules = BreedingRules {
     compatibility: 0x08070d4c,
@@ -43,6 +44,7 @@ pub const EMERALD: BreedingRules = BreedingRules {
     receive_special: 0xbb,
     receive_code: 0x70aa8,
     production: Some(crate::breeding_production::EMERALD),
+    saved: Some(crate::daycare_state::EMERALD),
 };
 pub const ROCKET: BreedingRules = BreedingRules {
     compatibility: 0x0809ed3c,
@@ -59,6 +61,7 @@ pub const ROCKET: BreedingRules = BreedingRules {
     receive_special: 0xbb,
     receive_code: 0x9ea90,
     production: Some(crate::breeding_production::ROCKET),
+    saved: Some(crate::daycare_state::ROCKET),
 };
 pub const MERCURY: BreedingRules = BreedingRules {
     compatibility: 0x0804654c,
@@ -75,6 +78,7 @@ pub const MERCURY: BreedingRules = BreedingRules {
     receive_special: 0xb8,
     receive_code: 0x462ac,
     production: Some(crate::breeding_production::MERCURY),
+    saved: Some(crate::daycare_state::MERCURY),
 };
 pub const ULTIMATE: BreedingRules = BreedingRules {
     production: Some(crate::breeding_production::ULTIMATE),
@@ -89,6 +93,9 @@ pub struct DaycareSource {
 #[derive(Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Parent {
+    Deposited {
+        slot: usize,
+    },
     Stored {
         location: Location,
     },
@@ -150,6 +157,11 @@ pub struct Preview {
 
 fn parent_raw(rom: &Rom, save: Option<&Save>, parent: &Parent) -> Result<Vec<u8>> {
     let raw = match parent {
+        Parent::Deposited { slot } => crate::daycare_state::parent_raw(
+            rom,
+            save.ok_or_else(|| err("save_required", "deposited parent"))?,
+            *slot,
+        )?,
         Parent::Stored { location } => save
             .ok_or_else(|| err("save_required", "breeding parent"))?
             .raw(*location)?,
@@ -213,6 +225,14 @@ pub fn preview(rom: &Rom, save: Option<&Save>, request: &Request) -> Result<Prev
     if let [Parent::Stored { location: a }, Parent::Stored { location: b }] = &request.parents {
         if a == b {
             return Err(err("breeding_parent", "select two distinct individuals"));
+        }
+    }
+    if let [Parent::Deposited { slot: a }, Parent::Deposited { slot: b }] = &request.parents {
+        if a == b {
+            return Err(err(
+                "breeding_parent",
+                "select two distinct deposited individuals",
+            ));
         }
     }
     let raws = [

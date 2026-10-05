@@ -219,6 +219,16 @@ impl App {
                     &serde_json::from_value(p)?,
                 )?)?)
             }
+            "daycare_state" => {
+                let session = self.session()?;
+                let state = session
+                    .save
+                    .as_ref()
+                    .map(|s| crate::daycare_state::snapshot(&session.rom, s))
+                    .transpose()?
+                    .flatten();
+                Ok(serde_json::to_value(state)?)
+            }
             "trainer_native_preview" => Ok(serde_json::to_value(crate::native_trainer::preview(
                 &self.session()?.rom,
                 &serde_json::from_value(p)?,

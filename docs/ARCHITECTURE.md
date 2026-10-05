@@ -95,6 +95,15 @@ share `WildHeldDetails.tsx`; queries never modify a ROM or SAV.
 
 ## Native daycare scenarios
 
+`daycare_state.rs` copies logical SAV blocks into disposable RAM and executes the
+current ROM's configured presence, availability and service-status getters. It
+checks that copied blocks remain unchanged. Structurally invalid parents remain
+unknown and never enter native compatibility/receipt routines. Deposited-parent
+scenarios use the original 80-byte records; they are not save-edit locations.
+The snapshot is separate from simulated production, acquisition caches and live
+emulator RNG. Mercury's native flag hook is executed without inferring availability
+from its legacy pending field. Custom additional service records remain unknown.
+
 `breeding.rs` shares the bounded read-only `Sandbox` and codec readers. Adapter
 configuration holds entry points/RAM layouts/dispatch identities; current ROM
 code supplies compatibility, offspring selection and individual construction.
