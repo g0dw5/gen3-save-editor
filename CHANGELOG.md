@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Execute Mercury 1.2 ordinary trainer construction in read-only isolated RAM,
+  with explicit scenario seeds and independently verified generated values.
+  Preserve unknown FireRed hidden-item quantity/receipt packing; improve alternate
+  reward selection and collection goals for forms with parsed permanent sources.
+- 水银 1.2 新增隔离内存中的原生普通配队预览，明确情景种子并逐项独立验证。
+  火红系隐藏道具数量及领取打包方式保留未知；改善奖励分支选择及存在已解析
+  永久来源的形态收集目标。完整入战设置和特殊设施仍待验证。
+
 - Audit actual capabilities across all five exact fingerprints. Add runtime
   acquisition queries, static map entrances/connections and target-tile navigation,
   reference back navigation, SAV receipt overlays with verified rules, and regional

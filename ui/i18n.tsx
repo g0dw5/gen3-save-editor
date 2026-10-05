@@ -493,6 +493,13 @@ export const en = {
   trainerResults: "results",
   contextUnresolved: "Location unresolved",
   trainerSearchHint: "Name, tag, map, Pokémon…",
+  nativeTrainerScenarioValue: "Value in this scenario",
+  nativeTrainerTitle: "Native ordinary-party scenario",
+  nativeTrainerScope:
+    "Runs this ROM's party constructor in isolated RAM. Shows generated nature, ability, IVs, EVs, moves and items with zeroed story/context state. Script replacements, special facilities and real battle-entry settings are not included; this is not a guarantee of the team in your current save.",
+  nativeTrainerSeed: "Scenario random seed",
+  nativeTrainerSeedHelp:
+    "An explicit simulation seed, not your live game's RNG. Changing it explores one scenario; it does not prove all possible random outcomes.",
   trainerGenerationHelp:
     "Generated team values from this ROM. Later script overrides and temporary battle effects are not included.",
   dynamicLevel: "Dynamic level",
@@ -1277,6 +1284,13 @@ export const zh: Record<Key, string> = {
   trainerResults: "个结果",
   contextUnresolved: "地点待解析",
   trainerSearchHint: "姓名、标签、地图、宝可梦…",
+  nativeTrainerScenarioValue: "当前情景生成值",
+  nativeTrainerTitle: "原生普通配队情景",
+  nativeTrainerScope:
+    "在隔离内存中执行当前 ROM 的配队构造器，展示生成后的性格、特性、IV、EV、招式及道具。剧情与情景状态清零；不含脚本换队、特殊设施及实际入战设置，不保证等于当前存档下一场战斗的队伍。",
+  nativeTrainerSeed: "情景随机种子",
+  nativeTrainerSeedHelp:
+    "这是明确设定的模拟种子，并非游戏当前的随机状态。切换种子仅查看另一种情景，不能据此断言已覆盖全部随机结果。",
   trainerGenerationHelp:
     "以下为该 ROM 的队伍生成值，不含后续脚本改写和战斗中的临时变化。",
   dynamicLevel: "动态等级",

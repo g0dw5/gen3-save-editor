@@ -1789,6 +1789,17 @@ fn item_event_layers_keep_coordinates_and_hidden_flags() {
         (hidden.kind, hidden.x, hidden.y, hidden.flag),
         ("hidden", 5, 9, Some(0x1fe))
     );
+    // A FireRed adapter must not apply Emerald's collection index protocol.
+    r.profile.formats.scripts = crate::adapter::ScriptFormat::FireRed;
+    let fire_red = r.map_events(&map).unwrap();
+    let hidden = fire_red
+        .markers
+        .iter()
+        .find(|m| m.kind == "hidden")
+        .unwrap();
+    assert_eq!(hidden.flag, None);
+    assert_eq!(hidden.rewards[0].quantity, None);
+    assert!(hidden.stopped_at.contains(&bg));
     // Bad pointers must fail safely, never reinterpret an item's ID as a script.
     let b = std::sync::Arc::make_mut(&mut r.data);
     put32(b, ev + 16, 0xfffffff0);

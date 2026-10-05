@@ -9,6 +9,7 @@ import type {
   Snapshot,
   TrainerDifficulty,
   TrainerBattlePreview,
+  NativeTrainerPreview,
   TrainerEvPreview,
 } from "./types";
 
@@ -58,6 +59,36 @@ export function TrainerParty({
   onAbility: (id: number) => void;
 }) {
   const { t } = useI18n();
+  const [nativeSeed, setNativeSeed] = useState(0);
+  const [nativePreview, setNativePreview] =
+    useState<NativeTrainerPreview | null>(null);
+  const [nativeError, setNativeError] = useState("");
+  const hasNativeConstructor = !!catalog.profile.native_trainers;
+  useEffect(() => {
+    setNativePreview(null);
+    setNativeError("");
+    if (!hasNativeConstructor) return;
+    let alive = true;
+    const timer = window.setTimeout(() => {
+      api<NativeTrainerPreview>("trainer_native_preview", {
+        trainer_id: trainer.id,
+        seed: nativeSeed,
+      })
+        .then((result) => {
+          if (alive) setNativePreview(result);
+        })
+        .catch((error) => {
+          if (alive)
+            setNativeError(
+              `${error?.code ?? "error"}: ${error?.detail ?? error}`,
+            );
+        });
+    }, 120);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, [hasNativeConstructor, catalog.profile.md5, trainer.id, nativeSeed]);
   const party = save?.pokemon.filter((p) => p.location.kind === "party") ?? [];
   const [manual, setManual] = useState<ManualMon[]>([newManualMon()]);
   const [source, setSource] = useState<"save" | "manual">("save");
@@ -424,10 +455,56 @@ export function TrainerParty({
           )}
         </div>
       )}
+      {hasNativeConstructor && (
+        <div className="trainer-mode-note">
+          <strong>{t("nativeTrainerTitle")}</strong>
+          <p className="small">{t("nativeTrainerScope")}</p>
+          <label>
+            {t("nativeTrainerSeed")}{" "}
+            <input
+              type="number"
+              min="0"
+              max="4294967295"
+              value={nativeSeed}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (
+                  Number.isInteger(value) &&
+                  value >= 0 &&
+                  value <= 4294967295
+                )
+                  setNativeSeed(value);
+              }}
+            />
+          </label>
+          <p className="small muted">{t("nativeTrainerSeedHelp")}</p>
+          {nativeError && <p role="alert">{nativeError}</p>}
+          {!nativePreview && !nativeError && <p>{t("trainerEvCalculating")}</p>}
+        </div>
+      )}
       <p className="small muted">{t("trainerGenerationHelp")}</p>
       {trainer.party.map((p, i) => {
-        const species = catalog.species.find((s) => s.id === p.species);
-        const g = p.generation;
+        const native =
+          nativePreview?.rom_md5 === catalog.profile.md5 &&
+          nativePreview.trainer_id === trainer.id &&
+          nativePreview.seed === nativeSeed
+            ? nativePreview.mons[i]
+            : null;
+        const renderedSpecies = native?.species ?? p.species;
+        const species = catalog.species.find((s) => s.id === renderedSpecies);
+        const g = native
+          ? {
+              context: "native_scenario",
+              gender: native.gender,
+              nature: native.effective_nature ?? native.nature,
+              ability_id: native.ability_id,
+              ability_options: [native.ability_id],
+              ivs: native.ivs,
+              evs: native.evs,
+              personality_parameter: 0,
+              ev_increment: null,
+            }
+          : p.generation;
         const template = g?.context === "ultimate_template";
         const simulated =
           template &&
@@ -442,12 +519,15 @@ export function TrainerParty({
         const hp = hiddenPower(hpRules, resolvedIvs);
         const hpAlternate = hiddenPower(hpRules, simulated?.alternate_ivs);
         const dynamic = p.level_rule === "party_max";
-        const level = battleMon
-          ? battleMon.level
-          : dynamic
-            ? highestLevel
-            : p.level;
-        const moveIds = battleMon?.moves ?? p.moves;
+        const level = native
+          ? native.level
+          : battleMon
+            ? battleMon.level
+            : dynamic
+              ? highestLevel
+              : p.level;
+        const moveIds = native?.moves ?? battleMon?.moves ?? p.moves;
+        const heldItem = native?.held_item ?? p.held_item;
         const gender = g?.gender;
         const abilities = [
           ...new Set(g?.ability_options ?? (g ? [g.ability_id] : [])),
@@ -458,14 +538,14 @@ export function TrainerParty({
               <p className="small muted">{t("ultimateTrainerTemplate")}</p>
             )}
             <div className="trainer-mon-heading">
-              <Sprite catalog={catalog} species={p.species} />
+              <Sprite catalog={catalog} species={renderedSpecies} />
               <div>
                 <div className="trainer-mon-title">
                   <button
                     className="link-button"
-                    onClick={() => onSpecies(p.species)}
+                    onClick={() => onSpecies(renderedSpecies)}
                   >
-                    {species?.name ?? `#${p.species}`}
+                    {species?.name ?? `#${renderedSpecies}`}
                   </button>
                   <span className={`gender-badge ${gender ?? ""}`}>
                     {t("gender")} · {gender ? t(gender) : t("unresolved")}
@@ -542,7 +622,11 @@ export function TrainerParty({
                   {g && (
                     <span className="small muted">
                       {t(
-                        abilities.length > 1 ? "abilityChoice" : "abilityFixed",
+                        native
+                          ? "nativeTrainerScenarioValue"
+                          : abilities.length > 1
+                            ? "abilityChoice"
+                            : "abilityFixed",
                       )}
                     </span>
                   )}
@@ -555,8 +639,8 @@ export function TrainerParty({
               <div>
                 <dt>{t("held_item")}</dt>
                 <dd>
-                  {p.held_item
-                    ? (catalog.items[p.held_item]?.name ?? p.held_item)
+                  {heldItem
+                    ? (catalog.items[heldItem]?.name ?? heldItem)
                     : t("noHeldItem")}
                 </dd>
               </div>
@@ -567,7 +651,8 @@ export function TrainerParty({
                 {t(p.moves_explicit ? "explicitMoves" : "levelSource")}
               </span>
               <div>
-                {(dynamic || (battleMon && battleMon.moves === null)) &&
+                {((dynamic && !native) ||
+                  (battleMon && battleMon.moves === null)) &&
                 !p.moves_explicit
                   ? t("dynamicMoves")
                   : moveIds.filter(Boolean).map((id) => (

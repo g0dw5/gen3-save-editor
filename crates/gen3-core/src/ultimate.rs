@@ -58,6 +58,7 @@ pub const POCKETS: [Pocket; 6] = [
 ];
 
 pub const PROFILE: Profile = Profile {
+    native_trainers: None,
     clock: None,
     event_state: None,
     id: "ultimate-emerald-55",

@@ -178,3 +178,8 @@ and NPC layers, with tile coordinates, search, grid and zoom. See
 [map event evidence and limitations](docs/research/map-events.md).
 
 Release history: [Changelog](CHANGELOG.md), starting with the first public release 0.1.5. Route 119 fishing spots are calculated from the loaded save; use the map layer or the species reference shortcut.
+
+Mercury trainer references execute the loaded ROM's ordinary-party constructor
+in isolated RAM. These are explicitly seeded, zero-context scenarios; script
+replacements, special facilities and full live battle-entry state remain unknown.
+[Verification and current gaps](docs/verification/query-collection-20261005.md).

@@ -26,7 +26,8 @@ def verify_flags(rom):
     cpu.word(pointer, 0x02030000)
     count = 0
     for fill in [0, 0x55, 0xaa, 0xff]:
-        block = bytes([fill]) * 0x3000
+        # Address-sensitive bytes expose wrong offsets; uniform fills would not.
+        block = bytes(((i * 73 + (i >> 5) * 19) ^ fill) & 255 for i in range(0x3000))
         cpu.write(0x02030000, block)
         for flag in [1, 7, 8, 15, 16, 0x1f4, 0x3ff, 0x1000, 0x1800, 0x3fff]:
             expected = (block[0x1270 + (flag >> 3)] >> (flag & 7)) & 1

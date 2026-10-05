@@ -10,6 +10,7 @@ pub mod contest;
 pub mod fishing;
 pub mod graphics;
 pub mod map_events;
+pub mod native_trainer;
 pub mod navigation;
 pub mod pokemon;
 pub mod profile;

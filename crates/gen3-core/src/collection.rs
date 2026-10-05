@@ -112,8 +112,19 @@ impl AcquisitionIndex {
         }
         // Battle-only targets are not independent catching goals. Their source remains
         // visible in ROM form references; permanent forms remain separate species IDs.
-        let battle_targets: BTreeSet<_> =
-            rom.all_battle_forms()?.iter().map(|f| f.target).collect();
+        let permanent_references: BTreeSet<_> = self
+            .evolutions
+            .values()
+            .flatten()
+            .map(|e| e.target)
+            .chain(self.world.encounters.iter().map(|e| e.species))
+            .collect();
+        let battle_targets: BTreeSet<_> = rom
+            .all_battle_forms()?
+            .iter()
+            .map(|f| f.target)
+            .filter(|id| !permanent_references.contains(id))
+            .collect();
         let mut regions: BTreeMap<Option<u8>, Vec<CollectionTask>> = BTreeMap::new();
         let mut missing_count = 0;
         for family in families.values() {
@@ -204,7 +215,7 @@ impl AcquisitionIndex {
             .collect();
         for id in item_ids {
             let mut seen = BTreeSet::new();
-            for s in self
+            let mut sources = self
                 .query(
                     rom,
                     Some(save),
@@ -213,9 +224,21 @@ impl AcquisitionIndex {
                         id,
                     },
                 )?
-                .sources
-            {
-                if s.map_id.is_none()
+                .sources;
+            sources.sort_by_key(|s| match s.status {
+                "completed" => 0,
+                "available" => 1,
+                "unknown" => 2,
+                _ => 3,
+            });
+            let completed: BTreeSet<_> = sources
+                .iter()
+                .filter(|s| s.status == "completed")
+                .map(|s| (s.map_id.clone(), s.offset))
+                .collect();
+            for s in sources {
+                if completed.contains(&(s.map_id.clone(), s.offset))
+                    || s.map_id.is_none()
                     || s.kind == "shop"
                     || s.status == "completed"
                     || s.status == "unknown" && !request.include_unknown_rewards

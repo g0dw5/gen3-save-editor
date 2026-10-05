@@ -95,6 +95,7 @@ export interface Catalog {
       native_predicates: number[];
       forced_night_flag: number | null;
     } | null;
+    native_trainers?: { constructor: number } | null;
     fishing_rods?: number[];
     save?: { pockets: { id: string; category: number }[] };
     feebas?: { map_id: string } | null;
@@ -528,4 +529,13 @@ export interface CollectionPlan {
   regions: { region: number | null; tasks: CollectionTask[] }[];
   entrances: { map_id: string; chains: MapLink[][]; truncated: boolean }[];
   partial: boolean;
+}
+
+export interface NativeTrainerPreview {
+  rom_md5: string;
+  trainer_id: number;
+  seed: number;
+  scenario: string;
+  partial: boolean;
+  mons: Pokemon[];
 }

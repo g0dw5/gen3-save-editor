@@ -91,6 +91,14 @@ const MERCURY_SAVE: SaveLayout = SaveLayout {
 };
 
 pub const PROFILE: Profile = Profile {
+    native_trainers: Some(crate::native_trainer::NativeTrainerRules {
+        constructor: 0x09d0b150,
+        enemy_party: 0x0202402c,
+        battle_flags: 0x02022b4c,
+        save_pointers: [0x03005008, 0x0300500c],
+        rng: 0x03005000,
+        instruction_limit: 1_000_000,
+    }),
     clock: Some(crate::clock::ClockRules {
         starts: [4, 8, 17, 20],
         native_predicates: [0x1d20de0, 0x1d20df8, 0x1d20814],

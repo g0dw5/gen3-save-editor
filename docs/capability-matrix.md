@@ -1,11 +1,11 @@
 # Capability audit / 实际能力审计
 
-Audit baseline: 2026-10-05, `f6f347a`. This matrix describes tested scope, not
+Audit baseline: 2026-10-05, `f6f347a`. The table includes the increments recorded below and describes tested scope, not
 promises implied by an API, readable table or working screen. Local binaries,
 saves and extracted artwork are excluded from Git and releases.
 
 审计基线：2026-10-05，`f6f347a`。接口存在、能读取表、页面能打开不代表完整支持。
-ROM 和 SAV 仅用于本地验证。新增实现的证据在本文后续记录中追加。
+ROM 和 SAV 仅用于本地验证。矩阵已包含下文增量，证据在本文后续记录中追加。
 
 ## Exact supported inputs / 精确支持范围
 
@@ -31,19 +31,19 @@ from missing code. A P row can contain individually verified subfeatures.
 | Requested workflow / 功能 | BW | DP | Rocket | Ultimate | Mercury 1.2 | Evidence and limit / 证据与边界 |
 |---|---|---|---|---|---|---|
 | Map layouts, NPC art / 地图与 NPC | P | P | P | P | P | `graphics.rs`, `map_events.rs`, [map palettes](research/map-palettes.md), [Rocket maps](research/rocket-map-and-trainer-display.md), [Mercury](research/mercury-fc-11.md). Static initial layouts; no live movement/layout replacement simulation. |
-| Entrances, connections, current reachability / 入口与可达性 | U | U | U | U | U | Baseline `Map` omits warps/connections; a map reference is not proof of current access. |
+| Entrances, connections, current reachability / 入口与可达性 | P | P | P | P | P | `navigation.rs`, shared map UI and five exact-ROM tests. Static entrance alternatives, focus and return work; current access and dynamic destinations remain unresolved. |
 | Pickup, hidden items, dialogue rewards / 拾取与奖励 | P | P | P | P | P | [map events](research/map-events.md): BW/DP 707 maps, 122 balls, 112 hidden items. Bounded scripts report stop offsets; FireRed command semantics and reward guards need further validation. |
 | Random encounters, probability, time tables / 随机相遇 | P | P | P | P | P | `world.rs`; [time selection](research/encounter-time-selection.md), Mercury native selector. Slot weights are separate from encounter frequency; no full weekday/clock-state validation. |
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Bounded `script_report`; [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers and custom exchanges are not comprehensively indexed. |
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
-| Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | Held-item fields and learnsets read from ROM; shop/receipt/location closure missing. No verified probability under all ability modifiers. |
-| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | U | U | U | U | U | Marker visibility is not a universal reward receipt; bag absence is not evidence of non-receipt. No general SAV condition overlay at baseline. |
+| Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. No verified probability under all ability modifiers. |
+| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | U | U | U | Native BW/DP SB1 addressing and direct pickup/hidden receipt protocols; unknown guards remain tri-state. Other layouts and complete story dependencies await proof. NPC visibility and bag absence are not receipt evidence. |
 | Effective game clock, weekday, next event / 有效时钟与刷新 | U | U | U | U | P | Mercury has verified four encounter periods, but virtual-clock/jump-time save state still needs native proof. No device-time assumption. |
-| Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | U | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury raw records are not final generated values. |
+| Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | P | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury executes its native constructor for explicit zero-context scenarios; independent CPU comparisons are recorded below, while full setup remains unknown. |
 | Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution with party/scenario. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
 | Edit, drag/swap, batch, undo/export safety / 编辑事务 | V | V | V | V | V | `session.rs`, [save integrity](research/save-integrity.md). Checksums, record preservation, rollback, backup and source conflict checks; linked mail changes blocked. Scope is represented fields, not all in-game legitimacy rules. |
 | Edited SAV in-game save and re-read / 模拟器再次保存 | P | P | P | P | V | Mercury 1.2 mGBA load, game save and re-read of disposable edited party/box/items verified. Other individual emulator experiments do not certify every edit or format. |
-| Missing collection, regional planning, HTML / 缺失与路线规划 | U | U | U | U | U | Earlier private reports are manual research outputs, not a reusable released planner. Mercury expanded Pokédex remains unavailable; existing individuals can be inspected. |
+| Missing collection, regional planning, HTML / 缺失与路线规划 | P | P | P | P | P | `collection.rs` and shared Collection planning UI: read-only SAV missing goals, regions, static entrances and standalone HTML. Full task DAG/access/time remain partial. Mercury uses existing individuals; expanded Dex flags stay disabled. |
 
 ## Reproducible baseline / 可重复基线
 
@@ -72,7 +72,7 @@ private file paths are not release inputs. Missing evidence is retained as a gap
 
 Shared modules `navigation.rs`, `acquisition.rs`, `collection.rs`, `clock.rs`
 add usable query → tile → entrance → return and SAV → regional suggestion → HTML
-flows. This advances the baseline U entrance/planning rows to **P for all five**;
+flows. Entrance/planning rows, originally U at the audit baseline, are now **P for all five**;
 it does not certify current accessibility, complete tasks or all source types.
 BW/DP receipt overlays are **P**: direct item-ball/hidden protocols and native
 flag/variable addresses are verified, while generic NPC receipt inference is not.
@@ -112,3 +112,20 @@ refresh remain unresolved. The UI never substitutes the device's clock.
 共同编号只能证明该物种曾获得，不证明每种独立形态都持有；按现有个体可区分
 存档里的种类。已有家族成员不等于所有分支已完成。隐藏条件、交换、游走、原生
 奖励、剧情依赖、跨地区解锁和设施仍有缺口；生成的 HTML 明示这些边界。
+
+## Native trainer increment / 原生训练家增量
+
+Mercury ordinary trainer construction advances U → **P**. The shared trainer
+page executes its exact ROM constructor in bounded, isolated RAM; 742 trainers,
+two seeds, 1,484 scenarios and 3,784 individuals match an independent Unicorn
+execution, including 71,896 getter comparisons. This is a zero-context ordinary
+scenario, not the entire battle setup, script replacements or facilities.
+FireRed/custom hidden-item quantity and receipt indexes are now deliberately
+unknown rather than silently decoded with Emerald's packing.
+
+The matrix above includes the current increments. Entrance, acquisition,
+planning and Mercury trainer increments remain partial; no cell is promoted to full
+coverage merely by an interface. See [the current verification and gaps](verification/query-collection-20261005.md).
+
+水银普通配队由待验证提升为部分验证，展示原生构造器的情景结果。领取标记、
+虚拟时钟、完整剧情依赖、特殊设施等缺口仍未关闭，详见增量验证记录。

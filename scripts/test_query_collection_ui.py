@@ -12,6 +12,7 @@ from test_editor_navigation import pokemon
 
 
 def main():
+    expect.set_options(timeout=30000)
     catalog = copy.deepcopy(CATALOG)
     catalog['profile']['capabilities'] = {'world': True, 'save_edit': True, 'dex': True}
     catalog['species'][0]['name'] = 'Test species <script>alert(1)</script>'

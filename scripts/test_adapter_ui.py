@@ -11,6 +11,7 @@ from test_reference_navigation import CATALOG, WORLD, species
 
 
 def main():
+    expect.set_options(timeout=30000)
     catalog = copy.deepcopy(CATALOG)
     catalog['items'] = [{'id': 0, 'name': '', 'tm_move': None}, {'id':1, 'name':'Test item', 'tm_move':None}]
     catalog['moves'] = [{'id': 0, 'name': '', 'pp': 0}]

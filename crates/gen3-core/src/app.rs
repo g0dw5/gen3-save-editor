@@ -203,6 +203,10 @@ impl App {
                     )?)?)
                 }
             }
+            "trainer_native_preview" => Ok(serde_json::to_value(crate::native_trainer::preview(
+                &self.session()?.rom,
+                &serde_json::from_value(p)?,
+            )?)?),
             "trainer_ev_preview" => {
                 let request: crate::ultimate_ev::TrainerEvRequest = serde_json::from_value(p)?;
                 Ok(serde_json::to_value(crate::ultimate_ev::preview(

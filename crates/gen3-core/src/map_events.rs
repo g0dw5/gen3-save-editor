@@ -474,13 +474,26 @@ impl Rom {
                     } else if b[o + 5] == 7 {
                         marker.kind = "hidden";
                         let item = u16(b, o + 8)?;
-                        let index = u16(b, o + 10)?;
-                        // Emerald stores a hidden-item index, not an absolute flag ID.
-                        marker.flag = index.checked_add(0x1f4);
+                        // The Emerald index protocol is verified for these adapters.
+                        // FireRed/custom quantity/index packing needs native proof;
+                        // never reinterpret its packed bytes as an Emerald receipt flag.
+                        let emerald = matches!(
+                            self.profile.formats.scripts,
+                            crate::adapter::ScriptFormat::DarkPhantom
+                                | crate::adapter::ScriptFormat::EmeraldExpanded
+                        );
+                        marker.flag = if emerald {
+                            u16(b, o + 10)?.checked_add(0x1f4)
+                        } else {
+                            None
+                        };
+                        if !emerald {
+                            marker.stopped_at.push(o);
+                        }
                         if item > 0 && self.item(item).is_ok() {
                             marker.rewards.push(ItemReward {
                                 item,
-                                quantity: Some(1),
+                                quantity: emerald.then_some(1),
                                 offset: o,
                                 via: "hidden",
                                 conditions: Vec::new(),

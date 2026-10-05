@@ -39,6 +39,7 @@ pub struct EventStateLayout {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct Profile {
+    pub native_trainers: Option<crate::native_trainer::NativeTrainerRules>,
     pub clock: Option<crate::clock::ClockRules>,
     /// Native-verified SB1 flag/variable addressing; never inferred from item ownership.
     pub event_state: Option<EventStateLayout>,
@@ -261,6 +262,7 @@ pub const EMERALD: SaveLayout = SaveLayout {
     skip_unoccupied_box_records: false,
 };
 pub const BW: Profile = Profile {
+    native_trainers: None,
     clock: None,
     event_state: Some(EventStateLayout {
         flags: 0x1270,
@@ -472,6 +474,7 @@ pub const DP: Profile = Profile {
     ..BW
 };
 pub const ROCKET: Profile = Profile {
+    native_trainers: None,
     clock: None,
     event_state: None,
     nature_names: 0xd052ec,
