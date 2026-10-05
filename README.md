@@ -44,6 +44,10 @@ coverage remain partial. See [event verification](docs/verification/event-state-
 and [ordinary pickup verification](docs/verification/pickup-receipts-20261005.md),
 plus [bounded NPC receipt verification](docs/verification/npc-receipts-20261006.md).
 
+Parsed scripted Pokémon gifts, eggs and fixed encounters also link to NPC tiles,
+species references and collection HTML. Unplaced records remain separate;
+delivery and current access remain undetermined. See [scope and verification](docs/verification/script-pokemon-20261006.md).
+
 ## Cheat codes
 
 Open an exact-match ROM first, then use **Cheats** in the toolbar; no save is

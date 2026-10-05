@@ -92,6 +92,9 @@ export const en = {
     "The receipt protocol is not verified for this event. A visibility flag does not prove that you collected its reward.",
   acqGiftReceiptHelp:
     "Receipt follows a successful award in this script, independent of bag contents. Resets by other scripts remain unverified.",
+  acqScriptSourceHelp:
+    "Map-script source and parsed command inputs. Delivery outcome, complete generation rules and current access remain unverified.",
+  mapUnplacedPokemon: "Pokémon events without a verified tile",
   acqReceiptEvidence: "Verified receipt flag",
   acqConditions: "Prerequisite checks",
   acqConditionsMet: "known conditions met",
@@ -934,6 +937,9 @@ export const zh: Record<Key, string> = {
     "尚未确认此事件的领取规则，不能仅凭对象的消失标记判断已经领奖。",
   acqGiftReceiptHelp:
     "按成功领奖后写入的存档标记判断，不根据背包是否持有；其他脚本的重置规则仍待验证。",
+  acqScriptSourceHelp:
+    "地图脚本来源及已解析的指令输入；发放结果、完整生成规则和当前可达性仍待核实。",
+  mapUnplacedPokemon: "格位待确定的宝可梦事件",
   acqReceiptEvidence: "已验证的领取标记",
   acqConditions: "前置条件检查",
   acqConditionsMet: "项已知条件满足",

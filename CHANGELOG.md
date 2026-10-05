@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Connect parsed scripted Pokémon gifts, gift eggs and fixed encounters to NPC
+  tiles, acquisition queries, map-to-species navigation and collection HTML.
+  Keep unplaced sources separate and delivery/access conditions undetermined.
+  Decode Rocket's extended wild operands and Mercury's single/double wild
+  operands per adapter; read gift-egg levels from the current native constructor.
+- 已解析的宝可梦赠送、赠蛋及定点相遇接入 NPC 格位、获取途径、地图宝可梦跳转
+  与收集 HTML；无可靠格位的来源单列，发放结果与当前可达性保持未知。分别解析
+  西班牙火箭队扩展遇怪参数、水银单只／双只参数，赠蛋等级实时读取原生构造例程。
+
 - Trace bounded NPC gift receipt protocols at runtime, with per-reward guards,
   native boolean award outcomes and success-only flag writes. Verify 80 reward
   rows / 320 native cases across all five exact ROMs. Connect receipt evidence to

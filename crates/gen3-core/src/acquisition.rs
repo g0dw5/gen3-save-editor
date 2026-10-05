@@ -53,6 +53,7 @@ pub struct AcquisitionSource {
     pub status: &'static str,
     pub receipt_flag: Option<u16>,
     pub receipt: Option<crate::map_events::ReceiptEvidence>,
+    pub script_source: Option<crate::script_pokemon::PokemonSource>,
     pub repeatable: Option<bool>,
     pub offset: usize,
     pub partial: bool,
@@ -92,6 +93,7 @@ fn source(kind: &str, offset: usize) -> AcquisitionSource {
         status: "unknown",
         receipt_flag: None,
         receipt: None,
+        script_source: None,
         repeatable: None,
         offset,
         partial: true,
@@ -274,12 +276,13 @@ impl AcquisitionIndex {
                 }
             }
             TargetKind::Species => {
-                for e in self
-                    .world
-                    .encounters
-                    .iter()
-                    .filter(|e| e.species == target.id)
-                {
+                for e in self.world.encounters.iter().filter(|e| {
+                    e.species == target.id
+                        && !matches!(
+                            e.method.as_str(),
+                            "static" | "gift" | "egg" | "special_battle"
+                        )
+                }) {
                     let mut s = source(&e.method, e.offset);
                     s.map_id = Some(e.map_id.clone());
                     s.region = Some(e.region);
@@ -313,6 +316,39 @@ impl AcquisitionIndex {
                         s.status = "blocked";
                     }
                     sources.push(s);
+                }
+                for report in &self.world.map_events {
+                    let map = self
+                        .world
+                        .maps
+                        .iter()
+                        .find(|m| m.id == report.map_id)
+                        .ok_or_else(|| err("map_id", &report.map_id))?;
+                    for (marker, mon) in report
+                        .markers
+                        .iter()
+                        .flat_map(|m| m.pokemon.iter().map(move |p| (Some(m), p)))
+                        .chain(report.unplaced_pokemon.iter().map(|p| (None, p)))
+                        .filter(|(_, p)| p.species == target.id)
+                    {
+                        let mut s = source(mon.method, mon.offset);
+                        s.map_id = Some(map.id.clone());
+                        s.region = Some(map.region);
+                        s.x = marker.map(|m| m.x);
+                        s.y = marker.map(|m| m.y);
+                        s.min_level = mon.level;
+                        s.max_level = mon.level;
+                        s.conditions = mon
+                            .conditions
+                            .iter()
+                            .map(|c| check(state.as_ref(), c))
+                            .collect();
+                        s.script_source = Some(mon.clone());
+                        // These are native command inputs, not a receipt, current access,
+                        // or a complete generated individual. Visibility never proves receipt.
+                        s.partial = true;
+                        sources.push(s);
+                    }
                 }
                 for (parent, evos) in &self.evolutions {
                     for evo in evos.iter().filter(|e| e.target == target.id) {

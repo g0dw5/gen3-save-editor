@@ -189,6 +189,9 @@ export function AcquisitionPanel({
                   </small>
                 )}
               </div>
+              {s.script_source && (
+                <p className="small muted">{t("acqScriptSourceHelp")}</p>
+              )}
               {s.receipt && (
                 <p className="small muted">{t("acqGiftReceiptHelp")}</p>
               )}

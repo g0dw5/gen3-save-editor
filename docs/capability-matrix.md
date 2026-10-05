@@ -213,3 +213,16 @@ See [method, reproducible checks and limits](verification/npc-receipts-20261006.
 分支对照，不是 80 个独立 NPC，也不代表所有赠送。按奖励单独保存证据，共用查询、
 地图、返回、规划及中英文 HTML；未资格化奖励保持未知。水银的大量自定义指令、
 原生奖励调用、完整重置／剧情依赖和当前可达性尚未补齐。
+
+## Script Pokémon source increment / 脚本宝可梦来源增量
+
+Script gifts, eggs and fixed encounters remain **P** across all five fingerprints.
+Shared command decoding now distinguishes literal/variable operands and extended
+single/double battle layouts. Parsed sources link to NPC/coordinate tiles or an
+explicit unplaced list, acquisition and collection HTML. Runtime egg levels are
+checked against native constructors; delivery, exchanges, custom native sources,
+receipt state and full access prerequisites remain unresolved. See
+[evidence and boundaries](verification/script-pokemon-20261006.md).
+
+五份指纹的脚本宝可梦获取仍为部分解析；来源和格位关联不代表当前可领取。
+交换、自定义原生来源、完整生成／发放结果、领取状态和剧情可达性仍有缺口。

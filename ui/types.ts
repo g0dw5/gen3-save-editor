@@ -292,6 +292,15 @@ export interface ItemReward {
     taken: boolean;
   }[];
 }
+export interface PokemonSource {
+  species: number;
+  level: number | null;
+  held_item: number | null;
+  method: string;
+  offset: number;
+  member: number;
+  conditions: ItemReward["conditions"];
+}
 export interface MapMarker {
   id: string;
   kind: "pickup" | "hidden" | "gift" | "npc" | "event";
@@ -307,12 +316,14 @@ export interface MapMarker {
   offset: number;
   script: number | null;
   rewards: ItemReward[];
+  pokemon: PokemonSource[];
   stopped_at: number[];
 }
 export interface MapEventReport {
   map_id: string;
   markers: MapMarker[];
   unplaced_rewards: ItemReward[];
+  unplaced_pokemon: PokemonSource[];
   stopped_at: number[];
 }
 export interface GameMap {
@@ -504,6 +515,7 @@ export interface AcquisitionSource {
   status: "completed" | "available" | "blocked" | "unknown";
   receipt_flag: number | null;
   receipt: ReceiptEvidence | null;
+  script_source: PokemonSource | null;
   repeatable: boolean | null;
   offset: number;
   partial: boolean;

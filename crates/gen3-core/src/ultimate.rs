@@ -58,6 +58,11 @@ pub const POCKETS: [Pocket; 6] = [
 ];
 
 pub const PROFILE: Profile = Profile {
+    script_pokemon: crate::script_pokemon::PokemonScriptRules {
+        wild: crate::script_pokemon::WildCommand::Literal,
+        egg_level_instruction: 0x70978,
+        native_battle: None,
+    },
     native_trainers: None,
     clock: None,
     hidden_items: Some(crate::profile::HiddenItemRules {

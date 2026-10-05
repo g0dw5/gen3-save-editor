@@ -48,6 +48,7 @@ pub struct MapMarker {
     pub offset: usize,
     pub script: Option<usize>,
     pub rewards: Vec<ItemReward>,
+    pub pokemon: Vec<crate::script_pokemon::PokemonSource>,
     pub stopped_at: Vec<usize>,
 }
 #[derive(Serialize)]
@@ -56,6 +57,7 @@ pub struct MapEventReport {
     pub markers: Vec<MapMarker>,
     /// Map-level scripts have no reliable tile position.
     pub unplaced_rewards: Vec<ItemReward>,
+    pub unplaced_pokemon: Vec<crate::script_pokemon::PokemonSource>,
     pub stopped_at: Vec<usize>,
 }
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -83,6 +85,7 @@ struct AwardTrace {
 }
 struct Walk {
     rewards: Vec<ItemReward>,
+    pokemon: Vec<crate::script_pokemon::PokemonSource>,
     stopped: Vec<usize>,
     terminals: Vec<State>,
     complete: bool,
@@ -218,7 +221,12 @@ impl Rom {
             && code[10..13] == [0x09, 0x01, 0x02]
     }
 
+    #[cfg(test)]
     pub(crate) fn item_script(&self, root: usize) -> Result<(Vec<ItemReward>, Vec<usize>)> {
+        let walk = self.event_script(root)?;
+        Ok((walk.rewards, walk.stopped))
+    }
+    fn event_script(&self, root: usize) -> Result<Walk> {
         let mut walk = self.walk_item_script(root, false)?;
         // A second, bounded pass follows native boolean award outcomes. Keep the
         // broad catalog traversal independent of proof limits and branch expansion.
@@ -236,7 +244,7 @@ impl Rom {
                 reward.receipt = proof.get(&reward.key()).cloned();
             }
         }
-        Ok((walk.rewards, walk.stopped))
+        Ok(walk)
     }
 
     fn walk_item_script(&self, root: usize, prove: bool) -> Result<Walk> {
@@ -247,6 +255,7 @@ impl Rom {
         }]);
         let mut visited = BTreeSet::new();
         let mut rewards = BTreeSet::new();
+        let mut pokemon = BTreeSet::new();
         let mut stopped = BTreeSet::new();
         let mut steps = 0;
         let mut complete = true;
@@ -268,7 +277,9 @@ impl Rom {
                     stopped.insert(pc);
                     break;
                 };
-                let len = if op == 0x5c {
+                let len = if op == 0xb6 {
+                    self.wild_command_length(pc).unwrap_or(0)
+                } else if op == 0x5c {
                     match b.get(pc + 1) {
                         Some(0 | 5 | 9..=12) => 14,
                         Some(1 | 2 | 4 | 7) => 18,
@@ -289,6 +300,19 @@ impl Rom {
                 if len == 0 || bytes(b, pc, len).is_err() {
                     stopped.insert(pc);
                     break;
+                }
+                if !prove {
+                    match self.script_pokemon_instruction(pc, |v| resolve(&s, v)) {
+                        Ok(sources) => {
+                            for mut source in sources {
+                                source.conditions = s.conditions.clone();
+                                pokemon.insert(source);
+                            }
+                        }
+                        Err(_) => {
+                            stopped.insert(pc);
+                        }
+                    }
                 }
                 s.pc += len;
                 let mut reward = None;
@@ -480,7 +504,7 @@ impl Rom {
                         s.comparison = None;
                         s.known_comparison = None;
                     }
-                    0x23 | 0x25 | 0x26 => {
+                    0x23 | 0x25 | 0x26 | 0xb6 => {
                         s.vars.clear();
                         s.flags.clear();
                         s.comparison = None;
@@ -625,6 +649,7 @@ impl Rom {
         }
         Ok(Walk {
             rewards: rewards.into_iter().collect(),
+            pokemon: pokemon.into_iter().collect(),
             stopped: stopped.into_iter().collect(),
             terminals,
             complete,
@@ -666,6 +691,7 @@ impl Rom {
                         offset: o,
                         script: None,
                         rewards: Vec::new(),
+                        pokemon: Vec::new(),
                         stopped_at: Vec::new(),
                     };
                     if count_off == 0 {
@@ -736,14 +762,20 @@ impl Rom {
                     }
                     if let Some(script) = marker.script {
                         positioned.insert(script);
-                        let (rewards, stopped) = self.item_script(script)?;
-                        marker.rewards = rewards;
-                        marker.stopped_at = stopped;
+                        let report = self.event_script(script)?;
+                        marker.rewards = report.rewards;
+                        marker.pokemon = report.pokemon;
+                        marker.stopped_at = report.stopped;
                         if count_off == 2 {
                             let id = u16(b, o + 6)?;
                             if id != 0 {
-                                for reward in &mut marker.rewards {
-                                    reward.conditions.insert(
+                                for conditions in marker
+                                    .rewards
+                                    .iter_mut()
+                                    .map(|r| &mut r.conditions)
+                                    .chain(marker.pokemon.iter_mut().map(|p| &mut p.conditions))
+                                {
+                                    conditions.insert(
                                         0,
                                         EventCondition {
                                             kind: "variable",
@@ -761,28 +793,31 @@ impl Rom {
                             if count_off == 0 && self.ordinary_pickup_receipt(script) {
                                 marker.receipt_flag = marker.flag;
                             }
-                        } else if !marker.rewards.is_empty() {
+                        } else if !marker.rewards.is_empty() || !marker.pokemon.is_empty() {
                             marker.kind = "gift";
                         }
                     }
                     // NPC positions remain useful even when their script is unresolved.
-                    if count_off == 0 || !marker.rewards.is_empty() {
+                    if count_off == 0 || !marker.rewards.is_empty() || !marker.pokemon.is_empty() {
                         markers.push(marker);
                     }
                 }
             }
         }
         let mut unplaced = BTreeSet::new();
+        let mut unplaced_pokemon = BTreeSet::new();
         let mut stopped = BTreeSet::new();
         for root in map.scripts.iter().filter(|p| !positioned.contains(p)) {
-            let (items, stops) = self.item_script(*root)?;
-            unplaced.extend(items);
-            stopped.extend(stops);
+            let report = self.event_script(*root)?;
+            unplaced.extend(report.rewards);
+            unplaced_pokemon.extend(report.pokemon);
+            stopped.extend(report.stopped);
         }
         Ok(MapEventReport {
             map_id: map.id.clone(),
             markers,
             unplaced_rewards: unplaced.into_iter().collect(),
+            unplaced_pokemon: unplaced_pokemon.into_iter().collect(),
             stopped_at: stopped.into_iter().collect(),
         })
     }

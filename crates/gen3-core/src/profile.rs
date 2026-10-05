@@ -54,6 +54,7 @@ pub struct HiddenItemRules {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct Profile {
+    pub script_pokemon: crate::script_pokemon::PokemonScriptRules,
     pub native_trainers: Option<crate::native_trainer::NativeTrainerRules>,
     pub clock: Option<crate::clock::ClockRules>,
     /// Native-verified persistent flag/variable ranges; never inferred from item ownership.
@@ -282,6 +283,15 @@ pub const EMERALD: SaveLayout = SaveLayout {
     skip_unoccupied_box_records: false,
 };
 pub const BW: Profile = Profile {
+    script_pokemon: crate::script_pokemon::PokemonScriptRules {
+        wild: crate::script_pokemon::WildCommand::Literal,
+        egg_level_instruction: 0x70978,
+        native_battle: Some(crate::script_pokemon::NativeBattleCommand {
+            special: 0x1e2,
+            species_var: 0x8004,
+            level_var: 0x8005,
+        }),
+    },
     native_trainers: None,
     clock: None,
     hidden_items: Some(HiddenItemRules {
@@ -511,6 +521,11 @@ pub const DP: Profile = Profile {
     ..BW
 };
 pub const ROCKET: Profile = Profile {
+    script_pokemon: crate::script_pokemon::PokemonScriptRules {
+        wild: crate::script_pokemon::WildCommand::RocketExtended,
+        egg_level_instruction: 0x9e960,
+        native_battle: None,
+    },
     native_trainers: None,
     clock: None,
     hidden_items: Some(HiddenItemRules {

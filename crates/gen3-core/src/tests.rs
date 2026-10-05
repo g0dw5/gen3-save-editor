@@ -248,6 +248,7 @@ fn contest_matches_native_feeding_and_npc_bounds() {
 
 /// Synthetic labels deliberately differ from every supported game's names.
 fn label_fixture(b: &mut [u8], p: profile::Profile) {
+    put16(b, p.script_pokemon.egg_level_instruction, 0x2201);
     let codec = Codec::new();
     for n in 0..25 {
         let address = 0x18000 + n * 64;
@@ -1831,6 +1832,144 @@ fn item_event_layers_keep_coordinates_and_hidden_flags() {
     let b = std::sync::Arc::make_mut(&mut r.data);
     put32(b, ev + 16, 0xfffffff0);
     assert!(r.map_events(&map).is_err());
+}
+
+#[test]
+fn pokemon_script_operands_follow_each_adapter_and_runtime_egg_level() {
+    use crate::script_pokemon::WildCommand;
+    for p in profile::PROFILES {
+        let mut r = adapter_rom(p);
+        let pc = 0x25000;
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[pc..pc + 18].fill(0);
+        b[pc] = 0xb6;
+        put16(b, pc + 1, 1);
+        b[pc + 3] = 20;
+        let resolve = |v| {
+            if v == 0x8004 {
+                Some(2)
+            } else if v < 0x4000 {
+                Some(v)
+            } else {
+                None
+            }
+        };
+        assert_eq!(
+            r.wild_command_length(pc).unwrap(),
+            match p.script_pokemon.wild {
+                WildCommand::RocketExtended => 11,
+                _ => 6,
+            }
+        );
+        let source = r.script_pokemon_instruction(pc, resolve).unwrap();
+        assert_eq!(
+            (source[0].species, source[0].level),
+            (1, Some(20)),
+            "{}",
+            p.id
+        );
+        put16(
+            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+            pc + 1,
+            0x8004,
+        );
+        let source = r.script_pokemon_instruction(pc, resolve).unwrap();
+        if matches!(p.script_pokemon.wild, WildCommand::MercuryDouble) {
+            assert_eq!(source[0].species, 2);
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            put16(b, pc + 1, 0xffff);
+            put16(b, pc + 7, 0x8004);
+            b[pc + 9] = 21;
+            put16(b, pc + 13, 3);
+            b[pc + 15] = 22;
+            assert_eq!(r.wild_command_length(pc).unwrap(), 18);
+            let source = r.script_pokemon_instruction(pc, resolve).unwrap();
+            assert_eq!(
+                source
+                    .iter()
+                    .map(|s| (s.species, s.level, s.member))
+                    .collect::<Vec<_>>(),
+                [(2, Some(21), 0), (3, Some(22), 1)]
+            );
+        } else {
+            assert!(
+                source.is_empty(),
+                "literal native operands must not become VarGet: {}",
+                p.id
+            );
+        }
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[pc] = 0x7a;
+        put16(b, pc + 1, 1);
+        put16(b, p.script_pokemon.egg_level_instruction, 0x2201);
+        assert_eq!(
+            r.script_pokemon_instruction(pc, resolve).unwrap()[0].level,
+            Some(1)
+        );
+        put16(
+            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+            p.script_pokemon.egg_level_instruction,
+            0x2205,
+        );
+        assert_eq!(
+            r.script_pokemon_instruction(pc, resolve).unwrap()[0].level,
+            Some(5)
+        );
+        put16(
+            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+            p.script_pokemon.egg_level_instruction,
+            0x46c0,
+        );
+        assert!(r.script_pokemon_instruction(pc, resolve).is_err());
+    }
+}
+
+#[test]
+fn scripted_pokemon_keep_npc_tile_and_unplaced_sources_separate() {
+    let mut r = rom();
+    let ev = 0x25000;
+    let object = 0x25100;
+    let gift = 0x25200;
+    let egg = 0x25300;
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    b[ev] = 1;
+    put32(b, ev + 4, 0x08000000 + object as u32);
+    b[object] = 1;
+    put16(b, object + 4, 11);
+    put16(b, object + 6, 7);
+    put32(b, object + 16, 0x08000000 + gift as u32);
+    b[gift] = 0x79;
+    put16(b, gift + 1, 1);
+    b[gift + 3] = 20;
+    b[gift + 15] = 2;
+    b[egg] = 0x7a;
+    put16(b, egg + 1, 2);
+    b[egg + 3] = 2;
+    let map = crate::world::Map {
+        id: "0-0".into(),
+        group: 0,
+        number: 0,
+        name: "Synthetic".into(),
+        region: 0,
+        width: 20,
+        height: 20,
+        map_type: 0,
+        header: 0,
+        layout: 0,
+        invalid_events: false,
+        events: Some(ev),
+        scripts: vec![gift, egg],
+        objects: vec![],
+    };
+    let report = r.map_events(&map).unwrap();
+    assert_eq!(report.markers.len(), 1);
+    let marker = &report.markers[0];
+    assert_eq!((marker.kind, marker.x, marker.y), ("gift", 11, 7));
+    assert_eq!(marker.pokemon[0].species, 1);
+    assert!(marker.rewards.is_empty());
+    assert_eq!(report.unplaced_pokemon.len(), 1);
+    assert_eq!(report.unplaced_pokemon[0].species, 2);
+    assert_eq!(report.unplaced_pokemon[0].method, "egg");
 }
 
 #[test]
@@ -3452,6 +3591,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
                 offset: 0,
                 script: None,
                 stopped_at: vec![],
+                pokemon: vec![],
                 rewards: vec![ItemReward {
                     item: 1,
                     quantity: Some(1),
@@ -3469,6 +3609,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
                     map_id: "0-0".into(),
                     markers,
                     unplaced_rewards: vec![],
+                    unplaced_pokemon: vec![],
                     stopped_at: vec![],
                 }],
                 encounters: vec![],
@@ -3948,10 +4089,12 @@ fn gift_receipt_queries_and_plans_use_the_qualified_reward_not_visibility() {
                 receipt_flag: None,
                 offset: 80,
                 script: Some(90),
+                pokemon: vec![],
                 rewards: vec![reward],
                 stopped_at: vec![],
             }],
             unplaced_rewards: vec![],
+            unplaced_pokemon: vec![],
             stopped_at: vec![],
         }];
         let target = Target {

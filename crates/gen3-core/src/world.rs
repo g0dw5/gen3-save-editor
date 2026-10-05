@@ -774,11 +774,14 @@ impl Rom {
                     stopped.insert(pc);
                     break;
                 };
-                let len = if op != 0x5c
+                let len = if op == 0xb6 {
+                    self.wild_command_length(pc).unwrap_or(0)
+                } else if op != 0x5c
                     && matches!(
                         self.profile.formats.scripts,
                         crate::adapter::ScriptFormat::EmeraldExpanded
-                    ) {
+                    )
+                {
                     crate::map_events::expanded_length(op)
                 } else {
                     match op {
@@ -827,56 +830,32 @@ impl Rom {
                         vars.remove(&dest);
                     }
                 }
-                let mut encounter = None;
-                if matches!(op, 0xb6 | 0x79 | 0x7a) {
-                    let species = resolve(u16(b, pc + 1)?, &vars);
-                    let lv = if op == 0x7a {
-                        Some(5)
-                    } else {
-                        b.get(pc + 3).copied()
-                    };
-                    if let (Some(s), Some(l)) = (species, lv) {
-                        encounter = Some((
-                            s,
-                            l,
-                            if op == 0xb6 {
-                                "static"
-                            } else if op == 0x79 {
-                                "gift"
-                            } else {
-                                "egg"
-                            },
-                        ));
+                let decoded = self.script_pokemon_instruction(pc, |v| resolve(v, &vars));
+                match decoded {
+                    Ok(sources) => {
+                        for source in sources {
+                            if let Some(level) = source.level {
+                                found.entry((pc, source.species)).or_insert(Encounter {
+                                    selector: None,
+                                    periods: vec![],
+                                    species: source.species,
+                                    map_id: map.id.clone(),
+                                    map_name: map.name.clone(),
+                                    region: map.region,
+                                    method: source.method.into(),
+                                    min_level: level,
+                                    max_level: level,
+                                    weight: None,
+                                    encounter_rate: None,
+                                    slot: None,
+                                    offset: pc,
+                                    conditional: true,
+                                });
+                            }
+                        }
                     }
-                }
-                if matches!(
-                    self.profile.formats.scripts,
-                    crate::adapter::ScriptFormat::DarkPhantom
-                ) && op == 0x25
-                    && u16(b, pc + 1)? == 0x1e2
-                {
-                    if let (Some(s), Some(l)) = (vars.get(&0x8004), vars.get(&0x8005)) {
-                        encounter = Some((*s, *l as u8, "special_battle"));
-                    }
-                }
-                if let Some((s, l, method)) = encounter {
-                    if self.valid_species(s).is_ok() && l > 0 && l <= self.profile.max_level {
-                        found.entry((pc, s)).or_insert(Encounter {
-                            selector: None,
-                            periods: Vec::new(),
-                            species: s,
-                            map_id: map.id.clone(),
-                            map_name: map.name.clone(),
-                            region: map.region,
-                            method: method.into(),
-                            min_level: l,
-                            max_level: l,
-                            weight: None,
-                            encounter_rate: None,
-                            slot: None,
-                            offset: pc,
-                            conditional: true,
-                        });
+                    Err(_) => {
+                        stopped.insert(pc);
                     }
                 }
                 if op == 0x5c {

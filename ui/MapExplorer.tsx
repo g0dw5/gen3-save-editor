@@ -34,6 +34,7 @@ export function MapExplorer({
   navigation,
   onMap,
   onItem,
+  onSpecies,
 }: {
   map: GameMap;
   image: string;
@@ -45,6 +46,7 @@ export function MapExplorer({
   navigation?: MapNavigation | null;
   onMap?: (id: string, focus?: MapFocus) => void;
   onItem?: (id: number) => void;
+  onSpecies?: (id: number) => void;
 }) {
   const { t } = useI18n();
   const [enabled, setEnabled] = useState({
@@ -113,9 +115,14 @@ export function MapExplorer({
   );
   const rewardNames = (marker: MapMarker) =>
     [
-      ...new Set(
-        marker.rewards.map((r) => items.get(r.item)?.name ?? `#${r.item}`),
-      ),
+      ...new Set([
+        ...marker.rewards.map((r) => items.get(r.item)?.name ?? `#${r.item}`),
+        ...(marker.pokemon ?? []).map(
+          (p) =>
+            catalog.species.find((s) => s.id === p.species)?.name ??
+            `#${p.species}`,
+        ),
+      ]),
     ].join(" / ");
   const markers = report?.markers ?? [];
   const visible = markers.filter(
@@ -404,6 +411,25 @@ export function MapExplorer({
               {marker.underfoot === true && (
                 <p className="small muted">{t("mapHiddenUnderfoot")}</p>
               )}
+              {(marker.pokemon ?? []).map((mon, i) => (
+                <p key={`pokemon-${mon.offset}-${i}`}>
+                  <button
+                    className="link-button"
+                    onClick={() => onSpecies?.(mon.species)}
+                  >
+                    {catalog.species.find((s) => s.id === mon.species)?.name ??
+                      `#${mon.species}`}{" "}
+                    ↗
+                  </button>{" "}
+                  · {t(mon.method)}
+                  {mon.level !== null
+                    ? ` · Lv. ${mon.level}`
+                    : ` · ${t("unresolved")}`}
+                </p>
+              ))}
+              {!!marker.pokemon?.length && (
+                <p className="small muted">{t("acqScriptSourceHelp")}</p>
+              )}
               {marker.rewards.length ? (
                 marker.rewards.map((r, i) => (
                   <p key={`${r.offset}-${i}`}>
@@ -420,9 +446,9 @@ export function MapExplorer({
                         : ""}
                   </p>
                 ))
-              ) : (
+              ) : !marker.pokemon?.length ? (
                 <p>{t("mapNoReward")}</p>
-              )}
+              ) : null}
               {marker.rewards.some((r) => r.conditions.length > 0) && (
                 <p className="small muted">{t("mapConditionalReward")}</p>
               )}
@@ -447,6 +473,9 @@ export function MapExplorer({
                     ? ` · ${t("acqReceiptEvidence")} 0x${marker.receipt_flag.toString(16)}`
                     : ""}
                 </code>
+                {!!marker.pokemon?.length && (
+                  <pre>{JSON.stringify(marker.pokemon, null, 2)}</pre>
+                )}
                 {marker.rewards
                   .filter((r) => r.receipt)
                   .map((r, i) => (
@@ -484,6 +513,25 @@ export function MapExplorer({
             ),
           ].map((name) => (
             <p key={name}>{name}</p>
+          ))}
+        </details>
+      )}
+      {!!report?.unplaced_pokemon?.length && (
+        <details>
+          <summary>{t("mapUnplacedPokemon")}</summary>
+          <p className="small muted">{t("mapUnplacedHelp")}</p>
+          {report.unplaced_pokemon.map((mon, i) => (
+            <p key={i}>
+              <button
+                className="link-button"
+                onClick={() => onSpecies?.(mon.species)}
+              >
+                {catalog.species.find((s) => s.id === mon.species)?.name ??
+                  `#${mon.species}`}{" "}
+                ↗
+              </button>{" "}
+              · {t(mon.method)}
+            </p>
           ))}
         </details>
       )}

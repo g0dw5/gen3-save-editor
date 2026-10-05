@@ -197,6 +197,11 @@ export function CollectionPanel({
                           {s?.in_scenario === true && (
                             <p className="small">{t("clockInsideScenario")}</p>
                           )}
+                          {s?.script_source && (
+                            <p className="small muted">
+                              {t("acqScriptSourceHelp")}
+                            </p>
+                          )}
                           {s?.receipt && (
                             <p className="small muted">
                               {t("acqGiftReceiptHelp")}

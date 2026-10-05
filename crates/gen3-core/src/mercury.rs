@@ -95,6 +95,11 @@ const MERCURY_SAVE: SaveLayout = SaveLayout {
 };
 
 pub const PROFILE: Profile = Profile {
+    script_pokemon: crate::script_pokemon::PokemonScriptRules {
+        wild: crate::script_pokemon::WildCommand::MercuryDouble,
+        egg_level_instruction: 0x1d1b31e,
+        native_battle: None,
+    },
     hidden_items: Some(crate::profile::HiddenItemRules {
         packed: true,
         flag_base: 0x3e8,

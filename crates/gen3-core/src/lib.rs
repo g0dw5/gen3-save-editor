@@ -17,6 +17,7 @@ pub mod pokemon;
 pub mod profile;
 pub mod rom;
 pub mod save;
+pub mod script_pokemon;
 pub mod session;
 #[cfg(test)]
 mod tests;

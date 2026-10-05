@@ -817,6 +817,7 @@ export function ReferenceWindow({
                     navigation={navigation}
                     onMap={goMap}
                     onItem={(id) => goTarget({ kind: "item", id })}
+                    onSpecies={(id) => goTarget({ kind: "species", id })}
                   />
                 ) : mapImageError ? (
                   <p className="warning-text">{t("mapImageUnavailable")}</p>
