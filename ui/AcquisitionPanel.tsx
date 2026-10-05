@@ -1,3 +1,4 @@
+import { BreedingPanel } from "./BreedingPanel";
 import { WildHeldDetails } from "./WildHeldDetails";
 import { ConditionDetails } from "./ConditionDetails";
 import { useEffect, useMemo, useState } from "react";
@@ -147,6 +148,17 @@ export function AcquisitionPanel({
       )}
       <p className="small muted">{t("acqCoverage")}</p>
       {save && <p className="small muted">{t("acqSaveOverlay")}</p>}
+      {target.kind === "species" && catalog.profile.breeding && (
+        <BreedingPanel
+          catalog={catalog}
+          save={save}
+          species={target.id}
+          maps={maps}
+          onTarget={onTarget}
+          onMap={onMap}
+          onError={onError}
+        />
+      )}
       <input
         className="acquisition-search"
         aria-label={t("acqSearch")}

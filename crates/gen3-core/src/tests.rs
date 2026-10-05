@@ -4238,6 +4238,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
                 stopped_at: vec![],
                 pokemon: vec![],
                 teaching: vec![],
+                daycare: vec![],
                 rewards: vec![ItemReward {
                     item: 1,
                     quantity: Some(1),
@@ -4258,6 +4259,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
                     unplaced_rewards: vec![],
                     unplaced_pokemon: vec![],
                     unplaced_teaching: vec![],
+                    unplaced_daycare: vec![],
                     stopped_at: vec![],
                 }],
                 encounters: vec![],
@@ -4740,12 +4742,14 @@ fn gift_receipt_queries_and_plans_use_the_qualified_reward_not_visibility() {
                 script: Some(90),
                 pokemon: vec![],
                 teaching: vec![],
+                daycare: vec![],
                 rewards: vec![reward],
                 stopped_at: vec![],
             }],
             unplaced_rewards: vec![],
             unplaced_pokemon: vec![],
             unplaced_teaching: vec![],
+            unplaced_daycare: vec![],
             stopped_at: vec![],
         }];
         let target = Target {
@@ -5490,5 +5494,103 @@ fn held_sources_follow_random_references_time_and_preserve_unreferenced_uncertai
             .is_empty());
         assert_eq!(save.data, before);
         assert!(std::sync::Arc::ptr_eq(&rom.data, &data));
+    }
+}
+
+#[test]
+fn daycare_queries_preserve_guards_tiles_and_reject_changed_dispatch() {
+    for profile in profile::PROFILES {
+        let (mut r, map) = npc_trade_fixture(profile);
+        let rules = profile.breeding.unwrap();
+        r.profile.breeding = Some(rules);
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        put32(
+            b,
+            rules.specials + rules.receive_special as usize * 4,
+            0x08000001 + rules.receive_code as u32,
+        );
+        b[0x26000..0x2600e].copy_from_slice(&[
+            0x2b,
+            0x23,
+            0x01,
+            0x06,
+            0x01,
+            0x0a,
+            0x60,
+            0x02,
+            0x08,
+            0x02,
+            0x25,
+            rules.receive_special as u8,
+            0,
+            0x02,
+        ]);
+        let report = r.map_events(&map).unwrap();
+        assert_eq!(report.markers.len(), 1);
+        let marker = &report.markers[0];
+        assert_eq!((marker.x, marker.y), (3, 2));
+        assert_eq!(marker.daycare.len(), 1);
+        assert_eq!(marker.kind, "npc");
+        assert!(marker.rewards.is_empty() && marker.receipt_flag.is_none());
+        let condition = &marker.daycare[0].conditions[0];
+        assert_eq!(
+            (condition.kind, condition.id, condition.taken),
+            ("flag", 0x123, true)
+        );
+        assert!(report.unplaced_daycare.is_empty());
+        let index = crate::acquisition::AcquisitionIndex {
+            wild_cache: std::cell::RefCell::default(),
+            world: crate::world::World {
+                maps: vec![map.clone()],
+                map_events: vec![report],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: crate::world::TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: vec![],
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        let before = r.data.clone();
+        let sources = index.daycare_sources(&r, None);
+        assert_eq!((sources[0].x, sources[0].y), (Some(3), Some(2)));
+        assert_eq!(sources[0].conditions[0].satisfied, None);
+        assert_eq!(sources[0].status, "unknown");
+        assert_eq!(*before, *r.data);
+        put32(
+            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+            rules.specials + rules.receive_special as usize * 4,
+            0x08026001,
+        );
+        let invalid = r.map_events(&map).unwrap();
+        assert!(invalid.markers[0].daycare.is_empty());
+        assert!(invalid.markers[0].stopped_at.contains(&0x2600a));
+    }
+}
+
+#[test]
+fn stored_breeding_queries_leave_save_and_parent_history_unchanged() {
+    for p in profile::PROFILES {
+        let mut r = adapter_rom(p);
+        let mut rules = p.breeding.unwrap();
+        rules.compatibility = 0x08021000;
+        std::sync::Arc::make_mut(&mut r.data)[0x21000..0x21004]
+            .copy_from_slice(&[0, 0x20, 0x70, 0x47]); // MOVS r0,#0; BX lr
+        r.profile.breeding = Some(rules);
+        let save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let request: crate::breeding::Request = serde_json::from_value(serde_json::json!({"parents":[
+            {"kind":"stored","location":{"kind":"party","slot":0}},
+            {"kind":"simulated","species":1,"gender":"female","held_item":0,"trainer_id":2}],"offspring_pid":24,"seed":42})).unwrap();
+        let before = save.data.clone();
+        let rom_before = r.data.clone();
+        let preview = crate::breeding::preview(&r, Some(&save), &request).unwrap();
+        assert!(preview.child.is_none());
+        assert_eq!(preview.parents[0].pid, 12345);
+        assert_eq!(save.data, before);
+        assert_eq!(*r.data, *rom_before);
     }
 }

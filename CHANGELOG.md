@@ -10,6 +10,16 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add read-only native daycare scenarios with stored/simulated parents, offspring
+  links and located receiving NPC/map navigation. Verify 210 scenarios across five
+  fingerprints with mGBA, and correct shared odd Thumb halfword loads using 120
+  independent microcases. Keep production, next real eggs, complete inheritance
+  and Rocket/Mercury service references explicitly unresolved.
+- 新增只读原生寄养情景：选择存档／模拟亲本，跳转后代资料与已定位领蛋 NPC、地图。
+  五份指纹的 210 个情景对照 mGBA；以 120 个独立微测试修正共享 CPU 的奇地址
+  Thumb 半字读取。产蛋、下一颗真实蛋、完整遗传及西班牙火箭队／水银服务引用仍
+  明确保留未知，不生成或改动存档中的蛋。
+
 - Connect wild held-item sources to referenced encounter maps, levels, slots and
   time selectors. Execute each current ROM's ordinary single-wild assignment
   routine for a simulated baseline and the current SAV's first party member;

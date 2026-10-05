@@ -355,6 +355,37 @@ impl AcquisitionIndex {
             learnsets,
         })
     }
+    /// Indexed receiving scripts locate services, not proof of access or an egg.
+    pub fn daycare_sources(&self, rom: &Rom, save: Option<&Save>) -> Vec<AcquisitionSource> {
+        let state = save
+            .zip(rom.profile.event_state)
+            .map(|(save, layout)| EventSnapshot::new(save, layout));
+        let mut sources = Vec::new();
+        for report in &self.world.map_events {
+            let Some(map) = self.world.maps.iter().find(|m| m.id == report.map_id) else {
+                continue;
+            };
+            for (marker, offer) in report
+                .markers
+                .iter()
+                .flat_map(|m| m.daycare.iter().map(move |d| (Some(m), d)))
+                .chain(report.unplaced_daycare.iter().map(|d| (None, d)))
+            {
+                let mut s = source("daycare", offer.offset);
+                s.map_id = Some(map.id.clone());
+                s.region = Some(map.region);
+                s.x = marker.map(|m| m.x);
+                s.y = marker.map(|m| m.y);
+                s.conditions = offer
+                    .conditions
+                    .iter()
+                    .map(|c| check(state.as_ref(), Some(rom), c))
+                    .collect();
+                sources.push(s);
+            }
+        }
+        sources
+    }
     pub fn query_scenario(
         &self,
         rom: &Rom,

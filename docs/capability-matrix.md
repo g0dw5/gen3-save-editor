@@ -35,7 +35,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Pickup, hidden items, dialogue rewards / 拾取与奖励 | P | P | P | P | P | [map events](research/map-events.md): BW/DP 707 maps, 122 balls, 112 hidden items. Bounded scripts retain stop evidence; ordinary/hidden and qualified NPC receipt protocols have five-fingerprint evidence below. Custom commands, complete resource/runtime guards and access remain partial. |
 | Random encounters, probability, time tables / 随机相遇 | P | P | P | P | P | `world.rs`; [time selection](research/encounter-time-selection.md), Mercury native selector. Slot weights are separate from encounter frequency; no full weekday/clock-state validation. |
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Shared typed map-script sources and [bounded NPC trade quotes](verification/npc-trades-20261006.md); [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers, actual delivery and custom exchanges are not comprehensively indexed. |
-| Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
+| Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). [Native ordinary daycare scenarios](verification/breeding-20261006.md) execute compatibility/full receipt across five fingerprints with stored/simulated parents and offspring/NPC/map navigation; Rocket/Mercury service references, full production/inheritance/hatching/access remain unknown. Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. Native ordinary single-wild item selection has five-fingerprint evidence, including tested lead abilities and exceptional layout branches; full encounter modifiers and facilities remain unresolved. See [wild-item evidence](verification/wild-held-20261006.md). |
 | SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. [Bounded NPC success/receipt protocols](verification/npc-receipts-20261006.md) cover 80 reward rows. Compound/custom pickups, unqualified NPC protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
 | Item/money prerequisites / 道具与金钱前置条件 | P | P | P | P | P | [Native holdings and Boolean branch verification](verification/resource-conditions-20261006.md), required-item cross-links, readable query/map/planning/HTML conditions. Mercury ordinary checks use the first matching slot; other four retain unknown facility-bag context. Spending, complete eligibility and access remain unverified. |
@@ -294,3 +294,17 @@ See [scope and reproduction](verification/wild-held-20261006.md).
 
 五份指纹仍为部分支持。原生概率验证不证明地图当前可达，不把静态或赠送引用
 当作普通随机来源；收集建议与独立 HTML 保留相同的情景和未知边界。
+
+## Native daycare increment / 原生寄养增量
+
+All breeding/acquisition rows remain **P**. Five fingerprints have 210 ordinary
+compatibility/receipt scenarios (171 generated records) matching mGBA and 120 GBA
+halfword microcases. Stored/simulated parents, child/move links and located
+receiving NPC/map/back are a read-only shared workflow. BW/DP have two receiving
+paths each, Ultimate six; Rocket/Mercury currently have no located service and
+show explicit uncertainty. Full production/charm rates, live pending eggs,
+complete inheritance/forms and collection dependency planning remain gaps.
+See [scope, CPU correction and evidence](verification/breeding-20261006.md).
+
+本增量未将孵蛋候选或模拟后代视作可达、已捕获、当前有蛋可领。没有新增 SAV 编辑
+动作，也未重新打包；不同版本服务引用与完整产蛋／遗传／孵化依赖继续需要验证。

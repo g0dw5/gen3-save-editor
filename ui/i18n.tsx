@@ -1,5 +1,39 @@
 import { createContext, useContext } from "react";
 export const en = {
+  breedTitle: "Native daycare egg preview",
+  breedHelp:
+    "Choose two saved individuals or simulated parents. The current ROM runs its ordinary compatibility and egg-receipt routines in isolated RAM. This query never adds an egg or changes your SAV.",
+  breedParent: "Parent",
+  breedChooseParent: "Parent source",
+  breedSimulated: "Set a simulated parent",
+  breedStoredHelp:
+    "Uses this individual’s original data, including moves and held item; it is not moved to daycare.",
+  breedScenario: "Simulation inputs and limits",
+  breedScenarioHelp:
+    "Simulated parents have level 5, zero IVs, no moves and distinct trainer identities. Seed and pending personality specify one reproducible receipt scenario, not the next real egg. Production, charms, access and complete inheritance rules remain unverified.",
+  breedSeed: "Random seed",
+  breedPid: "Pending egg personality input",
+  breedCalculate: "Preview ordinary egg receipt",
+  breedIncompatible: "The native compatibility check rejects this pair.",
+  breedCompatible: "The native compatibility check accepts this pair.",
+  breedNotRate:
+    "The compatibility result is not the chance of producing an egg.",
+  breedChild: "Simulated offspring",
+  breedMatches: "This scenario produces the queried Pokémon.",
+  breedDifferent:
+    "This scenario produces another Pokémon; follow its link to check acquisition and evolution.",
+  breedEvidence: "Native scenario details",
+  breedServices: "Located egg-receiving services",
+  breedServicesHelp:
+    "These NPC scripts call the verified ordinary receiving routine. Script conditions and map connections do not prove current access, egg availability or a free party slot.",
+  breedNoService:
+    "No receiving script was located by the current parser; this does not prove the game has no daycare.",
+  breeding_unverified:
+    "The native daycare routine is not verified for this ROM.",
+  breeding_gender: "The selected gender is not available for this Pokémon.",
+  breeding_parent: "Choose two distinct non-egg individuals.",
+  breeding_pending_pid: "Enter a valid nonzero pending egg personality input.",
+
   conditionSourcePath: "This parsed source path requires",
   conditionItemPresent: "Has an item record in the bag:",
   conditionItemAbsent: "No item record in the bag:",
@@ -898,6 +932,36 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  breedTitle: "原生寄养孵蛋预览",
+  breedHelp:
+    "选择存档中的两个个体，或设置模拟亲本。当前 ROM 的普通配对检查和领蛋例程在隔离内存中运行；查询不会添加蛋或改动 SAV。",
+  breedParent: "亲本",
+  breedChooseParent: "亲本来源",
+  breedSimulated: "设置模拟亲本",
+  breedStoredHelp:
+    "读取此个体的原始数据，包括招式和携带道具；不会将它送入寄养屋。",
+  breedScenario: "模拟参数与范围",
+  breedScenarioHelp:
+    "模拟亲本为等级 5、个体值 0、无招式、不同训练家身份。随机种子和待领蛋性格值指定一个可复现的领蛋情景，并非下一颗真实的蛋。产蛋、护身符、可达性和完整遗传规则尚待验证。",
+  breedSeed: "随机种子",
+  breedPid: "待领蛋性格值输入",
+  breedCalculate: "预览普通领蛋结果",
+  breedIncompatible: "原生配对检查不接受这组亲本。",
+  breedCompatible: "原生配对检查接受这组亲本。",
+  breedNotRate: "配对结果不代表产蛋概率。",
+  breedChild: "模拟后代",
+  breedMatches: "此情景的后代就是正在查询的宝可梦。",
+  breedDifferent: "此情景生成另一种宝可梦，可点击查询它的获取和进化途径。",
+  breedEvidence: "原生情景技术详情",
+  breedServices: "已定位的领蛋服务",
+  breedServicesHelp:
+    "这些 NPC 脚本调用了已验证的普通领蛋例程。脚本条件和地图连接不能证明当前可达、有蛋可领或同行有空位。",
+  breedNoService: "当前解析器没有定位到领蛋脚本；不能据此判断本作没有寄养屋。",
+  breeding_unverified: "本 ROM 的原生寄养例程尚未验证。",
+  breeding_gender: "该宝可梦没有所选性别。",
+  breeding_parent: "请选择两个不同的非蛋个体。",
+  breeding_pending_pid: "请输入有效且非零的待领蛋性格值。",
+
   conditionSourcePath: "该条来源分支需要",
   conditionItemPresent: "背包中存在道具记录：",
   conditionItemAbsent: "背包中不存在道具记录：",

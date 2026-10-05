@@ -93,6 +93,48 @@ impl<'a> Sandbox<'a> {
             invalid: None,
         }
     }
+    /// armv4t_emu 0.1.3 masks away the low address bit for Thumb halfword
+    /// loads. GBA LDRH instead rotates the aligned value in a 32-bit register;
+    /// odd LDRSH sign-extends the addressed byte. Correct only those accesses,
+    /// leaving aligned instructions and native function control flow intact.
+    fn step_unaligned_thumb_halfword(&mut self, cpu: &mut Cpu) -> bool {
+        if cpu.reg_get(Mode::User, reg::CPSR) & 0x20 == 0 {
+            return false;
+        }
+        let pc = cpu.reg_get(Mode::User, reg::PC);
+        let instruction = self.r16(pc);
+        let (address, signed) = match instruction & 0xf800 {
+            0x8800 => {
+                let base = ((instruction >> 3) & 7) as u8;
+                (
+                    cpu.reg_get(Mode::User, base)
+                        .wrapping_add(u32::from((instruction >> 6) & 31) * 2),
+                    false,
+                )
+            }
+            0x5800 if matches!(instruction & 0xfe00, 0x5a00 | 0x5e00) => {
+                let base = ((instruction >> 3) & 7) as u8;
+                let offset = ((instruction >> 6) & 7) as u8;
+                (
+                    cpu.reg_get(Mode::User, base)
+                        .wrapping_add(cpu.reg_get(Mode::User, offset)),
+                    instruction & 0x0400 != 0,
+                )
+            }
+            _ => return false,
+        };
+        if address & 1 == 0 {
+            return false;
+        }
+        let value = if signed {
+            self.r8(address) as i8 as i32 as u32
+        } else {
+            u32::from(self.r16(address & !1)).rotate_right(8)
+        };
+        cpu.reg_set(Mode::User, (instruction & 7) as u8, value);
+        cpu.reg_set(Mode::User, reg::PC, pc.wrapping_add(2));
+        true
+    }
     pub(crate) fn call(
         &mut self,
         start: u32,
@@ -116,7 +158,7 @@ impl<'a> Sandbox<'a> {
             if pc == 0x0f000000 {
                 return Ok(cpu.reg_get(Mode::User, 0));
             }
-            if !cpu.step(self) {
+            if !self.step_unaligned_thumb_halfword(&mut cpu) && !cpu.step(self) {
                 return Err(err("trainer_native_instruction", format!("{pc:08X}")));
             }
             if let Some(a) = self.invalid {
@@ -169,6 +211,45 @@ impl Memory for Sandbox<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn gba_thumb_odd_halfword_loads_rotate_or_sign_extend_without_changing_flags() {
+        for instruction in [0x8808u16, 0x5a88, 0x5e88] {
+            let mut rom = instruction.to_le_bytes().to_vec();
+            rom.extend(0x4770u16.to_le_bytes());
+            let mut ram = Sandbox::new(&rom);
+            ram.w8(0x02001000, 0x80);
+            ram.w8(0x02001001, 0xff);
+            let even = ram
+                .call(0x08000000, [0, 0x02001000, 0, 0], [0; 2], 10)
+                .unwrap();
+            assert_eq!(
+                even,
+                if instruction == 0x5e88 {
+                    0xffffff80
+                } else {
+                    0xff80
+                }
+            );
+            let odd = ram
+                .call(0x08000000, [0, 0x02001001, 0, 0], [0; 2], 10)
+                .unwrap();
+            assert_eq!(
+                odd,
+                if instruction == 0x5e88 {
+                    0xffffffff
+                } else {
+                    0x800000ff
+                }
+            );
+            let mut cpu = Cpu::new();
+            cpu.reg_set(Mode::User, reg::CPSR, 0xa0000030);
+            cpu.reg_set(Mode::User, reg::PC, 0x08000000);
+            cpu.reg_set(Mode::User, 1, 0x02001001);
+            assert!(ram.step_unaligned_thumb_halfword(&mut cpu));
+            assert_eq!(cpu.reg_get(Mode::User, reg::CPSR), 0xa0000030);
+            assert_eq!(cpu.reg_get(Mode::User, reg::PC), 0x08000002);
+        }
+    }
     #[test]
     fn native_memory_rejects_rom_writes_and_unmapped_reads() {
         let bytes = [7];

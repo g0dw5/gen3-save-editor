@@ -95,6 +95,7 @@ export interface Catalog {
       native_predicates: number[];
       forced_night_flag: number | null;
     } | null;
+    breeding?: { pending_width: number } | null;
     native_trainers?: { constructor: number } | null;
     fishing_rods?: number[];
     save?: { pockets: { id: string; category: number }[] };
@@ -313,6 +314,10 @@ export interface TeachingSource {
   offset: number;
   conditions: ItemReward["conditions"];
 }
+export interface DaycareSource {
+  offset: number;
+  conditions: ItemReward["conditions"];
+}
 export interface MapMarker {
   id: string;
   kind: "pickup" | "hidden" | "gift" | "npc" | "event";
@@ -330,6 +335,7 @@ export interface MapMarker {
   rewards: ItemReward[];
   pokemon: PokemonSource[];
   teaching?: TeachingSource[];
+  daycare?: DaycareSource[];
   stopped_at: number[];
 }
 export interface MapEventReport {
@@ -338,6 +344,7 @@ export interface MapEventReport {
   unplaced_rewards: ItemReward[];
   unplaced_pokemon: PokemonSource[];
   unplaced_teaching?: TeachingSource[];
+  unplaced_daycare?: DaycareSource[];
   stopped_at: number[];
 }
 export interface GameMap {

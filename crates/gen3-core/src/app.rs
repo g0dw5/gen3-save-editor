@@ -161,7 +161,7 @@ impl App {
                 let id = serde_json::from_value(p["id"].clone())?;
                 Ok(serde_json::to_value(self.session()?.rom.detail(id)?)?)
             }
-            "world" | "acquisition" | "collection" => {
+            "world" | "acquisition" | "collection" | "daycare_sources" => {
                 let session = self.session()?;
                 if self
                     .acquisition_cache
@@ -174,6 +174,11 @@ impl App {
                 let index = &self.acquisition_cache.as_ref().unwrap().1;
                 if input.command == "world" {
                     Ok(serde_json::to_value(&index.world)?)
+                } else if input.command == "daycare_sources" {
+                    let session = self.session()?;
+                    Ok(serde_json::to_value(
+                        index.daycare_sources(&session.rom, session.save.as_ref()),
+                    )?)
                 } else if input.command == "collection" {
                     let request = serde_json::from_value(p)?;
                     let session = self.session()?;
@@ -205,6 +210,14 @@ impl App {
                         query.use_save_clock,
                     )?)?)
                 }
+            }
+            "breeding_preview" => {
+                let session = self.session()?;
+                Ok(serde_json::to_value(crate::breeding::preview(
+                    &session.rom,
+                    session.save.as_ref(),
+                    &serde_json::from_value(p)?,
+                )?)?)
             }
             "trainer_native_preview" => Ok(serde_json::to_value(crate::native_trainer::preview(
                 &self.session()?.rom,

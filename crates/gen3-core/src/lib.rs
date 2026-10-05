@@ -3,6 +3,7 @@ pub mod acquisition;
 pub mod adapter;
 pub mod app;
 pub mod binary;
+pub mod breeding;
 pub mod cheats;
 pub mod clock;
 pub mod collection;

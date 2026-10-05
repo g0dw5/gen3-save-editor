@@ -92,3 +92,22 @@ normalized layout plus the complete leading party record; no cache is bundled.
 A uniform 16-bit native output supplies conditional counts, separate from encounter
 slot probabilities. Unqualified contexts remain unknown. Bilingual UI and HTML
 share `WildHeldDetails.tsx`; queries never modify a ROM or SAV.
+
+## Native daycare scenarios
+
+`breeding.rs` shares the bounded read-only `Sandbox` and codec readers. Adapter
+configuration holds entry points/RAM layouts/dispatch identities; current ROM
+code supplies compatibility, offspring selection and individual construction.
+Stored parents are read as original boxed records; simulated parents are named
+minimal scenarios using ROM experience thresholds. Neither path writes a save.
+`map_events.rs` indexes qualified receiving specials and guards without treating
+native calls as receipt proof. `AcquisitionIndex.daycare_sources` joins those
+references to NPC coordinates, and `BreedingPanel.tsx` supplies the common
+bilingual offspring/map/back flow with stale-request guards. No extracted baby
+list, incense catalog or percentage fallback is bundled.
+
+The shared CPU corrects only odd Thumb halfword loads whose upstream interpreter
+loses the GBA address/rotation behavior. This is instruction semantics, not an
+adapter-specific function hook. mGBA full-record and halfword tests establish the
+bounded correction; ARM halfword conformance is not implied. Full daycare live
+state, production/access and collection dependencies remain separate gaps.

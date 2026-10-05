@@ -463,6 +463,20 @@ export function MapExplorer({
               {!!marker.teaching?.length && (
                 <p className="small muted">{t("tutorSourceHelp")}</p>
               )}
+              {!!marker.daycare?.length && (
+                <>
+                  <p>{t("breedServices")}</p>
+                  <p className="small muted">{t("breedServicesHelp")}</p>
+                  {marker.daycare.map((offer, i) => (
+                    <ConditionDetails
+                      key={`daycare-${i}`}
+                      conditions={offer.conditions}
+                      catalog={catalog}
+                      onTarget={(target) => onItem?.(target.id)}
+                    />
+                  ))}
+                </>
+              )}
               {marker.rewards.length ? (
                 marker.rewards.map((r, i) => (
                   <p key={`${r.offset}-${i}`}>
@@ -479,7 +493,9 @@ export function MapExplorer({
                         : ""}
                   </p>
                 ))
-              ) : !marker.pokemon?.length && !marker.teaching?.length ? (
+              ) : !marker.pokemon?.length &&
+                !marker.teaching?.length &&
+                !marker.daycare?.length ? (
                 <p>{t("mapNoReward")}</p>
               ) : null}
               {[
@@ -622,6 +638,21 @@ export function MapExplorer({
             </div>
           ))}
           <p className="small muted">{t("tutorSourceHelp")}</p>
+        </details>
+      )}
+      {!!report?.unplaced_daycare?.length && (
+        <details>
+          <summary>{t("breedServices")}</summary>
+          <p className="small muted">{t("mapUnplacedHelp")}</p>
+          <p className="small muted">{t("breedServicesHelp")}</p>
+          {report.unplaced_daycare.map((offer, i) => (
+            <ConditionDetails
+              key={i}
+              conditions={offer.conditions}
+              catalog={catalog}
+              onTarget={(target) => onItem?.(target.id)}
+            />
+          ))}
         </details>
       )}
       {report &&

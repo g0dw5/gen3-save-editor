@@ -2498,3 +2498,45 @@ summary {
 .map-marker.map-focus {
   z-index: 20;
 }
+
+.breeding-panel {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.breeding-parents {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.breeding-parents fieldset {
+  min-width: 0;
+}
+.breeding-result pre {
+  max-height: 300px;
+  overflow: auto;
+}
+.breeding-result table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+}
+.breeding-result th,
+.breeding-result td {
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.breeding-result td {
+  font-variant-numeric: tabular-nums;
+}
+.breeding-result .link-button + .link-button {
+  margin-left: 8px;
+}
+@media (max-width: 760px) {
+  .breeding-parents {
+    grid-template-columns: 1fr;
+  }
+}

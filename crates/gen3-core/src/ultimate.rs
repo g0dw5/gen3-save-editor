@@ -58,6 +58,7 @@ pub const POCKETS: [Pocket; 6] = [
 ];
 
 pub const PROFILE: Profile = Profile {
+    breeding: Some(crate::breeding::EMERALD),
     wild_items: Some(crate::wild_items::EMERALD),
     resource_checks: Some(crate::script_resources::EMERALD),
     tutor_scripts: Some(crate::script_teaching::TutorScriptRules {

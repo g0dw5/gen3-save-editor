@@ -260,6 +260,7 @@ impl Rom {
             data: Arc::new(data),
             profile: profile::Profile {
                 wild_items: None,
+                breeding: None,
                 ..profile::BW
             },
             codec: Codec::new(),

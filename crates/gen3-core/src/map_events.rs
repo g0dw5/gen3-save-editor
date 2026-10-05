@@ -50,6 +50,7 @@ pub struct MapMarker {
     pub rewards: Vec<ItemReward>,
     pub pokemon: Vec<crate::script_pokemon::PokemonSource>,
     pub teaching: Vec<crate::script_teaching::TeachingSource>,
+    pub daycare: Vec<crate::breeding::DaycareSource>,
     pub stopped_at: Vec<usize>,
 }
 #[derive(Serialize)]
@@ -60,6 +61,7 @@ pub struct MapEventReport {
     pub unplaced_rewards: Vec<ItemReward>,
     pub unplaced_pokemon: Vec<crate::script_pokemon::PokemonSource>,
     pub unplaced_teaching: Vec<crate::script_teaching::TeachingSource>,
+    pub unplaced_daycare: Vec<crate::breeding::DaycareSource>,
     pub stopped_at: Vec<usize>,
 }
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -89,6 +91,7 @@ struct Walk {
     rewards: Vec<ItemReward>,
     pokemon: Vec<crate::script_pokemon::PokemonSource>,
     teaching: Vec<crate::script_teaching::TeachingSource>,
+    daycare: Vec<crate::breeding::DaycareSource>,
     stopped: Vec<usize>,
     terminals: Vec<State>,
     complete: bool,
@@ -265,6 +268,7 @@ impl Rom {
         let mut rewards = BTreeSet::new();
         let mut pokemon = BTreeSet::new();
         let mut teaching = BTreeSet::new();
+        let mut daycare = BTreeSet::new();
         let mut stopped = BTreeSet::new();
         let mut steps = 0;
         let mut complete = true;
@@ -311,6 +315,16 @@ impl Rom {
                     break;
                 }
                 if !prove {
+                    match self.script_daycare_instruction(pc) {
+                        Ok(Some(mut source)) => {
+                            source.conditions = s.conditions.clone();
+                            daycare.insert(source);
+                        }
+                        Ok(None) => {}
+                        Err(_) => {
+                            stopped.insert(pc);
+                        }
+                    }
                     match self.script_teaching_instruction(pc, |v| resolve(&s, v)) {
                         Ok(Some(mut source)) => {
                             source.conditions = s.conditions.clone();
@@ -845,6 +859,7 @@ impl Rom {
             rewards: rewards.into_iter().collect(),
             pokemon: pokemon.into_iter().collect(),
             teaching: teaching.into_iter().collect(),
+            daycare: daycare.into_iter().collect(),
             stopped: stopped.into_iter().collect(),
             terminals,
             complete,
@@ -888,6 +903,7 @@ impl Rom {
                         rewards: Vec::new(),
                         pokemon: Vec::new(),
                         teaching: Vec::new(),
+                        daycare: Vec::new(),
                         stopped_at: Vec::new(),
                     };
                     if count_off == 0 {
@@ -962,6 +978,7 @@ impl Rom {
                         marker.rewards = report.rewards;
                         marker.pokemon = report.pokemon;
                         marker.teaching = report.teaching;
+                        marker.daycare = report.daycare;
                         marker.stopped_at = report.stopped;
                         if count_off == 2 {
                             let id = u16(b, o + 6)?;
@@ -972,6 +989,7 @@ impl Rom {
                                     .map(|r| &mut r.conditions)
                                     .chain(marker.pokemon.iter_mut().map(|p| &mut p.conditions))
                                     .chain(marker.teaching.iter_mut().map(|t| &mut t.conditions))
+                                    .chain(marker.daycare.iter_mut().map(|d| &mut d.conditions))
                                 {
                                     conditions.insert(
                                         0,
@@ -1000,6 +1018,7 @@ impl Rom {
                         || !marker.rewards.is_empty()
                         || !marker.pokemon.is_empty()
                         || !marker.teaching.is_empty()
+                        || !marker.daycare.is_empty()
                     {
                         markers.push(marker);
                     }
@@ -1009,12 +1028,14 @@ impl Rom {
         let mut unplaced = BTreeSet::new();
         let mut unplaced_pokemon = BTreeSet::new();
         let mut unplaced_teaching = BTreeSet::new();
+        let mut unplaced_daycare = BTreeSet::new();
         let mut stopped = BTreeSet::new();
         for root in map.scripts.iter().filter(|p| !positioned.contains(p)) {
             let report = self.event_script(*root)?;
             unplaced.extend(report.rewards);
             unplaced_pokemon.extend(report.pokemon);
             unplaced_teaching.extend(report.teaching);
+            unplaced_daycare.extend(report.daycare);
             stopped.extend(report.stopped);
         }
         Ok(MapEventReport {
@@ -1023,6 +1044,7 @@ impl Rom {
             unplaced_rewards: unplaced.into_iter().collect(),
             unplaced_pokemon: unplaced_pokemon.into_iter().collect(),
             unplaced_teaching: unplaced_teaching.into_iter().collect(),
+            unplaced_daycare: unplaced_daycare.into_iter().collect(),
             stopped_at: stopped.into_iter().collect(),
         })
     }

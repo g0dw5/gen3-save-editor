@@ -227,3 +227,9 @@ provides a simulated no-modifier baseline and, with a SAV, the first party
 member's context. Held chances are conditional on that Pokémon being encountered;
 encounter slot probabilities remain separate. Unreferenced records do not prove
 obtainability. See [native evidence and limits](docs/verification/wild-held-20261006.md).
+
+Pokémon acquisition includes a read-only native daycare preview. Choose saved
+parents or explicit simulated parents, follow the resulting offspring and located
+receiving NPC/map links. This is one receipt scenario, not production probability
+or the next real egg; Rocket/Mercury service locations and full breeding coverage
+remain unresolved. See [native daycare evidence](docs/verification/breeding-20261006.md).
