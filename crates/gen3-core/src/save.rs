@@ -1,4 +1,4 @@
-//! Sector ownership and lossless logical block access for Emerald-family saves.
+//! Sector ownership and lossless logical block access for Gen III saves.
 use crate::{
     binary::*,
     err,
@@ -295,10 +295,15 @@ impl Save {
         Ok(())
     }
     pub fn open(data: Vec<u8>, layout: SaveLayout) -> Result<Self> {
-        if data.len() != 0x20000 {
+        if data.len() != 0x20000
+            && !(layout.rtc_trailer_bytes > 0 && data.len() == 0x20000 + layout.rtc_trailer_bytes)
+        {
             return Err(err(
                 "save_size",
-                format!("expected 131072 battery-save bytes, got {}", data.len()),
+                format!(
+                    "expected 131072 battery-save bytes (optionally RTC trailer), got {}",
+                    data.len()
+                ),
             ));
         }
         let a = slot(&data, 0, layout);
@@ -391,6 +396,14 @@ impl Save {
         if raw.iter().all(|b| *b == 0) {
             return Ok(None);
         }
+        // The Mercury ROM leaves native, nonzero metadata in an unoccupied
+        // storage slot. Other adapters reject such records as possible damage.
+        if self.layout.skip_unoccupied_box_records
+            && matches!(loc, Location::Box { .. })
+            && self.layout.pokemon_codec.fields().has_species.read(&raw)? == 0
+        {
+            return Ok(None);
+        }
         let c = checked_record(&raw, loc, rom)?;
         if u16(&c, 0)? == 0
             && rom
@@ -466,6 +479,11 @@ impl Save {
                 let off = 4 + (b * self.layout.slots + i) * 80;
                 let raw = &storage[off..off + 80];
                 if raw.iter().all(|b| *b == 0) {
+                    continue;
+                }
+                if self.layout.skip_unoccupied_box_records
+                    && self.layout.pokemon_codec.fields().has_species.read(raw)? == 0
+                {
                     continue;
                 }
                 let location = Location::Box {
@@ -662,7 +680,7 @@ impl Save {
             seconds: self.data[a + 17],
             money: u32(&self.data, b + self.layout.money)? ^ key,
             coins: u16(&self.data, b + self.layout.coins)? ^ (key as u16),
-            registered_item: u16(&self.data, b + 0x496)?,
+            registered_item: u16(&self.data, b + self.layout.registered_item)?,
         })
     }
     pub fn edit_trainer(&mut self, p: &TrainerPatch, rom: &Rom) -> Result<()> {
@@ -714,7 +732,7 @@ impl Save {
         }
         if let Some(v) = p.registered_item {
             rom.item(v)?;
-            put16(&mut self.data, b + 0x496, v);
+            put16(&mut self.data, b + self.layout.registered_item, v);
         }
         self.fix(0);
         self.fix(1);
@@ -812,13 +830,22 @@ impl Save {
         for i in 0..self.layout.boxes {
             let count = (0..self.layout.slots)
                 .filter(|j| {
+                    let raw = &b[4 + (i * self.layout.slots + j) * 80
+                        ..4 + (i * self.layout.slots + j + 1) * 80];
+                    if self.layout.skip_unoccupied_box_records
+                        && self
+                            .layout
+                            .pokemon_codec
+                            .fields()
+                            .has_species
+                            .read(raw)
+                            .unwrap()
+                            == 0
+                    {
+                        return false;
+                    }
                     u16(
-                        &pokemon::unpack_with(
-                            &b[4 + (i * self.layout.slots + j) * 80
-                                ..4 + (i * self.layout.slots + j + 1) * 80],
-                            self.layout.pokemon_codec,
-                        )
-                        .unwrap(),
+                        &pokemon::unpack_with(raw, self.layout.pokemon_codec).unwrap(),
                         0,
                     )
                     .unwrap()

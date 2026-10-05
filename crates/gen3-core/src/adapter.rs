@@ -6,6 +6,9 @@ use serde::Serialize;
 #[serde(rename_all = "snake_case")]
 pub enum PokemonCodec {
     Gen3,
+    /// CFRU stores ordered, unencrypted substructures, the ball in Growth byte
+    /// 10 and a hidden-ability flag in Misc bit 31. Native checksums are disabled.
+    Cfru,
     Rocket21,
     Ultimate55,
 }
@@ -63,6 +66,10 @@ pub struct PokemonFields {
     pub ot_name: usize,
 }
 impl PokemonCodec {
+    pub fn plain_substructures(self) -> bool {
+        matches!(self, Self::Cfru | Self::Ultimate55)
+    }
+
     pub fn fields(self) -> PokemonFields {
         match self {
             Self::Gen3 => PokemonFields {
@@ -81,6 +88,10 @@ impl PokemonCodec {
                 header_egg: Field::new(19, 2, 1),
                 markings: Field::new(27, 0, 4),
                 ot_name: 20,
+            },
+            Self::Cfru => PokemonFields {
+                ball: Field::new(10, 0, 8),
+                ..Self::Gen3.fields()
             },
             Self::Rocket21 => PokemonFields {
                 experience: Field::new(4, 0, 23),
@@ -113,7 +124,7 @@ impl PokemonCodec {
 impl PokemonCodec {
     fn ribbon_fields(self) -> Vec<(Field, u8)> {
         match self {
-            Self::Gen3 | Self::Ultimate55 => vec![(Field::new(44, 0, 32), 0)],
+            Self::Gen3 | Self::Cfru | Self::Ultimate55 => vec![(Field::new(44, 0, 32), 0)],
             Self::Rocket21 => vec![
                 (Field::new(43, 7, 1), 0),
                 (Field::new(44, 0, 1), 3),
@@ -183,12 +194,14 @@ pub enum EvolutionFormat {
 pub enum ScriptFormat {
     DarkPhantom,
     EmeraldExpanded,
+    FireRed,
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub enum TrainerFormat {
     DarkPhantom,
     Ultimate55,
     ExpandedEvs,
+    FireRed,
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct RomFormats {

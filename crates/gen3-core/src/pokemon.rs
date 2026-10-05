@@ -128,7 +128,7 @@ pub fn unpack_with(raw: &[u8], codec: PokemonCodec) -> Result<[u8; 48]> {
     if raw.len() != 80 && raw.len() != 100 {
         return Err(err("pokemon_size", raw.len()));
     }
-    if codec == PokemonCodec::Ultimate55 {
+    if codec.plain_substructures() {
         return Ok(raw[32..80].try_into().unwrap());
     }
     let pid = u32(raw, 0)?;
@@ -153,7 +153,7 @@ pub fn checked_unpack_with(raw: &[u8], codec: PokemonCodec) -> Result<[u8; 48]> 
     let canonical = unpack_with(raw, codec)?;
     let stored = u16(raw, 28)?;
     let calculated = checksum(&canonical);
-    if codec != PokemonCodec::Ultimate55 && stored != calculated {
+    if !codec.plain_substructures() && stored != calculated {
         return Err(err(
             "pokemon_checksum",
             format!("stored {stored:#06x}, calculated {calculated:#06x}"),
@@ -168,7 +168,7 @@ pub fn pack(raw: &mut [u8], canonical: &[u8; 48]) {
     pack_with(raw, canonical, PokemonCodec::Gen3)
 }
 pub fn pack_with(raw: &mut [u8], canonical: &[u8; 48], codec: PokemonCodec) {
-    if codec == PokemonCodec::Ultimate55 {
+    if codec.plain_substructures() {
         // Native setters leave the disabled checksum word untouched.
         raw[32..80].copy_from_slice(canonical);
         return;
@@ -331,6 +331,14 @@ pub fn decode(raw: &[u8], rom: &Rom) -> Result<Pokemon> {
     let lv = rom_level(rom, s.growth, xp)?;
     let slot = if codec == PokemonCodec::Ultimate55 && raw[30] & 1 != 0 {
         2
+    } else if codec == PokemonCodec::Cfru {
+        if fields.ability.read(&c)? != 0 && s.abilities.get(2).is_some_and(|id| *id != 0) {
+            2
+        } else if pid & 1 != 0 && s.abilities.get(1).is_some_and(|id| *id != 0) {
+            1
+        } else {
+            0
+        }
     } else {
         fields.ability.read(&c)? as u8
     };
@@ -402,7 +410,7 @@ pub fn decode(raw: &[u8], rom: &Rom) -> Result<Pokemon> {
         } else {
             None
         },
-        checksum_ok: codec == PokemonCodec::Ultimate55 || checksum(&c) == u16(raw, 28)?,
+        checksum_ok: codec.plain_substructures() || checksum(&c) == u16(raw, 28)?,
     })
 }
 fn check(v: bool, field: &str) -> Result<()> {
@@ -447,12 +455,24 @@ pub fn findings(p: &Pokemon, rom: &Rom) -> Result<Vec<Finding>> {
     }
     Ok(out)
 }
-fn solve(start: u32, ot: u32, ratio: u8, nature: u8, sex: &str, is_shiny: bool) -> Result<u32> {
+fn solve(
+    start: u32,
+    ot: u32,
+    ratio: u8,
+    nature: u8,
+    sex: &str,
+    is_shiny: bool,
+    ability_parity: Option<u8>,
+) -> Result<u32> {
     if !matches!(sex, "male" | "female" | "genderless") {
         return Err(err("gender", sex));
     }
-    let matches =
-        |p| p % 25 == nature as u32 && gender(ratio, p) == sex && shiny(p, ot) == is_shiny;
+    let matches = |p| {
+        p % 25 == nature as u32
+            && gender(ratio, p) == sex
+            && shiny(p, ot) == is_shiny
+            && ability_parity.is_none_or(|parity| (p & 1) as u8 == parity)
+    };
     if matches(start) {
         return Ok(start);
     }
@@ -562,6 +582,9 @@ pub fn edit(
     let ability = patch.ability_slot.unwrap_or(before.ability_slot);
     if patch.ability_slot.is_some() {
         check((ability as usize) < s.abilities.len(), "ability_slot")?;
+        if rom.profile.save.pokemon_codec == PokemonCodec::Cfru {
+            check(s.abilities[ability as usize] != 0, "ability_slot")?;
+        }
     }
     let egg = patch.egg.unwrap_or(before.egg);
     let word = ivs
@@ -574,6 +597,12 @@ pub fn edit(
         Field::new(30, 0, 1).write(&mut out, (ability == 2) as u32)?;
         if ability < 2 {
             fields.ability.write(&mut c, ability as u32)?;
+        }
+    } else if rom.profile.save.pokemon_codec == PokemonCodec::Cfru {
+        // Native lookup may fall back when a species has no hidden ability.
+        // An unrelated edit must retain its stored hidden-ability flag.
+        if patch.ability_slot.is_some() {
+            fields.ability.write(&mut c, (ability == 2) as u32)?;
         }
     } else {
         fields.ability.write(&mut c, ability as u32)?;
@@ -643,12 +672,22 @@ pub fn edit(
     let ot = patch.ot_id.unwrap_or(before.ot_id);
     put32(&mut out, 4, ot);
     let mut pid = patch.pid.unwrap_or(before.pid);
+    let cfru_normal_ability = (rom.profile.save.pokemon_codec == PokemonCodec::Cfru
+        && ability < 2
+        && s.abilities.get(1).is_some_and(|id| *id != 0))
+    .then_some(ability);
+    if patch.ability_slot.is_some() && patch.pid.is_some() {
+        if let Some(parity) = cfru_normal_ability {
+            check((pid & 1) as u8 == parity, "pid_ability")?;
+        }
+    }
     if patch.pid.is_none()
         && (patch.nature.is_some()
             || patch.gender.is_some()
             || patch.shiny.is_some()
             || patch.ot_id.is_some()
-            || patch.species.is_some())
+            || patch.species.is_some()
+            || (patch.ability_slot.is_some() && cfru_normal_ability.is_some()))
     {
         let nature = patch.nature.unwrap_or(before.nature);
         check(nature < 25, "nature")?;
@@ -663,6 +702,7 @@ pub fn edit(
             nature,
             sex,
             patch.shiny.unwrap_or(before.shiny),
+            cfru_normal_ability,
         )?;
     } else if patch.pid.is_some()
         && (patch.nature.is_some() || patch.gender.is_some() || patch.shiny.is_some())
@@ -761,7 +801,9 @@ pub fn create(
     fields
         .met_level
         .write(&mut c, (level as u32).min(fields.met_level.max()))?;
-    fields.origin_game.write(&mut c, 3)?;
+    fields
+        .origin_game
+        .write(&mut c, rom.profile.save.created_origin_game as u32)?;
     fields.ball.write(&mut c, fields.default_ball as u32)?;
     if let Some(field) = fields.nature_override {
         field.write(&mut c, 26)?;

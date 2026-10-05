@@ -190,9 +190,9 @@ impl Rom {
         let tag = u16(b, info + 2)?;
         let images = pointer(b, info + 28)?;
         let tiles = bytes(b, pointer(b, images)?, u16(b, images + 4)? as usize)?;
-        let palette_table = self.profile.object_palettes;
-        let palette_offset = (0..palette_table.count)
-            .map(|i| palette_table.offset + i * palette_table.stride)
+        let palette_offset = std::iter::once(self.profile.object_palettes)
+            .chain(self.profile.object_palette_supplements.iter().copied())
+            .flat_map(|table| (0..table.count).map(move |i| table.offset + i * table.stride))
             .find(|o| u16(b, *o + 4).ok() == Some(tag))
             .ok_or_else(|| err("object_palette", tag))?;
         let palette = bytes(b, pointer(b, palette_offset)?, 32)?;

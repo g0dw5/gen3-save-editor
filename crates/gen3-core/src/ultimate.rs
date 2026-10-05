@@ -142,6 +142,7 @@ pub const PROFILE: Profile = Profile {
     learnsets: 0x1d89518,
     eggs: 0x1d78128,
     teaching: TeachingRules {
+        machine_item_ranges: &[],
         tm_first_item: 378,
         tm_count: 128,
         tm_stride: 16,

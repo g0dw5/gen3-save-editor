@@ -71,6 +71,25 @@ export function ReferenceWindow({
   const encounterMethod = (method: string) =>
     catalog.items.find((item) => item.id === fishingRodItems[method])?.name ||
     t(method);
+  const encounterPeriods = (encounter: Encounter) =>
+    (encounter.periods ?? [])
+      .map((period) => {
+        switch (period) {
+          case "base":
+            return t("encounterBase");
+          case "morning":
+            return t("encounterMorning");
+          case "day":
+            return t("encounterDay");
+          case "dusk":
+            return t("encounterDusk");
+          case "night":
+            return t("encounterNight");
+          default:
+            return period;
+        }
+      })
+      .join(" / ");
   const [tab, setTab] = useState<RefTab>(info.tab);
   const [selected, setSelected] = useState<number | string>(info.selected ?? 1);
   const [search, setSearch] = useState("");
@@ -593,6 +612,9 @@ export function ReferenceWindow({
                           : `${t("encounterVariant")} ${e.selector.value + 1}`}
                       </div>
                     )}
+                    {!!e.periods?.length && (
+                      <div className="muted small">{encounterPeriods(e)}</div>
+                    )}
                     {e.conditional && !e.selector && (
                       <div className="warning-text small">
                         {t("conditional")}
@@ -791,6 +813,7 @@ export function ReferenceWindow({
                       {e.weight !== null ? ` · ${e.weight}%` : ""}
                       {e.selector &&
                         ` · ${e.selector.fallback ? t("encounterDefault") : `${t("encounterVariant")} ${e.selector.value + 1}`}`}
+                      {!!e.periods?.length && ` · ${encounterPeriods(e)}`}
                     </span>
                     <button
                       className="link-button small"

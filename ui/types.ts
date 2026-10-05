@@ -212,6 +212,7 @@ export interface LearnSource {
 }
 export interface Encounter {
   selector?: { variable: number; value: number; fallback: boolean } | null;
+  periods?: string[];
   species: number;
   map_id: string;
   map_name: string;

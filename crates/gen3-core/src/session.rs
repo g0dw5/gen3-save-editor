@@ -238,7 +238,12 @@ impl Session {
                 number,
                 seen,
                 owned,
-            } => save.edit_dex(*number, *seen, *owned)?,
+            } => {
+                rom.profile
+                    .capabilities
+                    .require(rom.profile.capabilities.dex, "dex")?;
+                save.edit_dex(*number, *seen, *owned)?;
+            }
             Action::Import {
                 location,
                 rom_md5,

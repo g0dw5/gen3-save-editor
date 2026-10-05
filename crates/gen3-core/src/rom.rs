@@ -380,16 +380,22 @@ impl Rom {
             hold_param: b[19],
             pocket: b[26],
             item_type: b[27],
-            tm_move: if self.profile.capabilities.complete_learnsets
-                && (self.profile.teaching.tm_first_item
-                    ..self.profile.teaching.tm_first_item + self.profile.teaching.tm_count as u16)
-                    .contains(&id)
-            {
-                Some(u16(
-                    &self.data,
-                    self.profile.tm_moves
-                        + (id as usize - self.profile.teaching.tm_first_item as usize) * 2,
-                )?)
+            tm_move: if self.profile.capabilities.complete_learnsets {
+                let teaching = self.profile.teaching;
+                let machine = if teaching.machine_item_ranges.is_empty() {
+                    (teaching.tm_first_item..teaching.tm_first_item + teaching.tm_count as u16)
+                        .contains(&id)
+                        .then_some(id.saturating_sub(teaching.tm_first_item))
+                } else {
+                    teaching.machine_item_ranges.iter().find_map(|range| {
+                        (range.item_first..range.item_first + range.item_count)
+                            .contains(&id)
+                            .then(|| range.move_first + id - range.item_first)
+                    })
+                };
+                machine
+                    .map(|index| u16(&self.data, self.profile.tm_moves + index as usize * 2))
+                    .transpose()?
             } else {
                 None
             },
@@ -434,8 +440,53 @@ impl Rom {
             stat_changes,
         })
     }
+    pub(crate) fn region_name(&self, id: usize) -> String {
+        if id < self.profile.region_first || id >= self.profile.region_count {
+            return String::new();
+        }
+        self.ptr_text(
+            self.profile.regions + (id - self.profile.region_first) * self.profile.region_stride,
+        )
+    }
     pub fn catalog(&self) -> Result<Catalog> {
         let ultimate = self.profile.save.pokemon_codec == crate::adapter::PokemonCodec::Ultimate55;
+        let cfru = self.profile.save.pokemon_codec == crate::adapter::PokemonCodec::Cfru;
+        let mut ball_options = Vec::new();
+        let candidates = if cfru {
+            1..self.profile.items.count as u16
+        } else {
+            0..self.profile.save.pokemon_codec.fields().ball.max() as u16 + 1
+        };
+        for candidate in candidates {
+            let item_id = if ultimate {
+                crate::ultimate::ball_item(self, candidate)?
+            } else {
+                candidate
+            };
+            let Ok(item) = self.item(item_id) else {
+                continue;
+            };
+            if !self
+                .profile
+                .save
+                .pockets
+                .iter()
+                .any(|p| p.id == "balls" && p.category == item.pocket)
+            {
+                continue;
+            }
+            let value = if cfru {
+                item.item_type as u16
+            } else {
+                candidate
+            };
+            if !ball_options.iter().any(|b: &BallOption| b.value == value) {
+                ball_options.push(BallOption {
+                    value,
+                    item: item_id,
+                });
+            }
+        }
         Ok(Catalog {
             natures: (0..25).map(|id| self.nature(id)).collect::<Result<_>>()?,
             type_names: (0..self.profile.type_names.count)
@@ -450,42 +501,12 @@ impl Rom {
             battle_forms: self.all_battle_forms()?,
             profile: self.profile,
             editor_rules: EditorRules {
-                ball_options: (0..=self.profile.save.pokemon_codec.fields().ball.max() as u16)
-                    .map(|value| {
-                        let item = if ultimate {
-                            crate::ultimate::ball_item(self, value)?
-                        } else {
-                            value
-                        };
-                        Ok(BallOption { value, item })
-                    })
-                    .collect::<Result<Vec<_>>>()?
-                    .into_iter()
-                    .filter(|b| {
-                        self.item(b.item).is_ok_and(|i| {
-                            self.profile
-                                .save
-                                .pockets
-                                .iter()
-                                .any(|p| p.id == "balls" && p.category == i.pocket)
-                        })
-                    })
-                    .collect(),
+                balls: ball_options.iter().map(|b| b.value).collect(),
+                ball_options,
                 hyper_training: ultimate,
-                pokemon_checksum: !ultimate,
+                pokemon_checksum: !self.profile.save.pokemon_codec.plain_substructures(),
                 origin_game_max: self.profile.save.pokemon_codec.fields().origin_game.max() as u8,
                 met_level_max: self.profile.save.pokemon_codec.fields().met_level.max() as u8,
-                balls: (1..=self.profile.save.pokemon_codec.fields().ball.max() as u16)
-                    .filter(|id| {
-                        self.item(*id).is_ok_and(|i| {
-                            self.profile
-                                .save
-                                .pockets
-                                .iter()
-                                .any(|p| p.id == "balls" && p.category == i.pocket)
-                        })
-                    })
-                    .collect(),
                 nature_override: ultimate
                     || self
                         .profile
@@ -504,7 +525,7 @@ impl Rom {
             },
             met_locations: (0..self.profile.region_count)
                 .filter_map(|id| {
-                    let name = self.ptr_text(self.profile.regions + id * 8);
+                    let name = self.region_name(id);
                     (!name.trim().is_empty()).then_some(NamedLocation { id: id as u8, name })
                 })
                 .collect(),

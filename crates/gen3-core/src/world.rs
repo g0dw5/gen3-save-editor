@@ -29,6 +29,9 @@ pub struct MapObject {
 #[derive(Clone, Serialize)]
 pub struct Encounter {
     pub selector: Option<EncounterSelector>,
+    /// Empty for profiles without a clock selector and for scripted encounters.
+    /// Clock-selected tables use period names; their separate source table uses `base`.
+    pub periods: Vec<&'static str>,
     pub species: u16,
     pub map_id: String,
     pub map_name: String,
@@ -332,7 +335,7 @@ impl Rom {
                     }
                 }
                 let region = b[h + 20];
-                let name = self.ptr_text(self.profile.regions + region as usize * 8);
+                let name = self.region_name(region as usize);
                 maps.push(Map {
                     id: format!("{group}-{number}"),
                     group: group as u8,
@@ -364,106 +367,141 @@ impl Rom {
             .require(self.profile.capabilities.world, "world")?;
         let maps = self.maps()?;
         let by_id: BTreeMap<_, _> = maps.iter().map(|m| (m.id.clone(), m)).collect();
-        let mut out = Vec::new();
+        let mut out: Vec<Encounter> = Vec::new();
         let b = &self.data;
-        let mut first_headers = BTreeMap::new();
-        for i in 0..600 {
-            let o = self.profile.wild + i * 20;
-            let h = bytes(b, o, 20)?;
-            if h[0] == 255 && h[1] == 255 {
-                break;
-            }
-            let id = format!("{}-{}", h[0], h[1]);
-            let first = *first_headers.entry(id.clone()).or_insert(i);
-            let selector = if let Some(rule) = self.profile.wild_selection {
-                if id == rule.variable_map {
-                    let value = (i - first) as u16;
-                    if value > rule.max_variant {
+        let mut indexed = BTreeMap::<(String, &'static str, usize, u32), usize>::new();
+        let mut tables = vec![(self.profile.wild, None)];
+        if let Some(time) = self.profile.wild_time_tables {
+            tables.extend(time.into_iter().zip([
+                Some("morning"),
+                Some("day"),
+                Some("dusk"),
+                Some("night"),
+            ]));
+        }
+        for (table, period) in tables {
+            let mut first_headers = BTreeMap::new();
+            for i in 0..600 {
+                let o = table + i * 20;
+                let h = bytes(b, o, 20)?;
+                if h[0] == 255 && h[1] == 255 {
+                    break;
+                }
+                let id = format!("{}-{}", h[0], h[1]);
+                let first = *first_headers.entry(id.clone()).or_insert(i);
+                if let Some(rule) = self.profile.wild_selection {
+                    if period.is_none()
+                        && id == rule.variable_map
+                        && i - first > usize::from(rule.max_variant)
+                    {
                         continue;
                     }
-                    Some(EncounterSelector {
-                        variable: rule.variable,
-                        value,
-                        fallback: value == 0,
-                    })
+                }
+                let selector = if period.is_none() {
+                    self.profile.wild_selection
                 } else {
-                    // The game's map lookup returns the first record, not every
-                    // duplicate appearing later in the source table.
-                    if i != first {
-                        continue;
-                    }
                     None
                 }
-            } else {
-                None
-            };
-            let Some(map) = by_id.get(&id) else {
-                return Err(err("encounter_map", id));
-            };
-            for (ptr_off, method, count) in [
-                (4, "grass", 12),
-                (8, "surf", 5),
-                (12, "rock_smash", 5),
-                (16, "fishing", 10),
-            ] {
-                if u32(h, ptr_off)? == 0 {
+                .and_then(|rule| {
+                    if id == rule.variable_map {
+                        let value = (i - first) as u16;
+                        Some(EncounterSelector {
+                            variable: rule.variable,
+                            value,
+                            fallback: value == 0,
+                        })
+                    } else {
+                        // The game's map lookup returns the first record, not every
+                        // duplicate appearing later in the source table.
+                        None
+                    }
+                });
+                if i != first && selector.is_none() {
                     continue;
                 }
-                let p = pointer(b, o + ptr_off)?;
-                let rate = u32(b, p)?;
-                let list = pointer(b, p + 4)?;
-                for j in 0..count {
-                    let off = list + j * 4;
-                    let min = bytes(b, off, 2)?[0];
-                    let max = b[off + 1];
-                    let species = u16(b, off + 2)?;
-                    // Species zero is an empty source slot. Preserve the other
-                    // slots' original weights; never renormalize them to 100%.
-                    if species == 0 {
+                let Some(map) = by_id.get(&id) else {
+                    return Err(err("encounter_map", id));
+                };
+                for (ptr_off, method, count) in [
+                    (4, "grass", 12),
+                    (8, "surf", 5),
+                    (12, "rock_smash", 5),
+                    (16, "fishing", 10),
+                ] {
+                    if u32(h, ptr_off)? == 0 {
                         continue;
                     }
-                    self.valid_species(species)?;
-                    if min > max || max > self.profile.max_level {
-                        return Err(err("encounter_level", off));
-                    }
-                    let (method, weight) = if method == "fishing" {
-                        if j < 2 {
-                            ("old_rod", [70, 30][j])
-                        } else if j < 5 {
-                            ("good_rod", [60, 20, 20][j - 2])
-                        } else {
-                            ("super_rod", [40, 40, 15, 4, 1][j - 5])
+                    let p = pointer(b, o + ptr_off)?;
+                    let rate = u32(b, p)?;
+                    let list = pointer(b, p + 4)?;
+                    for j in 0..count {
+                        let off = list + j * 4;
+                        let min = bytes(b, off, 2)?[0];
+                        let max = b[off + 1];
+                        let species = u16(b, off + 2)?;
+                        // Species zero is an empty source slot. Preserve the other
+                        // slots' original weights; never renormalize them to 100%.
+                        if species == 0 {
+                            continue;
                         }
-                    } else if method == "grass" {
-                        (
-                            if map.map_type == 4 { "cave" } else { method },
-                            [20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1][j],
-                        )
-                    } else {
-                        (
-                            if method == "surf" && map.map_type == 5 {
-                                "dive"
+                        self.valid_species(species)?;
+                        if min > max || max > self.profile.max_level {
+                            return Err(err("encounter_level", off));
+                        }
+                        let (method, weight) = if method == "fishing" {
+                            if j < 2 {
+                                ("old_rod", [70, 30][j])
+                            } else if j < 5 {
+                                ("good_rod", [60, 20, 20][j - 2])
                             } else {
-                                method
+                                ("super_rod", [40, 40, 15, 4, 1][j - 5])
+                            }
+                        } else if method == "grass" {
+                            (
+                                if map.map_type == 4 { "cave" } else { method },
+                                [20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1][j],
+                            )
+                        } else {
+                            (
+                                if method == "surf" && map.map_type == 5 {
+                                    "dive"
+                                } else {
+                                    method
+                                },
+                                [60, 30, 5, 4, 1][j],
+                            )
+                        };
+                        if let Some(period) = period {
+                            if let Some(&prior) = indexed.get(&(id.clone(), method, off, rate)) {
+                                out[prior].periods.push(period);
+                                continue;
+                            }
+                        }
+                        let index = out.len();
+                        out.push(Encounter {
+                            selector: selector.clone(),
+                            periods: match period {
+                                Some(period) => vec![period],
+                                None if self.profile.wild_time_tables.is_some() => vec!["base"],
+                                None => Vec::new(),
                             },
-                            [60, 30, 5, 4, 1][j],
-                        )
-                    };
-                    out.push(Encounter {
-                        selector: selector.clone(),
-                        species,
-                        map_id: id.clone(),
-                        map_name: map.name.clone(),
-                        region: map.region,
-                        method: method.into(),
-                        min_level: min,
-                        max_level: max,
-                        weight: Some(weight),
-                        encounter_rate: Some(rate),
-                        slot: Some(j as u8),
-                        offset: off,
-                        conditional: selector.is_some(),
-                    });
+                            species,
+                            map_id: id.clone(),
+                            map_name: map.name.clone(),
+                            region: map.region,
+                            method: method.into(),
+                            min_level: min,
+                            max_level: max,
+                            weight: Some(weight),
+                            encounter_rate: Some(rate),
+                            slot: Some(j as u8),
+                            offset: off,
+                            conditional: selector.is_some(),
+                        });
+                        if period.is_some() {
+                            indexed.insert((id.clone(), method, off, rate), index);
+                        }
+                    }
                 }
             }
         }
@@ -532,7 +570,15 @@ impl Rom {
                         .map(|c| *c as u32)
                         .sum::<u32>(),
                 );
-                let generation = if ultimate {
+                let generation = if matches!(
+                    self.profile.formats.trainers,
+                    crate::adapter::TrainerFormat::FireRed
+                ) {
+                    // The CFRU constructor can override stock FireRed's PID,
+                    // ability, IV and EV choices. Keep raw party values visible
+                    // until its exact native constructor has been verified.
+                    None
+                } else if ultimate {
                     if let Ok(mon_species) = self.valid_species(species) {
                         if flags & 3 != 0 {
                             Some(crate::ultimate::trainer_template(self, species, b[p])?)
@@ -817,6 +863,7 @@ impl Rom {
                     if self.valid_species(s).is_ok() && l > 0 && l <= self.profile.max_level {
                         found.entry((pc, s)).or_insert(Encounter {
                             selector: None,
+                            periods: Vec::new(),
                             species: s,
                             map_id: map.id.clone(),
                             map_name: map.name.clone(),

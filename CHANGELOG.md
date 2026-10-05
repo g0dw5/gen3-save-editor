@@ -10,6 +10,24 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add exact-ROM Mercury FC 1.1 / 1.2 reference: species, moves, items,
+  descriptions, evolutions and battle forms, complete move sources, native
+  experience thresholds, appearance, maps, timed encounters, trainers and
+  ROM-rendered map/NPC artwork. Add core save editing verified against native
+  routines, private-copy round trips and mGBA loading. Expanded Pokédex flags,
+  a complete in-game resave round trip and cheats remain pending
+  verification; no ROM bytes or extracted assets are bundled.
+- 新增宝可梦水银 FC 1.1 / 1.2 的精确指纹资料：宝可梦、招式／道具及说明、进化与
+  对战形态、完整招式来源、ROM 原生经验表、外观、地图、分时段相遇、训练家，
+  以及从 ROM 渲染的地图和 NPC。核心存档编辑经过原生函数对照、副本读写回读及
+  mGBA 加载验证；完整游戏再次保存流程待验证，扩展图鉴位与金手指暂不开放。
+  不内置 ROM 字节或导出素材。
+- Verify Mercury's unencrypted individual layout against both ROMs' native
+  getters/setters and stat routines. Keep its ball byte separate from Gigantamax
+  flags; distinguish PID-selected ordinary abilities from its hidden-ability bit.
+- 逐字段对照两版水银的原生读写及能力值例程，采用不加密的个体布局；捕获球
+  与超极巨化标记分开，普通特性按 PID 选择，隐藏特性按独立标记处理。
+
 - Add exact-ROM persistent player-side Protect for all four supported ROMs.
   Four CodeBreaker lines OR the native Protect bit for both player-side battler
   slots only while a battle callback exists. mGBA single-battle comparisons

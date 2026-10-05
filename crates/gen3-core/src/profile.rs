@@ -86,9 +86,14 @@ pub struct Profile {
     pub map_palette_banks: [usize; 2],
     pub map_graphics: MapGraphics,
     pub regions: usize,
+    /// First map-section index represented by `regions` (FireRed may omit 0–87).
+    pub region_first: usize,
+    pub region_stride: usize,
     pub region_count: usize,
     pub wild: usize,
     pub wild_selection: Option<WildSelection>,
+    /// Optional native time-of-day encounter tables, in morning/day/dusk/night order.
+    pub wild_time_tables: Option<[usize; 4]>,
     pub feebas: Option<FeebasRules>,
     pub fishing_rods: [u16; 3],
     pub trainers: Table,
@@ -97,6 +102,7 @@ pub struct Profile {
     pub trainer_palettes: usize,
     pub object_graphics: &'static [Table],
     pub object_palettes: Table,
+    pub object_palette_supplements: &'static [Table],
     pub script_actors: &'static [ScriptActor],
     pub map_groups: &'static [MapGroup],
     pub map_counts: &'static [usize],
@@ -113,6 +119,8 @@ pub struct WildSelection {
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct TeachingRules {
     pub tm_first_item: u16,
+    /// Item-ID ranges when machines are split across item tables.
+    pub machine_item_ranges: &'static [MachineItemRange],
     pub tm_count: usize,
     pub tm_stride: usize,
     pub tutor_count: usize,
@@ -120,6 +128,12 @@ pub struct TeachingRules {
     /// A zero-terminated move list per species, shared by machines and tutors.
     pub shared_lists: Option<usize>,
     pub egg_words: usize,
+}
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct MachineItemRange {
+    pub item_first: u16,
+    pub item_count: u16,
+    pub move_first: u16,
 }
 /// Verified battle-engine behavior, not the move table's placeholder type/power.
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -186,6 +200,13 @@ pub struct SaveLayout {
     pub key: usize,
     pub money: usize,
     pub coins: usize,
+    pub registered_item: usize,
+    /// Native game-version field for a newly created individual.
+    pub created_origin_game: u8,
+    /// Emulator RTC data may follow the 128 KiB flash image; preserve it verbatim.
+    pub rtc_trailer_bytes: usize,
+    /// Some ROMs preserve nonzero bytes in box slots whose native occupancy bit is clear.
+    pub skip_unoccupied_box_records: bool,
 }
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 pub enum SectorChecksum {
@@ -224,6 +245,10 @@ pub const EMERALD: SaveLayout = SaveLayout {
     key: 0xac,
     money: 0x490,
     coins: 0x494,
+    registered_item: 0x496,
+    created_origin_game: 3,
+    rtc_trailer_bytes: 0,
+    skip_unoccupied_box_records: false,
 };
 pub const BW: Profile = Profile {
     nature_names: 0x61cb50,
@@ -321,6 +346,7 @@ pub const BW: Profile = Profile {
     eggs: 0x32add8,
     teaching: TeachingRules {
         tm_first_item: 0x121,
+        machine_item_ranges: &[],
         tm_count: 58,
         tm_stride: 8,
         tutor_count: 32,
@@ -352,9 +378,12 @@ pub const BW: Profile = Profile {
     },
     fishing_rods: [262, 263, 264],
     regions: 0x5a1480,
+    region_first: 0,
+    region_stride: 8,
     region_count: 213,
     wild: 0xea2d34,
     wild_selection: None,
+    wild_time_tables: None,
     feebas: Some(FeebasRules {
         map_id: "0-34",
         seed_offset: 0x2e6a,
@@ -398,6 +427,7 @@ pub const BW: Profile = Profile {
         count: 35,
         stride: 8,
     },
+    object_palette_supplements: &[],
     script_actors: &[ScriptActor {
         battle_offset: 0x228a51,
         local_ids: &[1],
@@ -513,6 +543,7 @@ pub const ROCKET: Profile = Profile {
     eggs: 0x61dac4,
     teaching: TeachingRules {
         tm_first_item: 592,
+        machine_item_ranges: &[],
         tm_count: 254,
         tm_stride: 0,
         tutor_count: 0,
@@ -549,6 +580,8 @@ pub const ROCKET: Profile = Profile {
     },
     fishing_rods: [866, 867, 868],
     regions: 0xc6ad68,
+    region_first: 0,
+    region_stride: 8,
     region_count: 252,
     wild: 0xbe8a70,
     wild_selection: Some(WildSelection {
@@ -556,6 +589,7 @@ pub const ROCKET: Profile = Profile {
         variable: 0x403e,
         max_variant: 8,
     }),
+    wild_time_tables: None,
     feebas: None,
     trainers: Table {
         offset: 0x586a18,
@@ -595,6 +629,7 @@ pub const ROCKET: Profile = Profile {
         count: 190,
         stride: 8,
     },
+    object_palette_supplements: &[],
     script_actors: &[],
     map_groups: &[],
     map_counts: &[
@@ -620,12 +655,13 @@ pub const ROCKET: Profile = Profile {
         ..EMERALD
     },
 };
-pub const PROFILES: [Profile; 5] = [
+pub const PROFILES: [Profile; 6] = [
     BW,
     DP,
     ROCKET,
     crate::ultimate::PROFILE,
     crate::mercury::PROFILE,
+    crate::mercury::PROFILE_12,
 ];
 pub fn identify(data: &[u8]) -> Result<Profile> {
     let md5 = hash(data);

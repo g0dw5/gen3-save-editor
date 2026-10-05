@@ -100,7 +100,7 @@ impl Options {
                 id: m.id,
                 group: m.group,
                 number: m.number,
-                name: rom.ptr_text(rom.profile.regions + usize::from(m.region) * 8),
+                name: rom.region_name(usize::from(m.region)),
                 region: m.region,
                 code: format!("{:02X} {:02X}", m.group, m.number),
                 landings,

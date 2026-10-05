@@ -337,15 +337,15 @@ fn save_bytes(r: &Rom) -> Vec<u8> {
             }
             if id == 0 {
                 b[o..o + 7].copy_from_slice(&r.codec.encode("ASH", 7).unwrap());
-                put32(&mut b, o + 0xac, 0x87654321);
+                put32(&mut b, o + layout.key, 0x87654321);
                 put16(&mut b, o + 10, 0x5678);
                 put16(&mut b, o + 12, 0x1234);
             }
             if id == 1 {
-                b[o + 0x234] = 1;
-                b[o + 0x238..o + 0x238 + 100].copy_from_slice(&party);
-                put32(&mut b, o + 0x490, 1000 ^ 0x87654321);
-                put16(&mut b, o + 0x494, 50 ^ 0x4321);
+                b[o + layout.party_count] = 1;
+                b[o + layout.party..o + layout.party + 100].copy_from_slice(&party);
+                put32(&mut b, o + layout.money, 1000 ^ 0x87654321);
+                put16(&mut b, o + layout.coins, 50 ^ 0x4321);
             }
             put16(&mut b, o + 0xff4, id as u16);
             put32(&mut b, o + 0xff8, 0x08012025);
@@ -679,11 +679,7 @@ fn transfer_invariants_and_import_profile() {
 
 // An independent physical-byte oracle: don't use Save's logical block writer.
 fn expected_box_write(save: &Save, output: &mut [u8], index: usize, raw: &[u8]) {
-    let payload = if save.layout.pokemon_codec == crate::adapter::PokemonCodec::Rocket21 {
-        0xff4
-    } else {
-        0xf80
-    };
+    let payload = save.layout.sizes[5];
     for (i, byte) in raw.iter().enumerate() {
         let logical = 4 + index * 80 + i;
         output[save.sections[5 + logical / payload] + logical % payload] = *byte;
@@ -1850,7 +1846,7 @@ fn reward_parser_stops_unknown_commands_and_invalidates_native_values() {
 /// Synthetic tables intentionally use the same public model with different byte formats.
 fn adapter_rom(p: profile::Profile) -> Rom {
     let mut r = rom();
-    if p.save.pokemon_codec == crate::adapter::PokemonCodec::Gen3 {
+    if p.id == profile::BW.id || p.id == profile::DP.id {
         // Synthetic BW/DP tables share test addresses, while identity/capabilities differ.
         r.profile.id = p.id;
         r.profile.md5 = p.md5;
@@ -1884,6 +1880,10 @@ fn adapter_rom(p: profile::Profile) -> Rom {
                     *ability,
                 );
             }
+        } else if p.formats.species == crate::adapter::SpeciesFormat::Cfru28 {
+            b[o + 22] = 1;
+            b[o + 23] = 2;
+            b[o + 26] = 3;
         } else {
             put16(&mut b, o + 24, 1);
             put16(&mut b, o + 26, 2);
@@ -1958,7 +1958,14 @@ fn adapter_matrix_bit_ownership_all_pid_orders() {
                 if rocket { 3 } else { (pid % 25) as u8 }
             );
             assert_eq!(after.ot_name, "ASH");
-            assert_eq!(&edited[..28], &raw[..28]);
+            if profile.save.pokemon_codec == crate::adapter::PokemonCodec::Cfru {
+                // CFRU chooses the two ordinary abilities by PID parity. Its
+                // ability capsule also changes PID while retaining nature and sex.
+                assert_eq!(after.pid & 1, 1);
+                assert_eq!(&edited[4..28], &raw[4..28]);
+            } else {
+                assert_eq!(&edited[..28], &raw[..28]);
+            }
             assert!(after.checksum_ok);
             let canonical = pokemon::unpack_with(&edited, profile.save.pokemon_codec).unwrap();
             let mut expected = c;
@@ -1975,11 +1982,17 @@ fn adapter_matrix_bit_ownership_all_pid_orders() {
                 expected[9] = 201;
                 if profile.save.pokemon_codec == crate::adapter::PokemonCodec::Ultimate55 {
                     expected[39] = (expected[39] & !0x7c) | (12 << 2);
+                } else if profile.save.pokemon_codec == crate::adapter::PokemonCodec::Cfru {
+                    expected[10] = 12;
                 } else {
                     let origins = (u16(&expected, 38).unwrap() & !0x7800) | (12 << 11);
                     put16(&mut expected, 38, origins);
                 }
-                expected[43] |= 0x80;
+                if profile.save.pokemon_codec == crate::adapter::PokemonCodec::Cfru {
+                    expected[43] &= !0x80;
+                } else {
+                    expected[43] |= 0x80;
+                }
             }
             for i in 0..4 {
                 let id = u16(&expected, 12 + i * 2).unwrap();
@@ -1989,6 +2002,101 @@ fn adapter_matrix_bit_ownership_all_pid_orders() {
             assert_eq!(canonical, expected, "unowned bits {} PID {pid}", profile.id);
         }
     }
+}
+
+#[test]
+fn cfru_ball_hidden_ability_and_gigantamax_bits_do_not_overlap() {
+    let rom = adapter_rom(crate::mercury::PROFILE);
+    let codec = crate::adapter::PokemonCodec::Cfru;
+    let mut raw = pokemon::create(&rom, 1, 0x1234_5678, "ASH", 50, 100).unwrap();
+    assert_eq!(pokemon::decode(&raw, &rom).unwrap().origin_game, 4);
+    let mut canonical = pokemon::unpack_with(&raw, codec).unwrap();
+    canonical[39] |= 0x08; // CFRU Gigantamax flag, formerly Gen III ball bits.
+    canonical[43] |= 0x80; // Hidden ability, not ordinary ability 2.
+    pokemon::pack_with(&mut raw, &canonical, codec);
+    let hidden = pokemon::decode(&raw, &rom).unwrap();
+    assert_eq!((hidden.ability_slot, hidden.ability_id), (2, 3));
+    let (ball_changed, _) = pokemon::edit(
+        &raw,
+        &PokemonPatch {
+            ball: Some(12),
+            ..PokemonPatch::default()
+        },
+        &rom,
+        Policy::Free,
+    )
+    .unwrap();
+    let c = pokemon::unpack_with(&ball_changed, codec).unwrap();
+    assert_eq!(c[10], 12);
+    assert_eq!(c[39] & 0x08, 0x08);
+    assert_eq!(c[43] & 0x80, 0x80);
+    let (ordinary, _) = pokemon::edit(
+        &ball_changed,
+        &PokemonPatch {
+            ability_slot: Some(1),
+            ..PokemonPatch::default()
+        },
+        &rom,
+        Policy::Free,
+    )
+    .unwrap();
+    let after = pokemon::decode(&ordinary, &rom).unwrap();
+    assert_eq!((after.ability_slot, after.ability_id), (1, 2));
+    assert_eq!(after.pid & 1, 1);
+    assert_eq!(after.nature, hidden.nature);
+    assert_eq!(after.gender, hidden.gender);
+    assert_eq!(after.shiny, hidden.shiny);
+    let c = pokemon::unpack_with(&ordinary, codec).unwrap();
+    assert_eq!(c[39] & 0x08, 0x08);
+    assert_eq!(c[43] & 0x80, 0);
+}
+
+#[test]
+fn cfru_single_ordinary_ability_does_not_require_even_pid() {
+    let mut rom = adapter_rom(crate::mercury::PROFILE);
+    let offset = rom.profile.base_stats.offset + rom.profile.base_stats.stride;
+    std::sync::Arc::make_mut(&mut rom.data)[offset + 23] = 0;
+    let raw = pokemon::create(&rom, 1, 0x1234_5678, "ASH", 50, 101).unwrap();
+    let before = pokemon::decode(&raw, &rom).unwrap();
+    assert_eq!(before.ability_slot, 0);
+    let (edited, _) = pokemon::edit(
+        &raw,
+        &PokemonPatch {
+            ability_slot: Some(0),
+            ..PokemonPatch::default()
+        },
+        &rom,
+        Policy::Standard,
+    )
+    .unwrap();
+    assert_eq!(pokemon::decode(&edited, &rom).unwrap().pid, before.pid);
+    assert!(pokemon::edit(
+        &raw,
+        &PokemonPatch {
+            ability_slot: Some(1),
+            ..PokemonPatch::default()
+        },
+        &rom,
+        Policy::Free,
+    )
+    .is_err());
+    // A stored hidden-ability flag can survive an evolution into a species
+    // without that slot. Native fallback does not authorize clearing it.
+    std::sync::Arc::make_mut(&mut rom.data)[offset + 26] = 0;
+    let mut flagged = raw.clone();
+    flagged[75] |= 0x80;
+    assert_eq!(pokemon::decode(&flagged, &rom).unwrap().ability_slot, 0);
+    let (edited, _) = pokemon::edit(
+        &flagged,
+        &PokemonPatch {
+            ball: Some(12),
+            ..PokemonPatch::default()
+        },
+        &rom,
+        Policy::Free,
+    )
+    .unwrap();
+    assert_eq!(edited[75] & 0x80, 0x80);
 }
 
 #[test]
@@ -2415,7 +2523,7 @@ fn bad_egg_and_checksum_rejection_follow_each_codec() {
         assert!(pokemon::checked_unpack_with(&bad, profile.save.pokemon_codec).is_err());
         bad = raw;
         bad[32] ^= 1;
-        if profile.save.pokemon_codec == crate::adapter::PokemonCodec::Ultimate55 {
+        if profile.save.pokemon_codec.plain_substructures() {
             assert!(pokemon::checked_unpack_with(&bad, profile.save.pokemon_codec).is_ok());
             continue;
         }
