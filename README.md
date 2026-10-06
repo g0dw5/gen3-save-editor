@@ -288,3 +288,12 @@ not consume items or certify all menus, services or PID-linked appearances.
 [Evidence and limits](docs/verification/training-abilities-20261006.md).
 
 Ultimate ability items now join the shared native training previews: runtime variants, seeded hidden-to-normal selection without PID changes, and explicit acceptance-without-change warnings. Menu/consumption/access remain qualified. [Evidence](docs/verification/training-ultimate-abilities-20261006.md).
+
+The Training reference now includes Ultimate's referenced NPC Hyper Training
+service: runtime menu choices, crown fees, separate earned-credit requirements,
+SAV condition overlays and NPC-to-map/item-acquisition navigation. Native helpers
+keep base IVs and unrelated party data unchanged; existing stored party stats are
+not refreshed by this script stage. Full menus, credit acquisition and access
+remain partial; Mercury crown item names do not establish a verified service.
+Read-only CLI: `gen3 training-services ROM [SAVE]`.
+[Evidence and scope](docs/verification/training-crowns-20261006.md).

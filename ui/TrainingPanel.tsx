@@ -2,9 +2,16 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { ConditionQueryRevision } from "./ConditionDetails";
 import { SearchSelect } from "./SearchSelect";
+import { TrainingServices } from "./TrainingServices";
 import { useI18n } from "./i18n";
 import { fromKey, locationKey } from "./types";
-import type { Catalog, Pokemon, QueryTarget, Snapshot } from "./types";
+import type {
+  Catalog,
+  MapFocus,
+  Pokemon,
+  QueryTarget,
+  Snapshot,
+} from "./types";
 type Offer = {
   item: number;
   stat: number;
@@ -57,11 +64,13 @@ export function TrainingPanel({
   catalog,
   save,
   onTarget,
+  onMap,
   onError,
 }: {
   catalog: Catalog;
   save: Snapshot | null;
   onTarget: (target: QueryTarget) => void;
+  onMap: (id: string, focus?: MapFocus) => void;
   onError: (error: unknown) => void;
 }) {
   const { t } = useI18n();
@@ -179,6 +188,12 @@ export function TrainingPanel({
     <section className="training-panel">
       <h2>{t("trainingPage")}</h2>
       <p className="small muted">{t("trainingScope")}</p>
+      <TrainingServices
+        catalog={catalog}
+        onMap={onMap}
+        onTarget={onTarget}
+        onError={onError}
+      />
       {!report ? (
         <p>{t("loading")}</p>
       ) : !report.offers.length &&

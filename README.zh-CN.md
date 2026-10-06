@@ -224,3 +224,9 @@ ROM 资料的“培育资料”页提供已验证努力值道具的获取跳转�
 关联外观已验证。见[证据与边界](docs/verification/training-abilities-20261006.md)。
 
 究极绿宝石特性道具也已接入统一培育预览：实时变体、保留 PID 的随机普通槽位选择，以及允许使用却未变化的提示。菜单、消耗、可达性仍分别保留验证边界。见[原生证据](docs/verification/training-ultimate-abilities-20261006.md)。
+
+培育资料新增究极绿宝石 NPC 极限特训：实时读取菜单、王冠费用与额外认证次数，
+加载 SAV 后叠加条件，支持 NPC 格位、地图入口和王冠获取跳转。原生字段步骤保留
+基础个体值与无关同行数据，不立即刷新已保存的同行六围。完整菜单、认证获取与
+可达性仍为部分验证；水银的王冠道具名不代表服务已经确认。只读 CLI：
+`gen3 training-services ROM [SAVE]`。见[验证边界](docs/verification/training-crowns-20261006.md)。

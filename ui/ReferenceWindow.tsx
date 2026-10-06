@@ -431,6 +431,7 @@ export function ReferenceWindow({
             catalog={catalog}
             save={save}
             onTarget={goTarget}
+            onMap={goMap}
             onError={onError}
           />
         </div>

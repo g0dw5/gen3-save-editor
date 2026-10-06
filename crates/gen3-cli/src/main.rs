@@ -21,7 +21,7 @@ fn run() -> Result<()> {
         println!("{}", serde_json::to_string_pretty(&v).unwrap());
     };
     if command == "help" {
-        println!("gen3 profiles\ngen3 identify ROM\ngen3 cheats ROM\ngen3 cheat-code ROM CHEAT_ID gameshark_v1_v2|codebreaker [PARAMETERS.json]\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 game-clock ROM [SAVE]\ngen3 rtc-clock ROM REQUEST.json [SAVE]\ngen3 training-items ROM\ngen3 training-preview ROM REQUEST.json [SAVE]\ngen3 daycare-state ROM SAVE\ngen3 event-dependencies ROM CONDITION.json [SAVE]\ngen3 event-search ROM QUERY.json [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]");
+        println!("gen3 profiles\ngen3 identify ROM\ngen3 cheats ROM\ngen3 cheat-code ROM CHEAT_ID gameshark_v1_v2|codebreaker [PARAMETERS.json]\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 game-clock ROM [SAVE]\ngen3 rtc-clock ROM REQUEST.json [SAVE]\ngen3 training-items ROM\ngen3 training-services ROM [SAVE]\ngen3 training-preview ROM REQUEST.json [SAVE]\ngen3 daycare-state ROM SAVE\ngen3 event-dependencies ROM CONDITION.json [SAVE]\ngen3 event-search ROM QUERY.json [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]");
         return Ok(());
     }
     if command == "profiles" {
@@ -83,6 +83,16 @@ fn run() -> Result<()> {
             std::io::stdout().write_all(&rom.sprite(id, false)?)?;
         }
         "world" => print(serde_json::to_value(rom.world()?)?),
+        "training-services" => {
+            if !matches!(a.len(), 2 | 3) {
+                return Err(err("arguments", "gen3 training-services ROM [SAVE]"));
+            }
+            let save = a
+                .get(2)
+                .map(|path| Save::open(fs::read(path)?, rom.profile.save))
+                .transpose()?;
+            print(serde_json::to_value(rom.training_services(save.as_ref())?)?);
+        }
         "event-dependencies" | "event-search" => {
             if !matches!(a.len(), 3 | 4) {
                 return Err(err(

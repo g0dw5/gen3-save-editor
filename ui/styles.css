@@ -2681,6 +2681,7 @@ summary {
   text-align: left;
   border-bottom: 1px solid var(--line);
 }
+.training-service pre,
 .training-result pre {
   overflow: auto;
 }
@@ -2692,4 +2693,14 @@ summary {
 }
 .training-container[hidden] {
   display: none;
+}
+
+.training-service {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+}
+.training-service-choice {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
 }

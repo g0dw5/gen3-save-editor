@@ -14,7 +14,9 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(channel="chrome", headless=True)
         context = browser.new_context(viewport=dict(width=1100, height=800))
-        for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"]:
+        for key in os.environ.get(
+            "GEN3_UI_TRAINING_PROFILES", "BW,DP,ROCKET,ULTIMATE,MERCURY12"
+        ).split(","):
             catalog = copy.deepcopy(CATALOG)
             catalog["profile"].update(
                 md5="fixture-" + key, max_level=100, training={"classify": 1}
@@ -69,6 +71,15 @@ def main():
                             price=100,
                         )
                     )
+            if key == "ULTIMATE":
+                catalog["items"].extend(
+                    [
+                        dict(id=5, name="ULTIMATE runtime gold", tm_move=None, price=0),
+                        dict(
+                            id=6, name="ULTIMATE runtime silver", tm_move=None, price=0
+                        ),
+                    ]
+                )
             requests = []
             errors = []
             count = [0]
@@ -160,6 +171,73 @@ def main():
                         ],
                         partial=True,
                         clock=None,
+                    )
+                elif cmd == "training_services":
+                    assert payload["expected_rom_md5"] == catalog["profile"]["md5"]
+                    credit = dict(
+                        condition=dict(
+                            kind="variable",
+                            id=0x40FB,
+                            value=0,
+                            comparison=5,
+                            taken=True,
+                        ),
+                        actual=(count[0] + 4 if count[0] else None),
+                        satisfied=(True if count[0] else None),
+                        unresolved=None,
+                    )
+                    requirement = dict(
+                        condition=dict(
+                            kind="bag_item", id=5, value=1, comparison=4, taken=True
+                        ),
+                        actual=(0 if count[0] else None),
+                        satisfied=(False if count[0] else None),
+                        unresolved=None,
+                    )
+                    services = (
+                        [
+                            dict(
+                                kind="hyper_training_flags",
+                                minimum_level=100,
+                                choices=[
+                                    dict(
+                                        menu_index=i,
+                                        name=(
+                                            "All stats (gold)"
+                                            if i == 0
+                                            else f"Stat {i} (silver)"
+                                        ),
+                                        item=(5 if i == 0 else 6),
+                                        quantity=1,
+                                        stat=(None if i == 0 else i - 1),
+                                        mask=(126 if i == 0 else 1 << i),
+                                        credit=credit,
+                                        item_requirement=requirement,
+                                    )
+                                    for i in range(7)
+                                ],
+                                locations=[
+                                    dict(
+                                        map_id="26-13",
+                                        map_name="Test map",
+                                        x=3,
+                                        y=4,
+                                        visibility=[],
+                                    )
+                                ],
+                                text=["ULTIMATE runtime service dialogue"],
+                                evidence=dict(root=123),
+                                partial=True,
+                            )
+                        ]
+                        if key == "ULTIMATE"
+                        and catalog["profile"]["md5"] == "fixture-ULTIMATE"
+                        else []
+                    )
+                    data = dict(
+                        rom_md5=catalog["profile"]["md5"],
+                        services=services,
+                        partial=True,
                     )
                 elif cmd == "training_catalog":
                     assert payload["expected_rom_md5"] == catalog["profile"]["md5"]
@@ -330,6 +408,53 @@ def main():
             expect(
                 panel.get_by_role("combobox", name="Training item", exact=True)
             ).to_have_value(key + " EV item · HP · Increase EVs")
+            if key == "ULTIMATE":
+                service = panel.locator(".training-service")
+                expect(service).to_contain_text("Required level: at least 100")
+                expect(service.locator(".training-service-choice")).to_have_count(1)
+                expect(
+                    service.get_by_role(
+                        "combobox", name="Choose a training option", exact=True
+                    )
+                ).to_have_value("All stats (gold)")
+                expect(service).to_contain_text(
+                    "A crown and a corresponding earned certification credit"
+                )
+                service.get_by_role(
+                    "button", name="Test map · (3, 4) ↗", exact=True
+                ).click()
+                expect(page.locator(".map-navigation")).to_be_visible()
+                page.get_by_role(
+                    "button", name="← Back to previous reference", exact=True
+                ).click()
+                expect(service).to_be_visible()
+                service.get_by_role(
+                    "button", name="ULTIMATE runtime gold × 1 ↗", exact=True
+                ).click()
+                expect(page.locator(".acquisition-panel")).to_be_visible()
+                assert any(
+                    r["command"] == "acquisition" and r["payload"]["id"] == 5
+                    for r in requests
+                )
+                page.get_by_role(
+                    "button", name="← Back to previous reference", exact=True
+                ).click()
+                expect(service).to_be_visible()
+                menu = service.get_by_role(
+                    "combobox", name="Choose a training option", exact=True
+                )
+                menu.fill("silver")
+                expect(page.get_by_role("listbox").get_by_role("option")).to_have_count(
+                    6
+                )
+                page.get_by_role("option", name="Stat 3 (silver)", exact=True).click()
+                expect(
+                    service.get_by_role(
+                        "button", name="ULTIMATE runtime silver × 1 ↗", exact=True
+                    )
+                ).to_be_visible()
+            else:
+                expect(panel.locator(".training-service")).to_have_count(0)
             panel.get_by_label("HP EVs", exact=True).fill("90")
             panel.get_by_role(
                 "button", name="Preview native effect", exact=True
@@ -381,6 +506,10 @@ def main():
                     buffer=b"fixture-only",
                 )
             )
+            if key == "ULTIMATE":
+                expect(panel.locator(".training-service")).to_contain_text(
+                    "Saved certification credits · 5"
+                )
             panel.get_by_label("Individual for preview", exact=True).select_option(
                 "0:0"
             )
@@ -400,6 +529,10 @@ def main():
                 )
             )
             expect(panel.locator(".training-result")).to_have_count(0)
+            if key == "ULTIMATE":
+                expect(panel.locator(".training-service")).to_contain_text(
+                    "Saved certification credits · 6"
+                )
             if key == "ROCKET":
                 panel.get_by_label("Individual for preview", exact=True).select_option(
                     "simulated"
@@ -604,13 +737,25 @@ def main():
             expect(panel).to_contain_text("培育道具与原生效果预览")
             if key == "ROCKET":
                 expect(panel).to_contain_text("独立特性槽位并保留 PID")
+            if key == "ULTIMATE":
+                expect(panel.locator(".training-service")).to_contain_text(
+                    "NPC 极限特训"
+                )
+                expect(panel.locator(".training-service")).to_contain_text(
+                    "存档中的认证次数 · 6"
+                )
             page.set_viewport_size(dict(width=720, height=740))
             expect(panel).to_be_visible()
             assert panel.evaluate("(e)=>e.scrollWidth <= e.clientWidth + 1")
-            if key in ["BW", "MERCURY12"] and os.environ.get("GEN3_UI_ARTIFACTS"):
+            if key in ["BW", "MERCURY12", "ULTIMATE"] and os.environ.get(
+                "GEN3_UI_ARTIFACTS"
+            ):
                 d = Path(os.environ["GEN3_UI_ARTIFACTS"])
                 d.mkdir(parents=True, exist_ok=True)
                 panel.screenshot(path=str(d / f"training-{key}.png"))
+                if key == "ULTIMATE":
+                    panel.evaluate("e => e.scrollTop = 0")
+                    page.screenshot(path=str(d / "training-ULTIMATE-service.png"))
             if key in ["ROCKET", "MERCURY12", "ULTIMATE"]:
                 page.get_by_role("button", name="English", exact=True).click()
                 hold[0] = True
@@ -660,6 +805,7 @@ def main():
                     )
                 ).to_have_count(1)
                 assert requests[-1]["payload"]["expected_rom_md5"] == "fixture-SWITCH"
+            expect(panel.locator(".training-service")).to_have_count(0)
             assert not errors, errors
             assert not any(
                 r["command"] in ["action", "export_save", "save_bytes"]

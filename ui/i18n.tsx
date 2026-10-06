@@ -247,6 +247,16 @@ export const en = {
   trainingPIDNature: "Use PID nature (scenario default)",
   trainingNatureScope:
     "This previews the mint callback's persistent nature-and-stat stage and its unchanged-nature rejection. PID, trainer identity and unrelated individual data are retained. Menu eligibility, consumption, inheritance and current access remain outside this scenario.",
+  trainingCrownChoice: "Choose a training option",
+  trainingCrownService: "NPC Hyper Training",
+  trainingCrownLevel: "Required level: at least",
+  trainingCrownEffect:
+    "The service keeps base IVs and writes training flags so the selected stats use 31. It does not immediately refresh stored party stats; the ROM dialogue asks you to deposit the Pokémon in a PC. This reference does not edit or pay for training.",
+  trainingCrownAccess:
+    "A crown and a corresponding earned certification credit are both required and each is consumed on success. Map references and SAV holdings do not prove current access. Full menu execution and credit acquisition remain partially verified.",
+  trainingCrownCredit: "Saved certification credits",
+  trainingCrownConditions: "Requirements and prerequisite clues",
+  trainingCrownDialogue: "Read the ROM's service dialogue",
   trainingScope:
     "This list covers verified ordinary field EV-item handlers and supported nature/ability persistent stages. Names and descriptions come from the loaded ROM. It is not a complete catalog of all nature changes, ability changes, Hyper Training or NPC services; omitted mechanisms remain unverified, not absent.",
   trainingNone:
@@ -1397,6 +1407,16 @@ export const zh: Record<Key, string> = {
   trainingPIDNature: "使用 PID 性格（情景默认）",
   trainingNatureScope:
     "本次预览薄荷入口的持久化性格与能力处理阶段，以及性格不变时的拒绝使用分支。保留 PID、训练家身份和无关个体数据；菜单资格、消耗、遗传和当前可达性不在此情景验证范围内。",
+  trainingCrownChoice: "选择训练项目",
+  trainingCrownService: "NPC 极限特训",
+  trainingCrownLevel: "要求等级：至少",
+  trainingCrownEffect:
+    "服务保留基础个体值，写入训练标记，让对应能力按 31 计算。同行中已保存的六围不会立即刷新，ROM 对话提示要放入电脑休息。这是资料查询，不修改个体、不支付费用。",
+  trainingCrownAccess:
+    "同时需要王冠和对应的获胜认证次数，成功后各消耗一次。地图引用、存档持有量不代表当前可达；完整菜单执行和认证获取仍有待验证部分。",
+  trainingCrownCredit: "存档中的认证次数",
+  trainingCrownConditions: "使用条件与前置线索",
+  trainingCrownDialogue: "查看 ROM 中的服务对话",
   trainingScope:
     "本列表覆盖已验证的普通战斗外努力值道具入口与已支持的性格／特性持久化阶段，名称和说明来自当前 ROM。尚非所有性格调整、特性变更、王冠训练或 NPC 服务的完整目录；未列出表示尚未验证，不代表本作不存在。",
   trainingNone: "当前 ROM 未识别到已支持的培育道具入口。",

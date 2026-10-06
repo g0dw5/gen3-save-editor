@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add runtime NPC Hyper Training reference for Ultimate: actual menu choices,
+  item fees, earned-credit conditions and positioned NPC/map links. Keep base IVs
+  distinct from training flags and explain the delayed party-stat refresh. SAV
+  overlays are read-only; other-ROM crown services remain unverified.
+- 究极绿宝石新增实时读取的 NPC 极限特训资料：菜单选择、王冠费用、认证次数条件、
+  NPC 格位及地图跳转。区分基础个体值与训练标记，说明同行能力延迟刷新；
+  存档条件只读叠加，其他 ROM 的王冠服务不冒充已验证。
+
 - Add Ultimate's runtime ability-item variants and native script-prefix previews.
   Distinguish seeded normal-slot selection from PID generation, retain unrelated
   header/Hyper Training bits, and show successful-but-unchanged results.

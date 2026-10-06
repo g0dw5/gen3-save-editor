@@ -8234,3 +8234,166 @@ fn training_requests_require_typed_rng_and_ability_scenarios() {
         assert!(serde_json::from_value::<crate::training::Request>(invalid).is_err());
     }
 }
+
+#[test]
+fn crown_services_are_read_only_and_reject_stale_profiles() {
+    use crate::app::{App, Request};
+    let mut app = App {
+        session: Some(Session::new(rom())),
+        ..Default::default()
+    };
+    assert_eq!(
+        app.dispatch(Request {
+            command: "training_services".into(),
+            payload: serde_json::json!({"expected_rom_md5": profile::ROCKET.md5})
+        })
+        .unwrap_err()
+        .code,
+        "rom_mismatch"
+    );
+    let result = app
+        .dispatch(Request {
+            command: "training_services".into(),
+            payload: serde_json::json!({"expected_rom_md5": profile::BW.md5}),
+        })
+        .unwrap();
+    assert_eq!(result["services"], serde_json::json!([]));
+    assert_eq!(result["partial"], true);
+    assert!(app.session.as_ref().unwrap().save.is_none());
+}
+
+#[test]
+#[ignore = "requires five exact private ROMs and GEN3_TRAINING_CROWN_PROBES independent mGBA vectors"]
+fn local_crown_services_match_native_and_isolate_save_progress() {
+    use armv4t_emu::Memory;
+    let vectors: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_TRAINING_CROWN_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
+        let digest = sha256(&rom.data);
+        let report = rom.training_services(None).unwrap();
+        assert!(report.partial);
+        assert_eq!(report.rom_md5, rom.profile.md5);
+        if key != "ULTIMATE" {
+            assert!(
+                report.services.is_empty(),
+                "unverified crown services must not cross profiles"
+            );
+            continue;
+        }
+        assert_eq!(vectors["rom_md5"], rom.profile.md5);
+        assert_eq!(report.services.len(), 1);
+        let service = &report.services[0];
+        assert_eq!(service.minimum_level, 100);
+        assert_eq!(service.choices.len(), 7);
+        assert_eq!(service.locations.len(), 1);
+        let source = &service.locations[0];
+        assert_eq!(
+            (&*source.map_id, source.x, source.y, source.local_id),
+            ("35-28", 3, 39, Some(19))
+        );
+        assert!(service.text[0].contains("满级"));
+        assert!(service.text[3].contains("放入电脑"));
+        for choice in &service.choices {
+            assert_eq!(choice.quantity, 1);
+            assert_eq!(choice.credit.satisfied, None);
+            assert_eq!(choice.item_requirement.satisfied, None);
+            assert_eq!(choice.item, if choice.menu_index == 0 { 687 } else { 688 });
+            assert_eq!(
+                choice.credit.condition.id,
+                if choice.menu_index == 0 {
+                    0x40fb
+                } else {
+                    0x40fc
+                }
+            );
+        }
+        // SAVE overlays follow the actual certificate variables, including a
+        // logical-sector boundary; the ROM-only catalogue remains unchanged.
+        let before_report = serde_json::to_value(&report).unwrap();
+        let mut save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
+        for amount in [0, 1, u16::MAX] {
+            let range = rom.profile.event_state.unwrap().variables[0];
+            for id in [0x40fb, 0x40fc] {
+                let mut offset = range.offset + (id - range.first) as usize * 2;
+                for section in 1..=4 {
+                    if offset < save.layout.sizes[section] {
+                        put16(&mut save.data, save.sections[section] + offset, amount);
+                        break;
+                    }
+                    offset -= save.layout.sizes[section];
+                }
+            }
+            let saved = save.data.clone();
+            let overlay = rom.training_services(Some(&save)).unwrap();
+            for choice in &overlay.services[0].choices {
+                assert_eq!(choice.credit.actual, Some(amount as u32));
+                assert_eq!(choice.credit.satisfied, Some(amount != 0));
+            }
+            assert_eq!(save.data, saved);
+        }
+        assert_eq!(
+            serde_json::to_value(rom.training_services(None).unwrap()).unwrap(),
+            before_report
+        );
+        let rules = service.evidence;
+        let party = rom.profile.breeding.unwrap().party;
+        let raw =
+            pokemon::to_party(&pokemon::create(&rom, 25, 1, "", 100, 42).unwrap(), &rom).unwrap();
+        let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
+        for row in vectors["levels"].as_array().unwrap() {
+            let slot = row["slot"].as_u64().unwrap() as u32;
+            let level = row["level"].as_u64().unwrap() as u8;
+            ram.w8(party + slot * 100 + 84, level);
+            ram.w16(rules.selected_individual, slot as u16);
+            ram.w16(rules.selected_individual + 2, 84);
+            ram.call(rules.level_reader, [0; 4], [0; 2], 8192).unwrap();
+            assert_eq!(
+                ram.r16(rules.selected_individual + 2) as u64,
+                row["actual"].as_u64().unwrap()
+            );
+        }
+        assert_eq!(vectors["rows"].as_array().unwrap().len(), 10_752);
+        for row in vectors["rows"].as_array().unwrap() {
+            let slot = row["slot"].as_u64().unwrap() as u32;
+            let header = row["header"].as_u64().unwrap() as u8;
+            let menu = row["menu_index"].as_u64().unwrap() as u8;
+            let mut expected = raw.repeat(6);
+            expected[slot as usize * 100 + 30] = header;
+            for (i, byte) in expected.iter().enumerate() {
+                ram.w8(party + i as u32, *byte);
+            }
+            ram.w16(rules.selected_individual, slot as u16);
+            ram.w16(
+                rules.selected_individual + 2,
+                if menu == 0 { 126 } else { 1 },
+            );
+            if menu != 0 {
+                ram.w8(rules.selected_choice, menu);
+                ram.call(rules.selection_mask, [0; 4], [0; 2], 8192)
+                    .unwrap();
+            }
+            assert_eq!(
+                ram.r16(rules.selected_individual + 2) as u64,
+                row["mask"].as_u64().unwrap()
+            );
+            ram.call(rules.mark, [0; 4], [0; 2], 8192).unwrap();
+            expected[slot as usize * 100 + 30] = row["current"].as_u64().unwrap() as u8;
+            let actual: Vec<u8> = (0..600).map(|i| ram.r8(party + i)).collect();
+            assert_eq!(actual, expected, "unrelated party data changed");
+            assert_eq!(
+                ram.r8(rules.selected_individual + 4) as u64,
+                row["previous"].as_u64().unwrap()
+            );
+            assert_eq!(
+                ram.r8(rules.selected_individual + 6) as u64,
+                row["current"].as_u64().unwrap()
+            );
+        }
+        assert_eq!(sha256(&std::fs::read(path).unwrap()), digest);
+        eprintln!("{key}: 48 native readers, 10,752 native crown mutations, 7 positioned offers and certificate overlays verified");
+    }
+}
