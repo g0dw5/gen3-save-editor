@@ -399,3 +399,11 @@ and explicit native RTC scenarios, not recovered current time. Independent mGBA
 vectors cover 3,456 projections and 24 full getter error-clock cases. Mercury
 continues its separate virtual-clock path. See [evidence and limits](verification/hardware-clock-20261006.md).
 This supersedes the earlier U classification only for these bounded additions.
+
+## Native EV-item increment / 原生努力值道具增量
+
+All five training/source workflows remain P. The shared read-only training page
+links verified dispatch/classifier offers to acquisition, guards and maps, with
+660 byte-exact native field-effect scenarios. Custom handlers, mints, ability
+changes, Hyper Training services and complete normal-operation equivalence remain
+unresolved. See [evidence and limits](verification/training-items-20261006.md).

@@ -12,6 +12,7 @@ import { TrainerParty } from "./TrainerParty";
 import { SpeciesStats } from "./SpeciesStats";
 import { EvolutionTree } from "./EvolutionTree";
 import { EventCluesPanel } from "./EventCluesPanel";
+import { TrainingPanel } from "./TrainingPanel";
 import { ClockPanel } from "./ClockPanel";
 import { TrainerLocationsPanel } from "./TrainerLocationsPanel";
 import {
@@ -103,6 +104,10 @@ export function ReferenceWindow({
   const [selected, setSelected] = useState<number | string>(info.selected ?? 1);
   const [mapFocus, setMapFocus] = useState<MapFocus | undefined>();
   const [search, setSearch] = useState("");
+  const [trainingVisited, setTrainingVisited] = useState(false);
+  useEffect(() => {
+    if (tab === "training") setTrainingVisited(true);
+  }, [tab]);
   const [eventMap, setEventMap] = useState("");
   const [eventOffset, setEventOffset] = useState(0);
   const [navigation, setNavigation] = useState<MapNavigation | null>(null);
@@ -203,7 +208,10 @@ export function ReferenceWindow({
     () =>
       (tab === "maps"
         ? (world?.maps ?? [])
-        : tab === "collection" || tab === "events" || tab === "clock"
+        : tab === "collection" ||
+            tab === "events" ||
+            tab === "clock" ||
+            tab === "training"
           ? []
           : tab === "trainers"
             ? (world?.trainers ?? [])
@@ -372,12 +380,14 @@ export function ReferenceWindow({
             "events",
             "collection",
             "clock",
+            "training",
           ] as RefTab[]
         )
           .filter(
             (key) =>
-              catalog.profile.capabilities?.world !== false ||
-              !["maps", "trainers", "events"].includes(key),
+              (key !== "training" || !!catalog.profile.training) &&
+              (catalog.profile.capabilities?.world !== false ||
+                !["maps", "trainers", "events"].includes(key)),
           )
           .map((key) => (
             <button
@@ -414,7 +424,18 @@ export function ReferenceWindow({
       >
         ← {t("navBack")}
       </button>
-      {tab === "clock" ? (
+      {(trainingVisited || tab === "training") && (
+        <div className="training-container" hidden={tab !== "training"}>
+          <TrainingPanel
+            key={catalog.profile.md5}
+            catalog={catalog}
+            save={save}
+            onTarget={goTarget}
+            onError={onError}
+          />
+        </div>
+      )}
+      {tab === "training" ? null : tab === "clock" ? (
         <ClockPanel key={catalog.profile.md5} catalog={catalog} save={save} />
       ) : tab === "events" ? (
         <EventCluesPanel

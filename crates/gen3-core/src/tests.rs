@@ -7692,3 +7692,149 @@ fn local_hardware_clock_matches_native_validation_offsets_and_borrowing() {
         println!("{key}: {} native RTC projections, SAV-offset parity, invalid calendar and fresh snapshot passed",native[key]["rows"].as_array().unwrap().len());
     }
 }
+
+#[test]
+fn training_queries_reject_stale_rom_and_malformed_individuals() {
+    use crate::app::{App, Request};
+    let mut app = App {
+        session: Some(Session::new(rom())),
+        ..Default::default()
+    };
+    assert_eq!(
+        app.dispatch(Request {
+            command: "training_catalog".into(),
+            payload: serde_json::json!({"expected_rom_md5":"stale"})
+        })
+        .unwrap_err()
+        .code,
+        "rom_mismatch"
+    );
+    let valid = serde_json::json!({"expected_rom_md5":profile::BW.md5,"item":63,"individual":{"kind":"simulated","species":1,"level":5,"evs":[0,0,0,0,0,0],"friendship":70}});
+    for bad in [
+        serde_json::json!([null, 0, 0, 0, 0, 0]),
+        serde_json::json!([256, 0, 0, 0, 0, 0]),
+        serde_json::json!([-1, 0, 0, 0, 0, 0]),
+        serde_json::json!([0, 0]),
+        serde_json::json!([0.5, 0, 0, 0, 0, 0]),
+    ] {
+        let mut p = valid.clone();
+        p["individual"]["evs"] = bad;
+        assert_eq!(
+            app.dispatch(Request {
+                command: "training_preview".into(),
+                payload: p
+            })
+            .unwrap_err()
+            .code,
+            "json"
+        );
+    }
+    let mut p = valid;
+    p["unexpected"] = serde_json::json!(true);
+    assert_eq!(
+        app.dispatch(Request {
+            command: "training_preview".into(),
+            payload: p
+        })
+        .unwrap_err()
+        .code,
+        "json"
+    );
+}
+
+#[test]
+#[ignore = "requires five exact private ROMs and GEN3_TRAINING_PROBES mGBA vectors"]
+fn local_training_classification_and_effect_match_native_all_profiles() {
+    use crate::training::{Individual, Request};
+    let vectors: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_TRAINING_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for (key, profile) in [
+        ("BW", profile::BW),
+        ("DP", profile::DP),
+        ("ROCKET", profile::ROCKET),
+        ("ULTIMATE", crate::ultimate::PROFILE),
+        ("MERCURY12", crate::mercury::PROFILE),
+    ] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
+        let hash = crate::binary::sha256(&rom.data);
+        assert_eq!(vectors[key]["md5"], rom.profile.md5);
+        let catalog = rom.training_catalog().unwrap();
+        assert_eq!(catalog.rom_md5, profile.md5);
+        let rows = vectors[key]["categories"].as_array().unwrap();
+        let expected: Vec<_> = rows
+            .iter()
+            .filter(|r| (12..=17).contains(&r["category"].as_u64().unwrap()))
+            .collect();
+        assert_eq!(catalog.offers.len(), expected.len());
+        for offer in &catalog.offers {
+            let row = expected.iter().find(|r| r["item"] == offer.item).unwrap();
+            assert_eq!(row["category"], offer.native_category);
+            assert_eq!(row["handler"], offer.handler);
+            assert_eq!(
+                offer.stat,
+                match offer.native_category {
+                    13 => 0,
+                    12 => 1,
+                    17 => 2,
+                    16 => 3,
+                    14 => 4,
+                    15 => 5,
+                    _ => unreachable!(),
+                }
+            );
+        }
+        let mut save = Save::open(save_bytes(&rom), profile.save).unwrap();
+        let first = save.sections[1];
+        save.data[first + save.layout.party_count] = 1;
+        let at = first + save.layout.party;
+        for row in vectors[key]["rows"].as_array().unwrap() {
+            let raw: Vec<u8> = serde_json::from_value(row["before"].clone()).unwrap();
+            save.data[at..at + 100].copy_from_slice(&raw);
+            let old = save.data.clone();
+            let item = row["item"].as_u64().unwrap() as u16;
+            let actual = rom
+                .training_preview(
+                    Some(&save),
+                    Request {
+                        expected_rom_md5: profile.md5.into(),
+                        item,
+                        individual: Individual::Stored { location: party() },
+                    },
+                )
+                .unwrap();
+            let expected: Vec<u8> = serde_json::from_value(row["after"].clone()).unwrap();
+            assert_eq!(actual.raw, expected, "{key} item {item}");
+            assert_eq!(actual.native_no_effect, row["no_effect"].as_bool().unwrap());
+            assert_eq!(actual.changed, raw != expected);
+            assert_eq!(actual.before.pid, actual.after.pid);
+            assert_eq!(actual.before.ot_id, actual.after.ot_id);
+            assert_eq!(save.data, old);
+        }
+        let bad = rom
+            .training_preview(
+                None,
+                Request {
+                    expected_rom_md5: profile.md5.into(),
+                    item: 0,
+                    individual: Individual::Simulated {
+                        species: 25,
+                        level: 5,
+                        evs: [0; 6],
+                        friendship: 70,
+                    },
+                },
+            )
+            .unwrap_err();
+        assert_eq!(bad.code, "training_item_unverified");
+        assert_eq!(crate::binary::sha256(&rom.data), hash);
+        assert_eq!(crate::binary::sha256(&std::fs::read(path).unwrap()), hash);
+        println!(
+            "{key}: {} EV offers, {} native application vectors, original ROM/SAV preserved",
+            catalog.offers.len(),
+            vectors[key]["rows"].as_array().unwrap().len()
+        );
+    }
+}

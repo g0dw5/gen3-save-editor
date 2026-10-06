@@ -68,3 +68,5 @@ mod ultimate_battle;
 mod ultimate_ev;
 
 pub mod wild_items;
+
+pub mod training;

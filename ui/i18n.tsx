@@ -217,6 +217,34 @@ export const en = {
   mapNativeLayoutMismatch:
     "This static ROM layout also renders with mismatched tiles when loaded directly in the native emulator. Whether a normal entrance replaces the layout is unverified; this image does not establish the appearance or accessibility of a playable area.",
   clockScenario: "Game time and query scenario",
+  training: "Training reference",
+  trainingPage: "EV items and native field-use preview",
+  trainingScope:
+    "This list covers verified ordinary field EV-item handlers. Names and descriptions come from the loaded ROM. It is not a complete catalog of mints, ability changes, Hyper Training or NPC services; omitted mechanisms remain unverified, not absent.",
+  trainingNone: "No supported EV-item offers were identified in this ROM.",
+  trainingItem: "Training item",
+  trainingGetItem: "Find acquisition sources",
+  trainingIndividual: "Individual for preview",
+  trainingSimulated: "Simulated individual",
+  trainingIncrease: "Increase EVs",
+  trainingDecrease: "Decrease EVs",
+  trainingPreview: "Preview native effect",
+  trainingResult: "Native field-use result",
+  trainingBefore: "Before",
+  trainingAfter: "After",
+  trainingNoEffect: "The native effect routine reports no effect.",
+  trainingAccepted:
+    "The native effect routine reports success; inspect the actual changes below.",
+  trainingPreviewScope:
+    "Read-only ordinary field-use scenario at party slot 1. It never edits an individual or consumes an item. Menu eligibility, payment, item consumption, live battles and special facilities are not simulated. A classification or success result alone does not prove an EV increase.",
+  trainingUnchangedEV:
+    "No EV value changed in this scenario. This is the native result for the supplied context; further game-state dependencies may remain unresolved.",
+  trainingBoxScenario:
+    "The boxed individual is placed in a full-HP party scenario in disposable RAM; no SAV record is changed.",
+  trainingSaveContext:
+    "Persistent context comes from the loaded SAV snapshot; it is not live emulator state.",
+  trainingZeroContext:
+    "No SAV: persistent context is zeroed for this explicit scenario.",
   clockUseSave: "Use saved game time",
   clockUnspecified: "Unspecified in this scenario",
   clockSavedVirtual: "Saved virtual clock",
@@ -1312,6 +1340,31 @@ export const zh: Record<Key, string> = {
   mapNativeLayoutMismatch:
     "此 ROM 静态布局在模拟器直接加载时也出现贴图错乱。正常入口是否会替换布局尚未确认；这张图不能证明实际可游玩区域的样貌或可达性。",
   clockScenario: "游戏时间与查询情景",
+  training: "培育资料",
+  trainingPage: "努力值道具与原生战斗外预览",
+  trainingScope:
+    "本列表覆盖已验证的普通战斗外努力值道具处理入口，名称和说明来自当前 ROM。尚非薄荷、特性变更、王冠训练或 NPC 服务的完整目录；未列出表示尚未验证，不代表本作不存在。",
+  trainingNone: "当前 ROM 未识别到已支持的努力值道具入口。",
+  trainingItem: "培育道具",
+  trainingGetItem: "查询获取途径",
+  trainingIndividual: "预览个体",
+  trainingSimulated: "模拟个体",
+  trainingIncrease: "增加努力值",
+  trainingDecrease: "减少努力值",
+  trainingPreview: "预览原生效果",
+  trainingResult: "原生战斗外处理结果",
+  trainingBefore: "处理前",
+  trainingAfter: "处理后",
+  trainingNoEffect: "原生效果例程报告没有效果。",
+  trainingAccepted: "原生效果例程报告成功；实际变化请看下方数值。",
+  trainingPreviewScope:
+    "只读模拟普通战斗外、同行第 1 格的道具效果。不修改个体、不扣除道具；菜单资格、付款、消耗、实时战斗和特殊设施不在模拟范围内。分类用途或返回成功不能单独证明努力值已增加。",
+  trainingUnchangedEV:
+    "此情景没有改变任何努力值。这是给定上下文的原生结果，其他游戏状态依赖仍可能未确认。",
+  trainingBoxScenario:
+    "盒子个体在临时内存中转换为满 HP 的同行情景，不改变 SAV 记录。",
+  trainingSaveContext: "持久化上下文来自当前 SAV 快照，不代表模拟器实时状态。",
+  trainingZeroContext: "未加载 SAV：本次明确情景使用清零的持久化上下文。",
   clockUseSave: "使用存档游戏时间",
   clockUnspecified: "此情景未指定",
   clockSavedVirtual: "存档虚拟时钟",

@@ -275,3 +275,5 @@ are identified separately; a referenced record does not establish an available
 battle or its final party. See [native boundary evidence and limits](docs/verification/trainer-locations-20261006.md).
 
 The ROM reference **Game time** tab distinguishes Mercury’s saved virtual clock from explicit hardware RTC scenarios. Other registered profiles show SAV offsets/checkpoints and use native ROM routines for simulated input; current RTC and unverified weekday/refresh rules remain unknown. See [verification](docs/verification/hardware-clock-20261006.md).
+
+The read-only **Training reference** tab links verified EV-item handlers to acquisition and map queries, with native before/after previews for stored or simulated individuals. Custom mechanisms/menu eligibility/consumption remain partial. [Evidence](docs/verification/training-items-20261006.md). CLI: `gen3 training-items ROM` and `gen3 training-preview ROM REQUEST.json [SAVE]`.

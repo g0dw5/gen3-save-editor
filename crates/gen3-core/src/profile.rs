@@ -63,6 +63,7 @@ pub struct Profile {
     pub native_trainers: Option<crate::native_trainer::NativeTrainerRules>,
     pub clock: Option<crate::clock::ClockRules>,
     pub hardware_clock: Option<crate::hardware_clock::Rules>,
+    pub training: Option<crate::training::Rules>,
     /// Native-verified persistent flag/variable ranges; never inferred from item ownership.
     pub event_state: Option<EventStateLayout>,
     pub hidden_items: Option<HiddenItemRules>,
@@ -322,6 +323,7 @@ pub const BW: Profile = Profile {
     native_trainers: None,
     clock: None,
     hardware_clock: Some(crate::hardware_clock::EMERALD),
+    training: Some(crate::training::EMERALD),
     hidden_items: Some(HiddenItemRules {
         packed: false,
         flag_base: 0x1f4,
@@ -576,6 +578,7 @@ pub const ROCKET: Profile = Profile {
     native_trainers: None,
     clock: None,
     hardware_clock: Some(crate::hardware_clock::ROCKET),
+    training: Some(crate::training::ROCKET),
     hidden_items: Some(HiddenItemRules {
         packed: false,
         flag_base: 0x1f4,

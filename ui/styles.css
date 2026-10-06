@@ -2649,3 +2649,47 @@ summary {
   max-width: 100%;
   overflow: auto;
 }
+
+.training-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+}
+.training-panel > label,
+.training-panel fieldset > label {
+  display: block;
+  margin: 10px 0;
+}
+.training-panel fieldset {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+.training-panel input,
+.training-panel select {
+  max-width: 100%;
+  min-width: 0;
+}
+.training-result table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.training-result th,
+.training-result td {
+  padding: 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.training-result pre {
+  overflow: auto;
+}
+
+.training-container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.training-container[hidden] {
+  display: none;
+}

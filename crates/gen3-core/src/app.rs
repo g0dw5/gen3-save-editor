@@ -361,6 +361,20 @@ impl App {
                     p.condition,
                 )?)?)
             }
+            "training_catalog" => {
+                let session = self.session()?;
+                if required(&p, "expected_rom_md5")? != session.rom.profile.md5 {
+                    return Err(err("rom_mismatch", "training catalog"));
+                }
+                Ok(serde_json::to_value(session.rom.training_catalog()?)?)
+            }
+            "training_preview" => {
+                let session = self.session()?;
+                Ok(serde_json::to_value(session.rom.training_preview(
+                    session.save.as_ref(),
+                    serde_json::from_value(p)?,
+                )?)?)
+            }
             "clock_rtc_preview" => {
                 let session = self.session()?;
                 Ok(serde_json::to_value(session.rom.hardware_clock_preview(

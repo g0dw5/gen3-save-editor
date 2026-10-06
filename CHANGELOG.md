@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add read-only EV-item reference and native field-effect previews for stored or
+  simulated individuals, linked to acquisition and map navigation. Read handlers
+  from the current ROM; show actual before/after values and unresolved context.
+  Do not infer a gain from classification or success, consume items or edit SAVs.
+- 新增努力值道具资料及同行／盒子／模拟个体的原生战斗外效果预览，可跳转获取
+  与地图。处理入口实时读取当前 ROM，展示实际前后数值和未确认上下文；不凭
+  用途分类或返回成功推断增加量，不消耗道具、不修改存档。
+
 - Add a shared read-only Game time reference page. Mercury retains its saved
   virtual clock; four hardware-clock profiles expose SAV offsets/checkpoints
   and explicit RTC scenarios calculated by the loaded ROM's native routines.

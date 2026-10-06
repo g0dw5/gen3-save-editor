@@ -91,6 +91,7 @@ export interface Catalog {
     max_level?: number;
     sprite_rules?: { unown_species: number };
     hardware_clock?: unknown;
+    training?: unknown;
     clock?: {
       starts: number[];
       native_predicates: number[];
@@ -463,7 +464,8 @@ export type RefTab =
   | "trainers"
   | "events"
   | "collection"
-  | "clock";
+  | "clock"
+  | "training";
 export interface RefWindow {
   id: number;
   tab: RefTab;
