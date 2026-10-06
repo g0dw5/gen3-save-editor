@@ -9,8 +9,8 @@ use crate::{
     },
     forms::BattleFormRules,
     profile::{
-        MachineItemRange, MapGraphics, Profile, SaveLayout, SectorChecksum, SplitText, SpriteRules,
-        Table, TeachingRules,
+        DexReadBank, MachineItemRange, MapGraphics, Profile, SaveLayout, SectorChecksum, SplitText,
+        SpriteRules, Table, TeachingRules,
     },
     save::{Pocket, PocketBlock},
 };
@@ -77,6 +77,26 @@ const MERCURY_SAVE: SaveLayout = SaveLayout {
     pokemon_codec: PokemonCodec::Cfru,
     pockets: &MERCURY_POCKETS,
     dex: None,
+    // GetSetPokedexFlag 0x88E74 -> 0x1D6680C reads two SaveBlock1 banks.
+    // The second bank is lazily cleared unless its native marker is 0x11DE.
+    dex_read: Some(&[
+        DexReadBank {
+            first: 1,
+            count: 905,
+            main_block: true,
+            seen: 0x310,
+            owned: 0x38d,
+            initialization: None,
+        },
+        DexReadBank {
+            first: 906,
+            count: 122,
+            main_block: true,
+            seen: 0x40c,
+            owned: 0x41c,
+            initialization: Some((0x40a, 0x11de)),
+        },
+    ]),
     sizes: [
         0xf24, 0xff0, 0xff0, 0xff0, 0xd98, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0, 0xff0,
         0x450,

@@ -221,3 +221,10 @@ Further progression, Pokédex and story-state semantics remain unverified.
 | Extended map layers | `DrawMetatile 0x5A9B4` hook `0x1C8BDA0`; attributes `Tileset+20`, bits 28–30; base stride stays 16 bytes |
 
 Teaching coverage clarification (2026-10-06): Mercury 1.2 has additional native tutor lookup cases beyond the ordinary 145-entry bitset. Lookup is verified, while special eligibility/payment and complete obtainable-source coverage remain pending. The earlier word “complete” did not establish these behaviors. See [current evidence](../verification/tutor-sources-20261006.md).
+
+### Later Dex evidence / 后续图鉴证据
+
+The earlier pending expanded-Dex scope is superseded for Mercury 1.2's read-only
+flag projection and historical collection basis by
+[native split-bank verification](../verification/mercury-dex-20261006.md).
+Dex writing and complete acquisition/form/access coverage are not implied.

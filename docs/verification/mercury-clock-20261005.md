@@ -131,3 +131,10 @@ battle setup remain separate gaps. This increment does not promote them to verif
 硬件 RTC 模式、所有星期奖励与刷新机制仍未完成；未保存的模拟器变化不在 SAV 中。
 虚拟日期无效时不猜测重置结果。普通奖励领取、完整任务依赖、扩展图鉴和完整入战
 设置仍是独立缺口；本轮时间验证不能证明这些机制已经支持。
+
+### Later Dex evidence / 后续图鉴证据
+
+The earlier pending expanded-Dex scope is superseded for Mercury 1.2's read-only
+flag projection and historical collection basis by
+[native split-bank verification](../verification/mercury-dex-20261006.md).
+Dex writing and complete acquisition/form/access coverage are not implied.

@@ -62,8 +62,11 @@ included in standalone HTML. Historical Dex records do not supply usable parents
 and evolution edges are never reversed into assumed breeding outcomes. These are
 preparation suggestions, not verification of current evolution eligibility.
 Coverage is partial: script prerequisites, dynamic access and special sources
-may remain undetermined. Mercury currently supports individual-based planning,
-not unverified expanded Pokédex flags. See the [exact-ROM capability matrix](docs/capability-matrix.md).
+may remain undetermined. Mercury supports both individual-based and historical
+Pokédex planning through its verified native split banks. An uninitialized
+extended range is explained and projected as unseen/uncaught without changing
+the SAV; Dex editing remains disabled. See [native Dex evidence](docs/verification/mercury-dex-20261006.md)
+and the [exact-ROM capability matrix](docs/capability-matrix.md).
 
 Mercury 1.2 acquisition queries and collection HTML use the native virtual-clock
 snapshot from SAV, including saved weekday, speed and forced-night state. Choose

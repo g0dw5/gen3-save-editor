@@ -45,7 +45,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution with party/scenario. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
 | Edit, drag/swap, batch, undo/export safety / 编辑事务 | V | V | V | V | V | `session.rs`, [save integrity](research/save-integrity.md). Checksums, record preservation, rollback, backup and source conflict checks; linked mail changes blocked. Scope is represented fields, not all in-game legitimacy rules. |
 | Edited SAV in-game save and re-read / 模拟器再次保存 | V | V | V | V | V | [Five-fingerprint full-frame evidence](verification/save-roundtrip-20261006.md): tested IV/EV/marking and existing inventory changes survive normal-key game save/reboot; native party bytes, entire storage and every pocket are checked. First four include batch/moves/swaps; Mercury's current fixture has no occupied box, so that move scenario is not newly certified. Scope: these 128 KiB fixtures, not all edits/emulators or RTC trailers. Earlier incorrect Mercury vanilla-offset inventory claims remain withdrawn; see [correction](verification/mercury-display-storage-20261005.md). |
-| Missing collection, regional planning, HTML / 缺失与路线规划 | P | P | P | P | P | `collection.rs` and shared Collection planning UI: read-only SAV missing goals, regions, guarded entrance alternatives and standalone HTML. Full task DAG/access/time remain partial. Mercury uses existing individuals; expanded Dex flags stay disabled. |
+| Missing collection, regional planning, HTML / 缺失与路线规划 | P | P | P | P | P | `collection.rs` and shared Collection planning UI: read-only SAV missing goals, regions, guarded entrance alternatives and standalone HTML. Full task DAG/access/time remain partial. Mercury supports existing-individual and historical-Dex bases through [native split-bank reads](verification/mercury-dex-20261006.md); Dex writing stays disabled. |
 
 ## Reproducible baseline / 可重复基线
 
@@ -659,3 +659,20 @@ catalog or assets are bundled; source hashes remain unchanged.
 
 限定证据不等于整段事件、全部奖励、文字占位展开或地图可达性完整支持。四款游戏
 的其他缺口继续保留原有状态。
+
+## Mercury native historical Dex / 水银原生历史图鉴
+
+[Native Dex evidence](verification/mercury-dex-20261006.md) verifies Mercury 1.2's
+1,027 flag numbers, two logical SaveBlock1 banks and lazy initialization semantics.
+Read-only flag projection is **V within this exact-ROM boundary**: 16,432
+synthetic complete getters, 2,054 getters after normal-key loading of the current
+battery, and production comparisons. Both planning bases and shared HTML are now
+usable; complete regional acquisition, forms, access and task dependencies remain
+**P**. Mercury's Dex edit capability stays disabled. Standard/Free edit attempts
+are rejected without modifying bytes; the four legacy readers/editors retain
+cross-ROM regression coverage.
+
+Only adapter layouts/bounds/initialization semantics are configured. Names and
+species-to-Dex mappings are read from the loaded ROM. Uninitialized extended flags
+are explained rather than silently trusting nonzero raw bytes. Neither projection
+nor planning initializes the save, marks the Dex or creates individuals.

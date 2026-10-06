@@ -93,3 +93,10 @@ Use an absolute `GEN3_NATIVE_TRAINER_PROBES` output path for the Cargo local tes
   inferred absent merely because the current parser does not expose it.
 
 未完成项保留为明确缺口；不得把读取表格、生成情景或打开页面等同于完整支持。
+
+### Later Dex evidence / 后续图鉴证据
+
+The earlier pending expanded-Dex scope is superseded for Mercury 1.2's read-only
+flag projection and historical collection basis by
+[native split-bank verification](../verification/mercury-dex-20261006.md).
+Dex writing and complete acquisition/form/access coverage are not implied.

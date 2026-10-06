@@ -13,6 +13,7 @@ import { ClockDetails } from "./ClockDetails";
 import { TradeDetails } from "./TradeDetails";
 import { useI18n } from "./i18n";
 import { collectionHtml } from "./collectionHtml";
+import { dexReadSummary } from "./DexReadDetails";
 import type {
   Catalog,
   CollectionPlan,
@@ -88,10 +89,7 @@ export function CollectionPanel({
                 onChange={(e) => setBasis(e.target.value as typeof basis)}
               >
                 <option value="individuals">{t("planIndividuals")}</option>
-                <option
-                  value="dex"
-                  disabled={catalog.profile.capabilities?.dex === false}
-                >
+                <option value="dex" disabled={save.dex.length === 0}>
                   {t("planDex")}
                 </option>
               </select>
@@ -114,6 +112,12 @@ export function CollectionPanel({
             </label>
           </div>
           <p className="small muted">{t("acqSaveOverlay")}</p>
+          {basis === "dex" &&
+            dexReadSummary(save.dex_status, t).map((line, i) => (
+              <p className="small muted" key={i}>
+                {line}
+              </p>
+            ))}
           {!plan ? (
             <p>{t("loading")}</p>
           ) : (

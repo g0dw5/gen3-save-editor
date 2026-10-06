@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add Mercury 1.2 historical-Dex collection planning through native split-bank
+  reads. Explain lazy initialization in both languages and standalone HTML;
+  preserve raw SAV bytes and keep Dex editing disabled. Five-ROM regressions retain
+  legacy readers/edit boundaries; full acquisition/access coverage remains partial.
+- 水银 1.2 收集规划增加按图鉴捕获记录判断，按原生两段图鉴读取并解释未初始化
+  范围。中英文界面与独立 HTML 共用说明，不改存档；图鉴写入仍关闭。其他 ROM
+  的原有读取与编辑边界交叉回归，完整获取方式和可达性仍部分支持。
+
 - Preserve reward operands, entrance coordinates and conditions through verified,
   bounded native name/number buffers across five fingerprints. Unknown formatting,
   long strings and Mercury's runtime custom-berry name keep conservative stops.

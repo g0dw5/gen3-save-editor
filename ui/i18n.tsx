@@ -388,6 +388,11 @@ export const en = {
   planBasis: "Missing basis",
   planIndividuals: "Existing individuals",
   planDex: "Pokédex ownership",
+  planDexReadOnly:
+    "Historical Dex records are read-only here; planning does not mark entries or create Pokémon.",
+  planDexUninitialized: "Uninitialized Dex range:",
+  planDexProjection:
+    "The game's native reader initializes this range as unseen and uncaught. The report projects that result without writing the save.",
   planFamily: "Permanent evolution family",
   planUnknownRewards: "Include rewards with unknown receipt state",
   planOwned: "Owned species",
@@ -1633,6 +1638,10 @@ export const zh: Record<Key, string> = {
   planBasis: "缺失判断依据",
   planIndividuals: "现有个体",
   planDex: "图鉴捕获记录",
+  planDexReadOnly: "此处只读取历史图鉴记录；规划不会点亮图鉴或生成宝可梦。",
+  planDexUninitialized: "未初始化的图鉴范围：",
+  planDexProjection:
+    "游戏原生读取会将该范围初始化为未见、未捕获。此报告只按该结果判断，不写入存档。",
   planFamily: "永久进化家族",
   planUnknownRewards: "加入领取状态无法确定的奖励",
   planOwned: "已持有／记录宝可梦",

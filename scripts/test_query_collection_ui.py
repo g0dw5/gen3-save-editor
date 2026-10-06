@@ -33,6 +33,10 @@ def main():
     writer=dict(effect=dict(kind='flag',id=10,operation='set',operand=None,value=1,offset=300,conditions=[g2['condition']]),reference=dict(map_id='0-1',map_name='Test cave floor',region=1,kind='trigger',x=1,y=1,local_id=None,offset=200,root=250,conditions=[],entry_unresolved=True),conditions=[g2],text=[dict(offset=800,text='<script>context</script>')],stopped_at=[400],path_complete=False)
     report=dict(rom_md5='test',condition=g1,writers=[writer],coverage=dict(checked_scripts=10,total_scripts=12,failed_scripts=1,truncated=True),total_matches=1,next_offset=None,partial=True)
     save = dict(trainer={'name':'TEST'},pokemon=[pokemon(2,dict(kind='party',slot=0))],boxes=[dict(index=i,name=f'Box {i}',count=0,wallpaper=0) for i in range(14)],bag=[],dex=[],active_slot=0,counter=1,backup_valid=True,dirty=False,can_undo=False,can_redo=False,changes=[])
+    # Read-only Dex queries must not inherit the editor's write capability.
+    catalog['profile']['capabilities'] = dict(dex=False)
+    save['dex'] = [dict(number=1,seen=True,owned=True),dict(number=906,seen=False,owned=False)]
+    save['dex_status'] = dict(count=1027,read_only=True,uninitialized_ranges=[dict(first=906,count=122)])
     task = dict(target=dict(kind='species',id=1),family=[1],existing_family_members=[],source=source,alternatives=1)
     catalog['species'][1]['name'] = 'ROM parent'
     capture = dict(source, kind='grass',underfoot=None,min_level=5,max_level=8,encounter_percent=20,periods=['night'],in_scenario=False)
@@ -53,8 +57,10 @@ def main():
         elif command=='acquisition': data=dict(target=payload,sources=[source],partial=True,clock=None)
         elif command=='map_navigation': data=dict(map_id=payload['id'],outgoing=[edge] if payload['id']=='0-0' else [],incoming=[edge] if payload['id']=='0-1' else [],approaches=[[edge]] if payload['id']=='0-1' else [],truncated=False,diagnostics=[])
         elif command in ('collection','collection_export'):
-            if command=='collection_export': assert payload['expected_rom_md5']=='test' and payload['query']['basis']=='individuals'
-            data=plan
+            if command=='collection_export': assert payload['expected_rom_md5']=='test' and payload['query']['basis'] in ['individuals','dex']
+            data=copy.deepcopy(plan)
+            data['basis']=(payload.get('query') or payload)['basis']
+            data['dex_status']=save['dex_status'] if data['basis']=='dex' else None
         elif command=='trainer_references':
             assert payload['expected_rom_md5']=='test' and payload['trainer_id']==1
             battle=dict(trainer_id=1,battle_type=3,offset=250,conditions=[g2['condition']],role='primary')
@@ -139,6 +145,20 @@ def main():
         expect(page.locator('.acquisition-panel')).to_contain_text('Collected' if False else 'Undetermined')
         page.get_by_role('button',name='Collection planning',exact=True).click()
         expect(page.locator('.collection-panel')).to_contain_text('Missing goals 1')
+        basis=page.locator('.collection-panel .map-tools select').first
+        expect(basis.locator('option[value=dex]')).to_be_enabled()
+        basis.select_option('dex')
+        expect(page.locator('.collection-panel')).to_contain_text('Historical Dex records are read-only here')
+        expect(page.locator('.collection-panel')).to_contain_text('906–1027')
+        page.get_by_role('button',name='简体中文',exact=True).click()
+        expect(page.locator('.collection-panel')).to_contain_text('此处只读取历史图鉴记录')
+        with page.expect_download() as info:
+            page.get_by_role('button',name='导出独立 HTML',exact=True).click()
+        dex_html=Path(info.value.path()).read_text()
+        assert '未初始化的图鉴范围' in dex_html and '906–1027' in dex_html and '不写入存档' in dex_html
+        page.get_by_role('button',name='English',exact=True).click()
+        basis.select_option('individuals')
+        expect(page.locator('.collection-panel')).not_to_contain_text('Historical Dex records are read-only here')
         prep = page.locator('.collection-preparation')
         expect(prep).to_contain_text('Evolution preparation suggestion')
         expect(prep).to_contain_text('Use Test stone')
@@ -151,7 +171,7 @@ def main():
         expect(page.locator('.acquisition-panel')).to_be_visible()
         assert requests[-1]['command'] == 'acquisition' and requests[-1]['payload']['kind'] == 'item'
         page.get_by_role('button',name='Back to previous reference',exact=False).click()
-        page.locator('.collection-preparation').get_by_role('button',name='Test cave floor (1, 1) ↗',exact=True).click()
+        page.locator('.collection-preparation').get_by_role('button',name='Test cave floor (1, 1) ↗',exact=True).first.click()
         expect(page.locator('.map-focus')).to_be_visible()
         page.get_by_role('button',name='Back to previous reference',exact=False).click()
         page.get_by_role('button',name='简体中文',exact=True).click()

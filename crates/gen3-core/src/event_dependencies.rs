@@ -1205,6 +1205,7 @@ mod route_tests {
     #[test]
     fn prerequisite_routes_keep_alternatives_cycles_and_untraced_guards_separate() {
         let plan = crate::collection::CollectionPlan {
+            dex_status: None,
             entrance_coverage: None,
             entrance_diagnostics: vec![],
             prerequisites: None,
@@ -1254,6 +1255,7 @@ mod route_tests {
     #[test]
     fn writer_entrance_alternatives_do_not_become_one_mandatory_guard_list() {
         let plan = crate::collection::CollectionPlan {
+            dex_status: None,
             entrance_coverage: None,
             entrance_diagnostics: vec![],
             prerequisites: None,

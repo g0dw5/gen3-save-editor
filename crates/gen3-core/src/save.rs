@@ -932,6 +932,9 @@ impl Save {
         Ok(())
     }
     pub fn dex(&self) -> Result<Vec<DexFlag>> {
+        if self.layout.dex_read.is_some() {
+            return self.read_dex_banks();
+        }
         let Some(layout) = self.layout.dex else {
             return Ok(Vec::new());
         };

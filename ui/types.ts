@@ -207,6 +207,7 @@ export interface Snapshot {
   boxes: BoxInfo[];
   bag: BagEntry[];
   dex: { number: number; seen: boolean; owned: boolean }[];
+  dex_status?: DexReadStatus | null;
   active_slot: number;
   counter: number;
   backup_valid: boolean;
@@ -214,6 +215,11 @@ export interface Snapshot {
   can_undo: boolean;
   can_redo: boolean;
   changes: Change[];
+}
+export interface DexReadStatus {
+  count: number;
+  read_only: boolean;
+  uninitialized_ranges: { first: number; count: number }[];
 }
 export interface LearnSource {
   move_id: number;
@@ -694,6 +700,7 @@ export interface EntranceSuggestion {
   truncated: boolean;
 }
 export interface CollectionPlan {
+  dex_status?: DexReadStatus | null;
   prerequisites?: {
     reports: EventDependencyReport[];
     routes?: {

@@ -66,6 +66,7 @@ pub struct EntranceSuggestion {
 }
 #[derive(Serialize)]
 pub struct CollectionPlan {
+    pub dex_status: Option<crate::dex::DexReadStatus>,
     pub entrance_coverage: Option<crate::event_dependencies::Coverage>,
     pub entrance_diagnostics: Vec<String>,
     pub prerequisites: Option<crate::event_dependencies::Bundle>,
@@ -289,7 +290,7 @@ impl AcquisitionIndex {
         let owned: BTreeSet<u16> = match request.basis {
             CollectionBasis::Individuals => current.keys().copied().collect(),
             CollectionBasis::Dex => {
-                if rom.profile.save.dex.is_none() {
+                if save.dex_read_status()?.is_none() {
                     return Err(err(
                         "collection_dex_unverified",
                         "use current individuals; this ROM's expanded dex flags are unverified",
@@ -507,6 +508,11 @@ impl AcquisitionIndex {
             }
         }
         Ok(CollectionPlan {
+            dex_status: if matches!(request.basis, CollectionBasis::Dex) {
+                save.dex_read_status()?
+            } else {
+                None
+            },
             entrance_coverage: None,
             entrance_diagnostics: Vec::new(),
             prerequisites: None,

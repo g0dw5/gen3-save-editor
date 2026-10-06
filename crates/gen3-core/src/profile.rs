@@ -230,6 +230,8 @@ pub struct SaveLayout {
     pub pokemon_codec: crate::adapter::PokemonCodec,
     pub pockets: &'static [crate::save::Pocket],
     pub dex: Option<DexLayout>,
+    /// Independently verified read-only banks; does not authorize Dex editing.
+    pub dex_read: Option<&'static [DexReadBank]>,
     pub sizes: [usize; 14],
     pub party_count: usize,
     pub party: usize,
@@ -261,11 +263,23 @@ pub struct DexLayout {
     pub seen: usize,
     pub seen_mirrors: &'static [usize],
 }
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct DexReadBank {
+    pub first: u16,
+    pub count: u16,
+    pub main_block: bool,
+    pub seen: usize,
+    pub owned: usize,
+    /// Native lazy initialization clears this bank when the marker differs.
+    /// Queries project that result without changing any save bytes.
+    pub initialization: Option<(usize, u16)>,
+}
 pub const EMERALD: SaveLayout = SaveLayout {
     extension_sectors: None,
     sector_checksum: SectorChecksum::Sum,
     pokemon_codec: crate::adapter::PokemonCodec::Gen3,
     pockets: &crate::save::POCKETS,
+    dex_read: None,
     dex: Some(DexLayout {
         bit_bias: 0,
         main_block: false,

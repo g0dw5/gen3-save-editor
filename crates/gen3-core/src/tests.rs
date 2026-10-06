@@ -3928,7 +3928,7 @@ fn local_query_acquisition_and_collection_all_profiles() {
                     }
                 }
             }
-            if r.profile.save.dex.is_none() {
+            if r.profile.save.dex.is_none() && r.profile.save.dex_read.is_none() {
                 assert_eq!(
                     index
                         .collection(
@@ -3945,6 +3945,25 @@ fn local_query_acquisition_and_collection_all_profiles() {
                         .code,
                     "collection_dex_unverified"
                 );
+            }
+            if r.profile.save.dex_read.is_some() {
+                let before = s.data.clone();
+                let dex_plan = index
+                    .collection(
+                        &r,
+                        &s,
+                        CollectionRequest {
+                            basis: CollectionBasis::Dex,
+                            families: false,
+                            include_unknown_rewards: false,
+                        },
+                    )
+                    .unwrap();
+                assert!(dex_plan.dex_status.as_ref().unwrap().read_only);
+                assert_eq!(dex_plan.dex_status.as_ref().unwrap().count, 1027);
+                assert!(dex_plan.missing_count > 0);
+                assert_eq!(s.data, before);
+                eprintln!("{name}: read-only native Dex planning passed, {} owned species, {} missing goals", dex_plan.owned_count, dex_plan.missing_count);
             }
             eprintln!("{name}: {} species, {} shop rows, {} missing family goals, {} regions, {} entrance reports",index.species.len(),shops,plan.missing_count,plan.regions.len(),plan.entrances.len());
         } else {
@@ -9935,6 +9954,7 @@ fn local_collection_prerequisite_routes_all_profiles() {
         }
         assert!(!tasks.is_empty(), "{key}: no guarded runtime source");
         let mut plan = CollectionPlan {
+            dex_status: None,
             entrance_coverage: None,
             entrance_diagnostics: vec![],
             prerequisites: None,
@@ -10626,4 +10646,251 @@ fn local_script_buffers_match_complete_native_state_preservation() {
         assert!(proof["rows"].as_array().unwrap().len() > 500);
         assert_eq!(bytes, std::fs::read(path).unwrap());
     }
+}
+
+#[test]
+fn native_read_only_dex_banks_preserve_flags_initialization_and_edit_boundaries() {
+    for profile in profile::PROFILES {
+        let r = adapter_rom(profile);
+        let mut save = Save::open(save_bytes(&r), profile.save).unwrap();
+        if let Some(banks) = profile.save.dex_read {
+            let base = save.sections[1];
+            for bank in banks {
+                for i in 0..(bank.count as usize).div_ceil(8) {
+                    save.data[base + bank.seen + i] = 0xa5;
+                    save.data[base + bank.owned + i] = 0x5a;
+                }
+                if let Some((off, value)) = bank.initialization {
+                    put16(&mut save.data, base + off, value);
+                }
+            }
+            let before = save.data.clone();
+            let flags = save.dex().unwrap();
+            assert_eq!(flags.len(), 1027);
+            for bank in banks {
+                for i in 0..bank.count {
+                    let f = &flags[(bank.first + i - 1) as usize];
+                    assert_eq!(f.number, bank.first + i);
+                    assert_eq!(f.seen, 0xa5 & (1 << (i % 8)) != 0);
+                    assert_eq!(f.owned, 0x5a & (1 << (i % 8)) != 0);
+                }
+            }
+            assert!(save.dex_read_status().unwrap().unwrap().read_only);
+            for n in [1, 905, 906, 1027] {
+                assert_eq!(
+                    save.edit_dex(n, true, true).unwrap_err().code,
+                    "unsupported_feature"
+                );
+                assert_eq!(save.data, before);
+            }
+            let (off, _) = banks[1].initialization.unwrap();
+            put16(&mut save.data, base + off, 0);
+            let before = save.data.clone();
+            let flags = save.dex().unwrap();
+            assert!(flags[905..].iter().all(|f| !f.seen && !f.owned));
+            assert!(flags[..905].iter().any(|f| f.seen));
+            let status = save.dex_read_status().unwrap().unwrap();
+            assert_eq!(
+                (
+                    status.uninitialized_ranges[0].first,
+                    status.uninitialized_ranges[0].count
+                ),
+                (906, 122)
+            );
+            assert_eq!(
+                save.data, before,
+                "lazy initialization is projected, never written"
+            );
+            let sum = sector_checksum(&save.data[base..base + profile.save.sizes[1]]);
+            put16(&mut save.data, base + 0xff6, sum);
+            let original = save.data.clone();
+            let mut session = Session::new(r);
+            session.load(original.clone(), None).unwrap();
+            for policy in [Policy::Standard, Policy::Free] {
+                assert_eq!(
+                    session
+                        .apply(
+                            Action::Dex {
+                                number: 906,
+                                seen: true,
+                                owned: true
+                            },
+                            policy
+                        )
+                        .unwrap_err()
+                        .code,
+                    "unsupported_feature"
+                );
+                assert_eq!(session.save_ref().unwrap().data, original);
+                assert!(!session.snapshot().unwrap().can_undo);
+            }
+            assert_eq!(session.snapshot().unwrap().dex.len(), 1027);
+        } else {
+            let before = save.data.clone();
+            let status = save.dex_read_status().unwrap().unwrap();
+            assert!(!status.read_only);
+            assert_eq!(save.dex().unwrap().len(), status.count);
+            assert_eq!(save.data, before);
+            save.edit_dex(1, true, true).unwrap();
+            assert!(
+                save.dex().unwrap()[0].owned,
+                "legacy editing stays unchanged"
+            );
+        }
+    }
+}
+
+#[test]
+#[ignore = "requires GEN3_ROM_MERCURY12, GEN3_SAVE_MERCURY12 and GEN3_MERCURY_DEX_PROBES"]
+fn local_mercury_dex_matches_native_split_banks_and_booted_save() {
+    use sha2::{Digest, Sha256};
+    let proof: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_MERCURY_DEX_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    let rom_bytes = std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap();
+    let r = Rom::open(rom_bytes.clone()).unwrap();
+    assert_eq!(r.profile.md5, proof["md5"]);
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&rom_bytes)),
+        proof["rom_sha256"]
+    );
+    let banks = r.profile.save.dex_read.unwrap();
+    let mut total = 0;
+    for pattern in [0u8, 255, 165, 90] {
+        for initialized in [true, false] {
+            let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+            let base = save.sections[1];
+            for (i, bank) in banks.iter().enumerate() {
+                assert_eq!(
+                    (bank.first, bank.count, bank.seen, bank.owned),
+                    (
+                        proof["banks"][i]["first"].as_u64().unwrap() as u16,
+                        proof["banks"][i]["count"].as_u64().unwrap() as u16,
+                        proof["banks"][i]["seen"].as_u64().unwrap() as usize,
+                        proof["banks"][i]["owned"].as_u64().unwrap() as usize
+                    )
+                );
+                let length = (bank.count as usize).div_ceil(8);
+                save.data[base + bank.seen..base + bank.seen + length].fill(pattern);
+                save.data[base + bank.owned..base + bank.owned + length].fill(pattern ^ 255);
+                if let Some((off, marker)) = bank.initialization {
+                    put16(
+                        &mut save.data,
+                        base + off,
+                        if initialized { marker } else { marker ^ 1 },
+                    );
+                }
+            }
+            let before = save.data.clone();
+            let flags = save.dex().unwrap();
+            for row in proof["rows"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|v| v["pattern"] == pattern && v["initialized"] == initialized)
+            {
+                let f = &flags[row["number"].as_u64().unwrap() as usize - 1];
+                assert_eq!(
+                    serde_json::to_value(f).unwrap(),
+                    serde_json::json!({"number":row["number"],"seen":row["seen"],"owned":row["owned"]})
+                );
+                total += 1;
+            }
+            assert_eq!(save.data, before);
+        }
+    }
+    assert_eq!(total, 8 * 1027);
+    let original = std::fs::read(std::env::var("GEN3_SAVE_MERCURY12").unwrap()).unwrap();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&original)),
+        proof["save_sha256"]
+    );
+    let save = Save::open(original.clone(), r.profile.save).unwrap();
+    assert_eq!(
+        serde_json::to_value(save.dex().unwrap()).unwrap(),
+        proof["real"]
+    );
+    assert_eq!(save.data, original);
+}
+
+#[test]
+fn read_only_dex_planning_distinguishes_history_from_current_individuals() {
+    use crate::{
+        acquisition::AcquisitionIndex,
+        collection::{CollectionBasis, CollectionRequest},
+        world::{TrainerLocationIndex, World},
+    };
+    let r = adapter_rom(crate::mercury::PROFILE);
+    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+    let base = save.sections[1];
+    let bank = r.profile.save.dex_read.unwrap()[1];
+    let (offset, marker) = bank.initialization.unwrap();
+    put16(&mut save.data, base + offset, marker);
+    save.data[base + bank.owned] = 1;
+    let mut species = (1..=3)
+        .map(|id| r.valid_species(id).unwrap())
+        .collect::<Vec<_>>();
+    for (entry, n) in species.iter_mut().zip([1, 906, 1027]) {
+        entry.dex_number = n;
+    }
+    let index = AcquisitionIndex {
+        wild_cache: Default::default(),
+        breeding_cache: Default::default(),
+        world: World {
+            maps: vec![],
+            map_events: vec![],
+            encounters: vec![],
+            trainers: vec![],
+            trainer_locations: TrainerLocationIndex {
+                locations: vec![],
+                unresolved_maps: vec![],
+            },
+            map_groups: &[],
+        },
+        species,
+        evolutions: Default::default(),
+        learnsets: Default::default(),
+    };
+    let request = |basis| CollectionRequest {
+        basis,
+        families: false,
+        include_unknown_rewards: false,
+    };
+    let original = save.data.clone();
+    let plan = index
+        .collection(&r, &save, request(CollectionBasis::Dex))
+        .unwrap();
+    let goals = plan
+        .regions
+        .iter()
+        .flat_map(|region| &region.tasks)
+        .map(|task| task.target.id)
+        .collect::<Vec<_>>();
+    assert_eq!(goals, [1, 3]);
+    assert_eq!(plan.owned_count, 1);
+    assert!(plan.dex_status.unwrap().read_only);
+    let plan = index
+        .collection(&r, &save, request(CollectionBasis::Individuals))
+        .unwrap();
+    let goals = plan
+        .regions
+        .iter()
+        .flat_map(|region| &region.tasks)
+        .map(|task| task.target.id)
+        .collect::<Vec<_>>();
+    assert_eq!(goals, [2, 3]);
+    assert!(plan.dex_status.is_none());
+    assert_eq!(save.data, original);
+    // Missing initialization projects no extended history, independently of
+    // unchanged nonzero raw bytes. It does not invent currently usable parents.
+    put16(&mut save.data, base + offset, 0);
+    let original = save.data.clone();
+    let plan = index
+        .collection(&r, &save, request(CollectionBasis::Dex))
+        .unwrap();
+    assert_eq!(plan.owned_count, 0);
+    assert_eq!(plan.missing_count, 3);
+    assert_eq!(plan.dex_status.unwrap().uninitialized_ranges.len(), 1);
+    assert_eq!(save.data, original);
 }
