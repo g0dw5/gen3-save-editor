@@ -13,91 +13,19 @@ workspace. Core regression tests
 run against generated fixtures and optionally your exact ROMs. See
 [verification and remaining work](docs/IMPLEMENTATION.md) before using a build.
 Mercury FC 1.2 ROM reference and save editing are available on the development
-branch. Its expanded Pokédex flags and cheat catalog are still under study.
+branch. Historical Pokédex reads use its verified split banks; Pokédex writing stays disabled. Its cheat catalog remains under study.
 
-## Queries and collection planning
+## ROM reference
 
-ROM reference windows link Pokémon, item and move sources to map tiles,
-connected maps and exterior entrance chains. Read-only **Collection planning**
-uses an opened SAV: choose Pokédex ownership or existing individuals, optionally
-group permanent evolution families, and export a standalone HTML suggestion.
-Receipt status is independent of inventory; unknown rewards are opt-in.
-Collection rows and HTML include known source types, quantities, slot probabilities,
-periods and repeatability. Related references open current-ROM targets; report
-links point to existing tasks only. Period hours require verified clock rules.
-Use **Trace prerequisites** to inspect regional event alternatives, related goals,
-recursive conditions and exterior entrances. Reference/back navigation retains
-the plan; reopening a SAV or ROM invalidates it. Already-met conditions stop
-unnecessary prerequisite expansion. These are bounded clues, not a complete quest
-sequence. CLI: `gen3 collection-plan ROM SAVE QUERY.json`. See the
-[route evidence](docs/verification/collection-prerequisites-20261006.md).
-
-Map references, collection sources, evolution preparation and prerequisite writers
-share referenced script passages, with NPC/trigger tiles, branch conditions and
-fresh SAV checks. Each entrance chain is a separate alternative in the live UI
-and standalone HTML; expand additional chains and unresolved incoming sources. Destination setters do not create edges.
-Satisfied saved guards do not prove access or a return route. See the
-[native verification and limits](docs/verification/script-warps-20261006.md) and
-[collection entrance integration](docs/verification/collection-script-entrances-20261006.md).
-
-Verified presentation commands preserve script-assigned entrance coordinates
-across prompts, message closing and delays. Standard bodies are read from the
-current ROM; player choices, unsupported bodies and current access remain unknown.
-The expanded engine's message gate is handled separately. See
-[native evidence and limits](docs/verification/script-dialogues-20261006.md).
-
-Verified native player-gender reads and copied results now display human-readable
-conditions across references, maps and collection HTML; SAV overlays use the saved
-trainer byte, while ROM-only results remain unknown. Other script/access gaps are
-retained. See [player-condition evidence](docs/verification/player-conditions-20261006.md).
-
-Verified, bounded native name/number buffers also preserve reward parameters and
-entrance conditions. Unknown formatting and Mercury's runtime custom-berry name
-remain unresolved. See [buffer evidence](docs/verification/script-buffers-20261006.md).
-
-Missing species also show a bounded, directed permanent-evolution preparation
-chain when a current non-egg ancestor or referenced ancestor source is found.
-Open each required item/move and the origin map/entrance; the same explanation is
-included in standalone HTML. Historical Dex records do not supply usable parents,
-and evolution edges are never reversed into assumed breeding outcomes. These are
-preparation suggestions, not verification of current evolution eligibility.
-Coverage is partial: script prerequisites, dynamic access and special sources
-may remain undetermined. Mercury supports both individual-based and historical
-Pokédex planning through its verified native split banks. An uninitialized
-extended range is explained and projected as unseen/uncaught without changing
-the SAV; Dex editing remains disabled. See [native Dex evidence](docs/verification/mercury-dex-20261006.md)
-and the [exact-ROM capability matrix](docs/capability-matrix.md).
-Maps identify referenced actor actions/waits and explain that sprites use initial
-ROM tiles. Live motion, completion and collision remain unverified; explicit
-actor-map operands are not entrances. See [native action evidence](docs/verification/script-movements-20261006.md).
-Legacy Dex reads also follow each ROM's [native seen/caught checks](docs/verification/dex-read-checks-20261006.md):
-inconsistent positive records are explained and remain missing in planning;
-queries preserve raw save bytes. Rocket keeps its independent flag semantics.
-
-Mercury 1.2 acquisition queries and collection HTML use the native virtual-clock
-snapshot from SAV, including saved weekday, speed and forced-night state. Choose
-an explicit simulated hour or all periods as needed. Hardware RTC mode remains
-unresolved; device time is never substituted. See [clock verification](docs/verification/mercury-clock-20261005.md).
-The read-only CLI supports `gen3 game-clock ROM [SAVE]`.
-
-Verified persistent event ranges now support hidden-item and qualified ordinary
-item-ball receipt overlays for all five exact profiles. Qualified NPC gifts also
-trace the unset guard, native success/failure result and successful flag write.
-The flag is separate from NPC visibility; collected gifts leave the regional
-suggestion while ROM reference retains every event. Unqualified rewards stay
-undetermined, with the same explanation in acquisition, planning and HTML.
-Mercury's region-dependent hidden flags and underfoot pickup
-are read from native ROM rules. Ordinary NPC receipts and complete quest/refresh
-coverage remain partial. See [event verification](docs/verification/event-state-20261005.md)
-and [ordinary pickup verification](docs/verification/pickup-receipts-20261005.md),
-plus [bounded NPC receipt verification](docs/verification/npc-receipts-20261006.md).
-
-Parsed scripted Pokémon gifts, eggs and fixed encounters also link to NPC tiles,
-species references and collection HTML. Unplaced records remain separate;
-delivery and current access remain undetermined. See [scope and verification](docs/verification/script-pokemon-20261006.md).
-Bounded NPC trade quotes link to the exact requested Pokémon and held-item
-sources. With SAV, party and box donors are distinguished; no Pokémon is created
-or exchanged automatically. See [native trade verification and limits](docs/verification/npc-trades-20261006.md).
+The read-only floating window has six tabs: Pokémon, moves, items, abilities,
+maps and trainers. Learnsets, conditions, connections and evidence expand on
+demand; acquisition links and map locations still read the current ROM.
+Ultimate Emerald has one difficulty selector. Dynamic trainers automatically use
+the current SAV party; without a SAV, fixed records remain and unknowns are marked.
+There are no manual roster, level-override or random-seed controls.
+The four advanced tabs and their dedicated APIs have been removed. Their findings
+are preserved as [reverse-engineering addresses](docs/research/reference-key-addresses.md),
+not advertised as current product features.
 
 ## Cheat codes
 
@@ -192,12 +120,6 @@ npm ci
 npm run desktop
 ```
 
-Build an installer with `npm run desktop:build`. Windows x64 targets Windows 10/11;
-the bilingual per-user EXE installer installs WebView2 online when missing. See
-[Windows builds and validation limits](docs/windows-build.md). Windows and Linux builds are
-configured in CI; local verification status is recorded separately. No ROM,
-extracted sprite collection, save, updater or development HTTP server is shipped.
-
 ```sh
 cargo test -p gen3-core -p gen3-cli
 cargo fmt --all --check
@@ -262,11 +184,6 @@ and NPC layers, with tile coordinates, search, grid and zoom. See
 
 Release history: [Changelog](CHANGELOG.md), starting with the first public release 0.1.5. Route 119 fishing spots are calculated from the loaded save; use the map layer or the species reference shortcut.
 
-Mercury trainer references execute the loaded ROM's ordinary-party constructor
-in isolated RAM. These are explicitly seeded, zero-context scenarios; script
-replacements, special facilities and full live battle-entry state remain unknown.
-[Verification and current gaps](docs/verification/query-collection-20261005.md).
-
 Mercury 1.2 uses its native expanded inventory and section-name table. Static maps
 with independently reproduced native layout mismatches or unresolved layer types
 show warnings; a parsed map entry is not proof of a normally accessible area.
@@ -275,7 +192,7 @@ Validation scope: [Mercury display/storage](docs/verification/mercury-display-st
 Parsed tutor offers now link move queries to NPC tiles, exterior entrances and back navigation. Dark Phantom BW/DP uses the corrected native tutor table; payment, one-time limits and special eligibility remain unresolved. See [teaching evidence](docs/verification/tutor-sources-20261006.md).
 
 Parsed resource checks show item names and holdings, with prerequisite-item links
-in sources/maps/planning and standalone HTML. Money checks are not payment
+in sources and maps. Money checks are not payment
 proof; alternate facility bags and post-mutation checks remain unknown.
 See [native rules and evidence](docs/verification/resource-conditions-20261006.md).
 
@@ -301,84 +218,7 @@ their original records are preserved. This is a saved snapshot, not live emulato
 state or a forecast of the next egg. Mercury's additional custom service record
 remains unresolved. See [saved-state evidence](docs/verification/daycare-state-20261006.md).
 
-Collection preparation also samples the current ROM's ordinary offspring selection
-using exact existing party/box parents and their held items. A suggestion can lead
-through receiving-service references, hatching and directed evolution; its pairing
-can be checked with the full native receipt preview. Standalone HTML includes parent
-locations and the same limitations. Sampling is bounded, is not a complete offspring
-catalog and does not include already deposited daycare parents. Missing suggestions
-do not prove breeding impossible. See [planning evidence](docs/verification/breeding-planning-20261006.md).
-
-Prerequisite checks now offer **Find prerequisite clues**: potential map-referenced
-script writers, ROM text context, further guards and tile/entrance/back navigation.
-Standalone collection HTML includes a linked, bounded appendix from the same
-current ROM/SAV snapshot. These are partial clues, not a complete quest graph or
-proof of access/completion. See [evidence and limits](docs/verification/event-dependencies-20261006.md).
-
-The read-only **Event clues** reference page searches dialogue contexts and map
-references directly from the loaded ROM, then links guards to prerequisite traces,
-static tiles and exterior entrances. Saved observations are separate from quest
-completion and access. This remains partial story coverage; see
-[event-clue evidence](docs/verification/event-clues-20261006.md).
-
 Trainer references now link qualified battle-record operands to guarded script
 contexts, static actors/tiles and map entrances. Rematch bases and setup records
 are identified separately; a referenced record does not establish an available
 battle or its final party. See [native boundary evidence and limits](docs/verification/trainer-locations-20261006.md).
-
-The ROM reference **Game time** tab distinguishes Mercury’s saved virtual clock from explicit hardware RTC scenarios. Other registered profiles show SAV offsets/checkpoints and use native ROM routines for simulated input; current RTC and unverified weekday/refresh rules remain unknown. See [verification](docs/verification/hardware-clock-20261006.md).
-
-The read-only **Training reference** tab links verified EV-item handlers to acquisition and map queries, with native before/after previews for stored or simulated individuals. Custom mechanisms/menu eligibility/consumption remain partial. [Evidence](docs/verification/training-items-20261006.md). CLI: `gen3 training-items ROM` and `gen3 training-preview ROM REQUEST.json [SAVE]`.
-
-Rocket mint targets are also read at runtime in Training reference, with stored/simulated effective-nature and stat previews. In verified changing scenarios, the existing nature-override SAV patch matches native persistent effects while preserving PID/identity/history. Menus, consumption and other-ROM mint services remain unverified. [Evidence](docs/verification/training-natures-20261006.md).
-
-Training reference also reads Rocket and Mercury ability-item handlers at runtime,
-executes native acceptance and persistent effects, and links item acquisition/maps.
-Rocket retains PID; Mercury requires an explicit random-seed scenario and may
-reroll PID. Actual ability/PID/nature/stats are shown; these read-only previews do
-not consume items or certify all menus, services or PID-linked appearances.
-[Evidence and limits](docs/verification/training-abilities-20261006.md).
-
-Ultimate ability items now join the shared native training previews: runtime variants, seeded hidden-to-normal selection without PID changes, and explicit acceptance-without-change warnings. Menu/consumption/access remain qualified. [Evidence](docs/verification/training-ultimate-abilities-20261006.md).
-
-The Training reference now includes Ultimate's referenced NPC Hyper Training
-service: runtime menu choices, crown fees, separate earned-credit requirements,
-SAV condition overlays and NPC-to-map/item-acquisition navigation. Native helpers
-keep base IVs and unrelated party data unchanged; existing stored party stats are
-not refreshed by this script stage. Full menus, credit acquisition and access
-remain partial. Mercury 1.2 now has a referenced base-IV service: level/unlock
-checks, seven runtime options and a separate required-item/payment display.
-Native calls confirm that its silver branch checks silver but attempts to remove
-gold before the stat menu; this anomaly is shown without certifying the full
-transaction.
-Read-only CLI: `gen3 training-services ROM [SAVE]`.
-[Evidence and scope](docs/verification/training-crowns-20261006.md).
-
-Referenced crown services also preview native effects on stored or simulated
-individuals: Mercury changes base IVs and recalculates party stats; Ultimate
-changes training flags without immediately refreshing saved stats. Hypothetical
-effects remain separate from eligibility and full payment. Read-only CLI:
-`gen3 training-service-preview ROM REQUEST.json [SAVE]`.
-[Scope and evidence](docs/verification/training-service-previews-20261006.md).
-
-Service menus now show runtime B-cancellation rules. Mercury's single-stat menu
-ignores B after its payment attempt; its initial menu and Ultimate's training
-choice permit cancellation. This corrects the earlier menu description; full
-NPC transactions remain partial. [Native menu evidence](docs/verification/training-service-menus-20261006.md).
-
-Both referenced crown services select from the party in-game. Withdraw a boxed
-individual first; its preview is a full-HP projection, not a replay of PC
-withdrawal. Party selection permits B cancellation and does not exclude fainted
-individuals; later level and service checks remain separate. Editor previews
-accept non-eggs only. [Native selection evidence](docs/verification/training-party-selection-20261006.md).
-
-Fixed-encounter readers follow the native single/pair inputs and expose known companions in queries, maps and collection HTML. Native constructor support is separate from referenced in-game occurrence and capture/access conditions; see [verification](docs/verification/static-battles-20261006.md).
-
-Item reference queries include explicit held items from referenced fixed encounters, with Pokémon/map links and optional unconfirmed collection suggestions. Native setup fields are verified separately from capture, access and receipt; see [evidence](docs/verification/static-held-items-20261006.md).
-
-Evolution requirements now link to current-ROM resources and separate reverse uses; decoded location maps and entrance suggestions also appear in collection/HTML. Eligibility remains qualified; see [verification](docs/verification/evolution-links-20261006.md).
-
-Native item-selector checks corrected BW/DP's missing extended evolution rows
-and Mercury's auxiliary gender requirement. The shared tree, reverse queries and
-collection/HTML read these facts from the loaded ROM. They do not assert full
-current eligibility or item consumption; see [scope](docs/verification/item-evolutions-20261006.md).

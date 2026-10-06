@@ -1,44 +1,5 @@
 import { useI18n } from "./i18n";
-import type {
-  Catalog,
-  PokemonSource,
-  QueryTarget,
-  StaticBattleMember,
-} from "./types";
-
-function memberName(
-  member: StaticBattleMember,
-  catalog: Catalog,
-  t: (key: string) => string,
-): string {
-  const species =
-    member.species == null
-      ? t("unresolved")
-      : (catalog.species.find((s) => s.id === member.species)?.name ??
-        `#${member.species}`);
-  const level = member.level == null ? t("unresolved") : `Lv. ${member.level}`;
-  const item =
-    member.held_item == null
-      ? t("unresolved")
-      : member.held_item === 0
-        ? t("noHeldItem")
-        : (catalog.items.find((i) => i.id === member.held_item)?.name ??
-          `#${member.held_item}`);
-  return `${species} · ${level} · ${t("held_item")}: ${item}`;
-}
-
-export function staticBattleSummary(
-  mon: PokemonSource,
-  catalog: Catalog,
-  t: (key: string) => string,
-): string[] {
-  if (!mon.battle_members?.length) return [];
-  return [
-    t("staticBattlePair"),
-    ...mon.battle_members.map((m) => memberName(m, catalog, t)),
-    t("staticBattlePairHelp"),
-  ];
-}
+import type { Catalog, PokemonSource, QueryTarget } from "./types";
 
 export function StaticBattleDetails({
   mon,

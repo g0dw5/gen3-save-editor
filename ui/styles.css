@@ -1465,29 +1465,6 @@ summary {
   padding: 0 10px 12px;
   flex-shrink: 0;
 }
-.trainer-difficulty {
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  margin: 0 0 6px;
-  padding: 0 0 10px;
-  min-width: 0;
-}
-.trainer-difficulty legend {
-  font-size: 11px;
-  color: var(--muted);
-  padding: 0 0 6px;
-}
-.trainer-difficulty > div {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
-}
-.trainer-difficulty button {
-  justify-content: center;
-  min-width: 0;
-  font-size: 11px;
-  padding: 5px 3px;
-}
 .trainer-mode-note {
   background: var(--soft);
   border-radius: 8px;
@@ -1502,55 +1479,6 @@ summary {
   margin: 4px 0;
   font-size: 12px;
   color: var(--muted);
-}
-.trainer-ev-scenario {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-}
-.trainer-ev-source {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 8px 0;
-  font-size: 12px;
-}
-.trainer-ev-source label {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-.trainer-ev-manual-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 6px;
-  margin: 8px 0;
-}
-.trainer-ev-manual-row label,
-.trainer-ev-level {
-  display: grid;
-  gap: 3px;
-  color: var(--muted);
-  font-size: 11px;
-}
-.trainer-ev-manual-row input,
-.trainer-ev-manual-row select,
-.trainer-ev-level input,
-.trainer-ev-manual-row > input {
-  min-width: 0;
-  max-width: 135px;
-  padding: 5px;
-}
-.trainer-ev-manual-row > input {
-  width: 160px;
-  max-width: 100%;
-}
-.trainer-ev-manual-row input[type="number"] {
-  width: 70px;
-}
-.trainer-ev-level {
-  margin-top: 6px;
 }
 .trainer-filters label {
   display: grid;
@@ -2503,23 +2431,6 @@ summary {
 .acquisition-panel .encounter-card details {
   margin-top: 6px;
 }
-.collection-panel {
-  overflow: auto;
-  padding: 16px;
-  max-height: 68vh;
-}
-.collection-panel > details {
-  border: 1px solid var(--line);
-  padding: 10px;
-  margin-block: 8px;
-  border-radius: 8px;
-}
-.collection-panel summary {
-  cursor: pointer;
-}
-.collection-panel .map-tools {
-  flex-wrap: wrap;
-}
 .map-marker.map-focus {
   z-index: 20;
 }
@@ -2583,188 +2494,40 @@ summary {
   overflow-wrap: anywhere;
 }
 
-.event-clues-panel {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
+/* ROM reference: progressive detail keeps overviews readable in compact windows. */
+.reference-section,
+.reference-help,
+.condition-details {
+  margin: 12px 0;
 }
-.event-clues-panel > p {
-  margin: 10px 14px;
-  flex-shrink: 0;
+.reference-section > summary,
+.reference-help > summary,
+.condition-details > summary {
+  cursor: pointer;
 }
-.event-map-filter {
-  display: grid;
-  gap: 6px;
-  margin: 8px 10px;
-  min-width: 0;
-  flex-shrink: 0;
+.reference-section > summary {
+  font-weight: 650;
 }
-.event-map-filter select {
-  min-width: 0;
-  width: 100%;
-}
-.event-clue-context {
-  display: block;
+.reference-help {
   color: var(--muted);
-  margin-top: 6px;
+  font-size: 12px;
 }
-.event-clue-paging {
-  display: flex;
-  gap: 8px;
-  margin: 10px;
-  flex-shrink: 0;
-}
-.event-clue-effect {
-  padding: 12px;
-  margin: 10px 0;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-}
-.event-clue-text blockquote {
-  margin: 10px 0;
-  padding: 12px;
-  border-left: 3px solid var(--line);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-/* Clock queries stay inside the read-only reference window at compact sizes. */
-.clock-panel {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 16px;
-}
-.clock-panel .clock-scenario {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 16px 0;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-}
-.clock-panel .clock-scenario > label {
-  display: grid;
-  gap: 6px;
-  min-width: 160px;
-  flex: 1;
-}
-.clock-panel .clock-scenario > p,
-.clock-panel .clock-projection,
-.clock-panel .clock-offsets {
-  flex-basis: 100%;
-}
-.clock-offsets {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 12px;
-}
-.clock-offsets label {
-  display: grid;
-  gap: 6px;
-}
-.clock-panel input,
-.clock-panel select {
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-.clock-panel pre {
-  max-width: 100%;
-  overflow: auto;
-}
-
-.training-panel {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 16px;
-}
-.training-panel > label,
-.training-panel fieldset > label {
-  display: block;
-  margin: 10px 0;
-}
-.training-panel fieldset {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  min-width: 0;
-}
-.training-panel input,
-.training-panel select {
-  max-width: 100%;
-  min-width: 0;
-}
-.training-result table,
-.training-service-result table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.training-result th,
-.training-result td,
-.training-service-result th,
-.training-service-result td {
-  padding: 6px;
-  text-align: left;
-  border-bottom: 1px solid var(--line);
-}
-.training-service pre,
-.training-result pre {
-  overflow: auto;
-}
-
-.training-container {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-.training-container[hidden],
-.collection-container[hidden] {
-  display: none;
-}
-
-.training-service {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px;
-}
-.training-service-choice {
-  padding: 10px 0;
+.trainer-reference-entry {
   border-top: 1px solid var(--line);
+  padding: 8px 0;
+}
+.trainer-reference-entry p {
+  margin: 4px 0;
+}
+.trainer-mode-note p {
+  margin: 6px 0;
 }
 
-.training-service-preview {
-  margin: 12px 0;
-}
-.training-service-preview > label {
-  display: block;
-  margin: 10px 0;
-}
-.training-service-preview > label > select {
-  display: block;
-  width: 100%;
-  margin-top: 6px;
-}
-.training-service-result {
-  border-top: 1px solid var(--line);
-  margin-top: 12px;
-  padding-top: 8px;
-}
-.training-service-result .table-scroll {
-  max-width: 100%;
-  overflow-x: auto;
-}
-.training-service-result thead {
-  background: var(--soft);
+.trainer-mode-note > summary {
+  cursor: pointer;
+  font-weight: 600;
 }
 
-.prerequisite-candidate {
-  margin: 12px 0;
-  padding: 12px;
-  border-left: 3px solid var(--line, #dce3e9);
-  overflow-wrap: anywhere;
-}
-.collection-prerequisites blockquote {
-  white-space: pre-wrap;
+.trainer-mode-note:not([open]) {
+  padding: 9px 12px;
 }

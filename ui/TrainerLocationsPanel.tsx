@@ -14,13 +14,11 @@ export function TrainerLocationsPanel({
   trainerId,
   onMap,
   onTarget,
-  onEvent,
 }: {
   catalog: Catalog;
   trainerId: number;
   onMap: (id: string, focus?: MapFocus) => void;
   onTarget: (target: QueryTarget) => void;
-  onEvent: (id: string, map: string) => void;
 }) {
   const { t } = useI18n();
   const revision = useContext(ConditionQueryRevision);
@@ -83,9 +81,14 @@ export function TrainerLocationsPanel({
     }
   };
   return (
-    <section className="trainer-reference-panel">
-      <h3>{t("trainerReferenceTitle")}</h3>
-      <p className="small muted">{t("trainerReferenceHelp")}</p>
+    <details
+      className="trainer-reference-panel reference-section"
+      key={`${md5}:${trainerId}`}
+    >
+      <summary>
+        {t("trainerReferenceTitle")}
+        {report ? ` · ${report.total_matches}` : ""}
+      </summary>
       <button
         className="link-button"
         onClick={() => setRefresh((v) => v + 1)}
@@ -107,7 +110,7 @@ export function TrainerLocationsPanel({
           )}
           {report.references.map((row, i) => (
             <article
-              className="event-clue-effect"
+              className="trainer-reference-entry"
               key={`${row.clue_id}:${row.battle.offset}:${i}`}
             >
               <p>
@@ -134,7 +137,6 @@ export function TrainerLocationsPanel({
               {row.reference.x == null && (
                 <p className="small muted">{t("acqNoTile")}</p>
               )}
-              <p className="small muted">{t("dependencyAccessUnknown")}</p>
               <ConditionDetails
                 checks={row.conditions}
                 catalog={catalog}
@@ -150,12 +152,6 @@ export function TrainerLocationsPanel({
                   onMap={onMap}
                 />
               )}
-              <button
-                className="link-button"
-                onClick={() => onEvent(row.clue_id, row.reference.map_id)}
-              >
-                {t("trainerReferenceEvent")} ↗
-              </button>
               <details>
                 <summary>{t("evidence")}</summary>
                 <pre>{JSON.stringify(row, null, 2)}</pre>
@@ -183,6 +179,6 @@ export function TrainerLocationsPanel({
           </details>
         </>
       )}
-    </section>
+    </details>
   );
 }

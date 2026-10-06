@@ -4,11 +4,9 @@ pub mod adapter;
 pub mod app;
 pub mod binary;
 pub mod breeding;
-pub mod breeding_collection;
 pub mod breeding_production;
 pub mod cheats;
 pub mod clock;
-pub mod collection;
 pub mod contest;
 pub mod daycare_state;
 pub mod dex;
@@ -72,7 +70,3 @@ mod ultimate_battle;
 mod ultimate_ev;
 
 pub mod wild_items;
-
-pub mod training;
-pub mod training_service_preview;
-pub mod training_services;

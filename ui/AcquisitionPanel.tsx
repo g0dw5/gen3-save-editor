@@ -43,7 +43,7 @@ export function AcquisitionPanel({
   const { t } = useI18n();
   const [report, setReport] = useState<AcquisitionReport | null>(null);
   const [query, setQuery] = useState("");
-  const [limit, setLimit] = useState(30);
+  const [limit, setLimit] = useState(6);
   const [time, setTime] = useState(() => (save ? "save" : "all"));
   const hour = time !== "all" && time !== "save" ? Number(time) : null;
   useEffect(() => {
@@ -53,7 +53,7 @@ export function AcquisitionPanel({
     let active = true;
     setReport(null);
     setQuery("");
-    setLimit(30);
+    setLimit(6);
     api<AcquisitionReport>("acquisition", {
       ...target,
       hour,
@@ -127,8 +127,11 @@ export function AcquisitionPanel({
           )}
         </fieldset>
       )}
-      <p className="small muted">{t("acqCoverage")}</p>
-      {save && <p className="small muted">{t("acqSaveOverlay")}</p>}
+      <details className="reference-help">
+        <summary>{t("referenceSourceHelp")}</summary>
+        <p className="small muted">{t("acqCoverage")}</p>
+        {save && <p className="small muted">{t("acqSaveOverlay")}</p>}
+      </details>
       {target.kind === "species" && catalog.profile.breeding && (
         <BreedingPanel
           catalog={catalog}
@@ -147,7 +150,7 @@ export function AcquisitionPanel({
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
-          setLimit(30);
+          setLimit(6);
         }}
       />
       {!report ? (
@@ -191,9 +194,6 @@ export function AcquisitionPanel({
                   </small>
                 )}
               </div>
-              {s.script_source && (
-                <p className="small muted">{t("acqScriptSourceHelp")}</p>
-              )}
               <StaticBattleDetails
                 mon={s.script_source}
                 catalog={catalog}
@@ -206,12 +206,6 @@ export function AcquisitionPanel({
                 onSpecies={(id) => onTarget({ kind: "species", id })}
                 onItem={(id) => onTarget({ kind: "item", id })}
               />
-              {s.teaching_source && (
-                <p className="small muted">{t("tutorSourceHelp")}</p>
-              )}
-              {s.receipt && (
-                <p className="small muted">{t("acqGiftReceiptHelp")}</p>
-              )}
               {s.underfoot === true && (
                 <p className="small muted">{t("mapHiddenUnderfoot")}</p>
               )}
@@ -283,9 +277,6 @@ export function AcquisitionPanel({
                   {t("clockOutsideScenario")}
                 </p>
               )}
-              {s.in_scenario === true && (
-                <p className="small">{t("clockInsideScenario")}</p>
-              )}
               {s.evolution && (
                 <EvolutionRuleDetails
                   rule={s.evolution}
@@ -326,7 +317,7 @@ export function AcquisitionPanel({
         })
       )}
       {filtered.length > limit && (
-        <button onClick={() => setLimit((n) => n + 30)}>
+        <button onClick={() => setLimit((n) => n + 6)}>
           {t("acqMore")} ({filtered.length - limit})
         </button>
       )}

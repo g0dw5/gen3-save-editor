@@ -62,7 +62,8 @@ export function ClockDetails({ report }: { report: ClockReport }) {
         </p>
       )}
       {report.hardware && (
-        <div className="clock-hardware-snapshot">
+        <details className="clock-hardware-snapshot">
+          <summary>{t("clockOffsetSave")}</summary>
           <p>
             {t("clockOffsetSave")} · {t("clockDayCounter")}{" "}
             {report.hardware.offset.days} · {report.hardware.offset.hour}:
@@ -81,7 +82,7 @@ export function ClockDetails({ report }: { report: ClockReport }) {
             <p>{t("clockInvalidCheckpoint")}</p>
           )}
           <p className="small muted">{t("clockHardwareSnapshotHelp")}</p>
-        </div>
+        </details>
       )}
       <details>
         <summary>{t("evidence")}</summary>

@@ -91,7 +91,6 @@ export interface Catalog {
     max_level?: number;
     sprite_rules?: { unown_species: number };
     hardware_clock?: unknown;
-    training?: unknown;
     clock?: {
       starts: number[];
       native_predicates: number[];
@@ -484,16 +483,7 @@ export interface World {
   trainers: Opponent[];
 }
 export type RefTab =
-  | "species"
-  | "moves"
-  | "items"
-  | "abilities"
-  | "maps"
-  | "trainers"
-  | "events"
-  | "collection"
-  | "clock"
-  | "training";
+  "species" | "moves" | "items" | "abilities" | "maps" | "trainers";
 export interface RefWindow {
   id: number;
   tab: RefTab;
@@ -667,14 +657,6 @@ export interface AcquisitionReport {
   partial: boolean;
 }
 
-export interface CollectionTask {
-  target: QueryTarget;
-  family: number[];
-  existing_family_members: number[];
-  source: AcquisitionSource | null;
-  alternatives: number;
-  preparation?: CollectionPreparation | null;
-}
 export interface SavedDaycareState {
   rom_md5: string;
   source: string;
@@ -693,82 +675,6 @@ export interface SavedDaycareState {
   legacy_pending_value: number;
   partial: boolean;
 }
-export interface CollectionPreparation {
-  origin: number;
-  current_count: number;
-  source: AcquisitionSource | null;
-  steps: {
-    from: number;
-    evolution: SpeciesDetail["evolutions"][number];
-    related: QueryTarget[];
-  }[];
-  needs_hatching: boolean;
-  breeding?: CollectionBreedingRoute | null;
-  truncated: boolean;
-  partial: boolean;
-}
-export interface CollectionBreedingRoute {
-  parents: {
-    location: Location;
-    species: number;
-    nickname: string;
-    gender: string;
-    held_item: number;
-  }[];
-  compatibility: number;
-  seed: number;
-  offspring_pid: number;
-  partial: boolean;
-}
-export interface EntranceSuggestion {
-  map_id: string;
-  chains: MapLink[][];
-  unresolved_incoming?: MapLink[];
-  truncated: boolean;
-}
-export interface CollectionPlan {
-  dex_status?: DexReadStatus | null;
-  prerequisites?: {
-    reports: EventDependencyReport[];
-    routes?: {
-      report_index: number;
-      goals: [number, number][];
-      candidates: {
-        writer_index: number;
-        requires: number[];
-        entry_requires?: number[][];
-        entry_untraced_conditions?: AcquisitionSource["conditions"];
-        untraced_conditions: AcquisitionSource["conditions"];
-        recursive: boolean;
-      }[];
-    }[];
-    entrances: EntranceSuggestion[];
-    skipped_conditions: number;
-    truncated: boolean;
-    partial: boolean;
-  } | null;
-  clock: ClockReport | null;
-  rom_md5: string;
-  basis: "dex" | "individuals";
-  families: boolean;
-  owned_count: number;
-  missing_count: number;
-  regions: { region: number | null; tasks: CollectionTask[] }[];
-  entrances: EntranceSuggestion[];
-  entrance_coverage?: EventDependencyReport["coverage"] | null;
-  entrance_diagnostics?: string[];
-  breeding_coverage?: {
-    parent_count: number;
-    checked_pairs: number;
-    total_pairs: number;
-    failed_pairs: number;
-    truncated: boolean;
-    sampled: boolean;
-    issue: string | null;
-  } | null;
-  partial: boolean;
-}
-
 export interface NativeTrainerPreview {
   rom_md5: string;
   trainer_id: number;
@@ -827,21 +733,6 @@ export interface EventDependencyReport {
   partial: boolean;
 }
 
-export interface EventClue {
-  id: string;
-  reference: EventDependencyReport["writers"][number]["reference"];
-  text: { offset: number; text: string }[];
-  visibility: AcquisitionSource["conditions"];
-  effects: {
-    effect: EventDependencyReport["writers"][number]["effect"];
-    conditions: AcquisitionSource["conditions"];
-    observed: boolean | null;
-  }[];
-  effects_truncated: boolean;
-  battles?: ScriptBattleSource[];
-  stopped_at: number[];
-  path_complete: boolean;
-}
 export interface ScriptBattleSource {
   trainer_id: number;
   battle_type: number;
@@ -858,18 +749,9 @@ export interface TrainerReferenceReport {
     reference: EventDependencyReport["writers"][number]["reference"];
     conditions: AcquisitionSource["conditions"];
     visibility: AcquisitionSource["conditions"];
-    text: EventClue["text"];
+    text: EventDependencyReport["writers"][number]["text"];
     stopped_at: number[];
   }[];
-  total_matches: number;
-  next_offset: number | null;
-  coverage: EventDependencyReport["coverage"];
-  partial: boolean;
-}
-export interface EventClueReport {
-  rom_md5: string;
-  entries: EventClue[];
-  selected: EventClue | null;
   total_matches: number;
   next_offset: number | null;
   coverage: EventDependencyReport["coverage"];

@@ -2127,7 +2127,6 @@ fn tutor_sources_preserve_native_selector_guards_tiles_and_read_only_queries() {
         assert_eq!(marker.receipt_flag, None);
         let index = AcquisitionIndex {
             wild_cache: std::cell::RefCell::default(),
-            breeding_cache: Default::default(),
             world: crate::world::World {
                 maps: vec![map.clone()],
                 map_events: vec![report],
@@ -2303,158 +2302,6 @@ fn npc_trade_sources_use_native_dispatch_runtime_records_and_mode_guards() {
             0x08000001,
         );
         assert_eq!(r.trade_offer(0).unwrap_err().code, "trade_dispatch");
-    }
-}
-
-#[test]
-fn npc_trade_queries_and_plans_keep_donor_requirements_and_save_read_only() {
-    use crate::{
-        acquisition::{AcquisitionIndex, Target, TargetKind},
-        collection::{CollectionBasis, CollectionRequest},
-    };
-    for p in profile::PROFILES {
-        let (r, map) = npc_trade_fixture(p);
-        let report = r.map_events(&map).unwrap();
-        let index = AcquisitionIndex {
-            wild_cache: std::cell::RefCell::default(),
-            breeding_cache: Default::default(),
-            world: crate::world::World {
-                maps: vec![map],
-                map_events: vec![report],
-                encounters: vec![],
-                trainers: vec![],
-                trainer_locations: crate::world::TrainerLocationIndex {
-                    locations: vec![],
-                    unresolved_maps: vec![],
-                },
-                map_groups: &[],
-            },
-            species: (1..=3).map(|id| r.valid_species(id).unwrap()).collect(),
-            evolutions: Default::default(),
-            learnsets: Default::default(),
-        };
-        let target = Target {
-            kind: TargetKind::Species,
-            id: 2,
-        };
-        let rom_only = index.query(&r, None, target.clone()).unwrap();
-        assert_eq!(rom_only.sources[0].status, "unknown");
-        assert!(rom_only.sources[0].trade_context.is_none());
-        let mut save = Save::open(save_bytes(&r), p.save).unwrap();
-        let before = save.data.clone();
-        let report = index.query(&r, Some(&save), target.clone()).unwrap();
-        assert_eq!(report.sources[0].status, "unknown");
-        assert_eq!(
-            report.sources[0]
-                .trade_context
-                .as_ref()
-                .unwrap()
-                .party_levels,
-            [50]
-        );
-        assert_eq!(report.sources[0].receipt_flag, None);
-        let items = index
-            .query(
-                &r,
-                Some(&save),
-                Target {
-                    kind: TargetKind::Item,
-                    id: 1,
-                },
-            )
-            .unwrap();
-        assert!(items.sources.iter().any(|s| s.kind == "npc_trade_item"
-            && s.quantity == Some(1)
-            && s.related
-                .iter()
-                .any(|t| t.kind == TargetKind::Species && t.id == 2)));
-        let plan = index
-            .collection(
-                &r,
-                &save,
-                CollectionRequest {
-                    basis: CollectionBasis::Individuals,
-                    families: true,
-                    include_unknown_rewards: true,
-                },
-            )
-            .unwrap();
-        assert!(plan
-            .regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .any(|t| t.target.id == 2
-                && t.source
-                    .as_ref()
-                    .unwrap()
-                    .script_source
-                    .as_ref()
-                    .unwrap()
-                    .trade
-                    .is_some()));
-        assert!(plan
-            .regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .any(|t| t.target.kind == TargetKind::Item
-                && t.target.id == 1
-                && t.source.as_ref().unwrap().kind == "npc_trade_item"));
-        assert_eq!(save.data, before);
-        save.transfer(party(), loc(5), true, &r).unwrap();
-        save.edit(
-            party(),
-            &PokemonPatch {
-                species: Some(3),
-                ..Default::default()
-            },
-            &r,
-            Policy::Free,
-        )
-        .unwrap();
-        let report = index.query(&r, Some(&save), target.clone()).unwrap();
-        let c = report.sources[0].trade_context.as_ref().unwrap();
-        assert!(c.party_levels.is_empty());
-        assert!(!c.box_levels.is_empty());
-        assert_eq!(report.sources[0].status, "blocked");
-        let known_only = index
-            .collection(
-                &r,
-                &save,
-                CollectionRequest {
-                    basis: CollectionBasis::Individuals,
-                    families: true,
-                    include_unknown_rewards: false,
-                },
-            )
-            .unwrap();
-        assert!(known_only
-            .regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .all(|t| t.target.kind != TargetKind::Item));
-        // Eggs are not eligible donors; the query must use the exact requested species.
-        for stored in save
-            .all(&r)
-            .unwrap()
-            .into_iter()
-            .filter(|s| s.pokemon.species == 1)
-        {
-            save.edit(
-                stored.location,
-                &PokemonPatch {
-                    egg: Some(true),
-                    ..Default::default()
-                },
-                &r,
-                Policy::Free,
-            )
-            .unwrap();
-        }
-        let before = save.data.clone();
-        let report = index.query(&r, Some(&save), target).unwrap();
-        let c = report.sources[0].trade_context.as_ref().unwrap();
-        assert!(c.party_levels.is_empty() && c.box_levels.is_empty());
-        assert_eq!(save.data, before);
     }
 }
 
@@ -3728,323 +3575,6 @@ fn local_ultimate_adapter_regression() {
     }
 }
 
-#[test]
-#[ignore = "requires five exact local ROMs; optional private saves for planning"]
-fn local_query_acquisition_and_collection_all_profiles() {
-    use crate::{
-        acquisition::{AcquisitionIndex, Target, TargetKind},
-        collection::{CollectionBasis, CollectionRequest},
-    };
-    for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
-        let r =
-            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{name}")).unwrap()).unwrap())
-                .unwrap();
-        let index = AcquisitionIndex::build(&r).unwrap();
-        let mut resources = std::collections::BTreeSet::new();
-        let mut resource_edges = [0usize; 3];
-        for rows in index.evolutions.values() {
-            for e in rows {
-                assert!(!crate::forms::is_battle_method(
-                    r.profile.battle_forms,
-                    e.method
-                ));
-                assert_eq!(
-                    crate::binary::u16(&r.data, e.offset + 2).unwrap(),
-                    e.parameter
-                );
-                assert_eq!(crate::binary::u16(&r.data, e.offset + 4).unwrap(), e.target);
-                for target in crate::acquisition::evolution_targets(e) {
-                    let kind = match target.kind {
-                        TargetKind::Item => 0,
-                        TargetKind::Move => 1,
-                        TargetKind::Species => 2,
-                    };
-                    resources.insert((kind, target.id));
-                    resource_edges[kind] += 1;
-                }
-            }
-        }
-        for (kind, id) in &resources {
-            let kind = [TargetKind::Item, TargetKind::Move, TargetKind::Species][*kind].clone();
-            let target = Target { kind, id: *id };
-            let uses = index.evolution_uses(&target);
-            assert!(!uses.is_empty());
-            assert!(uses.iter().all(|row| !row
-                .related
-                .iter()
-                .any(|t| t.kind == target.kind && t.id == target.id)));
-        }
-        for kind in 0..3 {
-            if let Some((_, id)) = resources.iter().find(|(k, _)| *k == kind) {
-                let target = Target {
-                    kind: [TargetKind::Item, TargetKind::Move, TargetKind::Species][kind].clone(),
-                    id: *id,
-                };
-                let expected = index.evolution_uses(&target);
-                let report = index.query(&r, None, target).unwrap();
-                assert_eq!(
-                    serde_json::to_value(&report.evolution_uses).unwrap(),
-                    serde_json::to_value(&expected).unwrap()
-                );
-                assert!(!report.sources.iter().any(|s| s.kind == "evolution_use"));
-                let tree = r.species_relations(expected[0].source).unwrap();
-                for edge in tree.evolutions {
-                    assert_eq!(
-                        serde_json::to_value(&edge.related).unwrap(),
-                        serde_json::to_value(crate::acquisition::evolution_targets(
-                            &edge.evolution
-                        ))
-                        .unwrap()
-                    );
-                }
-            }
-        }
-        eprintln!("{name}: evolution resource references item/move/companion {:?}, {} distinct resources; acquisition uses remain separate",resource_edges,resources.len());
-        let item = index
-            .world
-            .map_events
-            .iter()
-            .flat_map(|m| m.markers.iter())
-            .flat_map(|m| m.rewards.iter())
-            .next()
-            .unwrap()
-            .item;
-        let report = index
-            .query(
-                &r,
-                None,
-                Target {
-                    kind: TargetKind::Item,
-                    id: item,
-                },
-            )
-            .unwrap();
-        assert!(!report.sources.is_empty(), "{name}");
-        assert!(report.sources.iter().all(|s| s.status == "unknown"));
-        for s in report.sources.iter().filter(|s| s.x.is_some()) {
-            let map = index
-                .world
-                .maps
-                .iter()
-                .find(|m| Some(&m.id) == s.map_id.as_ref())
-                .unwrap();
-            // Initial event locations outside a dynamic layout must not be normalized.
-            assert!(s.x.unwrap().abs() < 32767 && map.width > 0);
-        }
-        // A real grass/cave/surf/dive/fishing reference must close the held-item
-        // query, with the independent native chance rather than an orphan species row.
-        let encounter = index
-            .world
-            .encounters
-            .iter()
-            .find(|e| {
-                matches!(
-                    e.method.as_str(),
-                    "grass"
-                        | "cave"
-                        | "surf"
-                        | "dive"
-                        | "rock_smash"
-                        | "old_rod"
-                        | "good_rod"
-                        | "super_rod"
-                ) && r
-                    .species(e.species)
-                    .is_ok_and(|s| s.items.iter().any(|i| *i != 0))
-            })
-            .unwrap();
-        let held = r
-            .species(encounter.species)
-            .unwrap()
-            .items
-            .into_iter()
-            .find(|i| *i != 0)
-            .unwrap();
-        let held_report = index
-            .query(
-                &r,
-                None,
-                Target {
-                    kind: TargetKind::Item,
-                    id: held,
-                },
-            )
-            .unwrap();
-        let held_source = held_report
-            .sources
-            .iter()
-            .find(|s| {
-                s.kind == "wild_held"
-                    && s.map_id.as_deref() == Some(encounter.map_id.as_str())
-                    && s.related
-                        .iter()
-                        .any(|t| t.kind == TargetKind::Species && t.id == encounter.species)
-            })
-            .unwrap();
-        assert!(
-            held_source
-                .held_percent
-                .is_some_and(|p| p > 0.0 && p <= 100.0),
-            "{name}"
-        );
-        assert!(held_source.held_context.is_some());
-        assert_eq!(held_source.encounter_percent, encounter.weight);
-        assert_eq!(
-            held_source.encounter_method.as_deref(),
-            Some(encounter.method.as_str())
-        );
-        assert!(held_source.partial);
-        // Current raw party context belongs to the cache key; no quantity, identity
-        // or unrelated byte can change during a reference query.
-        let synthetic = Save::open(save_bytes(&r), r.profile.save).unwrap();
-        let original = synthetic.data.clone();
-        let current = index
-            .query(
-                &r,
-                Some(&synthetic),
-                Target {
-                    kind: TargetKind::Item,
-                    id: held,
-                },
-            )
-            .unwrap();
-        assert!(current
-            .sources
-            .iter()
-            .filter(|s| s.kind == "wild_held")
-            .all(|s| s
-                .held_context
-                .as_ref()
-                .is_some_and(|c| c.current_party.is_some())));
-        assert_eq!(synthetic.data, original);
-        let species = index.world.encounters.first().unwrap().species;
-        let mon = index
-            .query(
-                &r,
-                None,
-                Target {
-                    kind: TargetKind::Species,
-                    id: species,
-                },
-            )
-            .unwrap();
-        assert!(mon.sources.iter().any(|s| s.map_id.is_some()), "{name}");
-        let move_id = index.learnsets.values().flatten().next().unwrap().move_id;
-        assert!(!index
-            .query(
-                &r,
-                None,
-                Target {
-                    kind: TargetKind::Move,
-                    id: move_id
-                }
-            )
-            .unwrap()
-            .sources
-            .is_empty());
-        let shops = index
-            .world
-            .map_events
-            .iter()
-            .flat_map(|m| m.markers.iter())
-            .flat_map(|m| m.rewards.iter())
-            .filter(|r| r.via == "shop")
-            .count();
-        if let Ok(path) = std::env::var(format!("GEN3_SAVE_{name}")) {
-            let original = std::fs::read(path).unwrap();
-            let s = Save::open(original.clone(), r.profile.save).unwrap();
-            s.validate(&r).unwrap();
-            let plan = index
-                .collection(
-                    &r,
-                    &s,
-                    CollectionRequest {
-                        basis: CollectionBasis::Individuals,
-                        families: true,
-                        include_unknown_rewards: true,
-                    },
-                )
-                .unwrap();
-            assert_eq!(s.data, original, "planning must be read-only");
-            assert!(plan.missing_count > 0);
-            let current = s.all(&r).unwrap();
-            for task in plan.regions.iter().flat_map(|r| &r.tasks) {
-                if let Some(p) = &task.preparation {
-                    assert!(p.partial && !p.steps.is_empty());
-                    let mut from = p.origin;
-                    for step in &p.steps {
-                        assert_eq!(step.from, from);
-                        assert!(index.evolutions[&from]
-                            .iter()
-                            .any(|e| e.offset == step.evolution.offset
-                                && e.target == step.evolution.target));
-                        from = step.evolution.target;
-                    }
-                    assert_eq!(from, task.target.id);
-                    assert_eq!(
-                        p.current_count,
-                        current
-                            .iter()
-                            .filter(|v| v.pokemon.species == p.origin
-                                && !v.pokemon.egg
-                                && v.pokemon.checksum_ok)
-                            .count()
-                    );
-                    if let Some(source) = &p.source {
-                        let id = source.map_id.as_ref().unwrap();
-                        assert!(plan.entrances.iter().any(|e| &e.map_id == id));
-                        assert_ne!(source.kind, "breeding_candidate");
-                    }
-                }
-            }
-            if r.profile.save.dex.is_none() && r.profile.save.dex_read.is_none() {
-                assert_eq!(
-                    index
-                        .collection(
-                            &r,
-                            &s,
-                            CollectionRequest {
-                                basis: CollectionBasis::Dex,
-                                families: true,
-                                include_unknown_rewards: false
-                            }
-                        )
-                        .err()
-                        .unwrap()
-                        .code,
-                    "collection_dex_unverified"
-                );
-            }
-            if r.profile.save.dex_read.is_some() {
-                let before = s.data.clone();
-                let dex_plan = index
-                    .collection(
-                        &r,
-                        &s,
-                        CollectionRequest {
-                            basis: CollectionBasis::Dex,
-                            families: false,
-                            include_unknown_rewards: false,
-                        },
-                    )
-                    .unwrap();
-                assert!(dex_plan.dex_status.as_ref().unwrap().read_only);
-                assert_eq!(dex_plan.dex_status.as_ref().unwrap().count, 1027);
-                assert!(dex_plan.missing_count > 0);
-                assert_eq!(s.data, before);
-                eprintln!("{name}: read-only native Dex planning passed, {} owned species, {} missing goals", dex_plan.owned_count, dex_plan.missing_count);
-            }
-            eprintln!("{name}: {} species, {} shop rows, {} missing family goals, {} regions, {} entrance reports",index.species.len(),shops,plan.missing_count,plan.regions.len(),plan.entrances.len());
-        } else {
-            eprintln!(
-                "{name}: {} species, {} shop rows; ROM-only queries passed",
-                index.species.len(),
-                shops
-            );
-        }
-    }
-}
-
 #[cfg(test)]
 pub(crate) fn query_fixture_rom() -> Rom {
     rom()
@@ -4328,265 +3858,6 @@ fn local_standard_dialogues_match_native_and_resolve_referenced_coordinates() {
         assert_eq!(rom.data.as_ref(), &original);
         assert_eq!(std::fs::read(path).unwrap(), original);
         println!("{key}: native presentation parity and {} referenced variable-coordinate entrances; coordinates preserved across SAV snapshots, access unproven", coordinates.len());
-    }
-}
-
-#[test]
-fn script_passages_keep_guards_native_coordinate_width_and_rom_bound_state() {
-    use crate::event_dependencies::Index;
-    for profile in profile::PROFILES {
-        let (mut r, map) = npc_trade_fixture(profile);
-        let rules = r.profile.event_state.unwrap().effects.unwrap();
-        let b = std::sync::Arc::make_mut(&mut r.data);
-        for (opcode, handler) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
-            .into_iter()
-            .zip(rules.handlers)
-        {
-            put32(
-                b,
-                rules.commands + opcode as usize * 4,
-                0x08000001 + handler as u32,
-            );
-        }
-        for (opcode, handler) in [0x39, 0x3a, 0x3b, 0x3d, 0x3e, 0xd1, 0xd7]
-            .into_iter()
-            .zip(rules.warp_handlers)
-        {
-            if handler != 0 {
-                put32(
-                    b,
-                    rules.commands + opcode as usize * 4,
-                    0x08000001 + handler as u32,
-                );
-            }
-        }
-        let root = 0x26000;
-        let branch = 0x26100;
-        // The NPC is hidden by flag 12. Flag 11 selects the passage branch.
-        put16(b, 0x25114, 12);
-        b[root..root + 3].copy_from_slice(&[0x2b, 11, 0]);
-        b[root + 3..root + 5].copy_from_slice(&[6, 1]);
-        put32(b, root + 5, 0x08000000 + branch as u32);
-        // setwarp cannot add a passage, including a seemingly valid destination.
-        b[root + 9..root + 18].copy_from_slice(&[0x3e, 0, 1, 255, 1, 0, 2, 0, 2]);
-        // 256 narrows to zero, 511 to -1. Warp index 0 overrides these coords.
-        b[branch..branch + 5].copy_from_slice(&[0x16, 1, 0x40, 0, 1]);
-        b[branch + 5..branch + 14].copy_from_slice(&[0x3b, 0, 1, 0, 1, 0x40, 255, 1, 2]);
-        // Unreferenced apparent passage must not appear in any map.
-        b[0x26200..0x26209].copy_from_slice(&[0x3b, 0, 1, 255, 1, 0, 2, 0, 2]);
-        b[0x25301] = 1;
-        put32(b, 0x25308, 0x08025400);
-        put16(b, 0x25400, 1);
-        put16(b, 0x25402, 2);
-        b[0x25406..0x25408].fill(255);
-        // A writer inside the destination itself adds a guarded/cyclic clue.
-        // Trace it as an alternative, never as proof that entering is possible.
-        b[0x26400..0x26405].copy_from_slice(&[0x2b, 13, 0, 6, 1]);
-        put32(b, 0x26405, 0x08026500);
-        b[0x26409] = 2;
-        b[0x26500..0x26504].copy_from_slice(&[0x29, 11, 0, 2]);
-        let mut target = map.clone();
-        target.id = "0-1".into();
-        target.map_type = 4;
-        target.events = Some(0x25300);
-        target.scripts = vec![0x26400];
-        let maps = vec![map, target];
-        let original = r.data.clone();
-        let index = Index::build(&r, &maps).unwrap();
-        let rom_only = index.map_navigation(&r, &maps, "0-1", None).unwrap();
-        assert_eq!(rom_only.incoming.len(), 1, "{}", profile.id);
-        let edge = &rom_only.incoming[0];
-        assert_eq!(
-            (edge.x, edge.y, edge.target_x, edge.target_y),
-            (Some(3), Some(2), Some(1), Some(2))
-        );
-        assert_eq!(edge.kind, "script_warp");
-        assert_eq!(edge.offset, branch + 5);
-        assert!(edge.unresolved.is_none());
-        assert_eq!(rom_only.approaches.len(), 1);
-        let script = edge.script.as_ref().unwrap();
-        assert!(script.entry_unresolved);
-        assert_eq!(script.checks.len(), 2);
-        assert!(script.checks.iter().all(|c| c.satisfied.is_none()));
-        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
-        let before = save.data.clone();
-        let saved = index.map_navigation(&r, &maps, "0-1", Some(&save)).unwrap();
-        assert!(saved.incoming[0]
-            .script
-            .as_ref()
-            .unwrap()
-            .checks
-            .iter()
-            .any(|c| c.condition.id == 11 && c.satisfied == Some(false)));
-        // The planner must use the same referenced edges and fresh saved guards
-        // as the map page. A missing acquisition guard does not hide entrance guards.
-        let acquisition = crate::acquisition::AcquisitionIndex {
-            wild_cache: Default::default(),
-            breeding_cache: Default::default(),
-            world: crate::world::World {
-                maps: maps.clone(),
-                map_events: vec![],
-                encounters: vec![crate::world::Encounter {
-                    selector: None,
-                    periods: vec![],
-                    species: 3,
-                    map_id: "0-1".into(),
-                    map_name: "Interior".into(),
-                    region: 1,
-                    method: "grass".into(),
-                    min_level: 5,
-                    max_level: 5,
-                    weight: Some(20),
-                    encounter_rate: Some(20),
-                    slot: Some(0),
-                    offset: 0x27000,
-                    conditional: false,
-                }],
-                trainers: vec![],
-                trainer_locations: crate::world::TrainerLocationIndex {
-                    locations: vec![],
-                    unresolved_maps: vec![],
-                },
-                map_groups: &[],
-            },
-            species: vec![r.valid_species(3).unwrap()],
-            evolutions: Default::default(),
-            learnsets: Default::default(),
-        };
-        let request = || crate::collection::CollectionRequest {
-            basis: crate::collection::CollectionBasis::Individuals,
-            families: false,
-            include_unknown_rewards: false,
-        };
-        let plan = acquisition
-            .collection_with_passages(&r, &save, request(), &index)
-            .unwrap();
-        let entry = plan.entrances.iter().find(|e| e.map_id == "0-1").unwrap();
-        assert_eq!(
-            serde_json::to_value(&entry.chains).unwrap(),
-            serde_json::to_value(&saved.approaches).unwrap()
-        );
-        assert!(entry.unresolved_incoming.is_empty());
-        assert!(plan.entrance_coverage.is_some());
-        let bundle = index.trace_plan(&r, &save, &maps, &plan).unwrap();
-        let clue = bundle
-            .reports
-            .iter()
-            .position(|r| r.condition.condition.id == 11)
-            .unwrap();
-        assert!(!bundle.routes[clue].goals.is_empty());
-        assert_eq!(bundle.reports[clue].condition.satisfied, Some(false));
-        let writer = &bundle.routes[clue].candidates[0];
-        assert!(writer
-            .requires
-            .iter()
-            .any(|i| bundle.reports[*i].condition.condition.id == 13));
-        assert!(writer
-            .entry_requires
-            .iter()
-            .flatten()
-            .any(|i| bundle.reports[*i].condition.condition.id == 11));
-        assert!(writer.recursive);
-
-        assert_eq!(save.data, before);
-        let range = &profile.event_state.unwrap().flags[0];
-        let bit = (11 - range.first) as usize;
-        let mut main = save.logical(1..=4);
-        main[range.offset + bit / 8] |= 1 << (bit % 8);
-        synthetic_daycare_main(&mut save, &main);
-        let changed = save.data.clone();
-        let saved = index.map_navigation(&r, &maps, "0-1", Some(&save)).unwrap();
-        assert!(saved.incoming[0]
-            .script
-            .as_ref()
-            .unwrap()
-            .checks
-            .iter()
-            .any(|c| c.condition.id == 11 && c.satisfied == Some(true)));
-        let refreshed = acquisition
-            .collection_with_passages(&r, &save, request(), &index)
-            .unwrap();
-        let bundle = index.trace_plan(&r, &save, &maps, &refreshed).unwrap();
-        assert!(bundle
-            .reports
-            .iter()
-            .any(|r| r.condition.condition.id == 11 && r.condition.satisfied == Some(true)));
-        assert!(
-            !bundle
-                .reports
-                .iter()
-                .any(|r| r.condition.condition.id == 13),
-            "already-met conditions do not expand writer or entrance guards"
-        );
-        assert_eq!(save.data, changed);
-        assert_ne!(save.data, before);
-        let reverse = index.map_navigation(&r, &maps, "0-1", None).unwrap();
-        assert!(
-            reverse
-                .outgoing
-                .iter()
-                .all(|e| e.to.as_deref() != Some("0-0")),
-            "never fabricate a return passage"
-        );
-        assert_eq!(r.data, original);
-        let mut stale = r.clone();
-        std::sync::Arc::make_mut(&mut stale.data)[0] ^= 1;
-        assert_eq!(
-            acquisition
-                .collection_with_passages(&stale, &save, request(), &index)
-                .err()
-                .unwrap()
-                .code,
-            "rom_mismatch"
-        );
-        assert_eq!(
-            index
-                .map_navigation(&stale, &maps, "0-1", None)
-                .err()
-                .unwrap()
-                .code,
-            "rom_mismatch"
-        );
-        // Direct coordinates use the native s8 result; unknown variables survive.
-        let b = std::sync::Arc::make_mut(&mut r.data);
-        b[branch + 8] = 255;
-        let warp = r
-            .script_warp_instruction(branch + 5, |id| {
-                (id == 0x4001)
-                    .then_some(256)
-                    .or_else(|| (id < 0x4000).then_some(id))
-            })
-            .unwrap()
-            .unwrap();
-        assert_eq!((warp.x, warp.y), (Some(0), Some(-1)));
-        let unresolved = r
-            .script_warp_instruction(branch + 5, |id| (id < 0x4000).then_some(id))
-            .unwrap()
-            .unwrap();
-        assert_eq!(unresolved.x, None);
-        assert_eq!(unresolved.y, Some(-1));
-        // An unknown native call invalidates a previously known coordinate.
-        let b = std::sync::Arc::make_mut(&mut r.data);
-        b[0x26400..0x26413].copy_from_slice(&[
-            0x16, 1, 0x40, 2, 0, 0x23, 0, 0, 0, 8, 0x3b, 0, 1, 255, 1, 0x40, 1, 0, 2,
-        ]);
-        let unknown = r.event_effect_script(0x26400).unwrap();
-        assert_eq!(unknown.warps.len(), 1);
-        assert_eq!(unknown.warps[0].x, None);
-        assert!(unknown.stopped_at.contains(&0x26405));
-        let b = std::sync::Arc::make_mut(&mut r.data);
-        put32(
-            b,
-            rules.commands + 0x3b * 4,
-            0x08000003 + rules.warp_handlers[2] as u32,
-        );
-        assert_eq!(
-            r.script_warp_instruction(branch + 5, Some)
-                .err()
-                .unwrap()
-                .code,
-            "script_warp_dispatch"
-        );
     }
 }
 
@@ -4933,236 +4204,6 @@ fn local_mercury_clock_matches_native_restore_and_period_selection() {
 }
 
 #[test]
-fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
-    use crate::{
-        acquisition::{AcquisitionIndex, Target, TargetKind},
-        map_events::{ItemReward, MapEventReport, MapMarker},
-        world::{Map, TrainerLocationIndex, World},
-    };
-    for profile in profile::PROFILES {
-        let r = adapter_rom(profile);
-        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
-        let range = profile.event_state.unwrap().flags[0];
-        // Every adapter has a verified SB1 flag 1; the actual logical offset differs.
-        let mut offset = range.offset;
-        for section in 1..=4 {
-            if offset < save.layout.sizes[section] {
-                save.data[save.sections[section] + offset] |= 2;
-                break;
-            }
-            offset -= save.layout.sizes[section];
-        }
-        let before = save.data.clone();
-        let map = Map {
-            id: "0-0".into(),
-            group: 0,
-            number: 0,
-            name: "Synthetic".into(),
-            region: 1,
-            width: 4,
-            height: 4,
-            map_type: 1,
-            header: 0,
-            layout: 0,
-            invalid_events: false,
-            events: None,
-            scripts: vec![],
-            objects: vec![],
-        };
-        let markers = ["hidden", "pickup", "gift"]
-            .into_iter()
-            .map(|kind| MapMarker {
-                id: kind.into(),
-                kind,
-                x: 1,
-                y: 1,
-                elevation: 0,
-                local_id: Some(1),
-                graphics_id: None,
-                movement_type: None,
-                underfoot: None,
-                flag: Some(1),
-                receipt_flag: (kind != "gift").then_some(1),
-                offset: 0,
-                script: None,
-                stopped_at: vec![],
-                pokemon: vec![],
-                teaching: vec![],
-                daycare: vec![],
-                scripted_movements: vec![],
-                rewards: vec![ItemReward {
-                    item: 1,
-                    quantity: Some(1),
-                    offset: 0,
-                    via: kind,
-                    conditions: vec![],
-                    receipt: None,
-                }],
-            })
-            .collect();
-        let mut index = AcquisitionIndex {
-            wild_cache: std::cell::RefCell::default(),
-            breeding_cache: Default::default(),
-            world: World {
-                maps: vec![map],
-                map_events: vec![MapEventReport {
-                    map_id: "0-0".into(),
-                    markers,
-                    unplaced_rewards: vec![],
-                    unplaced_pokemon: vec![],
-                    unplaced_teaching: vec![],
-                    unplaced_daycare: vec![],
-                    unplaced_movements: vec![],
-                    stopped_at: vec![],
-                }],
-                encounters: vec![],
-                trainers: vec![],
-                trainer_locations: TrainerLocationIndex {
-                    locations: vec![],
-                    unresolved_maps: vec![],
-                },
-                map_groups: &[],
-            },
-            species: vec![],
-            evolutions: Default::default(),
-            learnsets: Default::default(),
-        };
-        let report = index
-            .query(
-                &r,
-                Some(&save),
-                Target {
-                    kind: TargetKind::Item,
-                    id: 1,
-                },
-            )
-            .unwrap();
-        let hidden = report.sources.iter().find(|s| s.kind == "hidden").unwrap();
-        assert_eq!(
-            (hidden.status, hidden.receipt_flag, hidden.repeatable),
-            ("completed", Some(1), None)
-        );
-        let pickup = report.sources.iter().find(|s| s.kind == "pickup").unwrap();
-        assert_eq!(
-            pickup.status,
-            if profile.event_state.unwrap().pickup_receipt {
-                "completed"
-            } else {
-                "unknown"
-            }
-        );
-        let gift = report.sources.iter().find(|s| s.kind == "gift").unwrap();
-        assert_ne!(gift.status, "completed");
-        assert_eq!(gift.receipt_flag, None);
-        assert_eq!(pickup.repeatable, None);
-        let plan = index
-            .collection(
-                &r,
-                &save,
-                crate::collection::CollectionRequest {
-                    basis: crate::collection::CollectionBasis::Individuals,
-                    families: true,
-                    include_unknown_rewards: true,
-                },
-            )
-            .unwrap();
-        assert!(plan
-            .regions
-            .iter()
-            .flat_map(|region| &region.tasks)
-            .all(|task| {
-                task.source
-                    .as_ref()
-                    .is_none_or(|s| !matches!(s.kind.as_str(), "hidden" | "pickup"))
-            }));
-        // Even a set visibility bit is insufficient for a compound/unverified pickup.
-        index.world.map_events[0].markers[1].receipt_flag = None;
-        let unverified = index
-            .query(
-                &r,
-                Some(&save),
-                Target {
-                    kind: TargetKind::Item,
-                    id: 1,
-                },
-            )
-            .unwrap();
-        assert_eq!(
-            unverified
-                .sources
-                .iter()
-                .find(|s| s.kind == "pickup")
-                .unwrap()
-                .status,
-            "unknown"
-        );
-        // A receipt ID outside the native-verified persistence ranges stays unknown.
-        index.world.map_events[0].markers[0].receipt_flag = Some(0xffff);
-        let outside = index
-            .query(
-                &r,
-                Some(&save),
-                Target {
-                    kind: TargetKind::Item,
-                    id: 1,
-                },
-            )
-            .unwrap();
-        assert_eq!(
-            outside
-                .sources
-                .iter()
-                .find(|s| s.kind == "hidden")
-                .unwrap()
-                .status,
-            "unknown"
-        );
-        // A native/unknown stop may alter later guards; do not turn incomplete traversal into a blocked claim.
-        index.world.map_events[0].markers[2].stopped_at.push(0xdead);
-        index.world.map_events[0].markers[2].rewards[0]
-            .conditions
-            .push(crate::map_events::EventCondition {
-                kind: "flag",
-                id: 2,
-                value: 1,
-                comparison: 1,
-                taken: true,
-            });
-        let partial = index
-            .query(
-                &r,
-                Some(&save),
-                Target {
-                    kind: TargetKind::Item,
-                    id: 1,
-                },
-            )
-            .unwrap();
-        assert_eq!(
-            partial
-                .sources
-                .iter()
-                .find(|s| s.kind == "gift")
-                .unwrap()
-                .status,
-            "unknown"
-        );
-        assert_eq!(save.data, before);
-        let without_save = index
-            .query(
-                &r,
-                None,
-                Target {
-                    kind: TargetKind::Item,
-                    id: 1,
-                },
-            )
-            .unwrap();
-        assert!(without_save.sources.iter().all(|s| s.status == "unknown"));
-    }
-}
-
-#[test]
 fn pickup_receipts_require_complete_ordinary_scripts_per_adapter() {
     use crate::world::Map;
     let ordinary = [0x1a, 0, 0x80, 1, 0, 0x1a, 1, 0x80, 2, 0, 9, 1, 2];
@@ -5402,148 +4443,6 @@ fn gift_receipts_follow_success_branches_and_reject_ambiguous_flags() {
         layout.gift_result = false;
         r.profile.event_state = Some(layout);
         assert!(r.item_script(root).unwrap().0[0].receipt.is_none());
-    }
-}
-
-#[test]
-fn gift_receipt_queries_and_plans_use_the_qualified_reward_not_visibility() {
-    use crate::{
-        acquisition::{AcquisitionIndex, Target, TargetKind},
-        collection::{CollectionBasis, CollectionRequest},
-        map_events::{EventCondition, ItemReward, MapEventReport, MapMarker, ReceiptEvidence},
-    };
-    for profile in profile::PROFILES {
-        let r = adapter_rom(profile);
-        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
-        let range = r.profile.event_state.unwrap().flags[0];
-        let mut offset = range.offset;
-        for section in 1..=4 {
-            if offset < save.layout.sizes[section] {
-                save.data[save.sections[section] + offset] |= 2;
-                break;
-            }
-            offset -= save.layout.sizes[section];
-        }
-        let data = save.data.clone();
-        let map = crate::world::Map {
-            id: "0-0".into(),
-            group: 0,
-            number: 0,
-            name: "Synthetic".into(),
-            region: 1,
-            width: 4,
-            height: 4,
-            map_type: 1,
-            header: 0,
-            layout: 0,
-            invalid_events: false,
-            events: None,
-            scripts: vec![],
-            objects: vec![],
-        };
-        let mut index = AcquisitionIndex {
-            wild_cache: std::cell::RefCell::default(),
-            breeding_cache: Default::default(),
-            world: crate::world::World {
-                maps: vec![map],
-                map_events: vec![],
-                encounters: vec![],
-                trainers: vec![],
-                trainer_locations: crate::world::TrainerLocationIndex {
-                    locations: vec![],
-                    unresolved_maps: vec![],
-                },
-                map_groups: &[],
-            },
-            species: vec![],
-            evolutions: Default::default(),
-            learnsets: Default::default(),
-        };
-        let reward = ItemReward {
-            item: 1,
-            quantity: Some(1),
-            offset: 100,
-            via: "gift",
-            conditions: vec![EventCondition {
-                kind: "flag",
-                id: 1,
-                value: 1,
-                comparison: 1,
-                taken: false,
-            }],
-            receipt: Some(ReceiptEvidence {
-                flag: 1,
-                root: 90,
-                award_offset: 100,
-                success_set_offsets: vec![110],
-            }),
-        };
-        index.world.map_events = vec![MapEventReport {
-            map_id: index.world.maps[0].id.clone(),
-            markers: vec![MapMarker {
-                id: "gift".into(),
-                kind: "gift",
-                x: 1,
-                y: 1,
-                elevation: 0,
-                local_id: Some(1),
-                graphics_id: None,
-                movement_type: None,
-                underfoot: None,
-                flag: Some(2),
-                receipt_flag: None,
-                offset: 80,
-                script: Some(90),
-                pokemon: vec![],
-                teaching: vec![],
-                daycare: vec![],
-                scripted_movements: vec![],
-                rewards: vec![reward],
-                stopped_at: vec![],
-            }],
-            unplaced_rewards: vec![],
-            unplaced_pokemon: vec![],
-            unplaced_teaching: vec![],
-            unplaced_daycare: vec![],
-            unplaced_movements: vec![],
-            stopped_at: vec![],
-        }];
-        let target = Target {
-            kind: TargetKind::Item,
-            id: 1,
-        };
-        let query = index.query(&r, Some(&save), target.clone()).unwrap();
-        let source = query.sources.iter().find(|s| s.kind == "gift").unwrap();
-        assert_eq!((source.status, source.receipt_flag), ("completed", Some(1)));
-        assert!(source.receipt.is_some());
-        let plan = index
-            .collection(
-                &r,
-                &save,
-                CollectionRequest {
-                    basis: CollectionBasis::Individuals,
-                    families: true,
-                    include_unknown_rewards: true,
-                },
-            )
-            .unwrap();
-        assert!(plan
-            .regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .all(|t| t.source.as_ref().is_none_or(|s| s.offset != 100)));
-        index.world.map_events[0].markers[0].rewards[0].receipt = None;
-        let query = index.query(&r, Some(&save), target).unwrap();
-        assert_eq!(
-            query
-                .sources
-                .iter()
-                .find(|s| s.kind == "gift")
-                .unwrap()
-                .status,
-            "unknown"
-        );
-        assert_eq!(save.data, data);
     }
 }
 
@@ -5869,7 +4768,6 @@ fn resource_conditions_query_item_links_without_mutating_or_claiming_receipt() {
         );
         let index = AcquisitionIndex {
             wild_cache: std::cell::RefCell::default(),
-            breeding_cache: Default::default(),
             world: crate::world::World {
                 maps: vec![map.clone()],
                 map_events: vec![r.map_events(&map).unwrap()],
@@ -6192,7 +5090,6 @@ fn held_sources_follow_random_references_time_and_preserve_unreferenced_uncertai
         fixed.offset = 126;
         let index = AcquisitionIndex {
             wild_cache: Default::default(),
-            breeding_cache: Default::default(),
             world: World {
                 maps: vec![map],
                 map_events: vec![],
@@ -6298,7 +5195,6 @@ fn daycare_queries_preserve_guards_tiles_and_reject_changed_dispatch() {
         assert!(report.unplaced_daycare.is_empty());
         let index = crate::acquisition::AcquisitionIndex {
             wild_cache: std::cell::RefCell::default(),
-            breeding_cache: Default::default(),
             world: crate::world::World {
                 maps: vec![map.clone()],
                 map_events: vec![report],
@@ -6480,277 +5376,6 @@ fn local_breeding_production_matches_native_rolls_bag_and_steps() {
             "{key}: all 65536 native draws and {} keyed SAV/override scenarios",
             native["rows"].as_array().unwrap().len()
         );
-    }
-}
-
-#[test]
-fn collection_preparation_uses_directed_edges_current_individuals_and_keeps_saves_unchanged() {
-    use crate::{
-        acquisition::AcquisitionIndex,
-        collection::{CollectionBasis, CollectionRequest},
-        rom::Evolution,
-    };
-    for profile in profile::PROFILES {
-        let (r, map) = npc_trade_fixture(profile);
-        let report = r.map_events(&map).unwrap();
-        let mut index = AcquisitionIndex {
-            wild_cache: Default::default(),
-            breeding_cache: Default::default(),
-            world: crate::world::World {
-                maps: vec![map],
-                map_events: vec![report],
-                encounters: vec![],
-                trainers: vec![],
-                trainer_locations: crate::world::TrainerLocationIndex {
-                    locations: vec![],
-                    unresolved_maps: vec![],
-                },
-                map_groups: &[],
-            },
-            species: (1..=3).map(|id| r.valid_species(id).unwrap()).collect(),
-            evolutions: Default::default(),
-            learnsets: Default::default(),
-        };
-        let edge = |target, condition, parameter, auxiliary, offset| Evolution {
-            method: 4,
-            condition,
-            parameter,
-            auxiliary,
-            target,
-            offset,
-            requirements: vec![],
-        };
-        index
-            .evolutions
-            .insert(1, vec![edge(2, "level", 20, 0, 100)]);
-        index
-            .evolutions
-            .insert(2, vec![edge(3, "item_hold_item", 1, 2, 200)]);
-        let mut save = Save::open(save_bytes(&r), profile.save).unwrap();
-        let request = || CollectionRequest {
-            basis: CollectionBasis::Individuals,
-            families: false,
-            include_unknown_rewards: false,
-        };
-        let before = save.data.clone();
-        let plan = index.collection(&r, &save, request()).unwrap();
-        let task = plan
-            .regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .find(|t| t.target.kind == crate::acquisition::TargetKind::Species && t.target.id == 3)
-            .unwrap();
-        let p = task.preparation.as_ref().unwrap();
-        assert_eq!(
-            (p.origin, p.current_count, p.needs_hatching, p.truncated),
-            (1, 1, false, false)
-        );
-        assert!(p.source.is_none());
-        assert_eq!(
-            p.steps
-                .iter()
-                .map(|s| (s.from, s.evolution.target))
-                .collect::<Vec<_>>(),
-            [(1, 2), (2, 3)]
-        );
-        assert_eq!(
-            p.steps[1].related.iter().map(|t| t.id).collect::<Vec<_>>(),
-            [1, 2]
-        );
-        assert_eq!(
-            task.source.as_ref().unwrap().status,
-            "unknown",
-            "possession must not certify evolution eligibility"
-        );
-        assert_eq!(save.data, before);
-        // Historical Dex records cannot supply a presently usable parent.
-        save.edit(
-            party(),
-            &PokemonPatch {
-                species: Some(3),
-                ..Default::default()
-            },
-            &r,
-            Policy::Free,
-        )
-        .unwrap();
-        if profile.save.dex.is_some() {
-            save.edit_dex(1, true, true).unwrap();
-            for (i, s) in index.species.iter_mut().enumerate() {
-                s.dex_number = i as u16 + 1;
-            }
-            let plan = index
-                .collection(
-                    &r,
-                    &save,
-                    CollectionRequest {
-                        basis: CollectionBasis::Dex,
-                        ..request()
-                    },
-                )
-                .unwrap();
-            assert!(plan
-                .regions
-                .iter()
-                .flat_map(|r| &r.tasks)
-                .filter_map(|t| t.preparation.as_ref())
-                .all(|p| p.current_count == 0 || p.origin == 3));
-        }
-        let before = save.data.clone();
-        let plan = index.collection(&r, &save, request()).unwrap();
-        let first = plan
-            .regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .find(|t| t.target.kind == crate::acquisition::TargetKind::Species && t.target.id == 1)
-            .unwrap();
-        assert!(
-            first.preparation.is_none(),
-            "owned final stage cannot be treated as a reverse-evolution parent"
-        );
-        let middle = plan
-            .regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .find(|t| t.target.kind == crate::acquisition::TargetKind::Species && t.target.id == 2)
-            .unwrap();
-        assert!(
-            middle.preparation.is_none(),
-            "an unreferenced origin is not an obtainable source"
-        );
-        assert_eq!(save.data, before);
-        // Cycles terminate; eggs are excluded from the actual-individual inventory.
-        index
-            .evolutions
-            .insert(3, vec![edge(1, "unknown", 0, 0, 300)]);
-        save.edit(
-            party(),
-            &PokemonPatch {
-                egg: Some(true),
-                ..Default::default()
-            },
-            &r,
-            Policy::Free,
-        )
-        .unwrap();
-        let before = save.data.clone();
-        let plan = index.collection(&r, &save, request()).unwrap();
-        assert!(plan
-            .regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .filter_map(|t| t.preparation.as_ref())
-            .all(|p| p.current_count == 0));
-        assert_eq!(save.data, before);
-    }
-}
-
-#[test]
-#[ignore = "requires all five exact private ROMs; creates only synthetic readonly SAV fixtures"]
-fn local_collection_preparation_all_fingerprints() {
-    use crate::{
-        acquisition::AcquisitionIndex,
-        collection::{CollectionBasis, CollectionRequest},
-    };
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
-        let r =
-            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
-                .unwrap();
-        let index = AcquisitionIndex::build(&r).unwrap();
-        let save = Save::open(save_bytes(&r), r.profile.save).unwrap();
-        let before = save.data.clone();
-        let rom_before = r.data.clone();
-        let plan = index
-            .collection(
-                &r,
-                &save,
-                CollectionRequest {
-                    basis: CollectionBasis::Individuals,
-                    families: false,
-                    include_unknown_rewards: false,
-                },
-            )
-            .unwrap();
-        let current = save.all(&r).unwrap();
-        let mut chains = 0;
-        let mut possessed = 0;
-        for task in plan.regions.iter().flat_map(|r| &r.tasks) {
-            if let Some(p) = &task.preparation {
-                chains += 1;
-                possessed += usize::from(p.current_count > 0);
-                let mut from = p.origin;
-                assert!(
-                    (!p.steps.is_empty() || p.breeding.is_some())
-                        && p.steps.len() <= 8
-                        && p.partial
-                );
-                let mut visited = std::collections::BTreeSet::from([from]);
-                for step in &p.steps {
-                    assert_eq!(step.from, from);
-                    let raw = r.evolutions(from).unwrap();
-                    assert!(
-                        raw.iter().any(|e| serde_json::to_value(e).unwrap()
-                            == serde_json::to_value(&step.evolution).unwrap()),
-                        "{key}: evolution must match current ROM"
-                    );
-                    assert_eq!(
-                        serde_json::to_value(&step.related).unwrap(),
-                        serde_json::to_value(crate::acquisition::evolution_targets(
-                            &step.evolution
-                        ))
-                        .unwrap()
-                    );
-                    from = step.evolution.target;
-                    assert!(
-                        visited.insert(from),
-                        "cycle must not become a proposed route"
-                    );
-                }
-                assert_eq!(from, task.target.id);
-                assert_eq!(
-                    p.current_count,
-                    current
-                        .iter()
-                        .filter(|v| v.pokemon.species == p.origin
-                            && !v.pokemon.egg
-                            && v.pokemon.checksum_ok)
-                        .count()
-                );
-                if let Some(source) = &p.source {
-                    let id = source.map_id.as_ref().unwrap();
-                    assert!(plan.entrances.iter().any(|e| &e.map_id == id));
-                    if p.breeding.is_some() {
-                        assert!(index
-                            .daycare_sources(&r, Some(&save))
-                            .iter()
-                            .any(|s| s.offset == source.offset && s.map_id == source.map_id));
-                    } else {
-                        assert!(index
-                            .query(
-                                &r,
-                                Some(&save),
-                                crate::acquisition::Target {
-                                    kind: crate::acquisition::TargetKind::Species,
-                                    id: p.origin
-                                }
-                            )
-                            .unwrap()
-                            .sources
-                            .iter()
-                            .any(|s| s.offset == source.offset
-                                && s.map_id == source.map_id
-                                && s.kind == source.kind));
-                    }
-                }
-            }
-        }
-        assert!(
-            chains > 0 && possessed > 0,
-            "{key}: exercise real ROM edges and current origin"
-        );
-        assert_eq!(save.data, before);
-        assert_eq!(*r.data, *rom_before);
-        eprintln!("{key}: {chains} directed preparation chains ({possessed} from current individuals), {} goals; ROM/SAV unchanged",plan.missing_count);
     }
 }
 
@@ -6964,149 +5589,6 @@ fn local_saved_daycare_matches_native_state_and_deposited_parent_records() {
         assert_eq!(save.data, before);
         assert_eq!(*r.data, *rom_before);
         eprintln!("{key}: {} native saved-state cases, 8 phases, deposited preview and corrupt-record safety passed",native["rows"].as_array().unwrap().len());
-    }
-}
-
-#[test]
-fn breeding_collection_has_no_unverified_fallback_or_fabricated_parents() {
-    let r = rom();
-    let save = Save::open(save_bytes(&r), r.profile.save).unwrap();
-    let before = save.data.clone();
-    assert!(crate::breeding_collection::suggestions(&r, &save)
-        .unwrap()
-        .is_none());
-    assert_eq!(
-        crate::breeding_collection::select(&r, Some(&save), &[vec![], vec![]], 42, 24)
-            .unwrap_err()
-            .code,
-        "breeding_unverified"
-    );
-    assert_eq!(save.data, before);
-}
-
-#[test]
-#[ignore = "requires five exact private ROMs and GEN3_BREEDING_SELECTION_PROBES independent native vectors"]
-fn local_breeding_collection_matches_native_selection_and_current_parent_plans() {
-    use crate::{
-        acquisition::AcquisitionIndex,
-        collection::{CollectionBasis, CollectionRequest},
-    };
-    let probes: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(std::env::var("GEN3_BREEDING_SELECTION_PROBES").unwrap()).unwrap(),
-    )
-    .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
-        let r =
-            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
-                .unwrap();
-        assert_eq!(probes[key]["md5"], r.profile.md5);
-        assert_eq!(probes[key]["engine"], "mGBA ARM7");
-        let original = r.data.clone();
-        for row in probes[key]["rows"].as_array().unwrap() {
-            let parents: [Vec<u8>; 2] = serde_json::from_value(row["parents"].clone()).unwrap();
-            let (compat, child) = crate::breeding_collection::select(
-                &r,
-                None,
-                &parents,
-                row["seed"].as_u64().unwrap() as u32,
-                row["offspring_pid"].as_u64().unwrap() as u32,
-            )
-            .unwrap();
-            assert_eq!(
-                serde_json::json!([compat, child]),
-                serde_json::json!([row["compatibility"], row["species"]]),
-                "{key}"
-            );
-        }
-        let index = AcquisitionIndex::build(&r).unwrap();
-        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
-        let row = probes[key]["rows"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|v| v["species"].as_u64().is_some_and(|s| s != 1 && s != 25))
-            .unwrap();
-        let raws: [Vec<u8>; 2] = serde_json::from_value(row["parents"].clone()).unwrap();
-        let child = row["species"].as_u64().unwrap() as u16;
-        for (i, raw) in raws.iter().enumerate() {
-            save.insert(loc(i), raw, &r).unwrap();
-        }
-        save.validate(&r).unwrap();
-        let before = save.data.clone();
-        let request = || CollectionRequest {
-            basis: CollectionBasis::Individuals,
-            families: false,
-            include_unknown_rewards: false,
-        };
-        let plan = index.collection(&r, &save, request()).unwrap();
-        let coverage = plan.breeding_coverage.as_ref().unwrap();
-        assert_eq!(
-            (
-                coverage.parent_count,
-                coverage.checked_pairs,
-                coverage.total_pairs,
-                coverage.failed_pairs
-            ),
-            (3, 3, 3, 0)
-        );
-        let task = plan
-            .regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .find(|t| {
-                t.target.kind == crate::acquisition::TargetKind::Species && t.target.id == child
-            })
-            .unwrap();
-        let prep = task.preparation.as_ref().unwrap();
-        assert_eq!(prep.origin, child);
-        assert!(prep.breeding.is_some() && prep.needs_hatching && prep.steps.is_empty());
-        let route = prep.breeding.as_ref().unwrap();
-        let native = crate::breeding::preview(
-            &r,
-            Some(&save),
-            &crate::breeding::Request {
-                parents: [
-                    crate::breeding::Parent::Stored {
-                        location: route.parents[0].location,
-                    },
-                    crate::breeding::Parent::Stored {
-                        location: route.parents[1].location,
-                    },
-                ],
-                seed: route.seed,
-                offspring_pid: route.offspring_pid,
-                production_item: None,
-            },
-        )
-        .unwrap();
-        assert_eq!(native.child.unwrap().species, child);
-        for p in &route.parents {
-            assert_eq!(
-                save.pokemon(p.location, &r).unwrap().unwrap().species,
-                p.species
-            );
-        }
-        assert_eq!(save.data, before);
-        let again = index.collection(&r, &save, request()).unwrap();
-        assert_eq!(
-            serde_json::to_value(&again).unwrap(),
-            serde_json::to_value(&plan).unwrap(),
-            "cached native suggestions must remain ROM/SAV bound"
-        );
-        save.remove(loc(0), &r).unwrap();
-        save.remove(loc(1), &r).unwrap();
-        let after = save.data.clone();
-        let without = index.collection(&r, &save, request()).unwrap();
-        assert_eq!(without.breeding_coverage.as_ref().unwrap().parent_count, 1);
-        assert!(without
-            .regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .filter_map(|t| t.preparation.as_ref())
-            .all(|p| p.breeding.is_none()));
-        assert_eq!(save.data, after);
-        assert_eq!(*r.data, *original);
-        eprintln!("{key}: 42 native compatibility scenarios and {} accepted selection checkpoints; existing-parent plan/receipt, cache invalidation and ROM/SAV preservation passed", probes[key]["rows"].as_array().unwrap().iter().filter(|row| !row["species"].is_null()).count());
     }
 }
 
@@ -7412,500 +5894,6 @@ fn local_event_effects_match_native_commands_and_referenced_dependency_queries()
 }
 
 #[test]
-fn collection_export_traces_current_prerequisites_without_save_or_rom_writes() {
-    use crate::{
-        acquisition::AcquisitionIndex,
-        app::{App, Request},
-    };
-    let (mut r, map) = npc_trade_fixture(profile::BW);
-    let rules = r.profile.event_state.unwrap().effects.unwrap();
-    let b = std::sync::Arc::make_mut(&mut r.data);
-    for (op, code) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
-        .into_iter()
-        .zip(rules.handlers)
-    {
-        put32(
-            b,
-            rules.commands + op as usize * 4,
-            0x08000001 + code as u32,
-        );
-    }
-    // NPC needs flag 11; the map-level script can set it. Gift receipt unknown.
-    b[0x26000..0x26003].copy_from_slice(&[0x2b, 11, 0]);
-    b[0x26003] = 6;
-    b[0x26004] = 1;
-    put32(b, 0x26005, 0x08026100);
-    b[0x26009] = 2;
-    b[0x26100..0x2610d].copy_from_slice(&[0x16, 0, 0x80, 1, 0, 0x16, 1, 0x80, 1, 0, 9, 0, 2]);
-    b[0x26200..0x26205].copy_from_slice(&[0x2b, 12, 0, 6, 1]);
-    put32(b, 0x26205, 0x08026400);
-    b[0x26209] = 2;
-    b[0x26400..0x26404].copy_from_slice(&[0x29, 11, 0, 2]);
-    b[0x26300..0x26304].copy_from_slice(&[0x29, 12, 0, 2]);
-    let mut map = map;
-    map.scripts.push(0x26200);
-    map.scripts.push(0x26300);
-    let report = r.map_events(&map).unwrap();
-    let bytes = save_bytes(&r);
-    let original = r.data.clone();
-    let md5 = r.profile.md5;
-    let mut session = Session::new(r);
-    session.load(bytes.clone(), None).unwrap();
-    let index = AcquisitionIndex {
-        wild_cache: Default::default(),
-        breeding_cache: Default::default(),
-        world: crate::world::World {
-            maps: vec![map],
-            map_events: vec![report],
-            encounters: vec![],
-            trainers: vec![],
-            trainer_locations: crate::world::TrainerLocationIndex {
-                locations: vec![],
-                unresolved_maps: vec![],
-            },
-            map_groups: &[],
-        },
-        species: vec![],
-        evolutions: Default::default(),
-        learnsets: Default::default(),
-    };
-    let mut app = App {
-        acquisition_cache: Some((session.rom.data.clone(), index)),
-        session: Some(session),
-        ..Default::default()
-    };
-    let payload = serde_json::json!({"expected_rom_md5":md5,"query":{"basis":"individuals","families":true,"include_unknown_rewards":true}});
-    let result = app
-        .dispatch(Request {
-            command: "collection_export".into(),
-            payload: payload.clone(),
-        })
-        .unwrap();
-    let prerequisites = &result["prerequisites"]["reports"];
-    assert!(prerequisites
-        .as_array()
-        .unwrap()
-        .iter()
-        .any(|r| r["condition"]["condition"]["id"] == 11
-            && r["writers"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .any(|w| w["reference"]["kind"] == "map_script")));
-    assert!(result["prerequisites"]["partial"].as_bool().unwrap());
-    let routes = result["prerequisites"]["routes"].as_array().unwrap();
-    let route = routes
-        .iter()
-        .find(|route| {
-            prerequisites[route["report_index"].as_u64().unwrap() as usize]["condition"]
-                ["condition"]["id"]
-                == 11
-        })
-        .unwrap();
-    assert!(!route["goals"].as_array().unwrap().is_empty());
-    assert!(prerequisites
-        .as_array()
-        .unwrap()
-        .iter()
-        .any(|r| r["condition"]["condition"]["id"] == 12));
-    for goal in route["goals"].as_array().unwrap() {
-        let task = &result["regions"][goal[0].as_u64().unwrap() as usize]["tasks"]
-            [goal[1].as_u64().unwrap() as usize];
-        assert!(task["source"]["conditions"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|c| c["condition"]["id"] == 11));
-    }
-    assert_eq!(
-        app.session.as_ref().unwrap().save.as_ref().unwrap().data,
-        bytes
-    );
-    assert_eq!(app.session.as_ref().unwrap().rom.data, original);
-    let cache = app.event_dependency_cache.as_ref().unwrap().0.clone();
-    let repeated = app
-        .dispatch(Request {
-            command: "collection_export".into(),
-            payload,
-        })
-        .unwrap();
-    assert_eq!(result, repeated);
-    let preview = app.dispatch(Request {
-        command: "collection_prerequisites".into(),
-        payload: serde_json::json!({"expected_rom_md5":md5,"query":{"basis":"individuals","families":true,"include_unknown_rewards":true}}),
-    }).unwrap();
-    assert_eq!(preview, result);
-    let stale_preview = app.dispatch(Request {
-        command: "collection_prerequisites".into(),
-        payload: serde_json::json!({"expected_rom_md5":profile::ROCKET.md5,"query":{"basis":"individuals","families":true,"include_unknown_rewards":true}}),
-    }).unwrap_err();
-    assert_eq!(stale_preview.code, "rom_mismatch");
-    assert!(std::sync::Arc::ptr_eq(
-        &cache,
-        &app.event_dependency_cache.as_ref().unwrap().0
-    ));
-    let stale=app.dispatch(Request { command:"event_dependencies".into(),payload:serde_json::json!({"kind":"flag","id":11,"value":1,"comparison":1,"taken":true,"expected_rom_md5":profile::ROCKET.md5}) }).unwrap_err();
-    assert_eq!(stale.code, "rom_mismatch");
-    let invalid=app.dispatch(Request { command:"event_dependencies".into(),payload:serde_json::json!({"kind":"flag","id":null,"value":1,"comparison":1,"taken":true,"expected_rom_md5":md5}) }).unwrap_err();
-    assert_eq!(invalid.code, "json");
-    assert_eq!(
-        app.session.as_ref().unwrap().save.as_ref().unwrap().data,
-        bytes
-    );
-    // Generated fixture only: an already-met condition must not suggest its
-    // writers' prerequisites as additional work. No production flag-edit API.
-    let session = app.session.as_mut().unwrap();
-    let range = session
-        .rom
-        .profile
-        .event_state
-        .unwrap()
-        .flags
-        .iter()
-        .find(|r| 11 >= r.first && 11 - r.first < r.count)
-        .unwrap();
-    assert!(matches!(range.block, crate::event_state::EventBlock::Main));
-    let offset = range.offset + (11 - range.first) as usize / 8;
-    let save = session.save.as_mut().unwrap();
-    save.data[save.sections[1 + offset / 0xf80] + offset % 0xf80] |= 1 << ((11 - range.first) % 8);
-    let satisfied_bytes = save.data.clone();
-    let satisfied = app.dispatch(Request {
-        command: "collection_prerequisites".into(),
-        payload: serde_json::json!({"expected_rom_md5":md5,"query":{"basis":"individuals","families":true,"include_unknown_rewards":true}}),
-    }).unwrap();
-    let satisfied_reports = satisfied["prerequisites"]["reports"].as_array().unwrap();
-    assert!(satisfied_reports
-        .iter()
-        .any(|r| r["condition"]["condition"]["id"] == 11 && r["condition"]["satisfied"] == true));
-    assert!(!satisfied_reports
-        .iter()
-        .any(|r| r["condition"]["condition"]["id"] == 12));
-    assert_eq!(
-        app.session.as_ref().unwrap().save.as_ref().unwrap().data,
-        satisfied_bytes
-    );
-    assert_eq!(app.session.as_ref().unwrap().rom.data, original);
-}
-
-#[test]
-fn event_clue_search_preserves_references_guards_and_saved_snapshot_boundaries() {
-    use crate::event_dependencies::{Index, SearchRequest};
-    for profile in profile::PROFILES {
-        let (mut rom, mut map) = npc_trade_fixture(profile);
-        let rules = rom.profile.event_state.unwrap().effects.unwrap();
-        let text = Codec::new().encode("HELLO", 6).unwrap();
-        let only = Codec::new().encode("ONLY", 5).unwrap();
-        let b = std::sync::Arc::make_mut(&mut rom.data);
-        for (op, code) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
-            .into_iter()
-            .zip(rules.handlers)
-        {
-            put32(
-                b,
-                rules.commands + op as usize * 4,
-                0x08000001 + code as u32,
-            );
-        }
-        b[0x29000..0x29006].copy_from_slice(&text);
-        b[0x29020..0x29025].copy_from_slice(&only);
-        b[0x26000..0x26002].copy_from_slice(&[0x0f, 0]);
-        put32(b, 0x26002, 0x08029000);
-        b[0x26006..0x2600b].copy_from_slice(&[0x2b, 11, 0, 6, 1]);
-        put32(b, 0x2600b, 0x08026100);
-        b[0x2600f..0x26013].copy_from_slice(&[0x2a, 12, 0, 2]);
-        for i in 0..66 {
-            b[0x26100 + i * 3] = 0x29;
-            put16(b, 0x26101 + i * 3, 12 + i as u16);
-        }
-        b[0x26100 + 66 * 3] = 2;
-        b[0x26200..0x26202].copy_from_slice(&[0x0f, 0]);
-        put32(b, 0x26202, 0x08029020);
-        b[0x26206] = 2;
-        // Seventy actors share a root, yet retain separate map positions/IDs.
-        b[0x25000] = 70;
-        put32(b, 0x25004, 0x08028000);
-        for i in 0..70 {
-            let at = 0x28000 + i * 24;
-            b[at] = i as u8 + 1;
-            put16(b, at + 4, if i == 69 { 99 } else { 1 });
-            put16(b, at + 6, 2);
-            put16(b, at + 20, 20);
-            put32(b, at + 16, 0x08026000);
-        }
-        // A valid-looking but unreferenced root must not become a clue.
-        b[0x26300..0x26307].copy_from_slice(&[0x0f, 0, 0, 0x90, 2, 8, 2]);
-        b[0x26400..0x26402].copy_from_slice(&[0x0f, 0]);
-        put32(b, 0x26402, 0x08029020);
-        b[0x26406] = 2;
-        map.scripts = vec![0x26000, 0x26200, 0x26400];
-        let original = rom.data.clone();
-        let mut save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
-        let before = save.data.clone();
-        let index = Index::build(&rom, std::slice::from_ref(&map)).unwrap();
-        let request = |search: &str, offset| SearchRequest {
-            expected_rom_md5: rom.profile.md5.into(),
-            search: search.into(),
-            map_id: None,
-            offset,
-            selected_id: None,
-        };
-        let first = index.search(&rom, None, request(" hello ", 0)).unwrap();
-        assert_eq!(first.total_matches, 70);
-        assert_eq!(first.entries.len(), 32);
-        assert_eq!(first.next_offset, Some(32));
-        assert!(first.entries[0].effects_truncated);
-        assert!(first.entries[0]
-            .effects
-            .iter()
-            .all(|e| e.observed.is_none()));
-        assert_eq!(first.entries[0].text[0].text, "HELLO");
-        assert_eq!(first.entries[0].reference.x, Some(1));
-        let final_page = index
-            .search(&rom, Some(&save), request("HELLO", 64))
-            .unwrap();
-        assert_eq!(final_page.entries.len(), 6);
-        assert!(final_page.next_offset.is_none());
-        let outside = final_page.entries.last().unwrap();
-        assert_eq!(outside.reference.x, None);
-        assert_eq!(outside.reference.y, None);
-        assert!(outside.reference.entry_unresolved);
-        let selected_id = outside.id.clone();
-        let mut selected_request = request("HELLO", 0);
-        selected_request.selected_id = Some(selected_id.clone());
-        let selection = index.search(&rom, Some(&save), selected_request).unwrap();
-        let selected = selection.selected.unwrap();
-        assert_eq!(selected.id, selected_id);
-        assert_eq!(selected.visibility[0].satisfied, Some(true));
-        let effect = selected
-            .effects
-            .iter()
-            .find(|e| e.effect.value == Some(1))
-            .unwrap();
-        assert_eq!(effect.observed, Some(false));
-        assert!(effect
-            .conditions
-            .iter()
-            .any(|c| c.condition.id == 11 && c.satisfied == Some(false)));
-        assert!(!serde_json::to_value(&selected)
-            .unwrap()
-            .as_object()
-            .unwrap()
-            .contains_key("status"));
-        let text_only = index.search(&rom, None, request("ONLY", 0)).unwrap();
-        assert_eq!(text_only.total_matches, 2);
-        assert_ne!(text_only.entries[0].id, text_only.entries[1].id);
-        assert_eq!(
-            text_only.entries[0].reference.offset,
-            text_only.entries[1].reference.offset
-        );
-        assert_ne!(
-            text_only.entries[0].reference.root,
-            text_only.entries[1].reference.root
-        );
-        assert!(text_only.entries[0].effects.is_empty());
-        assert_eq!(text_only.entries[0].reference.kind, "map_script");
-        assert_eq!(
-            index
-                .search(&rom, None, request("synthetic TRADE room", 0))
-                .unwrap()
-                .total_matches,
-            72
-        );
-        let mut filtered = request("", 0);
-        filtered.map_id = Some("missing-map".into());
-        assert_eq!(index.search(&rom, None, filtered).unwrap().total_matches, 0);
-        assert_eq!(save.data, before);
-        assert_eq!(rom.data, original);
-        // Explicitly change only a synthetic snapshot, and prove per-query invalidation.
-        let layout = rom.profile.event_state.unwrap();
-        let range = layout.flags[0];
-        let logical = range.offset + 11 / 8;
-        let absolute = save.sections[1 + logical / 3968] + logical % 3968;
-        save.data[absolute] |= 1 << (11 % 8);
-        let changed = index
-            .search(&rom, Some(&save), request("HELLO", 0))
-            .unwrap();
-        assert!(changed.entries[0]
-            .effects
-            .iter()
-            .any(|e| e
-                .conditions
-                .iter()
-                .any(|c| c.condition.id == 11 && c.satisfied == Some(true))));
-        let mut oversized = request("", 0);
-        oversized.search = "a".repeat(513);
-        assert_eq!(
-            index.search(&rom, None, oversized).err().unwrap().code,
-            "event_search_arguments"
-        );
-        assert_eq!(
-            index
-                .search(&rom, None, request("HELLO", 71))
-                .err()
-                .unwrap()
-                .code,
-            "event_search_offset"
-        );
-        let mut stale = request("", 0);
-        stale.expected_rom_md5 = "wrong".into();
-        assert_eq!(
-            index.search(&rom, None, stale).err().unwrap().code,
-            "rom_mismatch"
-        );
-        let mut other = rom.clone();
-        std::sync::Arc::make_mut(&mut other.data)[0] ^= 1;
-        assert_eq!(
-            index
-                .search(&other, None, request("", 0))
-                .err()
-                .unwrap()
-                .code,
-            "rom_mismatch"
-        );
-        // Read-only command: fresh SAV overlay, unchanged bytes, reject stale input.
-        let saved_snapshot = save.data.clone();
-        let mut session = Session::new(rom.clone());
-        session.save = Some(save);
-        let mut app = crate::app::App {
-            session: Some(session),
-            event_dependency_cache: Some((rom.data.clone(), index)),
-            ..Default::default()
-        };
-        let dispatch = |payload| crate::app::Request {
-            command: "event_search".into(),
-            payload,
-        };
-        let payload = serde_json::json!({"expected_rom_md5":rom.profile.md5,"search":"HELLO"});
-        let response = app.dispatch(dispatch(payload.clone())).unwrap();
-        assert_eq!(response["total_matches"], 70);
-        assert_eq!(app.dispatch(dispatch(payload)).unwrap(), response);
-        for payload in [
-            serde_json::Value::Null,
-            serde_json::json!({"expected_rom_md5":"stale"}),
-            serde_json::json!({"expected_rom_md5":rom.profile.md5,"offset":null}),
-            serde_json::json!({"expected_rom_md5":rom.profile.md5,"write":true}),
-        ] {
-            assert!(app.dispatch(dispatch(payload)).is_err());
-        }
-        assert_eq!(
-            app.session.as_ref().unwrap().save.as_ref().unwrap().data,
-            saved_snapshot
-        );
-        assert_eq!(app.session.as_ref().unwrap().rom.data, original);
-    }
-}
-
-#[test]
-#[ignore = "requires all five exact private ROMs and GEN3_SAVE_MERCURY12"]
-fn local_event_clue_search_cross_rom_queries() {
-    use crate::app::{App, Request};
-    let mut app = App::default();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
-        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
-        let original = std::fs::read(&path).unwrap();
-        let rom = Rom::open(original.clone()).unwrap();
-        let maps = rom.maps().unwrap();
-        app.session = Some(Session::new(rom.clone()));
-        let query = |search: &str, offset, selected: Option<&str>| Request {
-            command: "event_search".into(),
-            payload: serde_json::json!({"expected_rom_md5":rom.profile.md5,"search":search,"offset":offset,"selected_id":selected}),
-        };
-        let first = app.dispatch(query("", 0, None)).unwrap();
-        assert_eq!(first["rom_md5"], rom.profile.md5);
-        assert!(first["total_matches"].as_u64().unwrap() > 0);
-        assert!(std::sync::Arc::ptr_eq(
-            &app.event_dependency_cache.as_ref().unwrap().0,
-            &rom.data
-        ));
-        let total = first["total_matches"].as_u64().unwrap() as usize;
-        let mut checked = 0;
-        let mut ids = std::collections::BTreeSet::new();
-        // Every search row is checked against actual map/event bytes and current
-        // ROM strings. This is reference evidence, not gameplay accessibility.
-        for offset in (0..total).step_by(32) {
-            let page = app.dispatch(query("", offset, None)).unwrap();
-            for entry in page["entries"].as_array().unwrap() {
-                assert!(ids.insert(entry["id"].as_str().unwrap().to_string()));
-                let reference = &entry["reference"];
-                let map = maps
-                    .iter()
-                    .find(|m| m.id == reference["map_id"].as_str().unwrap())
-                    .unwrap();
-                assert_eq!(reference["map_name"], map.name);
-                let root = reference["root"].as_u64().unwrap() as usize;
-                let at = reference["offset"].as_u64().unwrap() as usize;
-                let script_off = match reference["kind"].as_str().unwrap() {
-                    "npc" => Some(16),
-                    "trigger" => Some(12),
-                    "sign" => Some(8),
-                    "map_script" => None,
-                    _ => panic!(),
-                };
-                if let Some(script_off) = script_off {
-                    assert_eq!(pointer(&rom.data, at + script_off).unwrap(), root);
-                } else {
-                    assert!(map.scripts.contains(&root));
-                }
-                if let (Some(x), Some(y)) = (reference["x"].as_i64(), reference["y"].as_i64()) {
-                    assert!(x >= 0 && y >= 0 && x < (map.width as i64) && y < (map.height as i64));
-                }
-                for text in entry["text"].as_array().unwrap() {
-                    assert_eq!(
-                        text["text"],
-                        rom.cstring(text["offset"].as_u64().unwrap() as usize)
-                    );
-                }
-                assert!(entry["effects"]
-                    .as_array()
-                    .unwrap()
-                    .iter()
-                    .all(|e| e["observed"].is_null()));
-                assert!(entry.get("status").is_none());
-                checked += 1;
-            }
-        }
-        assert_eq!(checked, total);
-        let sample = first["entries"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|e| !e["text"].as_array().unwrap().is_empty())
-            .unwrap();
-        let phrase = sample["text"][0]["text"]
-            .as_str()
-            .unwrap()
-            .chars()
-            .take(64)
-            .collect::<String>();
-        let found = app
-            .dispatch(query(&phrase, 0, sample["id"].as_str()))
-            .unwrap();
-        assert_eq!(found["selected"]["id"], sample["id"]);
-        if key == "MERCURY12" {
-            let sav_path = std::env::var("GEN3_SAVE_MERCURY12").unwrap();
-            let before = std::fs::read(&sav_path).unwrap();
-            app.session
-                .as_mut()
-                .unwrap()
-                .load(before.clone(), None)
-                .unwrap();
-            let current = app
-                .dispatch(query(&phrase, 0, sample["id"].as_str()))
-                .unwrap();
-            assert_eq!(current["selected"]["text"], found["selected"]["text"]);
-            assert_eq!(
-                app.session.as_ref().unwrap().save.as_ref().unwrap().data,
-                before
-            );
-            assert_eq!(std::fs::read(sav_path).unwrap(), before);
-        }
-        assert_eq!(rom.data.as_ref(), &original);
-        assert_eq!(std::fs::read(path).unwrap(), original);
-        println!("{key}: {total} searchable references, every map/root/text checked; search/detail/cache preservation passed");
-    }
-}
-
-#[test]
 fn trainer_references_keep_guarded_roots_actors_and_unresolved_access_separate() {
     use crate::event_dependencies::{Index, TrainerRequest};
     for profile in profile::PROFILES {
@@ -8154,1975 +6142,6 @@ fn local_trainer_reference_formats_match_native_boundaries_and_current_roots() {
         assert_eq!(r.data.as_ref(), &data);
         assert_eq!(std::fs::read(path).unwrap(), data);
         println!("{key}: {} native scenarios; {references} guarded literal-record references, {positioned} positioned; ROM preserved", probes[key]["rows"].as_array().unwrap().len());
-    }
-}
-
-#[test]
-fn hardware_clock_snapshots_are_not_live_time_and_remain_rom_scoped() {
-    use crate::{
-        clock::ClockScenario,
-        hardware_clock::{Input, Request, Time},
-    };
-    for p in [
-        profile::BW,
-        profile::DP,
-        profile::ROCKET,
-        crate::ultimate::PROFILE,
-    ] {
-        let r = adapter_rom(p);
-        let original = r.data.clone();
-        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
-        let at = save.sections[0];
-        put16(&mut save.data, at + 0x98, (-1_i16) as u16);
-        save.data[at + 0x9a..at + 0x9d].copy_from_slice(&[23, 59, 58]);
-        put16(&mut save.data, at + 0xa0, 2000);
-        save.data[at + 0xa2..at + 0xa5].copy_from_slice(&[12, 30, 40]);
-        let before = save.data.clone();
-        let report = r
-            .clock_query_with_save(
-                Some(&save),
-                ClockScenario {
-                    hour: None,
-                    weekday: None,
-                },
-            )
-            .unwrap();
-        assert_eq!(report.rom_md5, p.md5);
-        assert_eq!(report.issue, Some("hardware_rtc_unresolved"));
-        assert_eq!(report.source, "unresolved");
-        assert_eq!(report.effective_hour, None);
-        assert_eq!(report.weekday, None);
-        assert_eq!(report.period, None);
-        assert!(!report.current_clock_verified);
-        let hw = report.hardware.unwrap();
-        assert_eq!(
-            hw.offset,
-            Time {
-                days: -1,
-                hour: 23,
-                minute: 59,
-                second: 58
-            }
-        );
-        assert_eq!(
-            hw.last_update,
-            Time {
-                days: 2000,
-                hour: 12,
-                minute: 30,
-                second: 40
-            }
-        );
-        assert!(hw.offset_valid && hw.last_update_valid);
-        let input = Input {
-            year: 2026,
-            month: 10,
-            day: 6,
-            hour: 12,
-            minute: 30,
-            second: 40,
-        };
-        assert_eq!(
-            r.hardware_clock_preview(
-                Some(&save),
-                Request {
-                    expected_rom_md5: "stale".into(),
-                    rtc: input,
-                    offset: None
-                }
-            )
-            .err()
-            .unwrap()
-            .code,
-            "rom_mismatch"
-        );
-        assert_eq!(
-            r.hardware_clock_preview(
-                None,
-                Request {
-                    expected_rom_md5: p.md5.into(),
-                    rtc: input,
-                    offset: None
-                }
-            )
-            .err()
-            .unwrap()
-            .code,
-            "clock_save_required"
-        );
-        assert!(r
-            .hardware_clock_preview(
-                Some(&save),
-                Request {
-                    expected_rom_md5: p.md5.into(),
-                    rtc: Input { month: 0, ..input },
-                    offset: None
-                }
-            )
-            .is_err());
-        save.data[at + 0x9a] = 255;
-        assert!(
-            !r.hardware_clock_snapshot(Some(&save))
-                .unwrap()
-                .unwrap()
-                .offset_valid
-        );
-        assert_eq!(
-            r.hardware_clock_preview(
-                Some(&save),
-                Request {
-                    expected_rom_md5: p.md5.into(),
-                    rtc: input,
-                    offset: None
-                }
-            )
-            .err()
-            .unwrap()
-            .code,
-            "clock_saved_offset"
-        );
-        save.data[at + 0x9a] = 23;
-        assert_eq!(save.data, before);
-        assert_eq!(r.data, original);
-        let mut app = crate::app::App {
-            session: Some(Session::new(r)),
-            ..Default::default()
-        };
-        app.session.as_mut().unwrap().save = Some(save);
-        for payload in [
-            serde_json::Value::Null,
-            serde_json::json!({"expected_rom_md5":p.md5,"rtc":null}),
-            serde_json::json!({"expected_rom_md5":p.md5,"rtc":input,"offset":{"days":null,"hour":0,"minute":0,"second":0}}),
-            serde_json::json!({"expected_rom_md5":p.md5,"rtc":input,"write":true}),
-        ] {
-            assert!(app
-                .dispatch(crate::app::Request {
-                    command: "clock_rtc_preview".into(),
-                    payload
-                })
-                .is_err());
-        }
-        assert_eq!(
-            app.session.as_ref().unwrap().save.as_ref().unwrap().data,
-            before
-        );
-    }
-    let r = adapter_rom(crate::mercury::PROFILE);
-    assert!(r
-        .hardware_clock_preview(
-            None,
-            Request {
-                expected_rom_md5: r.profile.md5.into(),
-                rtc: Input {
-                    year: 2026,
-                    month: 10,
-                    day: 6,
-                    hour: 12,
-                    minute: 0,
-                    second: 0
-                },
-                offset: Some(Time {
-                    days: 0,
-                    hour: 0,
-                    minute: 0,
-                    second: 0
-                })
-            }
-        )
-        .is_err());
-}
-
-#[test]
-#[ignore = "requires four exact private ROMs and GEN3_HARDWARE_CLOCK_PROBES independent native vectors"]
-fn local_hardware_clock_matches_native_validation_offsets_and_borrowing() {
-    use crate::hardware_clock::{Input, Request, Time};
-    let native: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(std::env::var("GEN3_HARDWARE_CLOCK_PROBES").unwrap()).unwrap(),
-    )
-    .unwrap();
-    let mut app = crate::app::App::default();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE"] {
-        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
-        let bytes = std::fs::read(&path).unwrap();
-        let r = Rom::open(bytes.clone()).unwrap();
-        let rules = r.profile.hardware_clock.unwrap();
-        assert_eq!(native[key]["md5"], r.profile.md5);
-        assert_eq!(native[key]["validation"], rules.validate);
-        assert_eq!(native[key]["difference"], rules.difference);
-        assert_eq!(native[key]["getter"], rules.getter);
-        let mut saved = Save::open(save_bytes(&r), r.profile.save).unwrap();
-        for row in native[key]["rows"].as_array().unwrap() {
-            let v = row["date"].as_array().unwrap();
-            let n = |i: usize| v[i].as_u64().unwrap() as u8;
-            let rtc = Input {
-                year: v[0].as_u64().unwrap() as u16,
-                month: n(1),
-                day: n(2),
-                hour: n(3),
-                minute: n(4),
-                second: n(5),
-            };
-            let off = row["offset"].as_array().unwrap();
-            let i = |idx: usize| off[idx].as_i64().unwrap() as i8;
-            let offset = Time {
-                days: off[0].as_i64().unwrap() as i16,
-                hour: i(1),
-                minute: i(2),
-                second: i(3),
-            };
-            let projected = r
-                .hardware_clock_preview(
-                    None,
-                    Request {
-                        expected_rom_md5: r.profile.md5.into(),
-                        rtc,
-                        offset: Some(offset),
-                    },
-                )
-                .unwrap();
-            assert_eq!(
-                serde_json::to_value(projected.local_time).unwrap(),
-                row["result"],
-                "{key} {row}"
-            );
-            assert_eq!(projected.weekday, None);
-            assert_eq!(projected.period, None);
-            assert!(!projected.current_clock_verified);
-            let at = saved.sections[0] + rules.save_offset;
-            put16(&mut saved.data, at, offset.days as u16);
-            saved.data[at + 2..at + 5].copy_from_slice(&[
-                offset.hour as u8,
-                offset.minute as u8,
-                offset.second as u8,
-            ]);
-            let before = saved.data.clone();
-            let actual = r
-                .hardware_clock_preview(
-                    Some(&saved),
-                    Request {
-                        expected_rom_md5: r.profile.md5.into(),
-                        rtc,
-                        offset: None,
-                    },
-                )
-                .unwrap();
-            assert_eq!(actual.offset_source, "save");
-            assert_eq!(actual.local_time, projected.local_time);
-            assert_eq!(saved.data, before);
-        }
-        let rtc = Input {
-            year: 2026,
-            month: 10,
-            day: 6,
-            hour: 12,
-            minute: 0,
-            second: 0,
-        };
-        let offset = Some(Time {
-            days: 0,
-            hour: 0,
-            minute: 0,
-            second: 0,
-        });
-        for (year, month, day) in [(2001, 2, 29), (2026, 2, 30), (2026, 4, 31)] {
-            assert_eq!(
-                r.hardware_clock_preview(
-                    None,
-                    Request {
-                        expected_rom_md5: r.profile.md5.into(),
-                        rtc: Input {
-                            year,
-                            month,
-                            day,
-                            ..rtc
-                        },
-                        offset
-                    }
-                )
-                .err()
-                .unwrap()
-                .code,
-                "clock_rtc_invalid"
-            );
-        }
-        app.session = Some(Session::new(r.clone()));
-        app.session.as_mut().unwrap().save = Some(saved.clone());
-        let payload = serde_json::json!({"expected_rom_md5":r.profile.md5,"rtc":rtc});
-        let query = |payload| crate::app::Request {
-            command: "clock_rtc_preview".into(),
-            payload,
-        };
-        let first = app.dispatch(query(payload.clone())).unwrap();
-        let at = app
-            .session
-            .as_ref()
-            .unwrap()
-            .save
-            .as_ref()
-            .unwrap()
-            .sections[0]
-            + rules.save_offset;
-        app.session.as_mut().unwrap().save.as_mut().unwrap().data[at + 2] = 1;
-        let second = app.dispatch(query(payload)).unwrap();
-        assert_ne!(first["local_time"], second["local_time"]);
-        assert_eq!(second["rom_md5"], r.profile.md5);
-        assert_eq!(std::fs::read(path).unwrap(), bytes);
-        assert_eq!(r.data.as_ref(), &bytes);
-        println!("{key}: {} native RTC projections, SAV-offset parity, invalid calendar and fresh snapshot passed",native[key]["rows"].as_array().unwrap().len());
-    }
-}
-
-#[test]
-fn training_queries_reject_stale_rom_and_malformed_individuals() {
-    use crate::app::{App, Request};
-    let mut app = App {
-        session: Some(Session::new(rom())),
-        ..Default::default()
-    };
-    assert_eq!(
-        app.dispatch(Request {
-            command: "training_catalog".into(),
-            payload: serde_json::json!({"expected_rom_md5":"stale"})
-        })
-        .unwrap_err()
-        .code,
-        "rom_mismatch"
-    );
-    let valid = serde_json::json!({"expected_rom_md5":profile::BW.md5,"item":63,"individual":{"kind":"simulated","species":1,"level":5,"evs":[0,0,0,0,0,0],"friendship":70}});
-    for bad in [
-        serde_json::json!([null, 0, 0, 0, 0, 0]),
-        serde_json::json!([256, 0, 0, 0, 0, 0]),
-        serde_json::json!([-1, 0, 0, 0, 0, 0]),
-        serde_json::json!([0, 0]),
-        serde_json::json!([0.5, 0, 0, 0, 0, 0]),
-    ] {
-        let mut p = valid.clone();
-        p["individual"]["evs"] = bad;
-        assert_eq!(
-            app.dispatch(Request {
-                command: "training_preview".into(),
-                payload: p
-            })
-            .unwrap_err()
-            .code,
-            "json"
-        );
-    }
-    let mut p = valid;
-    p["unexpected"] = serde_json::json!(true);
-    assert_eq!(
-        app.dispatch(Request {
-            command: "training_preview".into(),
-            payload: p
-        })
-        .unwrap_err()
-        .code,
-        "json"
-    );
-}
-
-#[test]
-#[ignore = "requires five exact private ROMs and GEN3_TRAINING_PROBES mGBA vectors"]
-fn local_training_classification_and_effect_match_native_all_profiles() {
-    use crate::training::{Individual, Request};
-    let vectors: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(std::env::var("GEN3_TRAINING_PROBES").unwrap()).unwrap(),
-    )
-    .unwrap();
-    for (key, profile) in [
-        ("BW", profile::BW),
-        ("DP", profile::DP),
-        ("ROCKET", profile::ROCKET),
-        ("ULTIMATE", crate::ultimate::PROFILE),
-        ("MERCURY12", crate::mercury::PROFILE),
-    ] {
-        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
-        let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
-        let hash = crate::binary::sha256(&rom.data);
-        assert_eq!(vectors[key]["md5"], rom.profile.md5);
-        let catalog = rom.training_catalog().unwrap();
-        assert_eq!(catalog.rom_md5, profile.md5);
-        let rows = vectors[key]["categories"].as_array().unwrap();
-        let expected: Vec<_> = rows
-            .iter()
-            .filter(|r| (12..=17).contains(&r["category"].as_u64().unwrap()))
-            .collect();
-        assert_eq!(catalog.offers.len(), expected.len());
-        for offer in &catalog.offers {
-            let row = expected.iter().find(|r| r["item"] == offer.item).unwrap();
-            assert_eq!(row["category"], offer.native_category);
-            assert_eq!(row["handler"], offer.handler);
-            assert_eq!(
-                offer.stat,
-                match offer.native_category {
-                    13 => 0,
-                    12 => 1,
-                    17 => 2,
-                    16 => 3,
-                    14 => 4,
-                    15 => 5,
-                    _ => unreachable!(),
-                }
-            );
-        }
-        let mut save = Save::open(save_bytes(&rom), profile.save).unwrap();
-        let first = save.sections[1];
-        save.data[first + save.layout.party_count] = 1;
-        let at = first + save.layout.party;
-        for row in vectors[key]["rows"].as_array().unwrap() {
-            let raw: Vec<u8> = serde_json::from_value(row["before"].clone()).unwrap();
-            save.data[at..at + 100].copy_from_slice(&raw);
-            let old = save.data.clone();
-            let item = row["item"].as_u64().unwrap() as u16;
-            let actual = rom
-                .training_preview(
-                    Some(&save),
-                    Request {
-                        expected_rom_md5: profile.md5.into(),
-                        item,
-                        rng_seed: None,
-                        individual: Individual::Stored { location: party() },
-                    },
-                )
-                .unwrap();
-            let expected: Vec<u8> = serde_json::from_value(row["after"].clone()).unwrap();
-            assert_eq!(actual.raw, expected, "{key} item {item}");
-            assert_eq!(actual.native_no_effect, row["no_effect"].as_bool().unwrap());
-            assert_eq!(actual.changed, raw != expected);
-            assert_eq!(actual.before.pid, actual.after.pid);
-            assert_eq!(actual.before.ot_id, actual.after.ot_id);
-            assert_eq!(save.data, old);
-        }
-        let bad = rom
-            .training_preview(
-                None,
-                Request {
-                    expected_rom_md5: profile.md5.into(),
-                    item: 0,
-                    rng_seed: None,
-                    individual: Individual::Simulated {
-                        species: 25,
-                        level: 5,
-                        evs: [0; 6],
-                        friendship: 70,
-                        ivs: None,
-                        nature_override: None,
-                        ability_slot: None,
-                    },
-                },
-            )
-            .unwrap_err();
-        assert_eq!(bad.code, "training_item_unverified");
-        assert_eq!(crate::binary::sha256(&rom.data), hash);
-        assert_eq!(crate::binary::sha256(&std::fs::read(path).unwrap()), hash);
-        println!(
-            "{key}: {} EV offers, {} native application vectors, original ROM/SAV preserved",
-            catalog.offers.len(),
-            vectors[key]["rows"].as_array().unwrap().len()
-        );
-    }
-}
-
-#[test]
-#[ignore = "requires five exact ROMs and GEN3_TRAINING_NATURE_PROBES independent mGBA vectors"]
-fn local_training_nature_items_match_native_and_existing_save_editor() {
-    use crate::training::{Individual, Request};
-    let vectors: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(std::env::var("GEN3_TRAINING_NATURE_PROBES").unwrap()).unwrap(),
-    )
-    .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
-        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
-        let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
-        let hash = crate::binary::sha256(&rom.data);
-        let catalog = rom.training_catalog().unwrap();
-        if key != "ROCKET" {
-            assert!(
-                catalog.nature_items.is_empty(),
-                "unverified handlers must not leak between profiles"
-            );
-            continue;
-        }
-        assert_eq!(vectors["md5"], rom.profile.md5);
-        assert_eq!(
-            catalog.nature_items.len(),
-            vectors["offers"].as_array().unwrap().len()
-        );
-        for offer in &catalog.nature_items {
-            let expected = vectors["offers"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .find(|v| v["item"] == offer.item)
-                .unwrap();
-            assert_eq!(expected["nature"], offer.nature);
-            assert_eq!(offer.handler, 0x08136ddd);
-        }
-        let index = crate::acquisition::AcquisitionIndex::build(&rom).unwrap();
-        let mut sources = 0;
-        let mut positioned = 0;
-        for offer in &catalog.nature_items {
-            let report = index
-                .query(
-                    &rom,
-                    None,
-                    crate::acquisition::Target {
-                        kind: crate::acquisition::TargetKind::Item,
-                        id: offer.item,
-                    },
-                )
-                .unwrap();
-            assert_eq!(report.target.id, offer.item);
-            for source in &report.sources {
-                sources += 1;
-                if let Some(map) = &source.map_id {
-                    let navigation = rom.map_navigation(map).unwrap();
-                    assert_eq!(navigation.map_id, *map);
-                    positioned += 1;
-                }
-            }
-        }
-        println!("Rocket mint acquisition: {sources} parsed sources, {positioned} map navigation references (access remains qualified)");
-        let mut save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
-        let first = save.sections[1];
-        save.data[first + save.layout.party_count] = 1;
-        let at = first + save.layout.party;
-        let mut edited = 0;
-        for row in vectors["rows"].as_array().unwrap() {
-            let raw: Vec<u8> = serde_json::from_value(row["before"].clone()).unwrap();
-            let expected: Vec<u8> = serde_json::from_value(row["after"].clone()).unwrap();
-            let item = row["item"].as_u64().unwrap() as u16;
-            let nature = row["nature"].as_u64().unwrap() as u8;
-            let no_effect = row["no_effect"].as_bool().unwrap();
-            save.data[at..at + 100].copy_from_slice(&raw);
-            let original = save.data.clone();
-            let preview = rom
-                .training_preview(
-                    Some(&save),
-                    Request {
-                        expected_rom_md5: rom.profile.md5.into(),
-                        item,
-                        rng_seed: None,
-                        individual: Individual::Stored { location: party() },
-                    },
-                )
-                .unwrap();
-            assert_eq!(
-                preview.raw, expected,
-                "item {item}, PID {}",
-                preview.before.pid
-            );
-            assert_eq!(preview.native_no_effect, no_effect);
-            assert_eq!(preview.effect_scope, "nature_persistent_stage");
-            for i in 0..6 {
-                assert_eq!(
-                    preview.party_stats_before[i],
-                    crate::binary::u16(&raw, 88 + i * 2).unwrap()
-                );
-                assert_eq!(
-                    preview.party_stats_after[i],
-                    crate::binary::u16(&expected, 88 + i * 2).unwrap()
-                );
-            }
-            assert_eq!(preview.before.pid, preview.after.pid);
-            assert_eq!(preview.before.ot_id, preview.after.ot_id);
-            assert_eq!(preview.before.evs, preview.after.evs);
-            assert_eq!(preview.before.ivs, preview.after.ivs);
-            assert_eq!(preview.before.ball, preview.after.ball);
-            assert_eq!(save.data, original);
-            if !no_effect {
-                let patch = PokemonPatch {
-                    nature_override: Some(nature),
-                    ..Default::default()
-                };
-                let (party, _) = pokemon::edit(&raw, &patch, &rom, Policy::Standard).unwrap();
-                let (boxed, _) = pokemon::edit(&raw[..80], &patch, &rom, Policy::Standard).unwrap();
-                assert_eq!(party, expected, "party editor item {item}");
-                assert_eq!(boxed, expected[..80], "box editor item {item}");
-                edited += 1;
-            } else {
-                assert_eq!(expected, raw);
-            }
-        }
-        assert_eq!(crate::binary::sha256(&rom.data), hash);
-        assert_eq!(crate::binary::sha256(&std::fs::read(path).unwrap()), hash);
-        println!("Rocket: {} mint scenarios; {edited} native-equivalent party and boxed nature edits; original ROM/SAV unchanged", vectors["rows"].as_array().unwrap().len());
-    }
-}
-
-#[test]
-#[ignore = "requires five exact ROMs and GEN3_TRAINING_ABILITY_PROBES independent mGBA vectors"]
-fn local_training_ability_items_match_native_and_keep_profiles_isolated() {
-    use crate::training::{ability_decision, AbilityExecution, Individual, Request};
-    use armv4t_emu::Memory;
-    let vectors: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(std::env::var("GEN3_TRAINING_ABILITY_PROBES").unwrap()).unwrap(),
-    )
-    .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
-        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
-        let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
-        let hash = crate::binary::sha256(&rom.data);
-        let catalog = rom.training_catalog().unwrap();
-        assert_eq!(catalog.offers.len(), 12);
-        assert_eq!(
-            catalog.nature_items.len(),
-            if key == "ROCKET" { 21 } else { 0 }
-        );
-        if !matches!(key, "ROCKET" | "MERCURY12" | "ULTIMATE") {
-            assert!(
-                catalog.ability_items.is_empty(),
-                "unverified handlers must not cross profiles"
-            );
-            continue;
-        }
-        let evidence = &vectors[key];
-        assert_eq!(evidence["md5"], rom.profile.md5);
-        assert_eq!(
-            catalog.ability_items.len(),
-            evidence["offers"].as_array().unwrap().len()
-        );
-        let b = rom.profile.breeding.unwrap();
-        let mut sources = 0;
-        let mut positioned = 0;
-        let index = crate::acquisition::AcquisitionIndex::build(&rom).unwrap();
-        for offer in &catalog.ability_items {
-            assert!(evidence["offers"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .any(|v| v["item"] == offer.item && v["handler"] == offer.handler));
-            let rule = rom
-                .profile
-                .training
-                .unwrap()
-                .abilities
-                .iter()
-                .find(|r| r.handler == offer.handler)
-                .unwrap();
-            assert_eq!(
-                offer.random_pid,
-                matches!(rule.execution, AbilityExecution::Pid { .. })
-            );
-            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
-            for guard in evidence["guards"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .filter(|v| v["item"] == offer.item)
-            {
-                let raw: Vec<u8> = serde_json::from_value(guard["before"].clone()).unwrap();
-                for (i, byte) in raw.iter().enumerate() {
-                    ram.w8(b.party + i as u32, *byte);
-                }
-                ram.w32(b.rng, 42);
-                let decision = ability_decision(&mut ram, rule, offer.item).unwrap();
-                assert_eq!(decision.accepted, guard["accepted"].as_bool().unwrap());
-                assert_eq!(decision.target, guard["target"].as_u64().unwrap() as u32);
-                assert_eq!(
-                    (0..100).map(|i| ram.r8(b.party + i)).collect::<Vec<_>>(),
-                    raw
-                );
-            }
-            let report = index
-                .query(
-                    &rom,
-                    None,
-                    crate::acquisition::Target {
-                        kind: crate::acquisition::TargetKind::Item,
-                        id: offer.item,
-                    },
-                )
-                .unwrap();
-            for source in &report.sources {
-                sources += 1;
-                if let Some(map) = &source.map_id {
-                    assert_eq!(rom.map_navigation(map).unwrap().map_id, *map);
-                    positioned += 1;
-                }
-            }
-        }
-        let mut save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
-        let first = save.sections[1];
-        save.data[first + save.layout.party_count] = 1;
-        let at = first + save.layout.party;
-        let mut editor_matches = 0;
-        let mut changed_pids = 0;
-        let mut identity_differences = 0;
-        for row in evidence["rows"].as_array().unwrap() {
-            let raw: Vec<u8> = serde_json::from_value(row["before"].clone()).unwrap();
-            let expected: Vec<u8> = serde_json::from_value(row["after"].clone()).unwrap();
-            save.data[at..at + 100].copy_from_slice(&raw);
-            let old = save.data.clone();
-            let item = row["item"].as_u64().unwrap() as u16;
-            let seed = catalog
-                .ability_items
-                .iter()
-                .find(|o| o.item == item && o.requires_rng_seed)
-                .map(|_| row["seed"].as_u64().unwrap() as u32);
-            let actual = rom
-                .training_preview(
-                    Some(&save),
-                    Request {
-                        expected_rom_md5: rom.profile.md5.into(),
-                        item,
-                        rng_seed: seed,
-                        individual: Individual::Stored { location: party() },
-                    },
-                )
-                .unwrap();
-            assert_eq!(
-                actual.raw, expected,
-                "{key} item {item}, PID {}",
-                actual.before.pid
-            );
-            assert_eq!(actual.native_no_effect, !row["accepted"].as_bool().unwrap());
-            assert_eq!(actual.changed, raw != expected);
-            assert_eq!(actual.effect_scope, "ability_persistent_stage");
-            assert_eq!(actual.rng_seed, seed);
-            if seed.is_some() {
-                assert_eq!(
-                    actual.rng_after,
-                    Some(row["rng_after"].as_u64().unwrap() as u32)
-                );
-            }
-            assert_eq!(actual.before.ot_id, actual.after.ot_id);
-            assert_eq!(actual.before.ivs, actual.after.ivs);
-            assert_eq!(actual.before.evs, actual.after.evs);
-            assert_eq!(actual.before.moves, actual.after.moves);
-            assert_eq!(save.data, old);
-            changed_pids += usize::from(actual.before.pid != actual.after.pid);
-            identity_differences += usize::from(
-                actual.before.nature != actual.after.nature
-                    || actual.before.gender != actual.after.gender
-                    || actual.before.shiny != actual.after.shiny,
-            );
-            if !actual.native_no_effect {
-                let native_target = if key == "ROCKET" {
-                    rom.species(actual.before.species).unwrap().abilities
-                        [row["target"].as_u64().unwrap() as usize]
-                } else if key == "ULTIMATE" {
-                    let target = row["target"].as_u64().unwrap() as usize;
-                    rom.species(actual.before.species).unwrap().abilities
-                        [if target >= 2 { 2 } else { target }]
-                } else {
-                    row["target"].as_u64().unwrap() as u16
-                };
-                assert_eq!(actual.ability_target, Some(native_target));
-                if key == "ROCKET" {
-                    let patch = PokemonPatch {
-                        ability_slot: Some(row["target"].as_u64().unwrap() as u8),
-                        ..Default::default()
-                    };
-                    assert_eq!(
-                        pokemon::edit(&raw, &patch, &rom, Policy::Standard)
-                            .unwrap()
-                            .0,
-                        expected
-                    );
-                    assert_eq!(
-                        pokemon::edit(&raw[..80], &patch, &rom, Policy::Standard)
-                            .unwrap()
-                            .0,
-                        expected[..80]
-                    );
-                    editor_matches += 1;
-                }
-                if key == "ULTIMATE" && actual.after.ability_id != 0 {
-                    let patch = PokemonPatch {
-                        ability_slot: Some(actual.after.ability_slot),
-                        ..Default::default()
-                    };
-                    assert_eq!(
-                        pokemon::edit(&raw[..80], &patch, &rom, Policy::Standard)
-                            .unwrap()
-                            .0,
-                        expected[..80]
-                    );
-                    editor_matches += 1;
-                }
-            } else {
-                assert!(actual.ability_target.is_none());
-            }
-        }
-        let item = catalog.ability_items[0].item;
-        for seeded in catalog.ability_items.iter().filter(|o| o.requires_rng_seed) {
-            assert_eq!(
-                rom.training_preview(
-                    Some(&save),
-                    Request {
-                        expected_rom_md5: rom.profile.md5.into(),
-                        item: seeded.item,
-                        rng_seed: None,
-                        individual: Individual::Stored { location: party() },
-                    }
-                )
-                .unwrap_err()
-                .code,
-                "training_seed_required"
-            );
-        }
-        let invalid = serde_json::json!({"expected_rom_md5":rom.profile.md5,"item":item,"rng_seed":42,
-            "individual":{"kind":"simulated","species":1,"level":5,"evs":[0,0,0,0,0,0],"friendship":70,"ability_slot":4}});
-        assert_eq!(
-            rom.training_preview(None, serde_json::from_value(invalid).unwrap())
-                .unwrap_err()
-                .code,
-            "range"
-        );
-        assert_eq!(crate::binary::sha256(&rom.data), hash);
-        assert_eq!(crate::binary::sha256(&std::fs::read(path).unwrap()), hash);
-        println!("{key}: {} native guards; {} persistent scenarios; {editor_matches} exact existing editor matches (Rocket party/box; Ultimate box only); {changed_pids} changed PIDs; {identity_differences} nature/gender/shiny differences; {sources} parsed item sources, {positioned} map refs; original ROM/SAV unchanged", evidence["guards"].as_array().unwrap().len(), evidence["rows"].as_array().unwrap().len());
-    }
-}
-
-#[test]
-fn training_requests_require_typed_rng_and_ability_scenarios() {
-    let base = serde_json::json!({"expected_rom_md5":"fixture","item":1,
-        "individual":{"kind":"simulated","species":1,"level":5,"evs":[0,0,0,0,0,0],"friendship":70}});
-    let parsed: crate::training::Request = serde_json::from_value(base.clone()).unwrap();
-    assert!(parsed.rng_seed.is_none());
-    for seed in [
-        serde_json::json!(-1),
-        serde_json::json!(4294967296u64),
-        serde_json::json!(0.5),
-        serde_json::json!("42"),
-        serde_json::json!(true),
-    ] {
-        let mut invalid = base.clone();
-        invalid["rng_seed"] = seed;
-        assert!(serde_json::from_value::<crate::training::Request>(invalid).is_err());
-    }
-    for seed in [0u32, u32::MAX] {
-        let mut valid = base.clone();
-        valid["rng_seed"] = serde_json::json!(seed);
-        assert_eq!(
-            serde_json::from_value::<crate::training::Request>(valid)
-                .unwrap()
-                .rng_seed,
-            Some(seed)
-        );
-    }
-    for ability in [
-        serde_json::json!(-1),
-        serde_json::json!(256),
-        serde_json::json!("1"),
-        serde_json::json!(0.5),
-    ] {
-        let mut invalid = base.clone();
-        invalid["individual"]["ability_slot"] = ability;
-        assert!(serde_json::from_value::<crate::training::Request>(invalid).is_err());
-    }
-}
-
-#[test]
-fn crown_services_are_read_only_and_reject_stale_profiles() {
-    use crate::app::{App, Request};
-    let mut app = App {
-        session: Some(Session::new(rom())),
-        ..Default::default()
-    };
-    assert_eq!(
-        app.dispatch(Request {
-            command: "training_services".into(),
-            payload: serde_json::json!({"expected_rom_md5": profile::ROCKET.md5})
-        })
-        .unwrap_err()
-        .code,
-        "rom_mismatch"
-    );
-    let result = app
-        .dispatch(Request {
-            command: "training_services".into(),
-            payload: serde_json::json!({"expected_rom_md5": profile::BW.md5}),
-        })
-        .unwrap();
-    assert_eq!(result["services"], serde_json::json!([]));
-    assert_eq!(result["partial"], true);
-    assert!(app.session.as_ref().unwrap().save.is_none());
-}
-
-#[test]
-#[ignore = "requires five exact private ROMs and GEN3_TRAINING_CROWN_PROBES independent mGBA vectors"]
-fn local_crown_services_match_native_and_isolate_save_progress() {
-    use armv4t_emu::Memory;
-    let vectors: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(std::env::var("GEN3_TRAINING_CROWN_PROBES").unwrap()).unwrap(),
-    )
-    .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
-        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
-        let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
-        let digest = sha256(&rom.data);
-        let report = rom.training_services(None).unwrap();
-        assert!(report.partial);
-        assert_eq!(report.rom_md5, rom.profile.md5);
-        if key == "MERCURY12" {
-            assert_eq!(report.services.len(), 1);
-            assert_eq!(report.services[0].kind, "base_iv_training");
-            continue;
-        }
-        if key != "ULTIMATE" {
-            assert!(
-                report.services.is_empty(),
-                "unverified crown services must not cross profiles"
-            );
-            continue;
-        }
-        assert_eq!(vectors["rom_md5"], rom.profile.md5);
-        assert_eq!(report.services.len(), 1);
-        let service = &report.services[0];
-        assert_eq!(service.minimum_level, 100);
-        assert_eq!(service.choices.len(), 7);
-        assert_eq!(service.locations.len(), 1);
-        let source = &service.locations[0];
-        assert_eq!(
-            (&*source.map_id, source.x, source.y, source.local_id),
-            ("35-28", 3, 39, Some(19))
-        );
-        assert!(service.text[0].contains("满级"));
-        assert!(service.text[3].contains("放入电脑"));
-        for choice in &service.choices {
-            assert_eq!(choice.quantity, 1);
-            assert_eq!(choice.credit.as_ref().unwrap().satisfied, None);
-            assert_eq!(choice.item_requirement.satisfied, None);
-            assert_eq!(choice.item, if choice.menu_index == 0 { 687 } else { 688 });
-            assert_eq!(
-                choice.credit.as_ref().unwrap().condition.id,
-                if choice.menu_index == 0 {
-                    0x40fb
-                } else {
-                    0x40fc
-                }
-            );
-        }
-        // SAVE overlays follow the actual certificate variables, including a
-        // logical-sector boundary; the ROM-only catalogue remains unchanged.
-        let before_report = serde_json::to_value(&report).unwrap();
-        let mut save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
-        for amount in [0, 1, u16::MAX] {
-            let range = rom.profile.event_state.unwrap().variables[0];
-            for id in [0x40fb, 0x40fc] {
-                let mut offset = range.offset + (id - range.first) as usize * 2;
-                for section in 1..=4 {
-                    if offset < save.layout.sizes[section] {
-                        put16(&mut save.data, save.sections[section] + offset, amount);
-                        break;
-                    }
-                    offset -= save.layout.sizes[section];
-                }
-            }
-            let saved = save.data.clone();
-            let overlay = rom.training_services(Some(&save)).unwrap();
-            for choice in &overlay.services[0].choices {
-                assert_eq!(choice.credit.as_ref().unwrap().actual, Some(amount as u32));
-                assert_eq!(choice.credit.as_ref().unwrap().satisfied, Some(amount != 0));
-            }
-            assert_eq!(save.data, saved);
-        }
-        assert_eq!(
-            serde_json::to_value(rom.training_services(None).unwrap()).unwrap(),
-            before_report
-        );
-        let crate::training_services::ServiceRules::Flags(rules) = service.evidence else {
-            panic!("wrong service mechanism");
-        };
-        let party = rom.profile.breeding.unwrap().party;
-        let raw =
-            pokemon::to_party(&pokemon::create(&rom, 25, 1, "", 100, 42).unwrap(), &rom).unwrap();
-        let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
-        for row in vectors["levels"].as_array().unwrap() {
-            let slot = row["slot"].as_u64().unwrap() as u32;
-            let level = row["level"].as_u64().unwrap() as u8;
-            ram.w8(party + slot * 100 + 84, level);
-            ram.w16(rules.selected_individual, slot as u16);
-            ram.w16(rules.selected_individual + 2, 84);
-            ram.call(rules.level_reader, [0; 4], [0; 2], 8192).unwrap();
-            assert_eq!(
-                ram.r16(rules.selected_individual + 2) as u64,
-                row["actual"].as_u64().unwrap()
-            );
-        }
-        assert_eq!(vectors["rows"].as_array().unwrap().len(), 10_752);
-        for row in vectors["rows"].as_array().unwrap() {
-            let slot = row["slot"].as_u64().unwrap() as u32;
-            let header = row["header"].as_u64().unwrap() as u8;
-            let menu = row["menu_index"].as_u64().unwrap() as u8;
-            let mut expected = raw.repeat(6);
-            expected[slot as usize * 100 + 30] = header;
-            for (i, byte) in expected.iter().enumerate() {
-                ram.w8(party + i as u32, *byte);
-            }
-            ram.w16(rules.selected_individual, slot as u16);
-            ram.w16(
-                rules.selected_individual + 2,
-                if menu == 0 { 126 } else { 1 },
-            );
-            if menu != 0 {
-                ram.w8(rules.selected_choice, menu);
-                ram.call(rules.selection_mask, [0; 4], [0; 2], 8192)
-                    .unwrap();
-            }
-            assert_eq!(
-                ram.r16(rules.selected_individual + 2) as u64,
-                row["mask"].as_u64().unwrap()
-            );
-            ram.call(rules.mark, [0; 4], [0; 2], 8192).unwrap();
-            expected[slot as usize * 100 + 30] = row["current"].as_u64().unwrap() as u8;
-            let actual: Vec<u8> = (0..600).map(|i| ram.r8(party + i)).collect();
-            assert_eq!(actual, expected, "unrelated party data changed");
-            assert_eq!(
-                ram.r8(rules.selected_individual + 4) as u64,
-                row["previous"].as_u64().unwrap()
-            );
-            assert_eq!(
-                ram.r8(rules.selected_individual + 6) as u64,
-                row["current"].as_u64().unwrap()
-            );
-        }
-        assert_eq!(sha256(&std::fs::read(path).unwrap()), digest);
-        eprintln!("{key}: 48 native readers, 10,752 native crown mutations, 7 positioned offers and certificate overlays verified");
-    }
-}
-
-#[test]
-#[ignore = "requires exact private Mercury 1.2 ROM and GEN3_MERCURY_CROWN_PROBES independent mGBA vectors"]
-fn local_mercury_crown_services_match_native_fields_and_payment_anomaly() {
-    use armv4t_emu::Memory;
-    let r =
-        Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap()).unwrap();
-    let vectors: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(std::env::var("GEN3_MERCURY_CROWN_PROBES").unwrap()).unwrap(),
-    )
-    .unwrap();
-    let digest = sha256(&r.data);
-    let report = r.training_services(None).unwrap();
-    assert_eq!(report.services.len(), 1);
-    let service = &report.services[0];
-    assert_eq!(service.kind, "base_iv_training");
-    assert_eq!(service.minimum_level, 50);
-    assert_eq!(service.choices.len(), 7);
-    assert_eq!(
-        (
-            &*service.locations[0].map_id,
-            service.locations[0].x,
-            service.locations[0].y,
-            service.locations[0].local_id
-        ),
-        ("46-0", 14, 10, Some(20))
-    );
-    assert_eq!(service.conditions[0].condition.id, 0xb15);
-    assert_eq!(service.conditions[0].satisfied, None);
-    for choice in &service.choices {
-        assert!(choice.credit.is_none());
-        assert_eq!(choice.item, if choice.menu_index == 0 { 640 } else { 639 });
-        assert_eq!(choice.payment.item, 640);
-        assert_eq!(choice.payment.before_stat_selection, choice.menu_index != 0);
-        assert!(!choice.payment.result_checked);
-        assert_eq!(
-            choice.stat,
-            (choice.menu_index != 0).then(|| choice.menu_index as usize - 1)
-        );
-    }
-    let crate::training_services::ServiceRules::BaseIvs(rules) = service.evidence else {
-        panic!("wrong mechanism");
-    };
-    let party = r.profile.breeding.unwrap().party;
-    let mut ram = crate::native_trainer::Sandbox::new(&r.data);
-    assert_eq!(vectors["rom_md5"], r.profile.md5);
-    assert_eq!(vectors["levels"].as_array().unwrap().len(), 216);
-    assert_eq!(vectors["rows"].as_array().unwrap().len(), 1512);
-    let array = |row: &serde_json::Value, name: &str| {
-        row[name]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|v| v.as_u64().unwrap() as u8)
-            .collect::<Vec<_>>()
-    };
-    for row in vectors["levels"].as_array().unwrap() {
-        let slot = row["slot"].as_u64().unwrap() as u32;
-        let raw = array(row, "before").repeat(6);
-        for (i, byte) in raw.iter().enumerate() {
-            ram.w8(party + i as u32, *byte);
-        }
-        ram.w16(rules.selected_individual, slot as u16);
-        ram.call(rules.level_reader, [0; 4], [0; 2], 100_000)
-            .unwrap();
-        assert_eq!(
-            ram.r16(rules.selected_individual + 4) as u64,
-            row["actual"].as_u64().unwrap()
-        );
-        assert_eq!((0..600).map(|i| ram.r8(party + i)).collect::<Vec<_>>(), raw);
-        for (branch, check_at) in rules.level_checks.iter().enumerate() {
-            for (op, at) in [(0x21u32, *check_at), (0x06, *check_at + 5)] {
-                let entry = crate::binary::u32(&r.data, 0x15f9b4 + op as usize * 4).unwrap() & !1;
-                ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
-                ram.call(entry, [0x02010000, 0, 0, 0], [0; 2], 100_000)
-                    .unwrap();
-            }
-            assert_eq!(
-                ram.r32(0x02010008) == 0x08000000 + *check_at as u32 + 11,
-                row["accepted"][branch].as_bool().unwrap()
-            );
-        }
-    }
-    for row in vectors["rows"].as_array().unwrap() {
-        let slot = row["slot"].as_u64().unwrap() as u32;
-        let mut raw = array(row, "before").repeat(6);
-        for (i, byte) in raw.iter().enumerate() {
-            ram.w8(party + i as u32, *byte);
-        }
-        ram.w16(rules.selected_individual - 2, 0);
-        ram.w16(rules.selected_individual, slot as u16);
-        ram.w16(
-            rules.selected_individual + 2,
-            row["selector"].as_u64().unwrap() as u16,
-        );
-        ram.w16(rules.selected_individual + 4, 31);
-        ram.call(rules.setter, [0; 4], [0; 2], 100_000).unwrap();
-        raw[slot as usize * 100..slot as usize * 100 + 100].copy_from_slice(&array(row, "after"));
-        assert_eq!((0..600).map(|i| ram.r8(party + i)).collect::<Vec<_>>(), raw);
-    }
-
-    for slot in vectors["invalid_slots"].as_array().unwrap() {
-        let before: Vec<u8> = (0..600).map(|i| ram.r8(party + i)).collect();
-        ram.w16(rules.selected_individual, slot.as_u64().unwrap() as u16);
-        ram.w16(rules.selected_individual + 2, 6);
-        ram.w16(rules.selected_individual + 4, 31);
-        ram.call(rules.setter, [0; 4], [0; 2], 100_000).unwrap();
-        assert_eq!(
-            (0..600).map(|i| ram.r8(party + i)).collect::<Vec<_>>(),
-            before
-        );
-        ram.call(rules.level_reader, [0; 4], [0; 2], 100_000)
-            .unwrap();
-        assert_eq!(ram.r16(rules.selected_individual + 4), 0);
-    }
-    let mut ram = crate::native_trainer::Sandbox::new(&r.data);
-    ram.w32(0x03005008, 0x02020000);
-    ram.w32(0x0300500c, 0x02030000);
-    let result = ram
-        .call(0x0806e454, [0x800d, 0, 0, 0], [0; 2], 100_000)
-        .unwrap();
-    assert_eq!(vectors["payments"].as_array().unwrap().len(), 32);
-    for row in vectors["payments"].as_array().unwrap() {
-        let silver = row["silver"].as_u64().unwrap() as u16;
-        let gold = row["gold"].as_u64().unwrap() as u16;
-        for i in 0..40 {
-            ram.w8(0x02009000 + i, 0);
-        }
-        ram.w16(0x02009000, 639);
-        ram.w16(0x02009002, silver);
-        ram.w16(0x02009004, 640);
-        ram.w16(0x02009006, gold);
-        ram.w32(0x0203988c, 0x02009000);
-        ram.w16(0x02039890, 10);
-        let branch = usize::from(row["branch"] == "silver");
-        for (op, at, expected) in [
-            (0x47u32, rules.item_checks[branch], "check_result"),
-            (0x45, rules.payments[branch], "remove_result"),
-        ] {
-            let entry = crate::binary::u32(&r.data, 0x15f9b4 + op as usize * 4).unwrap() & !1;
-            ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
-            ram.w16(result, 7);
-            ram.call(entry, [0x02010000, 0, 0, 0], [0; 2], 100_000)
-                .unwrap();
-            assert_eq!(ram.r16(result) as u64, row[expected].as_u64().unwrap());
-        }
-        let mut actual = std::collections::BTreeMap::new();
-        for i in 0..10 {
-            let item = ram.r16(0x02009000 + i * 4);
-            if item != 0 {
-                actual.insert(item.to_string(), ram.r16(0x02009002 + i * 4));
-            }
-        }
-        assert_eq!(serde_json::to_value(actual).unwrap(), row["bag"]);
-    }
-    // Current SAVE unlock overlays are separate from the ROM-only reference.
-    let base_report = serde_json::to_value(&report).unwrap();
-    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
-    let range = r
-        .profile
-        .event_state
-        .unwrap()
-        .flags
-        .iter()
-        .find(|v| 0xb15 >= v.first && 0xb15 - v.first < v.count)
-        .unwrap();
-    assert!(matches!(
-        range.block,
-        crate::event_state::EventBlock::Extensions
-    ));
-    let bit = (0xb15 - range.first) as usize;
-    let logical = range.offset + bit / 8;
-    assert!(logical < 0xff0 - save.layout.sizes[0]);
-    let absolute = save.sections[0] + save.layout.sizes[0] + logical;
-    for set in [false, true] {
-        save.data[absolute] =
-            (save.data[absolute] & !(1 << (bit % 8))) | (u8::from(set) << (bit % 8));
-        let before = save.data.clone();
-        assert_eq!(
-            r.training_services(Some(&save)).unwrap().services[0].conditions[0].satisfied,
-            Some(set)
-        );
-        assert_eq!(save.data, before);
-    }
-
-    let pocket = r
-        .profile
-        .save
-        .pockets
-        .iter()
-        .find(|p| p.category == 1)
-        .unwrap()
-        .id;
-    for amount in [0, 1, 2] {
-        save.edit_bag(
-            pocket,
-            0,
-            if amount == 0 { 0 } else { 639 },
-            amount,
-            &r,
-            Policy::Standard,
-        )
-        .unwrap();
-        let before = save.data.clone();
-        let overlay = r.training_services(Some(&save)).unwrap();
-        assert_eq!(
-            overlay.services[0].choices[1].item_requirement.satisfied,
-            Some(amount >= 1)
-        );
-        assert_eq!(save.data, before);
-    }
-    assert_eq!(
-        serde_json::to_value(r.training_services(None).unwrap()).unwrap(),
-        base_report
-    );
-    assert_eq!(sha256(&r.data), digest);
-}
-
-#[test]
-fn service_previews_reject_unknown_sources_and_stale_identity_without_writes() {
-    use crate::app::{App, Request};
-    let rom = rom();
-    let mut app = App {
-        session: Some(session()),
-        ..Default::default()
-    };
-    let saved = app
-        .session
-        .as_ref()
-        .unwrap()
-        .save
-        .as_ref()
-        .unwrap()
-        .data
-        .clone();
-    let request = |fingerprint: &str| serde_json::json!({"expected_rom_md5":fingerprint,"service_root":1,"choice_index":0,"individual":{"kind":"stored","location":{"kind":"party","slot":0}}});
-    assert_eq!(
-        app.dispatch(Request {
-            command: "training_service_preview".into(),
-            payload: request("stale")
-        })
-        .err()
-        .unwrap()
-        .code,
-        "rom_mismatch"
-    );
-    assert_eq!(
-        app.dispatch(Request {
-            command: "training_service_preview".into(),
-            payload: request(rom.profile.md5)
-        })
-        .err()
-        .unwrap()
-        .code,
-        "training_service_unverified"
-    );
-    assert!(serde_json::from_value::<crate::training_service_preview::Request>(serde_json::json!({"expected_rom_md5":rom.profile.md5,"service_root":null,"choice_index":0,"individual":{"kind":"stored","location":{"kind":"party","slot":0}}})).is_err());
-    assert_eq!(
-        app.session.as_ref().unwrap().save.as_ref().unwrap().data,
-        saved
-    );
-}
-
-#[test]
-#[ignore = "requires five exact ROMs, GEN3_MERCURY_CROWN_PROBES and GEN3_TRAINING_CROWN_PROBES independent native vectors"]
-fn local_service_previews_match_native_and_keep_reference_save_read_only() {
-    use crate::training::Individual;
-    use crate::training_service_preview::Request;
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
-        let rom =
-            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
-                .unwrap();
-        let hash = sha256(&rom.data);
-        let mut save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
-        let report = rom.training_services(None).unwrap();
-        if !matches!(key, "ULTIMATE" | "MERCURY12") {
-            assert!(report.services.is_empty());
-            assert_eq!(
-                rom.training_service_preview(
-                    None,
-                    Request {
-                        expected_rom_md5: rom.profile.md5.into(),
-                        service_root: 1,
-                        choice_index: 0,
-                        individual: Individual::Stored { location: party() }
-                    }
-                )
-                .err()
-                .unwrap()
-                .code,
-                "training_service_unverified"
-            );
-            continue;
-        }
-        let service = &report.services[0];
-        let root = match service.evidence {
-            crate::training_services::ServiceRules::Flags(r) => r.root,
-            crate::training_services::ServiceRules::BaseIvs(r) => r.root,
-        };
-        let at = save.sections[1] + save.layout.party;
-        if key == "MERCURY12" {
-            let vectors: serde_json::Value = serde_json::from_slice(
-                &std::fs::read(std::env::var("GEN3_MERCURY_CROWN_PROBES").unwrap()).unwrap(),
-            )
-            .unwrap();
-            let mut count = 0;
-            for row in vectors["rows"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .filter(|r| r["slot"] == 0)
-            {
-                let before: Vec<u8> = serde_json::from_value(row["before"].clone()).unwrap();
-                let native: Vec<u8> = serde_json::from_value(row["after"].clone()).unwrap();
-                save.data[at..at + 100].copy_from_slice(&before);
-                let old = save.data.clone();
-                let selector = row["selector"].as_u64().unwrap() as u8;
-                let choice_index = if selector == 6 { 0 } else { selector + 1 };
-                let preview = rom
-                    .training_service_preview(
-                        Some(&save),
-                        Request {
-                            expected_rom_md5: rom.profile.md5.into(),
-                            service_root: root,
-                            choice_index,
-                            individual: Individual::Stored { location: party() },
-                        },
-                    )
-                    .unwrap();
-                let level_ok = before[84] >= 50;
-                assert_eq!(preview.level_satisfied, level_ok);
-                assert_eq!(preview.raw, if level_ok { native } else { before });
-                assert_eq!(preview.stat_refresh, "immediate");
-                assert_eq!(preview.before.pid, preview.after.pid);
-                assert_eq!(preview.before.ot_id, preview.after.ot_id);
-                assert_eq!(save.data, old);
-                count += 1;
-            }
-            assert_eq!(count, 252);
-        } else {
-            let raw = pokemon::to_party(&pokemon::create(&rom, 25, 1, "", 100, 42).unwrap(), &rom)
-                .unwrap();
-            for level in [99, 100] {
-                for header in [0, 1, 0x56, 0xff] {
-                    for choice in &service.choices {
-                        let mut before = raw.clone();
-                        before[30] = header;
-                        before[84] = level;
-                        save.data[at..at + 100].copy_from_slice(&before);
-                        let old = save.data.clone();
-                        let preview = rom
-                            .training_service_preview(
-                                Some(&save),
-                                Request {
-                                    expected_rom_md5: rom.profile.md5.into(),
-                                    service_root: root,
-                                    choice_index: choice.menu_index,
-                                    individual: Individual::Stored { location: party() },
-                                },
-                            )
-                            .unwrap();
-                        let mut expected = before;
-                        if level >= 100 {
-                            expected[30] |= choice.mask;
-                        }
-                        assert_eq!(preview.raw, expected);
-                        assert_eq!(preview.stat_refresh, "deferred");
-                        assert_eq!(preview.before.ivs, preview.after.ivs);
-                        assert_eq!(preview.party_stats_before, preview.party_stats_after);
-                        assert_eq!(save.data, old);
-                    }
-                }
-            }
-        }
-        // ROM-only simulations and boxed individuals share preparation semantics.
-        for level in [service.minimum_level as u8 - 1, service.minimum_level as u8] {
-            let preview = rom
-                .training_service_preview(
-                    None,
-                    Request {
-                        expected_rom_md5: rom.profile.md5.into(),
-                        service_root: root,
-                        choice_index: 0,
-                        individual: Individual::Simulated {
-                            species: 25,
-                            level,
-                            evs: [0; 6],
-                            friendship: 70,
-                            ivs: Some([13; 6]),
-                            nature_override: None,
-                            ability_slot: None,
-                        },
-                    },
-                )
-                .unwrap();
-            assert_eq!(preview.before.ivs, [13; 6]);
-            assert!(!preview.withdrawal_required);
-            assert_eq!(
-                preview.level_satisfied,
-                level >= service.minimum_level as u8
-            );
-            assert_eq!(
-                preview.known_requirements_met,
-                if level < service.minimum_level as u8 {
-                    Some(false)
-                } else {
-                    None
-                }
-            );
-        }
-        let boxed = pokemon::create(&rom, 25, 1, "", service.minimum_level as u8, 42).unwrap();
-        let loc = Location::Box {
-            box_index: 0,
-            slot: 0,
-        };
-        save.insert(loc, &boxed, &rom).unwrap();
-        let old = save.data.clone();
-        let preview = rom
-            .training_service_preview(
-                Some(&save),
-                Request {
-                    expected_rom_md5: rom.profile.md5.into(),
-                    service_root: root,
-                    choice_index: 0,
-                    individual: Individual::Stored { location: loc },
-                },
-            )
-            .unwrap();
-        assert_eq!(preview.party_state, "boxed_full_hp_scenario");
-        assert!(preview.withdrawal_required);
-        assert_eq!(save.data, old);
-        assert_eq!(
-            rom.training_service_preview(
-                Some(&save),
-                Request {
-                    expected_rom_md5: rom.profile.md5.into(),
-                    service_root: root,
-                    choice_index: 7,
-                    individual: Individual::Stored { location: loc }
-                }
-            )
-            .err()
-            .unwrap()
-            .code,
-            "training_service_choice"
-        );
-        assert_eq!(sha256(&rom.data), hash);
-    }
-}
-
-#[test]
-#[ignore = "requires five exact ROMs and GEN3_TRAINING_SERVICE_MENU_PROBES independent native evidence"]
-fn local_training_service_menus_match_native_input_decisions() {
-    use armv4t_emu::Memory;
-    let vectors: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(std::env::var("GEN3_TRAINING_SERVICE_MENU_PROBES").unwrap()).unwrap(),
-    )
-    .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
-        let rom =
-            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
-                .unwrap();
-        let digest = sha256(&rom.data);
-        let report = rom.training_services(None).unwrap();
-        if !matches!(key, "ULTIMATE" | "MERCURY12") {
-            assert!(report.services.is_empty());
-            continue;
-        }
-        let v = &vectors[key];
-        assert_eq!(v["md5"], rom.profile.md5);
-        let rule = &v["rules"];
-        let number = |name: &str| rule[name].as_u64().unwrap() as u32;
-        let menus = &report.services[0].menus;
-        assert_eq!(menus.len(), if key == "MERCURY12" { 2 } else { 1 });
-        for entry in v["entries"].as_array().unwrap() {
-            let at = entry["command"].as_u64().unwrap() as usize;
-            let menu = menus.iter().find(|m| m.command == at).unwrap();
-            let params: Vec<u32> = entry["params"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|v| v.as_u64().unwrap() as u32)
-                .collect();
-            assert_eq!(menu.cancel_with_b, params[3] & number("ignore_b_mask") == 0);
-            assert_eq!(menu.payment_precedes_menu, menu.stage == "stat_choice");
-            assert_eq!(menu.single_stat_only, menu.stage == "stat_choice");
-            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
-            ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
-            let entry = u32(&rom.data, number("commands") as usize + 0x6f * 4).unwrap() & !1;
-            let regs = ram
-                .observe(
-                    entry,
-                    [0x02010000, 0, 0, 0],
-                    [0; 2],
-                    10_000,
-                    number("menu_entry"),
-                )
-                .unwrap();
-            assert_eq!(regs[..4], params);
-        }
-        assert_eq!(
-            v["rows"].as_array().unwrap().len(),
-            if key == "MERCURY12" { 32 } else { 28 }
-        );
-        for row in v["rows"].as_array().unwrap() {
-            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
-            let flags = row["params"][3].as_u64().unwrap() as u32;
-            let id = row["params"][2].as_u64().unwrap() as u32;
-            let count = row["count"].as_u64().unwrap() as u32;
-            ram.call(
-                number("create"),
-                [flags & number("ignore_b_mask"), count, 0, id],
-                [0; 2],
-                100_000,
-            )
-            .unwrap();
-            assert_eq!(ram.r8(number("tasks") + 4), 1);
-            assert_eq!(
-                ram.r16(number("tasks") + 16),
-                (flags & number("ignore_b_mask")) as u16
-            );
-            for _ in 0..row["startup_ticks"].as_u64().unwrap() {
-                ram.call(number("callback"), [0; 4], [0; 2], 100_000)
-                    .unwrap();
-            }
-            assert_eq!(ram.r8(number("delay")), 0);
-            ram.w8(number("cursor") + 2, row["cursor"].as_u64().unwrap() as u8);
-            ram.w8(number("cursor") + 11, 1);
-            ram.w16(number("keys"), row["keys"].as_u64().unwrap() as u16);
-            ram.w16(number("result"), 255);
-            let regs = ram
-                .observe(
-                    number("callback"),
-                    [0; 4],
-                    [0; 2],
-                    100_000,
-                    row["stop"].as_u64().unwrap() as u32,
-                )
-                .unwrap();
-            if row["kind"] == "selected" {
-                assert_eq!(regs[1], row["cursor"].as_u64().unwrap() as u32);
-            }
-            assert_eq!(ram.r16(number("result")), 255);
-            if row["kind"] == "cancel" {
-                assert_eq!(row["cancel_result"], 127);
-            }
-        }
-        for path in v["cancel_paths"].as_array().unwrap() {
-            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
-            ram.w16(number("result"), 127);
-            for step in path["trace"].as_array().unwrap() {
-                let at = step["command"].as_u64().unwrap() as usize;
-                let op = rom.data[at];
-                assert!(matches!(op, 0x21 | 0x05 | 0x06));
-                let native =
-                    u32(&rom.data, number("commands") as usize + op as usize * 4).unwrap() & !1;
-                ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
-                ram.call(native, [0x02010000, 0, 0, 0], [0; 2], 100_000)
-                    .unwrap();
-                assert_eq!(
-                    ram.r32(0x02010008),
-                    0x08000000 + step["next"].as_u64().unwrap() as u32
-                );
-            }
-            assert_eq!(rom.data[path["dialogue"].as_u64().unwrap() as usize], 0x0f);
-        }
-        assert_eq!(v["transforms"].as_array().unwrap().len(), 256);
-        for row in v["transforms"].as_array().unwrap() {
-            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
-            let flags = row["flags"].as_u64().unwrap() as u32;
-            ram.w32(0x03007e00 + number("transform_local"), flags);
-            let regs = ram
-                .observe(
-                    number("transform_start"),
-                    [0; 4],
-                    [
-                        if number("transform_local") == 0 {
-                            flags
-                        } else {
-                            0
-                        },
-                        0,
-                    ],
-                    1000,
-                    number("transform_stop"),
-                )
-                .unwrap();
-            assert_eq!(
-                regs[number("transform_reg") as usize],
-                row["actual"].as_u64().unwrap() as u32
-            );
-            assert_eq!(
-                row["actual"].as_u64().unwrap() as u32,
-                flags & number("ignore_b_mask")
-            );
-        }
-        assert_eq!(sha256(&rom.data), digest);
-    }
-}
-
-#[test]
-#[ignore = "requires five exact ROMs and GEN3_TRAINING_PARTY_SELECTION_PROBES independent native evidence"]
-fn local_training_party_selection_matches_native_and_keeps_individuals_unchanged() {
-    use armv4t_emu::Memory;
-    let vectors: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(std::env::var("GEN3_TRAINING_PARTY_SELECTION_PROBES").unwrap()).unwrap(),
-    )
-    .unwrap();
-    let mut total = 0;
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
-        let rom =
-            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
-                .unwrap();
-        let digest = sha256(&rom.data);
-        let report = rom.training_services(None).unwrap();
-        if !matches!(key, "ULTIMATE" | "MERCURY12") {
-            assert!(report.services.is_empty());
-            continue;
-        }
-        let v = &vectors[key];
-        assert_eq!(v["md5"], rom.profile.md5);
-        let rules = &v["rules"];
-        let number = |name: &str| rules[name].as_u64().unwrap() as u32;
-        let selection = &report.services[0].selection;
-        assert_eq!(selection.scope, "party");
-        assert!(selection.cancel_with_b);
-        assert!(!selection.rejects_fainted_during_selection);
-        assert!(!selection.rejects_egg_during_selection);
-        assert_eq!(
-            selection.cancel_value,
-            if key == "MERCURY12" { 7 } else { 255 }
-        );
-        for entry in v["entries"].as_array().unwrap() {
-            let at = entry["command"].as_u64().unwrap() as usize;
-            assert!(selection.evidence.commands.contains(&at));
-            assert_eq!(
-                selection.evidence.special_id as u64,
-                entry["special"].as_u64().unwrap()
-            );
-            assert_eq!(
-                selection.evidence.native as u64,
-                entry["native"].as_u64().unwrap()
-            );
-            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
-            ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
-            let handler = u32(&rom.data, number("commands") as usize + 0x25 * 4).unwrap() & !1;
-            ram.observe(
-                handler,
-                [0x02010000, 0, 0, 0],
-                [0; 2],
-                100_000,
-                number("entry"),
-            )
-            .unwrap();
-            // Full fade/task creation and overworld cleanup are independently
-            // observed by mGBA. The stricter core runner checks the native Init
-            // argument prefix only, with explicit zeroed engine context.
-            let regs = ram
-                .observe(
-                    number("init_prefix"),
-                    [number("init_argument"), 0, 0, 0],
-                    [0; 2],
-                    100_000,
-                    number("init"),
-                )
-                .unwrap();
-            assert_eq!(regs[..4], [3, 0, 11, 0]);
-            for (i, value) in entry["callbacks"].as_array().unwrap().iter().enumerate() {
-                assert_eq!(
-                    ram.r32(regs[13] + i as u32 * 4),
-                    value.as_u64().unwrap() as u32
-                );
-            }
-        }
-        assert_eq!(v["rows"].as_array().unwrap().len(), 144);
-        for row in v["rows"].as_array().unwrap() {
-            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
-            let raw: Vec<u8> = row["raw"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|v| v.as_u64().unwrap() as u8)
-                .collect();
-            assert_eq!(raw.len(), 100);
-            let b = rom.profile.breeding.unwrap();
-            ram.w32(b.save_pointers[0], 0x02030000);
-            ram.w32(b.save_pointers[1], 0x02034000);
-            for (i, value) in raw.iter().cycle().take(600).enumerate() {
-                ram.w8(b.party + i as u32, *value);
-            }
-            ram.w8(b.party_count, 6);
-            for (i, value) in [3, row["slot"].as_u64().unwrap() as u8, 0, 11]
-                .iter()
-                .enumerate()
-            {
-                ram.w8(number("menu") + 8 + i as u32, *value);
-            }
-            ram.w16(number("selected"), 88);
-            ram.w16(number("keys"), row["keys"].as_u64().unwrap() as u16);
-            ram.observe(
-                number("input"),
-                [0; 4],
-                [0; 2],
-                100_000,
-                row["stop"].as_u64().unwrap() as u32,
-            )
-            .unwrap();
-            assert_eq!(
-                ram.r16(number("selected")) as u64,
-                row["selection"].as_u64().unwrap()
-            );
-            assert_eq!(
-                ram.r8(number("menu") + 9) as u64,
-                row["menu_slot"].as_u64().unwrap()
-            );
-            if let Some(buffer) = rules["buffer"].as_u64() {
-                if row["decision"] != "waiting" {
-                    ram.observe(
-                        buffer as u32,
-                        [0; 4],
-                        [0; 2],
-                        100_000,
-                        number("buffer_stop"),
-                    )
-                    .unwrap();
-                }
-            }
-            assert_eq!(
-                ram.r16(number("selected")) as u64,
-                row["result"].as_u64().unwrap()
-            );
-            for (i, value) in raw.iter().cycle().take(600).enumerate() {
-                assert_eq!(ram.r8(b.party + i as u32), *value);
-            }
-            total += 1;
-        }
-        for row in v["normalized"].as_array().unwrap() {
-            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
-            ram.w8(number("menu") + 9, row["slot"].as_u64().unwrap() as u8);
-            ram.observe(
-                number("buffer"),
-                [0; 4],
-                [0; 2],
-                100_000,
-                number("buffer_stop"),
-            )
-            .unwrap();
-            assert_eq!(
-                ram.r16(number("selected")) as u64,
-                row["result"].as_u64().unwrap()
-            );
-        }
-        for path in v["paths"].as_array().unwrap() {
-            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
-            ram.w16(number("selected"), path["value"].as_u64().unwrap() as u16);
-            for step in path["trace"].as_array().unwrap() {
-                let at = step["command"].as_u64().unwrap() as usize;
-                let native = u32(
-                    &rom.data,
-                    number("commands") as usize + rom.data[at] as usize * 4,
-                )
-                .unwrap()
-                    & !1;
-                ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
-                ram.call(native, [0x02010000, 0, 0, 0], [0; 2], 100_000)
-                    .unwrap();
-                assert_eq!(
-                    ram.r32(0x02010008),
-                    0x08000000 + step["next"].as_u64().unwrap() as u32
-                );
-            }
-        }
-        assert_eq!(sha256(&rom.data), digest);
-    }
-    assert_eq!(total, 288);
-}
-
-#[test]
-#[ignore = "requires five local exact ROMs; synthetic persistent-state SAV scenarios"]
-fn local_collection_prerequisite_routes_all_profiles() {
-    use crate::{
-        acquisition::{AcquisitionIndex, Target, TargetKind},
-        collection::{CollectionBasis, CollectionPlan, CollectionRegion, CollectionTask},
-        event_dependencies::Index,
-    };
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
-        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
-        let original = std::fs::read(&path).unwrap();
-        let rom = Rom::open(original.clone()).unwrap();
-        let acquisition = AcquisitionIndex::build(&rom).unwrap();
-        let save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
-        let before = save.data.clone();
-        let ids: std::collections::BTreeSet<_> = acquisition
-            .world
-            .map_events
-            .iter()
-            .flat_map(|map| {
-                map.markers
-                    .iter()
-                    .flat_map(|m| &m.rewards)
-                    .chain(&map.unplaced_rewards)
-            })
-            .filter(|reward| {
-                reward
-                    .conditions
-                    .iter()
-                    .any(|c| matches!(c.kind, "flag" | "variable"))
-            })
-            .map(|reward| reward.item)
-            .collect();
-        let mut tasks = Vec::new();
-        for id in ids {
-            let target = Target {
-                kind: TargetKind::Item,
-                id,
-            };
-            let source = acquisition
-                .query(&rom, Some(&save), target.clone())
-                .unwrap()
-                .sources
-                .into_iter()
-                .find(|s| {
-                    s.map_id.is_some()
-                        && s.conditions
-                            .iter()
-                            .any(|c| matches!(c.condition.kind, "flag" | "variable"))
-                });
-            if let Some(source) = source {
-                tasks.push(CollectionTask {
-                    target,
-                    family: vec![],
-                    existing_family_members: vec![],
-                    source: Some(source),
-                    alternatives: 1,
-                    preparation: None,
-                });
-            }
-            if tasks.len() == 3 {
-                break;
-            }
-        }
-        assert!(!tasks.is_empty(), "{key}: no guarded runtime source");
-        let mut plan = CollectionPlan {
-            dex_status: None,
-            entrance_coverage: None,
-            entrance_diagnostics: vec![],
-            prerequisites: None,
-            clock: None,
-            rom_md5: rom.profile.md5,
-            basis: CollectionBasis::Individuals,
-            families: true,
-            owned_count: 0,
-            missing_count: 0,
-            regions: vec![CollectionRegion {
-                region: None,
-                tasks,
-            }],
-            entrances: vec![],
-            breeding_coverage: None,
-            partial: true,
-        };
-        let index = Index::build(&rom, &acquisition.world.maps).unwrap();
-        let graph = index
-            .navigation_graph(&rom, &acquisition.world.maps, Some(&save))
-            .unwrap();
-        let goal_maps = plan
-            .regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .filter_map(|t| t.source.as_ref().and_then(|s| s.map_id.clone()))
-            .collect::<std::collections::BTreeSet<_>>();
-        plan.entrances = crate::navigation::suggestions(&acquisition.world.maps, &graph, goal_maps);
-        for entry in &plan.entrances {
-            let navigation = index
-                .map_navigation(&rom, &acquisition.world.maps, &entry.map_id, Some(&save))
-                .unwrap();
-            assert_eq!(
-                serde_json::to_value(&entry.chains).unwrap(),
-                serde_json::to_value(&navigation.approaches).unwrap(),
-                "{key}: planner/map parity"
-            );
-        }
-        let bundle = index
-            .trace_plan(&rom, &save, &acquisition.world.maps, &plan)
-            .unwrap();
-        assert!(!bundle.routes.is_empty(), "{key}: no prerequisite routes");
-        for route in &bundle.routes {
-            let report = &bundle.reports[route.report_index];
-            assert!(!route.goals.is_empty());
-            assert!(route
-                .goals
-                .iter()
-                .all(|g| g[0] == 0 && g[1] < plan.regions[0].tasks.len()));
-            for candidate in &route.candidates {
-                let writer = &report.writers[candidate.writer_index];
-                for required in &candidate.requires {
-                    let guard = &bundle.reports[*required].condition;
-                    assert!(writer
-                        .conditions
-                        .iter()
-                        .any(|c| c.satisfied != Some(true) && c.condition == guard.condition));
-                }
-                let entry = bundle
-                    .entrances
-                    .iter()
-                    .find(|e| e.map_id == report.writers[candidate.writer_index].reference.map_id)
-                    .unwrap();
-                assert_eq!(
-                    candidate.entry_requires.len(),
-                    entry.chains.len() + entry.unresolved_incoming.len()
-                );
-                for condition in candidate
-                    .entry_requires
-                    .iter()
-                    .flatten()
-                    .map(|i| &bundle.reports[*i].condition.condition)
-                {
-                    assert!(entry
-                        .chains
-                        .iter()
-                        .flatten()
-                        .chain(&entry.unresolved_incoming)
-                        .filter_map(|e| e.script.as_ref())
-                        .flat_map(|s| &s.checks)
-                        .any(|g| g.satisfied != Some(true) && &g.condition == condition));
-                }
-                for untraced in &candidate.untraced_conditions {
-                    assert!(untraced.satisfied != Some(true));
-                    assert!(!bundle
-                        .reports
-                        .iter()
-                        .any(|r| r.condition.condition == untraced.condition));
-                }
-            }
-        }
-        assert_eq!(save.data, before);
-        assert_eq!(rom.data.as_ref(), &original);
-        assert_eq!(std::fs::read(&path).unwrap(), original);
-        println!("{key}: {} runtime goals, {} condition routes, {} candidate events; truncation={} (synthetic SAV, no accessibility claim)",plan.regions[0].tasks.len(),bundle.routes.len(),bundle.routes.iter().map(|r|r.candidates.len()).sum::<usize>(),bundle.truncated);
     }
 }
 
@@ -10581,7 +6600,6 @@ fn text_buffers_keep_reward_parameters_player_checks_and_guarded_map_routes() {
                 .any(|c| c.condition.kind == "player_gender" && c.satisfied.is_none()));
             let acquisition = AcquisitionIndex {
                 wild_cache: Default::default(),
-                breeding_cache: Default::default(),
                 world: crate::world::World {
                     maps: maps.clone(),
                     map_events: vec![events],
@@ -10887,87 +6905,6 @@ fn local_mercury_dex_matches_native_split_banks_and_booted_save() {
     assert_eq!(save.data, original);
 }
 
-#[test]
-fn read_only_dex_planning_distinguishes_history_from_current_individuals() {
-    use crate::{
-        acquisition::AcquisitionIndex,
-        collection::{CollectionBasis, CollectionRequest},
-        world::{TrainerLocationIndex, World},
-    };
-    let r = adapter_rom(crate::mercury::PROFILE);
-    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
-    let base = save.sections[1];
-    let bank = r.profile.save.dex_read.unwrap()[1];
-    let (offset, marker) = bank.initialization.unwrap();
-    put16(&mut save.data, base + offset, marker);
-    save.data[base + bank.owned] = 1;
-    let mut species = (1..=3)
-        .map(|id| r.valid_species(id).unwrap())
-        .collect::<Vec<_>>();
-    for (entry, n) in species.iter_mut().zip([1, 906, 1027]) {
-        entry.dex_number = n;
-    }
-    let index = AcquisitionIndex {
-        wild_cache: Default::default(),
-        breeding_cache: Default::default(),
-        world: World {
-            maps: vec![],
-            map_events: vec![],
-            encounters: vec![],
-            trainers: vec![],
-            trainer_locations: TrainerLocationIndex {
-                locations: vec![],
-                unresolved_maps: vec![],
-            },
-            map_groups: &[],
-        },
-        species,
-        evolutions: Default::default(),
-        learnsets: Default::default(),
-    };
-    let request = |basis| CollectionRequest {
-        basis,
-        families: false,
-        include_unknown_rewards: false,
-    };
-    let original = save.data.clone();
-    let plan = index
-        .collection(&r, &save, request(CollectionBasis::Dex))
-        .unwrap();
-    let goals = plan
-        .regions
-        .iter()
-        .flat_map(|region| &region.tasks)
-        .map(|task| task.target.id)
-        .collect::<Vec<_>>();
-    assert_eq!(goals, [1, 3]);
-    assert_eq!(plan.owned_count, 1);
-    assert!(plan.dex_status.unwrap().read_only);
-    let plan = index
-        .collection(&r, &save, request(CollectionBasis::Individuals))
-        .unwrap();
-    let goals = plan
-        .regions
-        .iter()
-        .flat_map(|region| &region.tasks)
-        .map(|task| task.target.id)
-        .collect::<Vec<_>>();
-    assert_eq!(goals, [2, 3]);
-    assert!(plan.dex_status.is_none());
-    assert_eq!(save.data, original);
-    // Missing initialization projects no extended history, independently of
-    // unchanged nonzero raw bytes. It does not invent currently usable parents.
-    put16(&mut save.data, base + offset, 0);
-    let original = save.data.clone();
-    let plan = index
-        .collection(&r, &save, request(CollectionBasis::Dex))
-        .unwrap();
-    assert_eq!(plan.owned_count, 0);
-    assert_eq!(plan.missing_count, 3);
-    assert_eq!(plan.dex_status.unwrap().uninitialized_ranges.len(), 1);
-    assert_eq!(save.data, original);
-}
-
 /// Set one synthetic legacy record across rotated logical save sectors.
 fn set_legacy_dex_record(save: &mut Save, number: u16, state: u8) {
     let layout = save.layout.dex.unwrap();
@@ -11100,67 +7037,6 @@ fn local_legacy_dex_matches_complete_native_getters() {
 }
 
 #[test]
-fn invalid_native_dex_records_remain_missing_in_collection() {
-    use crate::{
-        acquisition::AcquisitionIndex,
-        collection::{CollectionBasis, CollectionRequest},
-        world::{TrainerLocationIndex, World},
-    };
-    let r = adapter_rom(profile::BW);
-    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
-    // Both raw caught bits are set; only #2 has consistent seen mirrors.
-    set_legacy_dex_record(&mut save, 1, 0b0111);
-    set_legacy_dex_record(&mut save, 2, 0b1111);
-    let mut species = (1..=2)
-        .map(|id| r.valid_species(id).unwrap())
-        .collect::<Vec<_>>();
-    for (n, entry) in species.iter_mut().enumerate() {
-        entry.dex_number = n as u16 + 1;
-    }
-    let index = AcquisitionIndex {
-        wild_cache: Default::default(),
-        breeding_cache: Default::default(),
-        world: World {
-            maps: vec![],
-            map_events: vec![],
-            encounters: vec![],
-            trainers: vec![],
-            trainer_locations: TrainerLocationIndex {
-                locations: vec![],
-                unresolved_maps: vec![],
-            },
-            map_groups: &[],
-        },
-        species,
-        evolutions: Default::default(),
-        learnsets: Default::default(),
-    };
-    let before = save.data.clone();
-    let plan = index
-        .collection(
-            &r,
-            &save,
-            CollectionRequest {
-                basis: CollectionBasis::Dex,
-                families: false,
-                include_unknown_rewards: false,
-            },
-        )
-        .unwrap();
-    assert_eq!((plan.owned_count, plan.missing_count), (1, 1));
-    assert_eq!(plan.dex_status.unwrap().inconsistent_numbers, [1]);
-    assert_eq!(
-        plan.regions
-            .iter()
-            .flat_map(|r| &r.tasks)
-            .map(|t| t.target.id)
-            .collect::<Vec<_>>(),
-        [1]
-    );
-    assert_eq!(save.data, before);
-}
-
-#[test]
 fn scripted_actor_references_keep_initial_tiles_and_unverified_execution_boundaries() {
     use crate::{
         acquisition::{AcquisitionIndex, Target, TargetKind},
@@ -11240,7 +7116,6 @@ fn scripted_actor_references_keep_initial_tiles_and_unverified_execution_boundar
         );
         let index = AcquisitionIndex {
             wild_cache: Default::default(),
-            breeding_cache: Default::default(),
             world: World {
                 maps: vec![map],
                 map_events: vec![report],
@@ -11366,187 +7241,6 @@ fn local_script_movement_operands_match_native_dispatch_and_lifecycle() {
         );
     }
     assert_eq!(cases, 640);
-}
-
-#[test]
-fn paired_fixed_encounters_keep_both_members_unknown_inputs_and_query_links() {
-    use crate::{
-        acquisition::{AcquisitionIndex, Target, TargetKind},
-        script_pokemon::WildCommand,
-    };
-    for p in profile::PROFILES {
-        let (mut r, map) = npc_trade_fixture(p);
-        let pc = 0x26000;
-        let b = std::sync::Arc::make_mut(&mut r.data);
-        b[pc..pc + 24].fill(0);
-        b[pc] = 0xb6;
-        let double = !matches!(p.script_pokemon.wild, WildCommand::Literal);
-        let offsets = if matches!(p.script_pokemon.wild, WildCommand::MercuryDouble) {
-            put16(b, pc + 1, 0xffff);
-            [7, 13]
-        } else {
-            [1, 6]
-        };
-        for (i, off) in offsets.into_iter().enumerate() {
-            put16(b, pc + off, (i + 1) as u16);
-            b[pc + off + 2] = (20 + i) as u8;
-            put16(b, pc + off + 3, (i + 1) as u16);
-        }
-        let len = r.wild_command_length(pc).unwrap();
-        std::sync::Arc::make_mut(&mut r.data)[pc + len] = 2;
-        let original = r.data.clone();
-        let report = r.map_events(&map).unwrap();
-        assert_eq!(report.markers[0].pokemon.len(), if double { 2 } else { 1 });
-        let index = AcquisitionIndex {
-            wild_cache: Default::default(),
-            breeding_cache: Default::default(),
-            world: crate::world::World {
-                maps: vec![map],
-                map_events: vec![report],
-                encounters: vec![],
-                trainers: vec![],
-                trainer_locations: crate::world::TrainerLocationIndex {
-                    locations: vec![],
-                    unresolved_maps: vec![],
-                },
-                map_groups: &[],
-            },
-            species: (1..=3).map(|id| r.valid_species(id).unwrap()).collect(),
-            evolutions: Default::default(),
-            learnsets: Default::default(),
-        };
-        for id in 1..=if double { 2 } else { 1 } {
-            let query = index
-                .query(
-                    &r,
-                    None,
-                    Target {
-                        kind: TargetKind::Species,
-                        id,
-                    },
-                )
-                .unwrap();
-            let s = query.sources.iter().find(|s| s.kind == "static").unwrap();
-            assert_eq!(
-                (s.map_id.as_deref(), s.x, s.y, s.min_level),
-                (Some("0-0"), Some(3), Some(2), Some(19 + id as u8))
-            );
-            assert!(
-                s.partial
-                    && s.status == "unknown"
-                    && s.encounter_percent.is_none()
-                    && s.receipt_flag.is_none()
-            );
-            let item_query = index
-                .query(
-                    &r,
-                    None,
-                    Target {
-                        kind: TargetKind::Item,
-                        id,
-                    },
-                )
-                .unwrap();
-            let held = item_query
-                .sources
-                .iter()
-                .filter(|s| s.kind == "static_held")
-                .collect::<Vec<_>>();
-            assert_eq!(held.len(), 1);
-            assert_eq!(held[0].script_source.as_ref().unwrap().species, id);
-            assert_eq!(
-                (held[0].x, held[0].y, held[0].quantity),
-                (Some(3), Some(2), Some(1))
-            );
-            assert!(held[0]
-                .related
-                .iter()
-                .any(|t| t.kind == TargetKind::Species && t.id == id));
-            assert!(held[0].held_percent.is_none() && held[0].encounter_percent.is_none());
-            assert!(held[0].receipt.is_none() && held[0].partial && held[0].status == "unknown");
-            if double {
-                let group = &s.script_source.as_ref().unwrap().battle_members;
-                assert_eq!(group.len(), 2);
-                assert_eq!(group[1].species, Some(2));
-                assert!(s
-                    .related
-                    .iter()
-                    .any(|t| t.kind == TargetKind::Species && t.id == 3 - id));
-            } else {
-                assert!(s.script_source.as_ref().unwrap().battle_members.is_empty());
-            }
-        }
-        let save = Save::open(save_bytes(&r), p.save).unwrap();
-        let save_before = save.data.clone();
-        for include in [false, true] {
-            let plan = index
-                .collection(
-                    &r,
-                    &save,
-                    crate::collection::CollectionRequest {
-                        basis: crate::collection::CollectionBasis::Individuals,
-                        families: true,
-                        include_unknown_rewards: include,
-                    },
-                )
-                .unwrap();
-            let tasks = plan
-                .regions
-                .iter()
-                .flat_map(|r| &r.tasks)
-                .filter(|t| t.source.as_ref().is_some_and(|s| s.kind == "static_held"))
-                .collect::<Vec<_>>();
-            assert_eq!(
-                tasks.len(),
-                if include {
-                    if double {
-                        2
-                    } else {
-                        1
-                    }
-                } else {
-                    0
-                }
-            );
-            assert!(tasks.iter().all(|t| t.target.kind == TargetKind::Item
-                && t.source.as_ref().unwrap().status == "unknown"));
-        }
-        assert_eq!(save.data, save_before);
-        assert_eq!(r.data, original);
-        if double {
-            // An unresolved Mercury variable must retain its unknown partner,
-            // not fabricate a species. Rocket reads the same operand literally.
-            put16(
-                std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
-                pc + offsets[1],
-                0x8005,
-            );
-            let sources = r
-                .script_pokemon_instruction(pc, |v| (v < 0x4000).then_some(v))
-                .unwrap();
-            assert_eq!(sources.len(), 1);
-            assert_eq!(sources[0].battle_members[1].species, None);
-            // Two identical species are distinct opponents, not duplicate rows.
-            put16(
-                std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
-                pc + offsets[1],
-                1,
-            );
-            let sources = r.script_pokemon_instruction(pc, Some).unwrap();
-            assert_eq!(sources.len(), 2);
-            assert_eq!((sources[0].member, sources[1].member), (0, 1));
-        }
-        let rules = p.event_state.unwrap().effects.unwrap();
-        put32(
-            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
-            rules.commands + 0xb6 * 4,
-            0x08000001,
-        );
-        assert_eq!(
-            r.wild_command_length(pc).unwrap_err().code,
-            "script_wild_dispatch"
-        );
-    }
 }
 
 #[test]
@@ -11796,210 +7490,6 @@ fn local_referenced_static_held_items_match_native_setup_and_collection() {
 }
 
 #[test]
-fn evolution_requirements_link_resources_without_becoming_acquisition_sources() {
-    use crate::acquisition::{AcquisitionIndex, Target, TargetKind};
-    for p in profile::PROFILES {
-        let (mut r, _) = npc_trade_fixture(p);
-        r.profile.species.count = 4;
-        r.profile.evolutions = profile::Table {
-            offset: 0x28000,
-            count: 4,
-            stride: 48,
-        };
-        r.profile.form_families = None;
-        let base = r.profile.evolutions.offset + r.profile.evolutions.stride;
-        let move_method = match r.profile.formats.evolutions {
-            crate::adapter::EvolutionFormat::Cfru => 26,
-            crate::adapter::EvolutionFormat::Ultimate55 => 16,
-            crate::adapter::EvolutionFormat::Expanded => 23,
-            _ => 99,
-        };
-        let battle_method = match r.profile.battle_forms {
-            Some(crate::forms::BattleFormRules::ExpansionEvolutionMethods) => 0xffff,
-            Some(crate::forms::BattleFormRules::UltimateEvolutionMethods) => 250,
-            Some(crate::forms::BattleFormRules::CfruEvolutionMethods) => 0xfd,
-            None => 0,
-        };
-        let bytes = std::sync::Arc::make_mut(&mut r.data);
-        bytes[0x28000..0x280c0].fill(0);
-        for (row, method, param, target) in [
-            (0, 7, 1, 2),
-            (1, 4, 1, 3),
-            (2, move_method, 1, 3),
-            (3, battle_method, 1, 3),
-            (4, 99, 1, 2),
-        ] {
-            put16(bytes, base + row * 8, method);
-            put16(bytes, base + row * 8 + 2, param);
-            put16(bytes, base + row * 8 + 4, target);
-        }
-        if r.profile.formats.evolutions == crate::adapter::EvolutionFormat::Cfru {
-            put16(bytes, base + 40, 36);
-            put16(bytes, base + 42, 1);
-            put16(bytes, base + 44, 2);
-            put16(bytes, base + 46, 2);
-        }
-        let original = r.data.clone();
-        let mut index = AcquisitionIndex {
-            wild_cache: Default::default(),
-            breeding_cache: Default::default(),
-            world: crate::world::World {
-                maps: vec![],
-                map_events: vec![],
-                encounters: vec![],
-                trainers: vec![],
-                trainer_locations: crate::world::TrainerLocationIndex {
-                    locations: vec![],
-                    unresolved_maps: vec![],
-                },
-                map_groups: &[],
-            },
-            species: (1..4).map(|id| r.valid_species(id).unwrap()).collect(),
-            evolutions: (1..4).map(|id| (id, r.evolutions(id).unwrap())).collect(),
-            learnsets: Default::default(),
-        };
-        let save = Save::open(save_bytes(&r), r.profile.save).unwrap();
-        let before = save.data.clone();
-        let item = index
-            .query(
-                &r,
-                Some(&save),
-                Target {
-                    kind: TargetKind::Item,
-                    id: 1,
-                },
-            )
-            .unwrap();
-        assert!(
-            item.sources.is_empty(),
-            "an evolution consumes/uses the resource; it does not supply it"
-        );
-        let compound = r.profile.formats.evolutions == crate::adapter::EvolutionFormat::Cfru;
-        assert_eq!(item.evolution_uses.len(), if compound { 2 } else { 1 });
-        assert!(item
-            .evolution_uses
-            .iter()
-            .all(|e| e.source == 1 && e.evolution.target == 2));
-        assert!(!item
-            .evolution_uses
-            .iter()
-            .any(|e| matches!(e.evolution.condition, "level" | "unknown")));
-        if compound {
-            assert!(item.evolution_uses.iter().any(|e| e
-                .related
-                .iter()
-                .any(|t| t.kind == TargetKind::Item && t.id == 2)));
-        }
-        let moved = index
-            .query(
-                &r,
-                None,
-                Target {
-                    kind: TargetKind::Move,
-                    id: 1,
-                },
-            )
-            .unwrap();
-        assert!(moved.sources.is_empty());
-        assert_eq!(moved.evolution_uses.len(), usize::from(move_method != 99));
-        let incoming = index
-            .query(
-                &r,
-                None,
-                Target {
-                    kind: TargetKind::Species,
-                    id: 2,
-                },
-            )
-            .unwrap();
-        assert!(incoming.sources.iter().any(|s| s.kind == "evolution"
-            && s.related
-                .iter()
-                .any(|t| t.kind == TargetKind::Item && t.id == 1)));
-        let tree = r.species_relations(2).unwrap();
-        assert!(tree.evolutions.iter().any(|e| e.evolution.method == 7
-            && e.related
-                .iter()
-                .any(|t| t.kind == TargetKind::Item && t.id == 1)));
-        assert!(!tree
-            .evolutions
-            .iter()
-            .any(|e| crate::forms::is_battle_method(r.profile.battle_forms, e.evolution.method)));
-        // Typed location conditions also survive the full read-only plan/entrance flow.
-        let (_, mut exterior) = npc_trade_fixture(p);
-        exterior.events = None;
-        exterior.scripts.clear();
-        exterior.map_type = 1;
-        let mut inside = exterior.clone();
-        inside.id = "1-0".into();
-        inside.group = 1;
-        inside.map_type = 4;
-        index.world.maps = vec![exterior, inside];
-        for e in index
-            .evolutions
-            .get_mut(&1)
-            .unwrap()
-            .iter_mut()
-            .filter(|e| e.target == 3)
-        {
-            e.requirements.push(crate::rom::EvolutionRequirement {
-                kind: "map",
-                value: 256,
-            });
-        }
-        let rule = index.evolutions[&1].iter().find(|e| e.target == 3).unwrap();
-        let map_refs = crate::acquisition::evolution_location_maps(rule, &index.world.maps);
-        assert_eq!(
-            map_refs.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(),
-            ["1-0"]
-        );
-        let mut raw_map = rule.clone();
-        raw_map.condition = "map";
-        raw_map.parameter = 256;
-        raw_map.requirements.clear();
-        assert!(
-            crate::acquisition::evolution_location_maps(&raw_map, &index.world.maps).is_empty(),
-            "unverified raw map operands must not acquire meanings"
-        );
-        raw_map.condition = "region";
-        raw_map.parameter = 1;
-        assert_eq!(
-            crate::acquisition::evolution_location_maps(&raw_map, &index.world.maps).len(),
-            2
-        );
-        raw_map.requirements.push(crate::rom::EvolutionRequirement {
-            kind: "outside_region",
-            value: 1,
-        });
-        assert!(
-            crate::acquisition::evolution_location_maps(&raw_map, &index.world.maps).is_empty(),
-            "compound constraints are intersected"
-        );
-        let plan = index
-            .collection(
-                &r,
-                &save,
-                crate::collection::CollectionRequest {
-                    basis: crate::collection::CollectionBasis::Individuals,
-                    families: false,
-                    include_unknown_rewards: false,
-                },
-            )
-            .unwrap();
-        assert!(plan.entrances.iter().any(|entry| entry.map_id == "1-0"));
-        assert!(
-            plan.entrances
-                .iter()
-                .filter(|entry| entry.map_id == "1-0")
-                .all(|entry| entry.chains.is_empty()),
-            "a referenced map without an entrance must not gain an invented route"
-        );
-        assert_eq!(save.data, before);
-        assert_eq!(r.data, original);
-    }
-}
-
-#[test]
 fn extended_evolution_tables_read_current_bytes_and_remain_profile_scoped() {
     for p in [profile::BW, profile::DP] {
         let mut r = adapter_rom(p);
@@ -12223,4 +7713,866 @@ fn local_item_evolutions_match_native_selectors_and_reference_closure() {
     }
     assert_eq!(calls, 3344);
     assert_eq!(gender_calls, 1024);
+}
+
+#[test]
+#[ignore = "requires all five exact ROMs via GEN3_ROM_* and optional GEN3_SAVE_*"]
+fn local_query_acquisition_all_profiles() {
+    use crate::acquisition::{AcquisitionIndex, Target, TargetKind};
+    for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{name}")).unwrap()).unwrap())
+                .unwrap();
+        let index = AcquisitionIndex::build(&r).unwrap();
+        let mut resources = std::collections::BTreeSet::new();
+        let mut resource_edges = [0usize; 3];
+        for rows in index.evolutions.values() {
+            for e in rows {
+                assert!(!crate::forms::is_battle_method(
+                    r.profile.battle_forms,
+                    e.method
+                ));
+                assert_eq!(
+                    crate::binary::u16(&r.data, e.offset + 2).unwrap(),
+                    e.parameter
+                );
+                assert_eq!(crate::binary::u16(&r.data, e.offset + 4).unwrap(), e.target);
+                for target in crate::acquisition::evolution_targets(e) {
+                    let kind = match target.kind {
+                        TargetKind::Item => 0,
+                        TargetKind::Move => 1,
+                        TargetKind::Species => 2,
+                    };
+                    resources.insert((kind, target.id));
+                    resource_edges[kind] += 1;
+                }
+            }
+        }
+        for (kind, id) in &resources {
+            let kind = [TargetKind::Item, TargetKind::Move, TargetKind::Species][*kind].clone();
+            let target = Target { kind, id: *id };
+            let uses = index.evolution_uses(&target);
+            assert!(!uses.is_empty());
+            assert!(uses.iter().all(|row| !row
+                .related
+                .iter()
+                .any(|t| t.kind == target.kind && t.id == target.id)));
+        }
+        for kind in 0..3 {
+            if let Some((_, id)) = resources.iter().find(|(k, _)| *k == kind) {
+                let target = Target {
+                    kind: [TargetKind::Item, TargetKind::Move, TargetKind::Species][kind].clone(),
+                    id: *id,
+                };
+                let expected = index.evolution_uses(&target);
+                let report = index.query(&r, None, target).unwrap();
+                assert_eq!(
+                    serde_json::to_value(&report.evolution_uses).unwrap(),
+                    serde_json::to_value(&expected).unwrap()
+                );
+                assert!(!report.sources.iter().any(|s| s.kind == "evolution_use"));
+                let tree = r.species_relations(expected[0].source).unwrap();
+                for edge in tree.evolutions {
+                    assert_eq!(
+                        serde_json::to_value(&edge.related).unwrap(),
+                        serde_json::to_value(crate::acquisition::evolution_targets(
+                            &edge.evolution
+                        ))
+                        .unwrap()
+                    );
+                }
+            }
+        }
+        eprintln!("{name}: evolution resource references item/move/companion {:?}, {} distinct resources; acquisition uses remain separate",resource_edges,resources.len());
+        let item = index
+            .world
+            .map_events
+            .iter()
+            .flat_map(|m| m.markers.iter())
+            .flat_map(|m| m.rewards.iter())
+            .next()
+            .unwrap()
+            .item;
+        let report = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Item,
+                    id: item,
+                },
+            )
+            .unwrap();
+        assert!(!report.sources.is_empty(), "{name}");
+        assert!(report.sources.iter().all(|s| s.status == "unknown"));
+        for s in report.sources.iter().filter(|s| s.x.is_some()) {
+            let map = index
+                .world
+                .maps
+                .iter()
+                .find(|m| Some(&m.id) == s.map_id.as_ref())
+                .unwrap();
+            // Initial event locations outside a dynamic layout must not be normalized.
+            assert!(s.x.unwrap().abs() < 32767 && map.width > 0);
+        }
+        // A real grass/cave/surf/dive/fishing reference must close the held-item
+        // query, with the independent native chance rather than an orphan species row.
+        let encounter = index
+            .world
+            .encounters
+            .iter()
+            .find(|e| {
+                matches!(
+                    e.method.as_str(),
+                    "grass"
+                        | "cave"
+                        | "surf"
+                        | "dive"
+                        | "rock_smash"
+                        | "old_rod"
+                        | "good_rod"
+                        | "super_rod"
+                ) && r
+                    .species(e.species)
+                    .is_ok_and(|s| s.items.iter().any(|i| *i != 0))
+            })
+            .unwrap();
+        let held = r
+            .species(encounter.species)
+            .unwrap()
+            .items
+            .into_iter()
+            .find(|i| *i != 0)
+            .unwrap();
+        let held_report = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Item,
+                    id: held,
+                },
+            )
+            .unwrap();
+        let held_source = held_report
+            .sources
+            .iter()
+            .find(|s| {
+                s.kind == "wild_held"
+                    && s.map_id.as_deref() == Some(encounter.map_id.as_str())
+                    && s.related
+                        .iter()
+                        .any(|t| t.kind == TargetKind::Species && t.id == encounter.species)
+            })
+            .unwrap();
+        assert!(
+            held_source
+                .held_percent
+                .is_some_and(|p| p > 0.0 && p <= 100.0),
+            "{name}"
+        );
+        assert!(held_source.held_context.is_some());
+        assert_eq!(held_source.encounter_percent, encounter.weight);
+        assert_eq!(
+            held_source.encounter_method.as_deref(),
+            Some(encounter.method.as_str())
+        );
+        assert!(held_source.partial);
+        // Current raw party context belongs to the cache key; no quantity, identity
+        // or unrelated byte can change during a reference query.
+        let synthetic = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let original = synthetic.data.clone();
+        let current = index
+            .query(
+                &r,
+                Some(&synthetic),
+                Target {
+                    kind: TargetKind::Item,
+                    id: held,
+                },
+            )
+            .unwrap();
+        assert!(current
+            .sources
+            .iter()
+            .filter(|s| s.kind == "wild_held")
+            .all(|s| s
+                .held_context
+                .as_ref()
+                .is_some_and(|c| c.current_party.is_some())));
+        assert_eq!(synthetic.data, original);
+        let species = index.world.encounters.first().unwrap().species;
+        let mon = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Species,
+                    id: species,
+                },
+            )
+            .unwrap();
+        assert!(mon.sources.iter().any(|s| s.map_id.is_some()), "{name}");
+        let move_id = index.learnsets.values().flatten().next().unwrap().move_id;
+        assert!(!index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Move,
+                    id: move_id
+                }
+            )
+            .unwrap()
+            .sources
+            .is_empty());
+        let shops = index
+            .world
+            .map_events
+            .iter()
+            .flat_map(|m| m.markers.iter())
+            .flat_map(|m| m.rewards.iter())
+            .filter(|r| r.via == "shop")
+            .count();
+        if let Ok(path) = std::env::var(format!("GEN3_SAVE_{name}")) {
+            let original = std::fs::read(path).unwrap();
+            let save = Save::open(original.clone(), r.profile.save).unwrap();
+            save.validate(&r).unwrap();
+            index
+                .query(
+                    &r,
+                    Some(&save),
+                    Target {
+                        kind: TargetKind::Species,
+                        id: species,
+                    },
+                )
+                .unwrap();
+            assert_eq!(save.data, original);
+        }
+        eprintln!(
+            "{name}: {} species, {shops} shop rows; ROM and SAV query overlays passed",
+            index.species.len()
+        );
+    }
+}
+
+#[test]
+fn evolution_requirements_link_resources_without_becoming_acquisition_sources() {
+    use crate::acquisition::{AcquisitionIndex, Target, TargetKind};
+    for p in profile::PROFILES {
+        let (mut r, _) = npc_trade_fixture(p);
+        r.profile.species.count = 4;
+        r.profile.evolutions = profile::Table {
+            offset: 0x28000,
+            count: 4,
+            stride: 48,
+        };
+        r.profile.form_families = None;
+        let base = r.profile.evolutions.offset + r.profile.evolutions.stride;
+        let move_method = match r.profile.formats.evolutions {
+            crate::adapter::EvolutionFormat::Cfru => 26,
+            crate::adapter::EvolutionFormat::Ultimate55 => 16,
+            crate::adapter::EvolutionFormat::Expanded => 23,
+            _ => 99,
+        };
+        let battle_method = match r.profile.battle_forms {
+            Some(crate::forms::BattleFormRules::ExpansionEvolutionMethods) => 0xffff,
+            Some(crate::forms::BattleFormRules::UltimateEvolutionMethods) => 250,
+            Some(crate::forms::BattleFormRules::CfruEvolutionMethods) => 0xfd,
+            None => 0,
+        };
+        let bytes = std::sync::Arc::make_mut(&mut r.data);
+        bytes[0x28000..0x280c0].fill(0);
+        for (row, method, param, target) in [
+            (0, 7, 1, 2),
+            (1, 4, 1, 3),
+            (2, move_method, 1, 3),
+            (3, battle_method, 1, 3),
+            (4, 99, 1, 2),
+        ] {
+            put16(bytes, base + row * 8, method);
+            put16(bytes, base + row * 8 + 2, param);
+            put16(bytes, base + row * 8 + 4, target);
+        }
+        if r.profile.formats.evolutions == crate::adapter::EvolutionFormat::Cfru {
+            put16(bytes, base + 40, 36);
+            put16(bytes, base + 42, 1);
+            put16(bytes, base + 44, 2);
+            put16(bytes, base + 46, 2);
+        }
+        let original = r.data.clone();
+        let index = AcquisitionIndex {
+            wild_cache: Default::default(),
+            world: crate::world::World {
+                maps: vec![],
+                map_events: vec![],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: crate::world::TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: (1..4).map(|id| r.valid_species(id).unwrap()).collect(),
+            evolutions: (1..4).map(|id| (id, r.evolutions(id).unwrap())).collect(),
+            learnsets: Default::default(),
+        };
+        let save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let before = save.data.clone();
+        let item = index
+            .query(
+                &r,
+                Some(&save),
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        assert!(
+            item.sources.is_empty(),
+            "an evolution consumes/uses the resource; it does not supply it"
+        );
+        let compound = r.profile.formats.evolutions == crate::adapter::EvolutionFormat::Cfru;
+        assert_eq!(item.evolution_uses.len(), if compound { 2 } else { 1 });
+        assert!(item
+            .evolution_uses
+            .iter()
+            .all(|e| e.source == 1 && e.evolution.target == 2));
+        assert!(!item
+            .evolution_uses
+            .iter()
+            .any(|e| matches!(e.evolution.condition, "level" | "unknown")));
+        if compound {
+            assert!(item.evolution_uses.iter().any(|e| e
+                .related
+                .iter()
+                .any(|t| t.kind == TargetKind::Item && t.id == 2)));
+        }
+        let moved = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Move,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        assert!(moved.sources.is_empty());
+        assert_eq!(moved.evolution_uses.len(), usize::from(move_method != 99));
+        let incoming = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Species,
+                    id: 2,
+                },
+            )
+            .unwrap();
+        assert!(incoming.sources.iter().any(|s| s.kind == "evolution"
+            && s.related
+                .iter()
+                .any(|t| t.kind == TargetKind::Item && t.id == 1)));
+        let tree = r.species_relations(2).unwrap();
+        assert!(tree.evolutions.iter().any(|e| e.evolution.method == 7
+            && e.related
+                .iter()
+                .any(|t| t.kind == TargetKind::Item && t.id == 1)));
+        assert!(!tree
+            .evolutions
+            .iter()
+            .any(|e| crate::forms::is_battle_method(r.profile.battle_forms, e.evolution.method)));
+        assert_eq!(save.data, before);
+        assert_eq!(r.data, original);
+    }
+}
+
+#[test]
+fn paired_fixed_encounters_keep_both_members_unknown_inputs_and_query_links() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        script_pokemon::WildCommand,
+    };
+    for p in profile::PROFILES {
+        let (mut r, map) = npc_trade_fixture(p);
+        let pc = 0x26000;
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[pc..pc + 24].fill(0);
+        b[pc] = 0xb6;
+        let double = !matches!(p.script_pokemon.wild, WildCommand::Literal);
+        let offsets = if matches!(p.script_pokemon.wild, WildCommand::MercuryDouble) {
+            put16(b, pc + 1, 0xffff);
+            [7, 13]
+        } else {
+            [1, 6]
+        };
+        for (i, off) in offsets.into_iter().enumerate() {
+            put16(b, pc + off, (i + 1) as u16);
+            b[pc + off + 2] = (20 + i) as u8;
+            put16(b, pc + off + 3, (i + 1) as u16);
+        }
+        let len = r.wild_command_length(pc).unwrap();
+        std::sync::Arc::make_mut(&mut r.data)[pc + len] = 2;
+        let original = r.data.clone();
+        let report = r.map_events(&map).unwrap();
+        assert_eq!(report.markers[0].pokemon.len(), if double { 2 } else { 1 });
+        let index = AcquisitionIndex {
+            wild_cache: Default::default(),
+            world: crate::world::World {
+                maps: vec![map],
+                map_events: vec![report],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: crate::world::TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: (1..=3).map(|id| r.valid_species(id).unwrap()).collect(),
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        for id in 1..=if double { 2 } else { 1 } {
+            let query = index
+                .query(
+                    &r,
+                    None,
+                    Target {
+                        kind: TargetKind::Species,
+                        id,
+                    },
+                )
+                .unwrap();
+            let s = query.sources.iter().find(|s| s.kind == "static").unwrap();
+            assert_eq!(
+                (s.map_id.as_deref(), s.x, s.y, s.min_level),
+                (Some("0-0"), Some(3), Some(2), Some(19 + id as u8))
+            );
+            assert!(
+                s.partial
+                    && s.status == "unknown"
+                    && s.encounter_percent.is_none()
+                    && s.receipt_flag.is_none()
+            );
+            let item_query = index
+                .query(
+                    &r,
+                    None,
+                    Target {
+                        kind: TargetKind::Item,
+                        id,
+                    },
+                )
+                .unwrap();
+            let held = item_query
+                .sources
+                .iter()
+                .filter(|s| s.kind == "static_held")
+                .collect::<Vec<_>>();
+            assert_eq!(held.len(), 1);
+            assert_eq!(held[0].script_source.as_ref().unwrap().species, id);
+            assert_eq!(
+                (held[0].x, held[0].y, held[0].quantity),
+                (Some(3), Some(2), Some(1))
+            );
+            assert!(held[0]
+                .related
+                .iter()
+                .any(|t| t.kind == TargetKind::Species && t.id == id));
+            assert!(held[0].held_percent.is_none() && held[0].encounter_percent.is_none());
+            assert!(held[0].receipt.is_none() && held[0].partial && held[0].status == "unknown");
+            if double {
+                let group = &s.script_source.as_ref().unwrap().battle_members;
+                assert_eq!(group.len(), 2);
+                assert_eq!(group[1].species, Some(2));
+                assert!(s
+                    .related
+                    .iter()
+                    .any(|t| t.kind == TargetKind::Species && t.id == 3 - id));
+            } else {
+                assert!(s.script_source.as_ref().unwrap().battle_members.is_empty());
+            }
+        }
+        let save = Save::open(save_bytes(&r), p.save).unwrap();
+        let save_before = save.data.clone();
+        assert_eq!(save.data, save_before);
+        assert_eq!(r.data, original);
+        if double {
+            // An unresolved Mercury variable must retain its unknown partner,
+            // not fabricate a species. Rocket reads the same operand literally.
+            put16(
+                std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+                pc + offsets[1],
+                0x8005,
+            );
+            let sources = r
+                .script_pokemon_instruction(pc, |v| (v < 0x4000).then_some(v))
+                .unwrap();
+            assert_eq!(sources.len(), 1);
+            assert_eq!(sources[0].battle_members[1].species, None);
+            // Two identical species are distinct opponents, not duplicate rows.
+            put16(
+                std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+                pc + offsets[1],
+                1,
+            );
+            let sources = r.script_pokemon_instruction(pc, Some).unwrap();
+            assert_eq!(sources.len(), 2);
+            assert_eq!((sources[0].member, sources[1].member), (0, 1));
+        }
+        let rules = p.event_state.unwrap().effects.unwrap();
+        put32(
+            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+            rules.commands + 0xb6 * 4,
+            0x08000001,
+        );
+        assert_eq!(
+            r.wild_command_length(pc).unwrap_err().code,
+            "script_wild_dispatch"
+        );
+    }
+}
+
+#[test]
+fn script_passages_keep_guards_native_coordinate_width_and_rom_bound_state() {
+    use crate::event_dependencies::Index;
+    for profile in profile::PROFILES {
+        let (mut r, map) = npc_trade_fixture(profile);
+        let rules = r.profile.event_state.unwrap().effects.unwrap();
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        for (opcode, handler) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
+            .into_iter()
+            .zip(rules.handlers)
+        {
+            put32(
+                b,
+                rules.commands + opcode as usize * 4,
+                0x08000001 + handler as u32,
+            );
+        }
+        for (opcode, handler) in [0x39, 0x3a, 0x3b, 0x3d, 0x3e, 0xd1, 0xd7]
+            .into_iter()
+            .zip(rules.warp_handlers)
+        {
+            if handler != 0 {
+                put32(
+                    b,
+                    rules.commands + opcode as usize * 4,
+                    0x08000001 + handler as u32,
+                );
+            }
+        }
+        let root = 0x26000;
+        let branch = 0x26100;
+        // The NPC is hidden by flag 12. Flag 11 selects the passage branch.
+        put16(b, 0x25114, 12);
+        b[root..root + 3].copy_from_slice(&[0x2b, 11, 0]);
+        b[root + 3..root + 5].copy_from_slice(&[6, 1]);
+        put32(b, root + 5, 0x08000000 + branch as u32);
+        // setwarp cannot add a passage, including a seemingly valid destination.
+        b[root + 9..root + 18].copy_from_slice(&[0x3e, 0, 1, 255, 1, 0, 2, 0, 2]);
+        // 256 narrows to zero, 511 to -1. Warp index 0 overrides these coords.
+        b[branch..branch + 5].copy_from_slice(&[0x16, 1, 0x40, 0, 1]);
+        b[branch + 5..branch + 14].copy_from_slice(&[0x3b, 0, 1, 0, 1, 0x40, 255, 1, 2]);
+        // Unreferenced apparent passage must not appear in any map.
+        b[0x26200..0x26209].copy_from_slice(&[0x3b, 0, 1, 255, 1, 0, 2, 0, 2]);
+        b[0x25301] = 1;
+        put32(b, 0x25308, 0x08025400);
+        put16(b, 0x25400, 1);
+        put16(b, 0x25402, 2);
+        b[0x25406..0x25408].fill(255);
+        // A writer inside the destination itself adds a guarded/cyclic clue.
+        // Trace it as an alternative, never as proof that entering is possible.
+        b[0x26400..0x26405].copy_from_slice(&[0x2b, 13, 0, 6, 1]);
+        put32(b, 0x26405, 0x08026500);
+        b[0x26409] = 2;
+        b[0x26500..0x26504].copy_from_slice(&[0x29, 11, 0, 2]);
+        let mut target = map.clone();
+        target.id = "0-1".into();
+        target.map_type = 4;
+        target.events = Some(0x25300);
+        target.scripts = vec![0x26400];
+        let maps = vec![map, target];
+        let original = r.data.clone();
+        let index = Index::build(&r, &maps).unwrap();
+        let rom_only = index.map_navigation(&r, &maps, "0-1", None).unwrap();
+        assert_eq!(rom_only.incoming.len(), 1, "{}", profile.id);
+        let edge = &rom_only.incoming[0];
+        assert_eq!(
+            (edge.x, edge.y, edge.target_x, edge.target_y),
+            (Some(3), Some(2), Some(1), Some(2))
+        );
+        assert_eq!(edge.kind, "script_warp");
+        assert_eq!(edge.offset, branch + 5);
+        assert!(edge.unresolved.is_none());
+        assert_eq!(rom_only.approaches.len(), 1);
+        let script = edge.script.as_ref().unwrap();
+        assert!(script.entry_unresolved);
+        assert_eq!(script.checks.len(), 2);
+        assert!(script.checks.iter().all(|c| c.satisfied.is_none()));
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let before = save.data.clone();
+        let saved = index.map_navigation(&r, &maps, "0-1", Some(&save)).unwrap();
+        assert!(saved.incoming[0]
+            .script
+            .as_ref()
+            .unwrap()
+            .checks
+            .iter()
+            .any(|c| c.condition.id == 11 && c.satisfied == Some(false)));
+        assert_eq!(save.data, before);
+        let range = &profile.event_state.unwrap().flags[0];
+        let bit = (11 - range.first) as usize;
+        let mut main = save.logical(1..=4);
+        main[range.offset + bit / 8] |= 1 << (bit % 8);
+        synthetic_daycare_main(&mut save, &main);
+        let changed = save.data.clone();
+        let saved = index.map_navigation(&r, &maps, "0-1", Some(&save)).unwrap();
+        assert!(saved.incoming[0]
+            .script
+            .as_ref()
+            .unwrap()
+            .checks
+            .iter()
+            .any(|c| c.condition.id == 11 && c.satisfied == Some(true)));
+        assert_eq!(save.data, changed);
+        assert_ne!(save.data, before);
+        let reverse = index.map_navigation(&r, &maps, "0-1", None).unwrap();
+        assert!(
+            reverse
+                .outgoing
+                .iter()
+                .all(|e| e.to.as_deref() != Some("0-0")),
+            "never fabricate a return passage"
+        );
+        assert_eq!(r.data, original);
+        let mut stale = r.clone();
+        std::sync::Arc::make_mut(&mut stale.data)[0] ^= 1;
+        assert_eq!(
+            index
+                .map_navigation(&stale, &maps, "0-1", None)
+                .err()
+                .unwrap()
+                .code,
+            "rom_mismatch"
+        );
+        // Direct coordinates use the native s8 result; unknown variables survive.
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[branch + 8] = 255;
+        let warp = r
+            .script_warp_instruction(branch + 5, |id| {
+                (id == 0x4001)
+                    .then_some(256)
+                    .or_else(|| (id < 0x4000).then_some(id))
+            })
+            .unwrap()
+            .unwrap();
+        assert_eq!((warp.x, warp.y), (Some(0), Some(-1)));
+        let unresolved = r
+            .script_warp_instruction(branch + 5, |id| (id < 0x4000).then_some(id))
+            .unwrap()
+            .unwrap();
+        assert_eq!(unresolved.x, None);
+        assert_eq!(unresolved.y, Some(-1));
+        // An unknown native call invalidates a previously known coordinate.
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[0x26400..0x26413].copy_from_slice(&[
+            0x16, 1, 0x40, 2, 0, 0x23, 0, 0, 0, 8, 0x3b, 0, 1, 255, 1, 0x40, 1, 0, 2,
+        ]);
+        let unknown = r.event_effect_script(0x26400).unwrap();
+        assert_eq!(unknown.warps.len(), 1);
+        assert_eq!(unknown.warps[0].x, None);
+        assert!(unknown.stopped_at.contains(&0x26405));
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        put32(
+            b,
+            rules.commands + 0x3b * 4,
+            0x08000003 + rules.warp_handlers[2] as u32,
+        );
+        assert_eq!(
+            r.script_warp_instruction(branch + 5, Some)
+                .err()
+                .unwrap()
+                .code,
+            "script_warp_dispatch"
+        );
+    }
+}
+
+#[test]
+fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        map_events::{ItemReward, MapEventReport, MapMarker},
+        world::{Map, TrainerLocationIndex, World},
+    };
+    for profile in profile::PROFILES {
+        let r = adapter_rom(profile);
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let range = profile.event_state.unwrap().flags[0];
+        // Every adapter has a verified SB1 flag 1; the actual logical offset differs.
+        let mut offset = range.offset;
+        for section in 1..=4 {
+            if offset < save.layout.sizes[section] {
+                save.data[save.sections[section] + offset] |= 2;
+                break;
+            }
+            offset -= save.layout.sizes[section];
+        }
+        let before = save.data.clone();
+        let map = Map {
+            id: "0-0".into(),
+            group: 0,
+            number: 0,
+            name: "Synthetic".into(),
+            region: 1,
+            width: 4,
+            height: 4,
+            map_type: 1,
+            header: 0,
+            layout: 0,
+            invalid_events: false,
+            events: None,
+            scripts: vec![],
+            objects: vec![],
+        };
+        let markers = ["hidden", "pickup", "gift"]
+            .into_iter()
+            .map(|kind| MapMarker {
+                id: kind.into(),
+                kind,
+                x: 1,
+                y: 1,
+                elevation: 0,
+                local_id: Some(1),
+                graphics_id: None,
+                movement_type: None,
+                underfoot: None,
+                flag: Some(1),
+                receipt_flag: (kind != "gift").then_some(1),
+                offset: 0,
+                script: None,
+                stopped_at: vec![],
+                pokemon: vec![],
+                teaching: vec![],
+                daycare: vec![],
+                scripted_movements: vec![],
+                rewards: vec![ItemReward {
+                    item: 1,
+                    quantity: Some(1),
+                    offset: 0,
+                    via: kind,
+                    conditions: vec![],
+                    receipt: None,
+                }],
+            })
+            .collect();
+        let index = AcquisitionIndex {
+            wild_cache: std::cell::RefCell::default(),
+            world: World {
+                maps: vec![map],
+                map_events: vec![MapEventReport {
+                    map_id: "0-0".into(),
+                    markers,
+                    unplaced_rewards: vec![],
+                    unplaced_pokemon: vec![],
+                    unplaced_teaching: vec![],
+                    unplaced_daycare: vec![],
+                    unplaced_movements: vec![],
+                    stopped_at: vec![],
+                }],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: vec![],
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        let report = index
+            .query(
+                &r,
+                Some(&save),
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        let hidden = report.sources.iter().find(|s| s.kind == "hidden").unwrap();
+        assert_eq!(
+            (hidden.status, hidden.receipt_flag, hidden.repeatable),
+            ("completed", Some(1), None)
+        );
+        let pickup = report.sources.iter().find(|s| s.kind == "pickup").unwrap();
+        assert_eq!(
+            pickup.status,
+            if profile.event_state.unwrap().pickup_receipt {
+                "completed"
+            } else {
+                "unknown"
+            }
+        );
+        let gift = report.sources.iter().find(|s| s.kind == "gift").unwrap();
+        assert_ne!(gift.status, "completed");
+        assert_eq!(gift.receipt_flag, None);
+        assert_eq!(pickup.repeatable, None);
+        assert_eq!(save.data, before);
+        let without_save = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        assert!(without_save.sources.iter().all(|s| s.status == "unknown"));
+    }
+}
+
+#[test]
+fn removed_reference_commands_have_no_side_effects() {
+    let rom = rom();
+    let original = rom.data.clone();
+    let mut session = Session::new(rom);
+    session.load(save_bytes(&session.rom), None).unwrap();
+    let before = session.save.as_ref().unwrap().data.clone();
+    let mut app = crate::app::App {
+        session: Some(session),
+        ..Default::default()
+    };
+    for command in [
+        "collection",
+        "collection_export",
+        "collection_prerequisites",
+        "event_search",
+        "training_catalog",
+        "training_services",
+        "training_preview",
+        "training_service_preview",
+        "clock_query",
+        "clock_rtc_preview",
+    ] {
+        let error = app
+            .dispatch(crate::app::Request {
+                command: command.into(),
+                payload: serde_json::json!({}),
+            })
+            .unwrap_err();
+        assert_eq!(error.code, "command", "{command}");
+    }
+    let session = app.session.as_ref().unwrap();
+    assert_eq!(session.rom.data, original);
+    assert_eq!(session.save.as_ref().unwrap().data, before);
 }

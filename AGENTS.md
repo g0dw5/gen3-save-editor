@@ -97,3 +97,19 @@ release packaging. Do not bump versions or build release installers implicitly.
 版本号、当前发布状态等具体信息放在工程版本配置和更新日志中，不写入本文件。
 用户要求保持开发版本时，后续改动持续汇总到该未发布版本；明确要求打包前，
 不自行递增版本号或生成发布安装包。
+
+## ROM reference scope
+
+Keep ROM reference as a concise, read-only floating window with Pokémon, moves,
+items, abilities, maps and trainers. Do not reintroduce the removed event-clue,
+collection-planning, clock-simulation or training-preview tabs or their dedicated
+product APIs without a new user request. Preserve their reverse-engineering
+findings in developer address documents. Shared map, encounter, receipt and SAV
+readers remain valid. Use progressive disclosure for conditions and evidence.
+Only adapters with verified difficulty-dependent trainers show a simple difficulty
+selector; use the current SAV party automatically and mark unresolved values.
+
+用户已要求移除事件线索、收集规划、游戏时钟、培育机制四个资料页及专用实现，
+相关逆向知识保存在开发地址文档中，不因早先的任务目标自动重新加入。
+ROM 资料保留六个核心页，条件和技术证据按需展开；已验证的难度差异用简单选择
+与说明表达，动态预览自动使用当前 SAV 同行，未确定的数值不伪装成固定值。

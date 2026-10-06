@@ -51,7 +51,9 @@ def main():
                                  ivs=[0]*6, evs=[0]*6))
             data = dict(trainer_id=trainer['id'], difficulty=scenario['difficulty'],
                         player_max_level=maximum, mons=mons)
+        elif command=='trainer_references': data=dict(rom_md5=catalog['profile']['md5'],trainer_id=req['payload']['trainer_id'],references=[],total_matches=0,next_offset=None,partial=True,coverage={})
         elif command in ('sprite', 'trainer_sprite'): data = {'url': ''}
+        elif command=='acquisition': data=dict(target=req['payload'],sources=[],partial=True,clock=None)
         elif command == 'species':
             data = {'species': species(req['payload']['id']), 'learnset': [], 'encounters': [],
                     'evolutions': [{'method': 4, 'parameter': 90, 'condition': 'level', 'target': 2},
@@ -82,7 +84,7 @@ def main():
             expect(detail).to_contain_text('30%')
             expect(detail).to_contain_text('60')
             assert '987' not in detail.inner_text()
-            detail.locator('summary').click()
+            detail.get_by_text('Developer evidence' if locale == 'en' else '开发者证据',exact=True).click()
             expect(detail.locator('pre')).to_contain_text('987')
             tabs.get_by_role('button', name='Items' if locale == 'en' else '道具', exact=True).click()
             expect(detail.locator('.detail-pairs')).to_contain_text('Medicine' if locale == 'en' else '药品')
@@ -106,18 +108,17 @@ def main():
         page.get_by_role('button', name='ROM reference', exact=True).click()
         dialog = page.get_by_role('dialog', name='ROM reference')
         dialog.locator('.reference-tabs').get_by_role('button', name='Trainers', exact=True).click()
-        modes = dialog.get_by_role('group', name='Difficulty · whole trainer reference')
-        modes.get_by_role('button', name='Standard', exact=True).click()
+        modes = dialog.get_by_label('Difficulty · whole trainer reference')
+        modes.select_option('2')
         expect(dialog.locator('.trainer-mon-card').first).to_contain_text('Lv. 50')
         expect(dialog.locator('.trainer-mode-note')).to_contain_text('without a save')
         expect(dialog.locator('.trainer-ev-manual-row')).to_have_count(0)
-        modes.get_by_role('button', name='Lunatic', exact=True).click()
-        expect(dialog.locator('.trainer-mode-note')).to_contain_text('1530')
+        modes.select_option('4')
+        expect(dialog.locator('.trainer-mode-note')).to_contain_text('Species base stats remain the ROM values')
         dialog.locator('.reference-rows button').filter(has_text='Second trainer').click()
         expect(dialog.locator('.trainer-mode-note')).to_contain_text('Lunatic')
-        expect(dialog.locator('.trainer-mon-card').first).to_contain_text("Enter the player's highest party level")
-        dialog.get_by_label("Player's highest party level").fill('70')
-        expect(dialog.locator('.trainer-mon-card').first).to_contain_text('Lv. 70')
+        expect(dialog.locator('.trainer-mon-card').first).to_contain_text("Needs the highest party level · open a SAV")
+        expect(dialog.locator('.trainer-party input')).to_have_count(0)
         expect(dialog.locator('.trainer-stat-table').first).to_contain_text('0')
         expect(dialog.locator('.reference-rows button').filter(has_text='Second trainer')).to_have_class('selected')
         if os.environ.get('GEN3_UI_SHOTS'):
@@ -128,7 +129,7 @@ def main():
         page.get_by_role('button', name='ROM reference', exact=True).click()
         dialog = page.get_by_role('dialog', name='ROM reference')
         dialog.locator('.reference-tabs').get_by_role('button', name='Trainers', exact=True).click()
-        expect(dialog.get_by_role('group', name='Difficulty · whole trainer reference').get_by_role('button', name='Lunatic')).to_have_attribute('aria-pressed', 'true')
+        expect(dialog.get_by_label('Difficulty · whole trainer reference')).to_have_value('4')
         page.close()
         browser.close()
     assert not errors, errors

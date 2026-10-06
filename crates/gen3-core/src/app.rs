@@ -164,15 +164,8 @@ impl App {
                 let id = serde_json::from_value(p["id"].clone())?;
                 Ok(serde_json::to_value(self.session()?.rom.detail(id)?)?)
             }
-            "event_dependencies" | "event_search" | "trainer_references" => {
+            "event_dependencies" | "trainer_references" => {
                 let expected = required(&p, "expected_rom_md5")?;
-                let search_request = if input.command == "event_search" {
-                    Some(serde_json::from_value::<
-                        crate::event_dependencies::SearchRequest,
-                    >(p.clone())?)
-                } else {
-                    None
-                };
                 let trainer_request = if input.command == "trainer_references" {
                     Some(serde_json::from_value::<
                         crate::event_dependencies::TrainerRequest,
@@ -207,13 +200,6 @@ impl App {
                         request,
                     )?)?);
                 }
-                if let Some(request) = search_request {
-                    return Ok(serde_json::to_value(index.search(
-                        &session.rom,
-                        session.save.as_ref(),
-                        request,
-                    )?)?);
-                }
                 let request = dependency_request.expect("validated dependency request");
                 Ok(serde_json::to_value(index.query(
                     &session.rom,
@@ -221,12 +207,7 @@ impl App {
                     request,
                 )?)?)
             }
-            "world"
-            | "acquisition"
-            | "collection"
-            | "collection_export"
-            | "collection_prerequisites"
-            | "daycare_sources" => {
+            "world" | "acquisition" | "daycare_sources" => {
                 let session = self.session()?;
                 if self
                     .acquisition_cache
@@ -244,55 +225,6 @@ impl App {
                     Ok(serde_json::to_value(
                         index.daycare_sources(&session.rom, session.save.as_ref()),
                     )?)
-                } else if matches!(
-                    input.command.as_str(),
-                    "collection" | "collection_export" | "collection_prerequisites"
-                ) {
-                    #[derive(Deserialize)]
-                    #[serde(deny_unknown_fields)]
-                    struct Input {
-                        expected_rom_md5: String,
-                        query: crate::collection::CollectionRequest,
-                    }
-                    let request = if input.command == "collection" {
-                        serde_json::from_value(p)?
-                    } else {
-                        let request: Input = serde_json::from_value(p)?;
-                        if request.expected_rom_md5 != self.session()?.rom.profile.md5 {
-                            return Err(err("rom_mismatch", request.expected_rom_md5));
-                        }
-                        request.query
-                    };
-                    let session = self.session()?;
-                    if self
-                        .event_dependency_cache
-                        .as_ref()
-                        .is_none_or(|(data, _)| !std::sync::Arc::ptr_eq(data, &session.rom.data))
-                    {
-                        let deps = crate::event_dependencies::Index::build(
-                            &session.rom,
-                            &index.world.maps,
-                        )?;
-                        self.event_dependency_cache = Some((session.rom.data.clone(), deps));
-                    }
-                    let session = self.session()?;
-                    let index = &self.acquisition_cache.as_ref().unwrap().1;
-                    let passages = &self.event_dependency_cache.as_ref().unwrap().1;
-                    let mut plan = index.collection_with_passages(
-                        &session.rom,
-                        session.save_ref()?,
-                        request,
-                        passages,
-                    )?;
-                    if input.command != "collection" {
-                        plan.prerequisites = Some(passages.trace_plan(
-                            &session.rom,
-                            session.save_ref()?,
-                            &index.world.maps,
-                            &plan,
-                        )?);
-                    }
-                    Ok(serde_json::to_value(plan)?)
                 } else {
                     #[derive(Deserialize)]
                     #[serde(deny_unknown_fields)]
@@ -373,52 +305,7 @@ impl App {
                     p.condition,
                 )?)?)
             }
-            "training_services" => {
-                let session = self.session()?;
-                if required(&p, "expected_rom_md5")? != session.rom.profile.md5 {
-                    return Err(err("rom_mismatch", "training services"));
-                }
-                Ok(serde_json::to_value(
-                    session.rom.training_services(session.save.as_ref())?,
-                )?)
-            }
-            "training_catalog" => {
-                let session = self.session()?;
-                if required(&p, "expected_rom_md5")? != session.rom.profile.md5 {
-                    return Err(err("rom_mismatch", "training catalog"));
-                }
-                Ok(serde_json::to_value(session.rom.training_catalog()?)?)
-            }
-            "training_service_preview" => {
-                let session = self.session()?;
-                Ok(serde_json::to_value(
-                    session.rom.training_service_preview(
-                        session.save.as_ref(),
-                        serde_json::from_value(p)?,
-                    )?,
-                )?)
-            }
-            "training_preview" => {
-                let session = self.session()?;
-                Ok(serde_json::to_value(session.rom.training_preview(
-                    session.save.as_ref(),
-                    serde_json::from_value(p)?,
-                )?)?)
-            }
-            "clock_rtc_preview" => {
-                let session = self.session()?;
-                Ok(serde_json::to_value(session.rom.hardware_clock_preview(
-                    session.save.as_ref(),
-                    serde_json::from_value(p)?,
-                )?)?)
-            }
-            "clock_query" => {
-                let session = self.session()?;
-                Ok(serde_json::to_value(session.rom.clock_query_with_save(
-                    session.save.as_ref(),
-                    serde_json::from_value(p)?,
-                )?)?)
-            }
+
             "fishing_spots" => {
                 let s = self.session()?;
                 Ok(serde_json::to_value(s.rom.fishing_spots(s.save.as_ref())?)?)

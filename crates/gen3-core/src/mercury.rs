@@ -156,7 +156,6 @@ pub const PROFILE: Profile = Profile {
         instruction_limit: 1_000_000,
     }),
     hardware_clock: None,
-    training: Some(crate::training::MERCURY),
     clock: Some(crate::clock::ClockRules {
         starts: [4, 8, 17, 20],
         native_predicates: [0x1d20de0, 0x1d20df8, 0x1d20814],

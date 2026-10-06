@@ -4,7 +4,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Search, ArrowUpRight } from "lucide-react";
 import { api } from "./api";
 import { Floating, Sprite, Types } from "./components";
-import { CollectionPanel } from "./CollectionPanel";
 import { AcquisitionPanel } from "./AcquisitionPanel";
 import { MapNavigationPanel } from "./MapNavigationPanel";
 import { MapExplorer } from "./MapExplorer";
@@ -12,9 +11,6 @@ import { TrainerArt } from "./TrainerArt";
 import { TrainerParty } from "./TrainerParty";
 import { SpeciesStats } from "./SpeciesStats";
 import { EvolutionTree } from "./EvolutionTree";
-import { EventCluesPanel } from "./EventCluesPanel";
-import { TrainingPanel } from "./TrainingPanel";
-import { ClockPanel } from "./ClockPanel";
 import { TrainerLocationsPanel } from "./TrainerLocationsPanel";
 import {
   emptyTrainerFilters,
@@ -92,14 +88,6 @@ export function ReferenceWindow({
   const [selected, setSelected] = useState<number | string>(info.selected ?? 1);
   const [mapFocus, setMapFocus] = useState<MapFocus | undefined>();
   const [search, setSearch] = useState("");
-  const [trainingVisited, setTrainingVisited] = useState(false);
-  const [collectionVisited, setCollectionVisited] = useState(false);
-  useEffect(() => {
-    if (tab === "training") setTrainingVisited(true);
-    if (tab === "collection") setCollectionVisited(true);
-  }, [tab]);
-  const [eventMap, setEventMap] = useState("");
-  const [eventOffset, setEventOffset] = useState(0);
   const [navigation, setNavigation] = useState<MapNavigation | null>(null);
   const [history, setHistory] = useState<
     {
@@ -107,8 +95,6 @@ export function ReferenceWindow({
       selected: number | string;
       focus?: MapFocus;
       search: string;
-      eventMap: string;
-      eventOffset: number;
     }[]
   >([]);
   const lastPage = useRef({
@@ -116,8 +102,6 @@ export function ReferenceWindow({
     selected,
     focus: mapFocus,
     search,
-    eventMap,
-    eventOffset,
   });
   const returning = useRef(false);
   useEffect(() => {
@@ -131,10 +115,8 @@ export function ReferenceWindow({
       selected,
       focus: mapFocus,
       search,
-      eventMap,
-      eventOffset,
     };
-  }, [tab, selected, mapFocus, search, eventMap, eventOffset]);
+  }, [tab, selected, mapFocus, search]);
   const goMap = (id: string, focus?: MapFocus) => {
     setMapFocus(focus);
     setTab("maps");
@@ -198,14 +180,9 @@ export function ReferenceWindow({
     () =>
       (tab === "maps"
         ? (world?.maps ?? [])
-        : tab === "collection" ||
-            tab === "events" ||
-            tab === "clock" ||
-            tab === "training"
-          ? []
-          : tab === "trainers"
-            ? (world?.trainers ?? [])
-            : catalog[tab]
+        : tab === "trainers"
+          ? (world?.trainers ?? [])
+          : catalog[tab]
       )
         .filter((row) => row.id !== 0)
         .map((row) =>
@@ -367,17 +344,12 @@ export function ReferenceWindow({
             "abilities",
             "maps",
             "trainers",
-            "events",
-            "collection",
-            "clock",
-            "training",
           ] as RefTab[]
         )
           .filter(
             (key) =>
-              (key !== "training" || !!catalog.profile.training) &&
-              (catalog.profile.capabilities?.world !== false ||
-                !["maps", "trainers", "events"].includes(key)),
+              catalog.profile.capabilities?.world !== false ||
+              !["maps", "trainers"].includes(key),
           )
           .map((key) => (
             <button
@@ -387,7 +359,6 @@ export function ReferenceWindow({
               onClick={() => {
                 setTab(key);
                 setSearch("");
-                setEventOffset(0);
               }}
             >
               {t(key)}
@@ -407,269 +378,222 @@ export function ReferenceWindow({
           setSelected(previous.selected);
           setMapFocus(previous.focus);
           setSearch(previous.search);
-          setEventMap(previous.eventMap);
-          setEventOffset(previous.eventOffset);
+
           setTrainerFilters(emptyTrainerFilters);
         }}
       >
         ← {t("navBack")}
       </button>
-      {(trainingVisited || tab === "training") && (
-        <div className="training-container" hidden={tab !== "training"}>
-          <TrainingPanel
-            key={catalog.profile.md5}
-            catalog={catalog}
-            save={save}
-            onTarget={goTarget}
-            onMap={goMap}
-            onError={onError}
-          />
-        </div>
-      )}
-      {(collectionVisited || tab === "collection") && (
-        <div className="collection-container" hidden={tab !== "collection"}>
-          <CollectionPanel
-            key={catalog.profile.md5}
-            catalog={catalog}
-            maps={world?.maps ?? []}
-            save={save}
-            onTarget={goTarget}
-            onMap={goMap}
-            onError={onError}
-          />
-        </div>
-      )}
-      {tab === "training" || tab === "collection" ? null : tab === "clock" ? (
-        <ClockPanel key={catalog.profile.md5} catalog={catalog} save={save} />
-      ) : tab === "events" ? (
-        <EventCluesPanel
-          trainers={world?.trainers ?? []}
-          catalog={catalog}
-          maps={world?.maps ?? []}
-          search={search}
-          onSearch={setSearch}
-          selected={typeof selected === "string" ? selected : ""}
-          onSelect={setSelected}
-          mapId={eventMap}
-          onMapFilter={setEventMap}
-          onMap={goMap}
-          onTarget={goTarget}
-          offset={eventOffset}
-          setOffset={setEventOffset}
-          onTrainer={(id) => {
-            setTab("trainers");
-            setSelected(id);
-            setSearch("");
-            setTrainerFilters(emptyTrainerFilters);
-          }}
-        />
-      ) : (
-        <div className="reference-layout">
-          <div className="reference-list">
-            <label className="search-field">
-              <Search size={16} />
-              <input
-                aria-label={t(
-                  tab === "trainers" ? "trainerSearchHint" : "search",
-                )}
-                placeholder={t(
-                  tab === "trainers" ? "trainerSearchHint" : "search",
-                )}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </label>
-            {tab === "trainers" && (
-              <div className="trainer-filters">
-                {catalog.profile.id === "ultimate-emerald-55" && (
-                  <fieldset className="trainer-difficulty">
-                    <legend>{t("trainerDifficulty")}</legend>
-                    <div role="group" aria-label={t("trainerDifficulty")}>
-                      {([1, 2, 3, 4] as TrainerDifficulty[]).map((mode) => (
-                        <button
-                          key={mode}
-                          type="button"
-                          className={trainerDifficulty === mode ? "active" : ""}
-                          aria-pressed={trainerDifficulty === mode}
-                          onClick={() => onTrainerDifficulty(mode)}
-                        >
-                          {t(`trainerDifficulty_${mode}`)}
-                        </button>
-                      ))}
-                    </div>
-                  </fieldset>
-                )}
-                {(["role", "location"] as TrainerFacet[]).map(
+      <div className="reference-layout">
+        <div className="reference-list">
+          <label className="search-field">
+            <Search size={16} />
+            <input
+              aria-label={t(
+                tab === "trainers" ? "trainerSearchHint" : "search",
+              )}
+              placeholder={t(
+                tab === "trainers" ? "trainerSearchHint" : "search",
+              )}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
+          {tab === "trainers" && (
+            <div className="trainer-filters">
+              {catalog.profile.id === "ultimate-emerald-55" && (
+                <label className="trainer-filter">
+                  <span>{t("trainerDifficulty")}</span>
+                  <select
+                    value={trainerDifficulty}
+                    onChange={(e) =>
+                      onTrainerDifficulty(
+                        Number(e.target.value) as TrainerDifficulty,
+                      )
+                    }
+                  >
+                    {([1, 2, 3, 4] as TrainerDifficulty[]).map((mode) => (
+                      <option value={mode} key={mode}>
+                        {t(`trainerDifficulty_${mode}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {(["role", "location"] as TrainerFacet[]).map(
+                renderTrainerFilter,
+              )}
+              <details className="trainer-extra-filters">
+                <summary>
+                  {t("trainerMoreFilters")}
+                  {trainerFilters.battle || trainerFilters.level ? " •" : ""}
+                </summary>
+                {(["battle", "level"] as TrainerFacet[]).map(
                   renderTrainerFilter,
                 )}
-                <details className="trainer-extra-filters">
-                  <summary>
-                    {t("trainerMoreFilters")}
-                    {trainerFilters.battle || trainerFilters.level ? " •" : ""}
-                  </summary>
-                  {(["battle", "level"] as TrainerFacet[]).map(
-                    renderTrainerFilter,
+              </details>
+              <div className="trainer-filter-status">
+                <span>
+                  {filtered.length} {t("trainerResults")}
+                </span>
+                {(search || Object.values(trainerFilters).some(Boolean)) && (
+                  <button
+                    className="link-button"
+                    onClick={() => {
+                      setTrainerFilters(emptyTrainerFilters);
+                      setSearch("");
+                    }}
+                  >
+                    {t("trainerResetFilters")}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          <div className="reference-rows">
+            {filtered.map((row) => (
+              <button
+                type="button"
+                key={row.id}
+                className={selected === row.id ? "selected" : ""}
+                onClick={() => {
+                  setSelected(row.id);
+                }}
+              >
+                <span className="id">{row.id}</span>
+                <span>
+                  {row.name}
+                  {tab === "trainers" && (
+                    <small className="trainer-row-context">
+                      <span className="trainer-row-tags">
+                        {trainerEntryById
+                          .get(+row.id)
+                          ?.tags.filter(
+                            (tag) =>
+                              tag.facet === "role" || tag.facet === "location",
+                          )
+                          .map((tag) => (
+                            <span
+                              className={`trainer-tag ${tag.facet}`}
+                              key={`${tag.facet}:${tag.value}`}
+                            >
+                              {tag.label}
+                            </span>
+                          ))}
+                      </span>
+                      <br />
+                      {(row as Opponent).party.some(
+                        (p) => p.level_rule === "party_max",
+                      )
+                        ? t("dynamicLevel")
+                        : `${catalog.profile.id === "ultimate-emerald-55" ? `${t("trainerBaseLevel")} ` : "Lv. "}${Math.min(...(row as Opponent).party.map((p) => p.level))}–${Math.max(...(row as Opponent).party.map((p) => p.level))}`}
+                    </small>
                   )}
-                </details>
-                <div className="trainer-filter-status">
-                  <span>
-                    {filtered.length} {t("trainerResults")}
-                  </span>
-                  {(search || Object.values(trainerFilters).some(Boolean)) && (
+                </span>
+              </button>
+            ))}
+            {!filtered.length && (
+              <p className="muted">
+                {t(
+                  (tab === "maps" || tab === "trainers") && !world
+                    ? "loading"
+                    : "noResults",
+                )}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="reference-detail" ref={detailPane}>
+          <div className="reference-label">
+            <span className="eyebrow">
+              {t("readOnly")} · {catalog.profile.label}
+            </span>
+          </div>
+          {current && (tab !== "trainers" || filtered.length > 0) && (
+            <h2>
+              {current.name} <small>#{current.id}</small>
+            </h2>
+          )}
+          {tab === "species" &&
+            (detail && detail.species.id === speciesId ? (
+              <>
+                <div
+                  className="dex-hero"
+                  draggable={catalog.profile.capabilities?.save_edit !== false}
+                  onDragStart={(e) => drag(e, template())}
+                >
+                  <Sprite catalog={catalog} species={+selected} large />
+                  <div>
+                    <Types catalog={catalog} values={detail.species.types} />
+                    <p className="muted small">
+                      {t(
+                        catalog.profile.capabilities?.save_edit === false
+                          ? "representativeSprite"
+                          : "dragTemplate",
+                      )}
+                    </p>
                     <button
+                      type="button"
                       className="link-button"
+                      disabled={
+                        catalog.profile.capabilities?.save_edit === false
+                      }
+                      onClick={() => onTemplate(template())}
+                    >
+                      {t("pickDestination")}
+                      <ArrowUpRight size={14} />
+                    </button>
+                  </div>
+                </div>
+                <SpeciesStats detail={detail} catalog={catalog} />
+                <div className="detail-pairs">
+                  <span>{t("ability")}</span>
+                  <span>
+                    {[...new Set(detail.species.abilities.filter(Boolean))]
+                      .map((id) => catalog.abilities[id]?.name ?? id)
+                      .join(" / ")}
+                  </span>
+                </div>
+                {fishing?.species === speciesId && (
+                  <div className="fishing-info">
+                    <strong>{t("fishingSpots")}</strong>
+                    <p className="small muted">
+                      {t(
+                        fishing.seed === null
+                          ? "fishingNeedsSave"
+                          : "fishingSource",
+                      )}
+                    </p>
+                    <button
                       onClick={() => {
-                        setTrainerFilters(emptyTrainerFilters);
+                        setTab("maps");
+                        setSelected(fishing.map_id);
                         setSearch("");
                       }}
                     >
-                      {t("trainerResetFilters")}
+                      {t("fishingOpenMap")} · {fishing.map_id}
                     </button>
-                  )}
-                </div>
-              </div>
-            )}
-            <div className="reference-rows">
-              {filtered.map((row) => (
-                <button
-                  type="button"
-                  key={row.id}
-                  className={selected === row.id ? "selected" : ""}
-                  onClick={() => {
-                    setSelected(row.id);
+                  </div>
+                )}
+                <EvolutionTree
+                  detail={detail}
+                  catalog={catalog}
+                  maps={world?.maps ?? []}
+                  onTarget={goTarget}
+                  onMap={goMap}
+                  onNavigate={(id) => {
+                    if (id === speciesId) return;
+                    treeScroll.current = detailPane.current?.scrollTop ?? 0;
+                    goSpecies(id);
                   }}
+                />
+                <details
+                  className="reference-section"
+                  key={`learnset:${speciesId}`}
                 >
-                  <span className="id">{row.id}</span>
-                  <span>
-                    {row.name}
-                    {tab === "trainers" && (
-                      <small className="trainer-row-context">
-                        <span className="trainer-row-tags">
-                          {trainerEntryById
-                            .get(+row.id)
-                            ?.tags.filter(
-                              (tag) =>
-                                tag.facet === "role" ||
-                                tag.facet === "location",
-                            )
-                            .map((tag) => (
-                              <span
-                                className={`trainer-tag ${tag.facet}`}
-                                key={`${tag.facet}:${tag.value}`}
-                              >
-                                {tag.label}
-                              </span>
-                            ))}
-                        </span>
-                        <br />
-                        {(row as Opponent).party.some(
-                          (p) => p.level_rule === "party_max",
-                        )
-                          ? t("dynamicLevel")
-                          : `${catalog.profile.id === "ultimate-emerald-55" ? `${t("trainerBaseLevel")} ` : "Lv. "}${Math.min(...(row as Opponent).party.map((p) => p.level))}–${Math.max(...(row as Opponent).party.map((p) => p.level))}`}
-                      </small>
-                    )}
-                  </span>
-                </button>
-              ))}
-              {!filtered.length && (
-                <p className="muted">
-                  {t(
-                    (tab === "maps" || tab === "trainers") && !world
-                      ? "loading"
-                      : "noResults",
-                  )}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="reference-detail" ref={detailPane}>
-            <div className="reference-label">
-              <span className="eyebrow">
-                {t("readOnly")} · {catalog.profile.label}
-              </span>
-            </div>
-            {current && (tab !== "trainers" || filtered.length > 0) && (
-              <h2>
-                {current.name} <small>#{current.id}</small>
-              </h2>
-            )}
-            {tab === "species" &&
-              (detail && detail.species.id === speciesId ? (
-                <>
-                  <div
-                    className="dex-hero"
-                    draggable={
-                      catalog.profile.capabilities?.save_edit !== false
-                    }
-                    onDragStart={(e) => drag(e, template())}
-                  >
-                    <Sprite catalog={catalog} species={+selected} large />
-                    <div>
-                      <Types catalog={catalog} values={detail.species.types} />
-                      <p className="muted small">
-                        {t(
-                          catalog.profile.capabilities?.save_edit === false
-                            ? "representativeSprite"
-                            : "dragTemplate",
-                        )}
-                      </p>
-                      <button
-                        type="button"
-                        className="link-button"
-                        disabled={
-                          catalog.profile.capabilities?.save_edit === false
-                        }
-                        onClick={() => onTemplate(template())}
-                      >
-                        {t("pickDestination")}
-                        <ArrowUpRight size={14} />
-                      </button>
-                    </div>
-                  </div>
-                  <SpeciesStats detail={detail} catalog={catalog} />
-                  <div className="detail-pairs">
-                    <span>{t("ability")}</span>
-                    <span>
-                      {[...new Set(detail.species.abilities.filter(Boolean))]
-                        .map((id) => catalog.abilities[id]?.name ?? id)
-                        .join(" / ")}
-                    </span>
-                  </div>
-                  {fishing?.species === speciesId && (
-                    <div className="fishing-info">
-                      <strong>{t("fishingSpots")}</strong>
-                      <p className="small muted">
-                        {t(
-                          fishing.seed === null
-                            ? "fishingNeedsSave"
-                            : "fishingSource",
-                        )}
-                      </p>
-                      <button
-                        onClick={() => {
-                          setTab("maps");
-                          setSelected(fishing.map_id);
-                          setSearch("");
-                        }}
-                      >
-                        {t("fishingOpenMap")} · {fishing.map_id}
-                      </button>
-                    </div>
-                  )}
-                  <EvolutionTree
-                    detail={detail}
-                    catalog={catalog}
-                    maps={world?.maps ?? []}
-                    onTarget={goTarget}
-                    onMap={goMap}
-                    onNavigate={(id) => {
-                      if (id === speciesId) return;
-                      treeScroll.current = detailPane.current?.scrollTop ?? 0;
-                      goSpecies(id);
-                    }}
-                  />
-                  <h3>{t("learnset")}</h3>
+                  <summary>
+                    {t("learnset")} · {detail.learnset.length}
+                  </summary>
                   {detail.teaching_list_present === false && (
                     <p className="small muted">{t("missingTeachingList")}</p>
                   )}
@@ -732,92 +656,27 @@ export function ReferenceWindow({
                       </tbody>
                     </table>
                   </div>
-                  <AcquisitionPanel
-                    target={{ kind: "species", id: +selected }}
-                    catalog={catalog}
-                    maps={world?.maps ?? []}
-                    save={save}
-                    onTarget={goTarget}
-                    onMap={goMap}
-                    onError={onError}
-                    onTemplate={onTemplate}
-                  />
-                  <details>
-                    <summary>{t("evidence")}</summary>
-                    <pre>
-                      {JSON.stringify(
-                        {
-                          offset: detail.species.offset,
-                          evolutions: detail.evolutions,
-                          relations: detail.relations,
-                          learnset: detail.learnset,
-                          encounters: detail.encounters,
-                        },
-                        null,
-                        2,
-                      )}
-                    </pre>
-                  </details>
-                </>
-              ) : (
-                <p className="muted">{t("loading")}</p>
-              ))}
-            {tab === "moves" && current && (
-              <>
-                <h3>{t("moveEffectText")}</h3>
-                <p>{(current as Move).description || t("unresolved")}</p>
-                <div className="metric-grid">
-                  {(
-                    ["power", "accuracy", "pp", "priority", "chance"] as const
-                  ).map((k) => (
-                    <div key={k}>
-                      <span>{t(k)}</span>
-                      <strong>
-                        {k === "power" &&
-                        current.id === catalog.profile.hidden_power?.move_id
-                          ? catalog.profile.hidden_power?.formula ===
-                            "gen6_fixed60"
-                            ? "60"
-                            : "30–70"
-                          : k === "accuracy" || k === "chance"
-                            ? (current as Move)[k]
-                              ? `${(current as Move)[k]}%`
-                              : "—"
-                            : k === "power" && !(current as Move).power
-                              ? "—"
-                              : (current as Move)[k]}
-                      </strong>
-                    </div>
-                  ))}
-                </div>
-                <p>
-                  {t("moveCategory")} ·{" "}
-                  {moveCategoryNames[locale][(current as Move).category] ??
-                    t("unresolved")}
-                </p>
-                {current.id === catalog.profile.hidden_power?.move_id ? (
-                  <p className="small muted">
-                    {t(
-                      catalog.profile.hidden_power?.formula === "gen6_fixed60"
-                        ? "hiddenPowerFixedHelp"
-                        : "hiddenPowerReferenceHelp",
-                    )}
-                  </p>
-                ) : (
-                  <Types
-                    catalog={catalog}
-                    values={[(current as Move).move_type]}
-                  />
-                )}
+                </details>
+                <AcquisitionPanel
+                  target={{ kind: "species", id: +selected }}
+                  catalog={catalog}
+                  maps={world?.maps ?? []}
+                  save={save}
+                  onTarget={goTarget}
+                  onMap={goMap}
+                  onError={onError}
+                  onTemplate={onTemplate}
+                />
                 <details>
                   <summary>{t("evidence")}</summary>
                   <pre>
                     {JSON.stringify(
                       {
-                        effect: (current as Move).effect,
-                        target: (current as Move).target,
-                        flags: (current as Move).flags,
-                        offset: (current as Move).offset,
+                        offset: detail.species.offset,
+                        evolutions: detail.evolutions,
+                        relations: detail.relations,
+                        learnset: detail.learnset,
+                        encounters: detail.encounters,
                       },
                       null,
                       2,
@@ -825,10 +684,89 @@ export function ReferenceWindow({
                   </pre>
                 </details>
               </>
-            )}
-            {tab === "moves" && current && (
+            ) : (
+              <p className="muted">{t("loading")}</p>
+            ))}
+          {tab === "moves" && current && (
+            <>
+              <h3>{t("moveEffectText")}</h3>
+              <p>{(current as Move).description || t("unresolved")}</p>
+              <div className="metric-grid">
+                {(
+                  ["power", "accuracy", "pp", "priority", "chance"] as const
+                ).map((k) => (
+                  <div key={k}>
+                    <span>{t(k)}</span>
+                    <strong>
+                      {k === "power" &&
+                      current.id === catalog.profile.hidden_power?.move_id
+                        ? catalog.profile.hidden_power?.formula ===
+                          "gen6_fixed60"
+                          ? "60"
+                          : "30–70"
+                        : k === "accuracy" || k === "chance"
+                          ? (current as Move)[k]
+                            ? `${(current as Move)[k]}%`
+                            : "—"
+                          : k === "power" && !(current as Move).power
+                            ? "—"
+                            : (current as Move)[k]}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+              <p>
+                {t("moveCategory")} ·{" "}
+                {moveCategoryNames[locale][(current as Move).category] ??
+                  t("unresolved")}
+              </p>
+              {current.id === catalog.profile.hidden_power?.move_id ? (
+                <p className="small muted">
+                  {t(
+                    catalog.profile.hidden_power?.formula === "gen6_fixed60"
+                      ? "hiddenPowerFixedHelp"
+                      : "hiddenPowerReferenceHelp",
+                  )}
+                </p>
+              ) : (
+                <Types
+                  catalog={catalog}
+                  values={[(current as Move).move_type]}
+                />
+              )}
+              <details>
+                <summary>{t("evidence")}</summary>
+                <pre>
+                  {JSON.stringify(
+                    {
+                      effect: (current as Move).effect,
+                      target: (current as Move).target,
+                      flags: (current as Move).flags,
+                      offset: (current as Move).offset,
+                    },
+                    null,
+                    2,
+                  )}
+                </pre>
+              </details>
+            </>
+          )}
+          {tab === "moves" && current && (
+            <AcquisitionPanel
+              target={{ kind: "move", id: +selected }}
+              catalog={catalog}
+              maps={world?.maps ?? []}
+              save={save}
+              onTarget={goTarget}
+              onMap={goMap}
+              onError={onError}
+            />
+          )}
+          {tab === "items" && current && (
+            <>
+              <p>{(current as Item).description}</p>
               <AcquisitionPanel
-                target={{ kind: "move", id: +selected }}
+                target={{ kind: "item", id: +selected }}
                 catalog={catalog}
                 maps={world?.maps ?? []}
                 save={save}
@@ -836,90 +774,67 @@ export function ReferenceWindow({
                 onMap={goMap}
                 onError={onError}
               />
-            )}
-            {tab === "items" && current && (
-              <>
-                <p>{(current as Item).description}</p>
-                <AcquisitionPanel
-                  target={{ kind: "item", id: +selected }}
-                  catalog={catalog}
-                  maps={world?.maps ?? []}
-                  save={save}
-                  onTarget={goTarget}
-                  onMap={goMap}
-                  onError={onError}
-                />
-                <div className="detail-pairs">
-                  <span>{t("price")}</span>
-                  <span>{(current as Item).price}</span>
-                  <span>{t("pocket")}</span>
-                  <span>
-                    {itemPocketLabel((current as Item).pocket, catalog, t)}
-                  </span>
-                </div>
-                {(current as Item).tm_move && (
-                  <button
-                    className="link-button"
-                    onClick={() => {
-                      setTab("moves");
-                      setSelected((current as Item).tm_move!);
-                    }}
-                  >
-                    {catalog.moves[(current as Item).tm_move!]?.name}
-                  </button>
-                )}
-              </>
-            )}
-            {tab === "abilities" && current && (
-              <p>{(current as Ability).description}</p>
-            )}
-            {tab === "maps" && current && (
-              <>
+              <div className="detail-pairs">
+                <span>{t("price")}</span>
+                <span>{(current as Item).price}</span>
+                <span>{t("pocket")}</span>
+                <span>
+                  {itemPocketLabel((current as Item).pocket, catalog, t)}
+                </span>
+              </div>
+              {(current as Item).tm_move && (
                 <button
                   className="link-button"
                   onClick={() => {
-                    setEventMap(String(selected));
-                    setEventOffset(0);
-                    setSelected("");
-                    setSearch("");
-                    setTab("events");
+                    setTab("moves");
+                    setSelected((current as Item).tm_move!);
                   }}
                 >
-                  {t("eventCluesOnMap")} ↗
+                  {catalog.moves[(current as Item).tm_move!]?.name}
                 </button>
-                <div className="muted">
-                  {(current as GameMap).width} × {(current as GameMap).height}
-                </div>
-                {mapImage ? (
-                  <MapExplorer
-                    map={current as GameMap}
-                    image={mapImage}
-                    warnings={mapImageWarnings}
-                    report={world?.map_events.find(
-                      (m) => m.map_id === selected,
-                    )}
-                    catalog={catalog}
-                    fishing={fishing?.map_id === selected ? fishing : null}
-                    focus={mapFocus}
-                    navigation={navigation}
-                    onMap={goMap}
-                    onItem={(id) => goTarget({ kind: "item", id })}
-                    onSpecies={(id) => goTarget({ kind: "species", id })}
-                    onMove={(id) => goTarget({ kind: "move", id })}
-                  />
-                ) : mapImageError ? (
-                  <p className="warning-text">{t("mapImageUnavailable")}</p>
-                ) : (
-                  <p className="muted">{t("loading")}</p>
-                )}
-                <MapNavigationPanel
-                  report={navigation}
-                  maps={world?.maps ?? []}
-                  onMap={goMap}
+              )}
+            </>
+          )}
+          {tab === "abilities" && current && (
+            <p>{(current as Ability).description}</p>
+          )}
+          {tab === "maps" && current && (
+            <>
+              <div className="muted">
+                {(current as GameMap).width} × {(current as GameMap).height}
+              </div>
+              {mapImage ? (
+                <MapExplorer
+                  map={current as GameMap}
+                  image={mapImage}
+                  warnings={mapImageWarnings}
+                  report={world?.map_events.find((m) => m.map_id === selected)}
                   catalog={catalog}
-                  onTarget={goTarget}
+                  fishing={fishing?.map_id === selected ? fishing : null}
+                  focus={mapFocus}
+                  navigation={navigation}
+                  onMap={goMap}
+                  onItem={(id) => goTarget({ kind: "item", id })}
+                  onSpecies={(id) => goTarget({ kind: "species", id })}
+                  onMove={(id) => goTarget({ kind: "move", id })}
                 />
-                <h3>{t("mapTrainers")}</h3>
+              ) : mapImageError ? (
+                <p className="warning-text">{t("mapImageUnavailable")}</p>
+              ) : (
+                <p className="muted">{t("loading")}</p>
+              )}
+              <MapNavigationPanel
+                report={navigation}
+                maps={world?.maps ?? []}
+                onMap={goMap}
+                catalog={catalog}
+                onTarget={goTarget}
+              />
+              <details
+                className="reference-section"
+                key={`map-trainers:${selected}`}
+              >
+                <summary>{t("mapTrainers")}</summary>
                 <p className="small muted">{t("trainerMapsHelp")}</p>
                 {world?.trainer_locations.locations
                   .filter((l) => l.map_id === selected)
@@ -940,7 +855,12 @@ export function ReferenceWindow({
                       </button>
                     </div>
                   ))}
-                <h3>{t("encounter")}</h3>
+              </details>
+              <details
+                className="reference-section"
+                key={`encounters:${selected}`}
+              >
+                <summary>{t("encounter")}</summary>
                 {world?.encounters
                   .filter((e) => e.map_id === selected)
                   .map((e, i) => (
@@ -995,127 +915,89 @@ export function ReferenceWindow({
                       </button>
                     </div>
                   ))}
-              </>
-            )}
-            {tab === "trainers" && current && filtered.length > 0 && (
-              <>
-                <TrainerArt
-                  trainer={current as Opponent}
-                  world={world}
-                  catalog={catalog}
-                />
-                <div
-                  className="trainer-context-tags"
-                  aria-label={t("trainerTags")}
-                >
-                  {trainerEntryById.get(+selected)?.tags.map((tag) => (
-                    <button
-                      key={`${tag.facet}:${tag.value}`}
-                      className={`trainer-tag ${tag.facet}`}
-                      title={`${t("trainerFilterBy")} ${tag.label}`}
-                      onClick={() =>
-                        setTrainerFilters((filters) => ({
-                          ...filters,
-                          [tag.facet]: tag.value,
-                        }))
-                      }
-                    >
-                      {tag.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="small muted">{t("trainerTagsHelp")}</p>
-                <h3>{t("trainerMaps")}</h3>
-                <p className="small muted">{t("trainerMapsHelp")}</p>
-                <TrainerLocationsPanel
-                  catalog={catalog}
-                  trainerId={+selected}
-                  onMap={goMap}
-                  onTarget={goTarget}
-                  onEvent={(id, map) => {
-                    setEventMap(map);
-                    setEventOffset(0);
-                    setSelected(id);
-                    setSearch("");
-                    setTab("events");
-                  }}
-                />
-                {world?.trainer_locations.locations
-                  .filter((l) => l.trainer_id === +selected)
-                  .map((l) => (
-                    <div className="reference-line" key={l.map_id}>
-                      <button
-                        className="link-button"
-                        onClick={() => {
-                          setTab("maps");
-                          setSelected(l.map_id);
-                          setSearch("");
-                        }}
-                      >
-                        {l.map_name} ↗
-                      </button>
-                      <details>
-                        <summary>{t("evidence")}</summary>
-                        <code>
-                          {l.battle_offsets
-                            .map((o) => `0x${o.toString(16).toUpperCase()}`)
-                            .join(", ")}
-                        </code>
-                      </details>
-                    </div>
-                  ))}
-                {world &&
-                  !world.trainer_locations.locations.some(
-                    (l) => l.trainer_id === +selected,
-                  ) && <p className="muted">{t("trainerMapsUnknown")}</p>}
-                {!world && <p className="muted">{t("loading")}</p>}
-                {!!(current as Opponent).diagnostics.length && (
-                  <div className="warning-text">
-                    {t("trainerDiagnostics")}
-                    <pre>{(current as Opponent).diagnostics.join("\n")}</pre>
-                  </div>
-                )}
-                <div className="muted small">
-                  {(current as Opponent).party.length} Pokémon · {t("items")}{" "}
-                  {(current as Opponent).items
-                    .filter(Boolean)
-                    .map((id) => catalog.items[id]?.name ?? id)
-                    .join(" / ") || "—"}
-                </div>
-                <details>
-                  <summary>{t("evidence")}</summary>
-                  <pre>
-                    {JSON.stringify(
-                      {
-                        ai_flags: (current as Opponent).ai,
-                        offset: (current as Opponent).offset,
-                      },
-                      null,
-                      2,
-                    )}
-                  </pre>
+              </details>
+            </>
+          )}
+          {tab === "trainers" && current && filtered.length > 0 && (
+            <>
+              <TrainerArt
+                trainer={current as Opponent}
+                world={world}
+                catalog={catalog}
+              />
+              <div
+                className="trainer-context-tags"
+                aria-label={t("trainerTags")}
+              >
+                {trainerEntryById.get(+selected)?.tags.map((tag) => (
+                  <button
+                    key={`${tag.facet}:${tag.value}`}
+                    className={`trainer-tag ${tag.facet}`}
+                    title={`${t("trainerFilterBy")} ${tag.label}`}
+                    onClick={() =>
+                      setTrainerFilters((filters) => ({
+                        ...filters,
+                        [tag.facet]: tag.value,
+                      }))
+                    }
+                  >
+                    {tag.label}
+                  </button>
+                ))}
+              </div>
+              {!!(current as Opponent).diagnostics.length && (
+                <details className="warning-text">
+                  <summary>{t("trainerDiagnostics")}</summary>
+                  <pre>{(current as Opponent).diagnostics.join("\n")}</pre>
                 </details>
-                <TrainerParty
-                  trainer={current as Opponent}
-                  catalog={catalog}
-                  save={save}
-                  difficulty={
-                    catalog.profile.id === "ultimate-emerald-55"
-                      ? trainerDifficulty
-                      : null
-                  }
-                  onSpecies={goSpecies}
-                  onAbility={(id) => {
-                    setTab("abilities");
-                    setSelected(id);
-                    setSearch("");
-                  }}
-                />
-              </>
-            )}
-          </div>
+              )}
+              <div className="muted small">
+                {(current as Opponent).party.length} Pokémon · {t("items")}{" "}
+                {(current as Opponent).items
+                  .filter(Boolean)
+                  .map((id) => catalog.items[id]?.name ?? id)
+                  .join(" / ") || "—"}
+              </div>
+
+              <TrainerParty
+                trainer={current as Opponent}
+                catalog={catalog}
+                save={save}
+                difficulty={
+                  catalog.profile.id === "ultimate-emerald-55"
+                    ? trainerDifficulty
+                    : null
+                }
+                onSpecies={goSpecies}
+                onAbility={(id) => {
+                  setTab("abilities");
+                  setSelected(id);
+                  setSearch("");
+                }}
+              />
+              <TrainerLocationsPanel
+                catalog={catalog}
+                trainerId={+selected}
+                onMap={goMap}
+                onTarget={goTarget}
+              />
+              <details>
+                <summary>{t("evidence")}</summary>
+                <pre>
+                  {JSON.stringify(
+                    {
+                      ai_flags: (current as Opponent).ai,
+                      offset: (current as Opponent).offset,
+                    },
+                    null,
+                    2,
+                  )}
+                </pre>
+              </details>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </Floating>
   );
 }

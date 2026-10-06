@@ -10,6 +10,20 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Simplify ROM reference to six tabs. Remove Event clues, Collection planning,
+  Game time and Training reference, their dedicated UI/helpers and product APIs,
+  collection planner and training/RTC projection implementations. Preserve key
+  addresses and prior verification boundaries in developer research documents.
+- ROM 资料精简为六页；删除事件线索、收集规划、游戏时钟、培育机制及专用调用链，
+  收集规划器、培育预览与 RTC 情景计算转为逆向地址文档。早先未发布条目中的这些
+  页面与命令已撤去，不代表最终产品功能。
+- Collapse long learnsets, conditions and map connections; remove duplicate
+  trainer locations. Ultimate difficulty uses one selector and the current SAV
+  party automatically, with no manual roster, seed or level overrides.
+- 技能表、条件与地图连接按需展开，合并训练家重复位置；究绿仅保留简单难度选择，
+  自动取当前 SAV 同行，区分种族值与难度相关等级／IV／EV。
+  [Cleanup verification / 精简验证](docs/verification/reference-cleanup-20261006.md).
+
 - Read Dark Phantom BW/DP's native seven-row alternate evolution table instead
   of omitting its last two routes. Mercury item-evolution references now include
   the native gender requirement, resolved from current ROM operands. Tree,

@@ -1,4 +1,4 @@
-"""Public fixture: NPC receipt evidence -> map -> planner -> bilingual HTML.
+"""Public fixture: NPC receipt evidence -> map.
 
 Vite/Chrome/Playwright required. No private ROM/SAV or mutation requests.
 """
@@ -25,8 +25,6 @@ def main():
     source = dict(kind='gift',map_id='0-0',region=1,x=1,y=1,underfoot=None,related=[],quantity=1,min_level=None,max_level=None,encounter_percent=None,held_percent=None,periods=[],conditions=[],requirements=[],evolution=None,status='available',receipt_flag=1,receipt=receipt,repeatable=None,offset=100,partial=False,in_scenario=None)
     unknown = source | dict(status='unknown',receipt_flag=None,receipt=None,offset=200,partial=True)
     save = dict(trainer={'name':'TEST'},pokemon=[pokemon(2,dict(kind='party',slot=0))],boxes=[dict(index=i,name=f'Box {i}',count=0,wallpaper=0) for i in range(14)],bag=[],dex=[],active_slot=0,counter=1,backup_valid=True,dirty=False,can_undo=False,can_redo=False,changes=[])
-    tasks = [dict(target=dict(kind='item',id=1),family=[],existing_family_members=[],source=s,alternatives=1) for s in [source, unknown]]
-    plan = dict(rom_md5='test',basis='individuals',families=True,owned_count=1,missing_count=1,regions=[dict(region=1,tasks=tasks)],entrances=[],partial=True)
     requests, errors = [], []
     def respond(route):
         req=route.request.post_data_json;requests.append(req); command,payload=req['command'],req['payload']
@@ -34,7 +32,6 @@ def main():
         elif command=='world': data=world
         elif command=='species': data=dict(species=catalog['species'][payload['id']-1],evolutions=[],learnset=[],encounters=[],origins={})
         elif command=='acquisition': data=dict(target=payload,sources=[source,unknown],partial=True,clock=None)
-        elif command=='collection': data=plan
         elif command=='map_navigation': data=dict(map_id='0-0',outgoing=[],incoming=[],approaches=[],truncated=False,diagnostics=[])
         elif command in ('map_image','sprite','object_sprite','trainer_sprite'): data=dict(url='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="lightblue"/></svg>')
         else: raise AssertionError(req)
@@ -47,27 +44,18 @@ def main():
         page.goto(os.environ.get('GEN3_UI_URL','http://127.0.0.1:5173'))
         page.get_by_role('button',name='ROM reference',exact=True).click()
         panel=page.locator('.acquisition-panel')
-        expect(panel).to_contain_text('Receipt follows a successful award')
+        expect(panel).to_contain_text('Parsed conditions met')
         expect(panel).to_contain_text('The receipt protocol is not verified for this event')
         panel.get_by_role('button',name='Test gift room',exact=False).first.click()
         page.locator('.map-focus').click()
         page.locator('.map-marker-details summary').click()
         expect(page.locator('.map-marker-details')).to_contain_text('Flag 0x1 · Script 0x5a · 0x6e')
         page.get_by_role('button',name='Back to previous reference',exact=False).click()
-        page.get_by_role('button',name='Collection planning',exact=True).click()
-        expect(page.locator('.collection-panel')).to_contain_text('Receipt follows a successful award')
-        for locale, note in [('en','Receipt follows a successful award'),('zh','按成功领奖后写入的存档标记判断')]:
-            if locale=='zh': page.get_by_role('button',name='简体中文',exact=True).click()
-            expect(page.locator('.collection-panel')).to_contain_text(note)
-            with page.expect_download() as info:
-                page.get_by_role('button',name='Export standalone HTML' if locale=='en' else '导出独立 HTML',exact=True).click()
-            html=Path(info.value.path()).read_text()
-            assert note in html
-            assert ('The receipt protocol is not verified' if locale=='en' else '尚未确认此事件的领取规则') in html
+        page.get_by_role('button',name='简体中文',exact=True).click();expect(panel).to_contain_text('尚未确认此事件的领取规则')
         assert not errors,errors
         assert all(r['command'] not in ['action','export_save','save_bytes'] for r in requests)
         browser.close()
-        print('NPC receipt and unknown help, target map/evidence/back, planner and bilingual HTML passed; no mutations')
+        print('NPC receipt and unknown help, target map/evidence/back passed; no mutations')
 
 
 if __name__=='__main__': main()

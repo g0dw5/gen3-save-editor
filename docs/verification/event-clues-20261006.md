@@ -1,5 +1,12 @@
 # Searchable event clues / 可搜索事件线索
 
+> Historical research / 历史逆向记录：the dedicated four-tab feature and its
+> commands/tests were removed during reference cleanup. Procedures below
+> describe commit `f5b085c`, not the current application. Findings and limits
+> remain evidence; use [current key addresses](../research/reference-key-addresses.md)
+> for subsequent investigation. 本文旧页面／命令已撤去，不是当前产品使用说明。
+
+
 This increment adds a shared, read-only flow across the five registered
 fingerprints: **ROM reference → Event clues → search ROM text or map name →
 map-filtered reference → conditions/prerequisite trace → exact static tile →

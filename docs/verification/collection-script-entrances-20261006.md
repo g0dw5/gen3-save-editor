@@ -1,5 +1,12 @@
 # Guarded collection entrances / 收集规划脚本入口
 
+> Historical research / 历史逆向记录：the dedicated four-tab feature and its
+> commands/tests were removed during reference cleanup. Procedures below
+> describe commit `f5b085c`, not the current application. Findings and limits
+> remain evidence; use [current key addresses](../research/reference-key-addresses.md)
+> for subsequent investigation. 本文旧页面／命令已撤去，不是当前产品使用说明。
+
+
 This increment connects referenced script passages to collection sources,
 directed-evolution preparation, prerequisite writers and standalone HTML across
 BW/DP/Rocket/Ultimate/Mercury 1.2. All relevant matrix rows remain **P**: an

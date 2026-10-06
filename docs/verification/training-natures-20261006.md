@@ -1,5 +1,12 @@
 # Mint persistent effects / 薄荷持久化效果
 
+> Historical research / 历史逆向记录：the dedicated four-tab feature and its
+> commands/tests were removed during reference cleanup. Procedures below
+> describe commit `f5b085c`, not the current application. Findings and limits
+> remain evidence; use [current key addresses](../research/reference-key-addresses.md)
+> for subsequent investigation. 本文旧页面／命令已撤去，不是当前产品使用说明。
+
+
 The shared Training reference now lists runtime-recognized Rocket mint items,
 links each to acquisition/conditions/maps/entrances, and previews its effective
 nature and six stats for a stored or explicit simulated individual. The query is

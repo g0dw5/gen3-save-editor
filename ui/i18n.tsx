@@ -1,5 +1,16 @@
 import { createContext, useContext } from "react";
 export const en = {
+  referenceSourceHelp: "Scope and reading notes",
+  trainerDifficultySimple:
+    "Ultimate Emerald adjusts battle levels, IVs and EVs by difficulty. Species base stats remain the ROM values; these are different from an individual’s battle stats.",
+  trainerAutomaticParty:
+    "Dynamic preview uses the current saved party automatically. Random branches show alternatives; this is not a prediction of the next battle.",
+  trainerAutomaticNoSave:
+    "Open a SAV to calculate values that depend on your party. Unknown values stay “?”; fixed records are still available.",
+  trainerPreviewError: "Preview unavailable · details",
+  nativeTrainerSample:
+    "Randomly generated values are one reproducible sample, not guaranteed values for the next battle.",
+
   clockInvalidRtc:
     "The ROM rejected this RTC date/time. Check the date and time components.",
   clockNeedsOffset:
@@ -7,28 +18,13 @@ export const en = {
   clockInvalidCheckpoint:
     "This saved checkpoint has invalid time components; its refresh state is undetermined.",
   clock: "Game time",
-  clockPage: "Game time and query scenarios",
-  clockPageHelp:
-    "ROM-only queries describe verified clock rules. SAV values are saved checkpoints, not live emulator time. No device-clock substitution or save edit occurs.",
   clockWeekday: "Weekday",
-  clockIndependentScenario:
-    "Selecting an hour or weekday starts a simulated query. Unspecified components remain unknown; saved overrides are not inherited.",
-  clockRtcScenario: "Explicit RTC input scenario",
-  clockRtcScenarioHelp:
-    "Enter the RTC date/time you want to simulate. The loaded ROM validates it and subtracts the selected offset using its native routine. Initial fields are examples, not your current clock.",
-  clockRtcDate: "Simulated RTC date",
-  clockRtcTime: "Simulated RTC time",
-  clockOffsetSource: "Offset source",
   clockOffsetSave: "Offset saved in SAV",
-  clockOffsetManual: "Simulated offset",
   clockOffset_days: "Days",
   clockOffset_hour: "Hours",
   clockOffset_minute: "Minutes",
   clockOffset_second: "Seconds",
-  clockRtcProject: "Calculate with this ROM",
   clockDayCounter: "Native day counter:",
-  clockRtcResultHelp:
-    "This is a simulated RTC projection, not verified current game time. The day counter does not establish a calendar date or effective weekday; day/night and daily refresh rules remain unresolved here.",
   clockQueryError: "Game-time query failed",
   clockInvalidOffset:
     "Saved offset has invalid time components; projection is unavailable.",
@@ -37,8 +33,6 @@ export const en = {
     "The offset and checkpoint alone cannot recover current hardware RTC input. A battery-save trailer is not automatically treated as current RTC state.",
 
   trainerReferenceTitle: "Battle references and tile positions",
-  trainerReferenceHelp:
-    "These scripts refer to this trainer record. Guards and NPC visibility do not prove access or an available battle. Rematches, setup commands and script replacements may select a different final party; the constructor preview below describes the selected record/scenario.",
   trainerReferenceNone:
     "No qualified positioned reference found. Unparsed or native battle setup may still exist.",
   trainerReferenceError: "Battle references could not be verified",
@@ -52,34 +46,12 @@ export const en = {
     "Second opponent setup reference; battle activation unresolved",
 
   events: "Event clues",
-  eventCluesHelp:
-    "Search text and map references read from this ROM. These are partial script clues, not verified quests or a complete story log. Native/custom dialogue, entry selectors and current access remain unresolved.",
-  eventCluesSearch: "Search ROM dialogue or map name",
-  eventCluesMapFilter: "Filter event clues by map",
-  eventCluesMatches: "Matching references",
-  eventCluesUnknownTask: "Task completion undetermined",
   eventCluesVisibility: "NPC visibility checks (not task completion)",
-  eventCluesChanges: "Potential persistent changes",
-  eventCluesObservedHelp:
-    "A matching saved value means only that this write would agree with the snapshot. Other scripts may write the same value; this does not prove this event happened or that it is currently available.",
-  eventCluesObservedYes: "Known result matches the saved snapshot",
-  eventCluesObservedNo: "Known result differs from the saved snapshot",
-  eventCluesNoWrites:
-    "No persistent write was found in the bounded trace. This does not establish that the event has no effect.",
-  eventCluesEffectsLimit:
-    "Each trace shows at most 64 potential writes and 64 battle references. Further effects remain outside this view.",
-  eventCluesNone:
-    "No matching readable reference found. Unparsed dialogue and native events may still exist.",
-  eventCluesError: "Event clues could not be loaded",
-  eventCluesPrevious: "Previous references",
   eventCluesNext: "Next references",
-  eventCluesOnMap: "Find event clues on this map",
 
   conditionFlagSet: "set",
   conditionFlagUnset: "unset",
   dependencyExporting: "Building latest plan and prerequisite appendix…",
-  dependencyAppendixLimit:
-    "This appendix is bounded (128 conditions, three dependency expansions, 64 writers per condition and 256 entrance maps); some clues are omitted or unresolved. Use the app to continue tracing.",
   dependencyTrace: "Find prerequisite clues",
   dependencyHelp:
     "These referenced scripts may change this prerequisite. This is a partial static trace, not a verified quest list or proof of current access. Native calls, dynamic scripts and unreferenced records are not exhaustive.",
@@ -227,129 +199,6 @@ export const en = {
     "This static ROM layout also renders with mismatched tiles when loaded directly in the native emulator. Whether a normal entrance replaces the layout is unverified; this image does not establish the appearance or accessibility of a playable area.",
   clockScenario: "Game time and query scenario",
   training: "Training reference",
-  trainingPage: "Training items and native previews",
-  trainingNormalChange: "Normal ability change",
-  trainingHiddenChange: "Hidden ability toggle",
-  trainingInitialAbility: "Initial ability",
-  trainingNormalAbility1: "Normal ability 1",
-  trainingNormalAbility2: "Normal ability 2",
-  trainingHiddenAbility: "Hidden ability",
-  trainingAbilityRandomSlotScope:
-    "When switching from a hidden ability back to normal, this item can randomly choose a normal slot. This preview executes the native choice using the stated seed, retaining PID; it does not predict the live game's next choice.",
-  trainingAbilityUnchanged:
-    "The native guard accepts the item, but no individual data changes in this scenario. Acceptance alone does not mean a different ability was obtained; this preview does not consume an item.",
-  trainingAbilitySeed: "Random seed for this preview",
-  trainingAbilitySeedScope:
-    "Enter an integer from 0 to 4294967295. This is an explicit simulation, not a prediction of the live game's next random outcome.",
-  trainingAbilityPidScope:
-    "The native capsule can reroll PID after acceptance. This preview runs its own selection and persistent change with the stated seed. Check the actual before/after data; PID-linked appearances may differ. Menu eligibility, consumption and live RNG are outside this scenario.",
-  trainingAbilitySlotScope:
-    "The native item changes its independent ability slot and retains PID. Native eligibility can reject duplicate or unavailable abilities and certain starting slots. The persistent stage is verified separately from menu eligibility, consumption and current access.",
-  trainingAbilityRejected:
-    "The native ability guard rejects this scenario; the individual stays unchanged.",
-  trainingAbilityAccepted:
-    "The native ability guard accepts this scenario; actual persistent results are shown below.",
-  trainingAbilityTargetDifference:
-    "The native selector chose a different ability from the final decoded result. Selected target:",
-  trainingNature: "Effective nature",
-  trainingInitialNature: "Initial effective nature",
-  trainingPIDNature: "Use PID nature (scenario default)",
-  trainingNatureScope:
-    "This previews the mint callback's persistent nature-and-stat stage and its unchanged-nature rejection. PID, trainer identity and unrelated individual data are retained. Menu eligibility, consumption, inheritance and current access remain outside this scenario.",
-  trainingServicePreview: "Preview this service on an individual",
-  trainingServicePreviewScope:
-    "Read-only field simulation, not a full NPC transaction. Level checks gate the helper; other parsed requirements are shown separately. Missing or unknown requirements do not become proof of eligibility. No item, credit or SAV data is changed.",
-  trainingServiceHypothetical:
-    "Requirements are missing or unknown. The table only simulates the field stage assuming those requirements are completed; it does not establish that you can use the service now.",
-  trainingServiceIndividual: "Service preview individual",
-  trainingServiceSpecies: "Service preview Pokémon",
-  trainingServiceLevel: "Service preview level",
-  trainingServiceIv: "Simulated service IV",
-  trainingServiceSimulated:
-    "Explicit scenario: zero EVs and friendship 70. Change the level and base IVs below; this does not create a stored Pokémon.",
-  trainingServiceRun: "Preview service field effects",
-  trainingServiceResult: "Native individual-field result",
-  trainingServiceKnownRequirements:
-    "Parsed requirements only (full menus remain unverified)",
-  trainingServiceBelowLevel:
-    "Below the required level; no field effect was applied. Minimum:",
-  trainingServiceDeferred:
-    "Training flags change, but the native marker helper leaves stored party stats unchanged. Later PC/stat refresh is outside this preview.",
-  trainingServiceImmediate:
-    "The native setter changes base IVs and recalculates party HP/stats. Item removal and full menu execution are outside this preview.",
-  trainingServiceBaseIvs: "Base IVs · before → after",
-  trainingServiceFlags: "Training flags · before → after",
-  trainingServiceFlagYes: "Trained",
-  trainingServiceFlagNo: "Untrained",
-  trainingServicePartyStats: "Party stats · before → after",
-  trainingServiceHp: "Current HP:",
-  trainingServiceStoredParty:
-    "Uses the saved party record, including its stored HP/stats.",
-  trainingServicePartyOnly:
-    "In-game training selects a Pokémon from your party. Withdraw a boxed Pokémon first.",
-  trainingServicePartyCancel: "Press B to cancel party selection.",
-  trainingServiceFaintedSelection:
-    "Fainted Pokémon are not excluded by the selection step; level and other service requirements still apply.",
-  trainingServiceWithdrawFirst:
-    "First withdraw this Pokémon into your party in-game. This box preview projects a full-HP party record; it does not replay withdrawal or certify that the service is available.",
-  trainingServiceProjectedParty:
-    "Uses a simulated full-HP party projection; a box transfer is not replayed.",
-  trainingServiceUnchanged:
-    "The individual bytes are unchanged. This alone does not establish whether the complete service charges a fee.",
-  trainingIvService: "NPC base-IV training",
-  trainingIvEffect:
-    "This service changes the selected base IVs to 31 and immediately recalculates party stats. It preserves PID, trainer identity, EVs and unrelated history. These are base IVs, unlike Hyper Training flags. This reference does not edit or pay for training.",
-  trainingIvAccess:
-    "The referenced NPC script has an unlock flag and a level check. Map references and SAV conditions do not prove current access; complete party/stat menus and the full transaction remain partially verified.",
-  trainingServiceRequired: "Required holding:",
-  trainingServicePayment: "Script attempts to remove:",
-  trainingServiceEarlyPayment:
-    "Before the single-stat menu; menu cancellation rules are shown separately",
-  trainingServiceStatMenu: "Single-stat selection",
-  trainingServiceMainMenu: "Training option selection",
-  trainingServiceCanCancel: "B cancels this menu",
-  trainingServiceCannotCancel: "B is ignored; select an option to continue",
-  trainingServicePaymentAlreadyAttempted:
-    "Payment has already been attempted at this stage",
-  trainingServicePaymentMismatch:
-    "The ROM checks one item but attempts to remove a different one. Native removal failure is not guarded before continuing. Do not assume the listed required item is consumed; the complete NPC transaction remains unverified.",
-  trainingCrownChoice: "Choose a training option",
-  trainingCrownService: "NPC Hyper Training",
-  trainingCrownLevel: "Required level: at least",
-  trainingCrownEffect:
-    "The service keeps base IVs and writes training flags so the selected stats use 31. It does not immediately refresh stored party stats; the ROM dialogue asks you to deposit the Pokémon in a PC. This reference does not edit or pay for training.",
-  trainingCrownAccess:
-    "A crown and a corresponding earned certification credit are both required and each is consumed on success. Map references and SAV holdings do not prove current access. Full menu execution and credit acquisition remain partially verified.",
-  trainingCrownCredit: "Saved certification credits",
-  trainingCrownConditions: "Requirements and prerequisite clues",
-  trainingCrownDialogue: "Read the ROM's service dialogue",
-  trainingScope:
-    "This list covers verified ordinary field EV-item handlers and supported nature/ability persistent stages. Names and descriptions come from the loaded ROM. It is not a complete catalog of all nature changes, ability changes, Hyper Training or NPC services; omitted mechanisms remain unverified, not absent.",
-  trainingNone:
-    "No supported training-item handlers were identified in this ROM.",
-  trainingItem: "Training item",
-  trainingGetItem: "Find acquisition sources",
-  trainingIndividual: "Individual for preview",
-  trainingSimulated: "Simulated individual",
-  trainingIncrease: "Increase EVs",
-  trainingDecrease: "Decrease EVs",
-  trainingPreview: "Preview native effect",
-  trainingResult: "Native field-use result",
-  trainingBefore: "Before",
-  trainingAfter: "After",
-  trainingNoEffect: "The native effect routine reports no effect.",
-  trainingAccepted:
-    "The native effect routine reports success; inspect the actual changes below.",
-  trainingPreviewScope:
-    "Read-only ordinary field-use scenario at party slot 1. It never edits an individual or consumes an item. Menu eligibility, payment, item consumption, live battles and special facilities are not simulated. A classification or success result alone does not prove an EV increase.",
-  trainingUnchangedEV:
-    "No EV value changed in this scenario. This is the native result for the supplied context; further game-state dependencies may remain unresolved.",
-  trainingBoxScenario:
-    "The boxed individual is placed in a full-HP party scenario in disposable RAM; no SAV record is changed.",
-  trainingSaveContext:
-    "Persistent context comes from the loaded SAV snapshot; it is not live emulator state.",
-  trainingZeroContext:
-    "No SAV: persistent context is zeroed for this explicit scenario.",
   clockUseSave: "Use saved game time",
   clockUnspecified: "Unspecified in this scenario",
   clockSavedVirtual: "Saved virtual clock",
@@ -380,19 +229,8 @@ export const en = {
   clockForcedNightUnknown:
     "This simulated hour assumes no forced-night override and does not change the saved game clock.",
   clockOutsideScenario: "Outside the query period",
-  clockInsideScenario: "Matches the query period",
   clock_scenario_range: "Enter an hour from 0–23 and weekday from 0–6.",
 
-  collection: "Collection planning",
-  planGeneratedAt: "Report generated at",
-  planHelp:
-    "Regional suggestions from ROM and SAV, not a proven shortest route. Unknown prerequisites and access need verification. No save is changed.",
-  planFamilyHelp:
-    "Family mode treats a permanent evolution family with an existing member as covered, not every branch as registered. Review breeding and evolution requirements. Battle forms are separate.",
-  planNeedsSave:
-    "Open a SAV to identify missing collections. ROM sources remain available without a save.",
-  planBasis: "Missing basis",
-  planIndividuals: "Existing individuals",
   planDex: "Pokédex ownership",
   planDexReadOnly:
     "Historical Dex records are read-only here; planning does not mark entries or create Pokémon.",
@@ -402,63 +240,9 @@ export const en = {
     "Shown using this ROM's native seen/caught checks. Raw records stay unchanged; queries do not repair the save.",
   planDexProjection:
     "The game's native reader initializes this range as unseen and uncaught. The report projects that result without writing the save.",
-  planFamily: "Permanent evolution family",
-  planUnknownRewards: "Include rewards with unknown receipt state",
-  planOwned: "Owned species",
-  planMissing: "Missing goals",
-  planNoRegion: "Location unresolved",
-  planPreparation: "Evolution preparation suggestion",
-  planBreedPreparation: "Breeding and evolution preparation suggestion",
-  planBreedTitle: "Pair existing non-egg individuals",
-  planBreedHelp:
-    "The current ROM selected this offspring in a sampled ordinary daycare scenario using these exact parents and their current held items. This is not the next real egg, a complete offspring list, inheritance proof or service-access proof. Obtain and hatch the egg normally; no individual is added to your SAV.",
-  planBreedVerify: "Preview this pairing with the native receipt routine",
-  planBreedMatches:
-    "The full receipt scenario confirms this preparation's offspring species",
-  planBreedChanged:
-    "The receipt scenario differs; rebuild the plan and check the current parents",
-  planBreedCoverage: "Sampled existing-parent pairs: {checked} / {total}",
-  planBreedBound:
-    "The pairing search reached its bound; missing suggestions do not prove breeding is impossible.",
-  planBreedFailed:
-    "Some native pairing scenarios could not be resolved; inspect the evidence.",
-  planPreparationExisting: "Existing non-egg individuals",
-  planPreparationStart: "First obtain",
-  planPreparationOwned: "Existing non-egg individuals: {species} × {count}",
-  planPreparationAcquire: "First obtain: {species}",
-  planPreparationHatch:
-    "Hatch the source egg first; complete hatching requirements remain unverified.",
-  planPreparationHelp:
-    "This is one directed permanent evolution chain, not a shortest route or proof of current eligibility. Possession does not establish level, gender, friendship, item, move, time or access requirements. Branches may need additional individuals; breeding cannot be inferred by reversing evolution edges.",
-  planPreparationTruncated:
-    "The preparation search reached its bound; additional alternatives may exist.",
-  planSearch: "Search goals / regions / maps",
-  planFilter: "Progress status",
-  planExport: "Export standalone HTML",
-  planAlternatives: "Parsed source alternatives",
-  planClickSources: "Open target for sources and conditions",
-  planTracePrerequisites: "Trace prerequisites",
-  planPrerequisites: "Prerequisites by region",
-  planPrerequisiteNumber: "Prerequisite clue {n}",
-  planPrerequisiteHelp:
-    "Each event below is a possible alternative for a condition. Its own guards must hold together. Parsed conditions and static entrances do not establish current access or a complete quest sequence.",
-  planPrerequisiteNone:
-    "No traced persistent prerequisites in this snapshot; this does not prove that all goals are accessible.",
-  planAffectedGoals: "Related collection goals",
-  planMoreGoals: "Show more related goals",
-  planCandidateEvent: "Possible prerequisite event",
-  planCandidateRequires: "Trace these conditions first",
-  planRecursiveClue:
-    "This alternative contains a recursive clue. Check other alternatives; recursion is not proof that the goal is impossible.",
-  planUntracedGuards:
-    "Some guards have no indexed prerequisite route. Read their conditions separately; no unlocking task is inferred.",
   planPeriods: "Time conditions",
-  acqRelatedTargets: "Related references",
   planConditionYes: "Satisfied",
   planConditionNo: "Missing prerequisite",
-  planCheck: "Mark this step locally",
-  collection_dex_unverified:
-    "Pokédex flags are unverified. Use existing individuals.",
 
   acqTitle: "Acquisition and prerequisites",
   acqCoverage:
@@ -497,8 +281,6 @@ export const en = {
   acqOneTime: "Single receipt",
   acqReceiptUnknown:
     "The receipt protocol is not verified for this event. A visibility flag does not prove that you collected its reward.",
-  acqGiftReceiptHelp:
-    "Receipt follows a successful award in this script, independent of bag contents. Resets by other scripts remain unverified.",
   npc_trade: "NPC Pokémon trade",
   npc_trade_item: "Held item from an NPC trade",
   static_held: "Item assigned to a fixed encounter",
@@ -533,13 +315,6 @@ export const en = {
   navTitle: "Entrances and connected maps",
   navHelp:
     "ROM table and referenced-script links. Script guards may be checked against your SAV; activation, collision and dynamic layouts still need verification. Links do not prove current access or a return route.",
-  planEntranceAlternatives:
-    "Each approach is a separate alternative; their conditions are not all required together.",
-  planEntranceNumber: "Approach {n}",
-  planEntranceMore: "Show more approaches",
-  planEntranceBlocked: "Missing parsed conditions",
-  planEntranceUnknown: "Conditions unresolved",
-  planEntranceMet: "Parsed conditions met; access unverified",
   navApproaches: "Suggested exterior entrance chains",
   navNoApproach:
     "Exterior map or no resolved entrance reference chain. Additional scripted and dynamic access may exist.",
@@ -828,12 +603,8 @@ export const en = {
   ribbonRank: "ribbon rank",
   reservedRibbonBits: "Reserved ribbon bits (preserved)",
   checksumState: "Checksum",
-  ultimateTrainerTemplate:
-    "Enhanced-team template from the ROM. Nature, ability and IVs below describe this template; the game selects adjustments by difficulty and battle context.",
   ultimateTrainerLevel:
     "ROM base level; difficulty, level caps and player party can change the actual battle level.",
-  ultimateTrainerEvs:
-    "EVs are generated from difficulty and player-party data. Template allocation parameter: {n}; it is not a fixed EV value for all six stats.",
   ultimateTemplateEvidence:
     "This byte selects a native training template, not the original Emerald 0–255 IV-quality scale.",
   ultimatePlainEvidence:
@@ -924,14 +695,9 @@ export const en = {
   trainerDifficulty_4: "Lunatic",
   trainerPartyInMode: "Party · {mode}",
   trainerBaseLevel: "ROM Lv.",
-  trainerDifficultyPartySource:
-    "The four modes read this trainer's same ROM party record. This view shows its base members, moves and template; event scripts and live battle generation can still change the result.",
-  trainerEvScenario: "Battle scenario for exact EV calculation",
   trainerRomOnlyPreview:
     "This ordinary party has no enhanced template. Its ROM roster, level-up moves and untrained IVs/EVs can be previewed without a save.",
-  trainerPlayerMaxLevel: "Player's highest party level",
-  trainerMaxLevelNeeded:
-    "Enter the player's highest party level to resolve this battle level.",
+  trainerMaxLevelNeeded: "Needs the highest party level · open a SAV",
   trainerLevelSource_rom: "ROM level in an ordinary trainer battle.",
   trainerLevelSource_player_max: "Uses the player's highest party level.",
   trainerLevelSource_lunatic_scaled:
@@ -940,29 +706,10 @@ export const en = {
     "The battle level depends on the player's highest party level.",
   trainerLevelSource_unsupported_raw:
     "This raw level needs separate battle-context verification.",
-  trainerEvCurrentParty: "Current save party",
-  trainerEvManualParty: "Set party manually",
-  trainerEvManualHelp:
-    "Set each Pokémon's ROM species, pre-battle Speed, nature, held item, ability slot and current HP. The game's routine handles item adjustments.",
-  trainerEvAddMon: "Add party Pokémon",
-  trainerEvNeedsParty: "Enter a valid Pokémon and Speed to calculate EVs.",
   trainerEvCalculating: "Calculating with the loaded ROM…",
-  trainerEvComputed:
-    "IVs and EVs below are calculated by this ROM's opponent-generation routine for this scenario.",
-  trainerEvLevel: "Simulated battle level",
   trainerEvTotal: "Total EVs",
   trainerEvAlternate:
     "Two native random outcomes; differing cells show both values",
-  trainerEvAbilitySlot: "Ability slot",
-  trainerEvCurrentHp: "Current HP",
-  trainerDifficultyHelp_1:
-    "Casual removes opponent IV/EV training. The raw enhancement template below is reference data, not a preview of final stats.",
-  trainerDifficultyHelp_2:
-    "Standard allows up to 508 total opponent EVs. Level caps and battle context can change generated values.",
-  trainerDifficultyHelp_3:
-    "Challenge strengthens all opponents, with up to 508 total EVs. The exact spread and level depend on battle context.",
-  trainerDifficultyHelp_4:
-    "Lunatic allows up to 1530 total EVs, plus battle bonuses. The exact spread and level depend on battle context.",
   trainerFacet_location: "Location",
   trainerFacet_battle: "Battle format",
   trainerFacet_level: "Level rule",
@@ -986,11 +733,6 @@ export const en = {
   nativeTrainerTitle: "Native ordinary-party scenario",
   nativeTrainerScope:
     "Runs this ROM's party constructor in isolated RAM. Shows generated nature, ability, IVs, EVs, moves and items with zeroed story/context state. Script replacements, special facilities and real battle-entry settings are not included; this is not a guarantee of the team in your current save.",
-  nativeTrainerSeed: "Scenario random seed",
-  nativeTrainerSeedHelp:
-    "An explicit simulation seed, not your live game's RNG. Changing it explores one scenario; it does not prove all possible random outcomes.",
-  trainerGenerationHelp:
-    "Generated team values from this ROM. Later script overrides and temporary battle effects are not included.",
   dynamicLevel: "Dynamic level",
   partyMaxNoSave: "Matches your highest party level. Open a save to preview.",
   partyMaxWithSave: "Preview based on the current party’s highest level.",
@@ -1306,32 +1048,28 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  referenceSourceHelp: "解析范围与阅读说明",
+  trainerDifficultySimple:
+    "究极绿宝石会按难度调整实战等级、个体值和努力值。种族值仍取 ROM 中的数据，与个体的实战能力不同。",
+  trainerAutomaticParty:
+    "动态预览自动使用当前存档同行；随机分支并列显示可能结果，不保证下一场战斗取其中哪组。",
+  trainerAutomaticNoSave:
+    "打开 SAV 后才能计算依赖同行的数值。未知值保留“?”，固定记录仍可直接查看。",
+  trainerPreviewError: "暂无法预览 · 查看详情",
+  nativeTrainerSample:
+    "原生随机生成的字段展示一组可复现样例，并非下一场战斗的保证值。",
+
   clockInvalidRtc: "ROM 拒绝了此 RTC 日期／时间，请检查日期与时间分量。",
   clockNeedsOffset: "请加载相容的 SAV，或明确选择模拟偏移量。",
   clockInvalidCheckpoint: "此保存检查点的时间分量无效，刷新状态无法确定。",
   clock: "游戏时间",
-  clockPage: "游戏时间与查询情景",
-  clockPageHelp:
-    "只打开 ROM 可查已验证时钟规则；SAV 数值是保存快照，不是模拟器实时状态。本页不会代入设备时间或修改存档。",
   clockWeekday: "星期",
-  clockIndependentScenario:
-    "选择小时或星期即开始模拟查询；未指定的分量保留未知，不继承存档中的覆盖状态。",
-  clockRtcScenario: "明确输入 RTC 的模拟情景",
-  clockRtcScenarioHelp:
-    "输入希望模拟的 RTC 日期和时间。当前 ROM 校验日期，再用原生例程减去所选偏移量。初始字段只是示例，并非你的当前时钟。",
-  clockRtcDate: "模拟 RTC 日期",
-  clockRtcTime: "模拟 RTC 时间",
-  clockOffsetSource: "偏移来源",
   clockOffsetSave: "SAV 中的时间偏移",
-  clockOffsetManual: "模拟时间偏移",
   clockOffset_days: "天",
   clockOffset_hour: "小时",
   clockOffset_minute: "分钟",
   clockOffset_second: "秒",
-  clockRtcProject: "用当前 ROM 计算",
   clockDayCounter: "原生日计数：",
-  clockRtcResultHelp:
-    "这是模拟 RTC 投影，不是已核实的当前游戏时间。日计数不能证明日历日期或有效星期；本路径的昼夜和每日刷新规则仍未确定。",
   clockQueryError: "游戏时间查询失败",
   clockInvalidOffset: "保存偏移的时间分量无效，不能进行投影。",
   clockLastUpdate: "保存的周期更新检查点",
@@ -1339,8 +1077,6 @@ export const zh: Record<Key, string> = {
     "只有偏移和检查点不能恢复当前硬件 RTC 输入；不会自动把电池存档的尾部数据当作当前 RTC。",
 
   trainerReferenceTitle: "战斗引用与格位",
-  trainerReferenceHelp:
-    "脚本引用此训练家记录。条件满足或 NPC 可见不代表当前可达或可挑战。再战、准备指令和脚本替换可能选择不同的最终配队；下方构造器预览针对所选记录／情景。",
   trainerReferenceNone:
     "未找到已资格化的格位引用；未解析或原生战斗准备仍可能存在。",
   trainerReferenceError: "无法核实战斗引用",
@@ -1351,32 +1087,12 @@ export const zh: Record<Key, string> = {
   trainerReferenceRole_secondary_setup: "第二对手准备引用，战斗激活未确定",
 
   events: "事件线索",
-  eventCluesHelp:
-    "按当前 ROM 的文字和地图引用搜索。这是部分脚本线索，并非已验证任务或完整剧情日志；原生／自定义对话、激活条件和当前可达性仍有缺口。",
-  eventCluesSearch: "搜索 ROM 对话或地图名称",
-  eventCluesMapFilter: "按地图筛选事件线索",
-  eventCluesMatches: "匹配的引用",
-  eventCluesUnknownTask: "任务完成状态无法确定",
   eventCluesVisibility: "NPC 可见性检查（不是任务完成状态）",
-  eventCluesChanges: "可能改变的持久化状态",
-  eventCluesObservedHelp:
-    "保存值一致仅表示这次写入的已知结果与快照一致。其他脚本可能写入相同值，不能据此证明已触发此事件或现在能执行。",
-  eventCluesObservedYes: "已知结果与存档快照一致",
-  eventCluesObservedNo: "已知结果与存档快照不同",
-  eventCluesNoWrites: "有界追查未找到持久化写入，不代表此事件没有作用。",
-  eventCluesEffectsLimit:
-    "每条线索最多展示 64 次可能写入及 64 条战斗引用，其他变化未在此页展开。",
-  eventCluesNone: "未找到匹配的可读引用；未解析对话或原生事件仍可能存在。",
-  eventCluesError: "无法加载事件线索",
-  eventCluesPrevious: "上一页线索",
   eventCluesNext: "下一页线索",
-  eventCluesOnMap: "查询此地图的事件线索",
 
   conditionFlagSet: "已设置",
   conditionFlagUnset: "未设置",
   dependencyExporting: "正在生成最新建议与前置线索附录…",
-  dependencyAppendixLimit:
-    "附录有界（128 个条件、三层依赖展开、每条件 64 个来源及 256 张入口地图），部分线索被省略或尚未确定。可回到应用继续追查。",
   dependencyTrace: "追查前置线索",
   dependencyHelp:
     "这些被地图引用的脚本可能改变此前置条件。这是部分静态线索，不是已验证任务清单或当前可达证明；原生调用、动态脚本与无引用记录尚未完整覆盖。",
@@ -1513,119 +1229,6 @@ export const zh: Record<Key, string> = {
     "此 ROM 静态布局在模拟器直接加载时也出现贴图错乱。正常入口是否会替换布局尚未确认；这张图不能证明实际可游玩区域的样貌或可达性。",
   clockScenario: "游戏时间与查询情景",
   training: "培育资料",
-  trainingPage: "培育道具与原生效果预览",
-  trainingNormalChange: "普通特性变更",
-  trainingHiddenChange: "隐藏特性切换",
-  trainingInitialAbility: "初始特性",
-  trainingNormalAbility1: "普通特性 1",
-  trainingNormalAbility2: "普通特性 2",
-  trainingHiddenAbility: "隐藏特性",
-  trainingAbilityRandomSlotScope:
-    "从隐藏特性切回普通特性时，此道具可能随机选择普通槽位。预览使用指定种子执行本作选择，保留 PID，不预测游戏下一次的选择。",
-  trainingAbilityUnchanged:
-    "本作允许使用此道具，但本次没有改变任何个体数据。允许分支不代表已经获得不同特性；此预览不消耗道具。",
-  trainingAbilitySeed: "本次预览的随机种子",
-  trainingAbilitySeedScope:
-    "输入 0～4294967295 的整数。这是明确的模拟情景，不预测游戏下一次的随机结果。",
-  trainingAbilityPidScope:
-    "原生胶囊在允许使用后可能重选 PID。本次使用指定种子执行本作的判断与持久化变更，请核对实际前后数据；与 PID 关联的外观可能不同。菜单资格、消耗与实时随机状态不在此情景内。",
-  trainingAbilitySlotScope:
-    "原生道具修改独立特性槽位并保留 PID。重复、缺失的特性或部分初始槽位会被本作拒绝使用。持久化阶段与菜单资格、消耗、当前可达性分别验证。",
-  trainingAbilityRejected: "本作的特性判断拒绝此情景，个体保持不变。",
-  trainingAbilityAccepted: "本作的特性判断允许此情景，实际持久化结果见下方。",
-  trainingAbilityTargetDifference:
-    "原生选择的特性与最终解析结果不同。选定目标：",
-  trainingNature: "实际性格",
-  trainingInitialNature: "初始实际性格",
-  trainingPIDNature: "使用 PID 性格（情景默认）",
-  trainingNatureScope:
-    "本次预览薄荷入口的持久化性格与能力处理阶段，以及性格不变时的拒绝使用分支。保留 PID、训练家身份和无关个体数据；菜单资格、消耗、遗传和当前可达性不在此情景验证范围内。",
-  trainingServicePreview: "预览服务对个体的效果",
-  trainingServicePreviewScope:
-    "只读字段模拟，不是完整 NPC 交易。等级检查决定是否执行字段步骤，其他已解析条件分别展示；缺少或未知条件不能视为已经具备资格。不消耗道具、认证或修改 SAV。",
-  trainingServiceHypothetical:
-    "条件尚未齐备或无法确定。下表只模拟完成这些条件后的字段效果，不能视为现在可以执行此服务。",
-  trainingServiceIndividual: "服务预览个体",
-  trainingServiceSpecies: "服务预览宝可梦",
-  trainingServiceLevel: "服务预览等级",
-  trainingServiceIv: "模拟服务个体值",
-  trainingServiceSimulated:
-    "明确模拟情景：六项努力值为 0，亲密度为 70。可调整等级和基础 IV，不会生成存档宝可梦。",
-  trainingServiceRun: "预览服务字段效果",
-  trainingServiceResult: "原生个体字段结果",
-  trainingServiceKnownRequirements: "仅已解析条件（完整菜单仍待验证）",
-  trainingServiceBelowLevel: "未达到等级要求，没有执行字段修改。最低等级：",
-  trainingServiceDeferred:
-    "原生步骤修改训练标记，但同行中保存的六围不变。后续电脑寄存／能力刷新不在本次预览范围。",
-  trainingServiceImmediate:
-    "原生步骤修改基础 IV 并重算同行 HP／六围；道具扣除和完整菜单执行不在本次预览范围。",
-  trainingServiceBaseIvs: "基础 IV · 前 → 后",
-  trainingServiceFlags: "训练标记 · 前 → 后",
-  trainingServiceFlagYes: "已训练",
-  trainingServiceFlagNo: "未训练",
-  trainingServicePartyStats: "同行能力 · 前 → 后",
-  trainingServiceHp: "当前 HP：",
-  trainingServiceStoredParty: "使用存档同行原始记录，包括其中保存的 HP／六围。",
-  trainingServicePartyOnly:
-    "游戏内服务只能选择同行宝可梦；盒子个体须先取回同行。",
-  trainingServicePartyCancel: "选择同行时可按 B 取消。",
-  trainingServiceFaintedSelection:
-    "选择步骤不会排除已倒下的宝可梦；仍须满足等级和其他服务条件。",
-  trainingServiceWithdrawFirst:
-    "先在游戏内把这只宝可梦取回同行。当前盒子预览使用模拟满血同行记录，没有重放取回流程，也不能证明当前可接受服务。",
-  trainingServiceProjectedParty:
-    "使用模拟满血同行投影，没有重放从盒子取出的流程。",
-  trainingServiceUnchanged:
-    "个体字节未发生变化；仅凭这一点不能判断完整服务是否收取费用。",
-  trainingIvService: "NPC 基础个体值训练",
-  trainingIvEffect:
-    "服务将所选基础个体值改为 31，并立即重算同行能力，保留 PID、训练家身份、努力值和无关历史。这会改变基础个体值，与极限特训标记不同。当前页面只读，不修改个体、不支付费用。",
-  trainingIvAccess:
-    "引用的 NPC 脚本检查解锁标记和等级。地图引用与存档条件不能证明当前可达；完整同行／单项菜单和整套交易仍有待验证部分。",
-  trainingServiceRequired: "需要持有：",
-  trainingServicePayment: "脚本尝试扣除：",
-  trainingServiceEarlyPayment:
-    "在单项选择菜单之前尝试扣除；菜单取消规则另行展示",
-  trainingServiceStatMenu: "单项能力选择",
-  trainingServiceMainMenu: "训练项目选择",
-  trainingServiceCanCancel: "可按 B 取消此菜单",
-  trainingServiceCannotCancel: "B 键无效，需选择一项继续",
-  trainingServicePaymentAlreadyAttempted: "到此阶段已尝试支付",
-  trainingServicePaymentMismatch:
-    "ROM 检查的道具与尝试扣除的不同。原生命令扣除失败后，后续没有立即检查结果再继续。不要将所需道具等同于实际消耗，完整 NPC 交易仍待验证。",
-  trainingCrownChoice: "选择训练项目",
-  trainingCrownService: "NPC 极限特训",
-  trainingCrownLevel: "要求等级：至少",
-  trainingCrownEffect:
-    "服务保留基础个体值，写入训练标记，让对应能力按 31 计算。同行中已保存的六围不会立即刷新，ROM 对话提示要放入电脑休息。这是资料查询，不修改个体、不支付费用。",
-  trainingCrownAccess:
-    "同时需要王冠和对应的获胜认证次数，成功后各消耗一次。地图引用、存档持有量不代表当前可达；完整菜单执行和认证获取仍有待验证部分。",
-  trainingCrownCredit: "存档中的认证次数",
-  trainingCrownConditions: "使用条件与前置线索",
-  trainingCrownDialogue: "查看 ROM 中的服务对话",
-  trainingScope:
-    "本列表覆盖已验证的普通战斗外努力值道具入口与已支持的性格／特性持久化阶段，名称和说明来自当前 ROM。尚非所有性格调整、特性变更、王冠训练或 NPC 服务的完整目录；未列出表示尚未验证，不代表本作不存在。",
-  trainingNone: "当前 ROM 未识别到已支持的培育道具入口。",
-  trainingItem: "培育道具",
-  trainingGetItem: "查询获取途径",
-  trainingIndividual: "预览个体",
-  trainingSimulated: "模拟个体",
-  trainingIncrease: "增加努力值",
-  trainingDecrease: "减少努力值",
-  trainingPreview: "预览原生效果",
-  trainingResult: "原生战斗外处理结果",
-  trainingBefore: "处理前",
-  trainingAfter: "处理后",
-  trainingNoEffect: "原生效果例程报告没有效果。",
-  trainingAccepted: "原生效果例程报告成功；实际变化请看下方数值。",
-  trainingPreviewScope:
-    "只读模拟普通战斗外、同行第 1 格的道具效果。不修改个体、不扣除道具；菜单资格、付款、消耗、实时战斗和特殊设施不在模拟范围内。分类用途或返回成功不能单独证明努力值已增加。",
-  trainingUnchangedEV:
-    "此情景没有改变任何努力值。这是给定上下文的原生结果，其他游戏状态依赖仍可能未确认。",
-  trainingBoxScenario:
-    "盒子个体在临时内存中转换为满 HP 的同行情景，不改变 SAV 记录。",
-  trainingSaveContext: "持久化上下文来自当前 SAV 快照，不代表模拟器实时状态。",
-  trainingZeroContext: "未加载 SAV：本次明确情景使用清零的持久化上下文。",
   clockUseSave: "使用存档游戏时间",
   clockUnspecified: "此情景未指定",
   clockSavedVirtual: "存档虚拟时钟",
@@ -1655,18 +1258,8 @@ export const zh: Record<Key, string> = {
   clockForcedNightUnknown:
     "该模拟小时假设没有强制夜晚覆盖，不会修改存档游戏时间。",
   clockOutsideScenario: "不属于查询时段",
-  clockInsideScenario: "符合查询时段",
   clock_scenario_range: "小时应为 0–23，星期应为 0–6。",
 
-  collection: "收集规划",
-  planGeneratedAt: "报告生成时间",
-  planHelp:
-    "按 ROM 和 SAV 提供区域建议，不保证全局最短。未知前置条件和可达性仍需核实，此页面不改存档。",
-  planFamilyHelp:
-    "按家族规划时，已有永久进化线成员的家族不重复捕捉，但不代表每一分支已点亮。仍需核对孵蛋与进化条件，战斗形态独立处理。",
-  planNeedsSave: "打开 SAV 后判断收集缺失，不打开存档仍可查询 ROM 来源。",
-  planBasis: "缺失判断依据",
-  planIndividuals: "现有个体",
   planDex: "图鉴捕获记录",
   planDexReadOnly: "此处只读取历史图鉴记录；规划不会点亮图鉴或生成宝可梦。",
   planDexInconsistent: "未通过游戏校验的图鉴记录：",
@@ -1675,56 +1268,9 @@ export const zh: Record<Key, string> = {
   planDexUninitialized: "未初始化的图鉴范围：",
   planDexProjection:
     "游戏原生读取会将该范围初始化为未见、未捕获。此报告只按该结果判断，不写入存档。",
-  planFamily: "永久进化家族",
-  planUnknownRewards: "加入领取状态无法确定的奖励",
-  planOwned: "已持有／记录宝可梦",
-  planMissing: "缺失目标",
-  planNoRegion: "地点待确认",
-  planPreparation: "进化准备建议",
-  planBreedPreparation: "孵蛋与进化准备建议",
-  planBreedTitle: "使用现有非蛋个体配对",
-  planBreedHelp:
-    "当前 ROM 在普通寄养抽样情景中，用这两只原始个体及其当前携带道具选出了该后代。这不是下一颗真实蛋、全部后代清单、完整遗传或服务可达性的证明。仍需正常领蛋并孵化，不向 SAV 添加个体。",
-  planBreedVerify: "用原生领蛋例程预览这组亲本",
-  planBreedMatches: "完整领蛋情景确认了此准备链的后代种类",
-  planBreedChanged: "领蛋情景与建议不一致，请重新生成规划并核对当前亲本",
-  planBreedCoverage: "已抽样现有亲本组合：{checked} / {total}",
-  planBreedBound: "配对搜索已达到边界，没有建议不能证明无法孵蛋。",
-  planBreedFailed: "部分原生配对情景无法确定，请查看证据。",
-  planPreparationExisting: "现有非蛋个体",
-  planPreparationStart: "先获得",
-  planPreparationOwned: "现有非蛋个体：{species} × {count}",
-  planPreparationAcquire: "先获得：{species}",
-  planPreparationHatch: "先孵化来源中的蛋；完整孵化条件尚未验证。",
-  planPreparationHelp:
-    "这是按永久进化边展开的一条建议链，不保证最短或当前可进化。持有不代表等级、性别、亲密度、道具、招式、时间及可达条件已满足；不同分支可能需要更多个体。不能通过反转进化边推断孵蛋结果。",
-  planPreparationTruncated: "准备链搜索已达到边界，可能还有其他途径。",
-  planSearch: "搜索目标／区域／地图",
-  planFilter: "进度状态",
-  planExport: "导出独立 HTML",
-  planAlternatives: "已解析来源数量",
-  planClickSources: "点击目标查看来源及条件",
-  planTracePrerequisites: "分析前置条件",
-  planPrerequisites: "按区域查看前置线索",
-  planPrerequisiteNumber: "前置线索 {n}",
-  planPrerequisiteHelp:
-    "同一条件下的事件是可能的替代途径；每个事件自身的条件需要同时满足。脚本条件与静态入口不证明当前可达，也不代表完整任务顺序。",
-  planPrerequisiteNone:
-    "本次没有可追溯的持久前置条件；不代表所有目标均可到达。",
-  planAffectedGoals: "关联收集目标",
-  planMoreGoals: "显示更多关联目标",
-  planCandidateEvent: "可能的前置事件",
-  planCandidateRequires: "先追查这些条件",
-  planRecursiveClue:
-    "这个候选途径存在循环线索。可查看其他途径；循环不代表目标无法完成。",
-  planUntracedGuards:
-    "部分条件没有已索引的前置途径。请分别查看其条件，不据此推断解锁任务。",
   planPeriods: "时间条件",
-  acqRelatedTargets: "关联资料",
   planConditionYes: "已满足",
   planConditionNo: "缺少前置条件",
-  planCheck: "勾选本步骤",
-  collection_dex_unverified: "本 ROM 图鉴标记尚未验证，请按现有个体规划。",
 
   acqTitle: "获取方式与前置条件",
   acqCoverage:
@@ -1761,8 +1307,6 @@ export const zh: Record<Key, string> = {
   acqOneTime: "一次性领取",
   acqReceiptUnknown:
     "尚未确认此事件的领取规则，不能仅凭对象的消失标记判断已经领奖。",
-  acqGiftReceiptHelp:
-    "按成功领奖后写入的存档标记判断，不根据背包是否持有；其他脚本的重置规则仍待验证。",
   npc_trade: "NPC 宝可梦交换",
   npc_trade_item: "NPC 交换宝可梦携带的道具",
   static_held: "定点宝可梦指定携带的道具",
@@ -1793,13 +1337,6 @@ export const zh: Record<Key, string> = {
   navTitle: "入口与关联地图",
   navHelp:
     "以下为 ROM 表与已引用脚本中的连接。脚本条件可叠加 SAV 判断，但触发方式、碰撞及动态布局仍需验证；存在连接不代表当前可达，也不保证能原路返回。",
-  planEntranceAlternatives:
-    "每条入口是独立备选路线，不要求同时完成所有路线的条件。",
-  planEntranceNumber: "入口路线 {n}",
-  planEntranceMore: "显示更多入口",
-  planEntranceBlocked: "尚缺已解析条件",
-  planEntranceUnknown: "条件无法确定",
-  planEntranceMet: "已解析条件满足；可达性未确认",
   navApproaches: "外部入口链（参考）",
   navNoApproach:
     "当前已是外部地图，或未找到可解析的入口引用链；可能还存在其他脚本或动态入口。",
@@ -2074,12 +1611,8 @@ export const zh: Record<Key, string> = {
   ribbonRank: "缎带等级",
   reservedRibbonBits: "保留位（原样保留）",
   checksumState: "校验状态",
-  ultimateTrainerTemplate:
-    "ROM 中的强化队伍培养模板。下方性格、特性、个体值是模板设定；实际应用由难度及战斗场景决定。",
   ultimateTrainerLevel:
     "此处为表中基础等级；实际对战等级可能随难度、等级上限和玩家队伍调整。",
-  ultimateTrainerEvs:
-    "努力值由难度、玩家队伍和战斗场景生成。模板分配参数为 {n}，不能当作固定的六项努力值。",
   ultimateTemplateEvidence:
     "此字节是本作培养模板的索引，不是原版绿宝石 0～255 的个体值质量。",
   ultimatePlainEvidence:
@@ -2168,40 +1701,17 @@ export const zh: Record<Key, string> = {
   trainerDifficulty_4: "疯子",
   trainerPartyInMode: "队伍 · {mode}",
   trainerBaseLevel: "表中 Lv.",
-  trainerDifficultyPartySource:
-    "四档难度读取此训练家的同一份 ROM 队伍记录。这里展示基础成员、招式与培养模板；剧情脚本和实战生成仍可能改变结果。",
-  trainerEvScenario: "精确计算努力值的对战情景",
   trainerRomOnlyPreview:
     "这支普通队伍没有强化培养模板。只打开 ROM 就能预览其成员、升级招式以及未培养的个体值和努力值。",
-  trainerPlayerMaxLevel: "玩家同行最高等级",
-  trainerMaxLevelNeeded: "填写玩家同行最高等级后，才能确定这场战斗的等级。",
+  trainerMaxLevelNeeded: "需要同行最高等级 · 请打开 SAV",
   trainerLevelSource_rom: "普通训练家战沿用 ROM 表中的等级。",
   trainerLevelSource_player_max: "等级取玩家同行最高等级。",
   trainerLevelSource_lunatic_scaled: "疯子模式下提升到玩家同行最高等级。",
   trainerLevelSource_needs_player_max: "实战等级取决于玩家同行最高等级。",
   trainerLevelSource_unsupported_raw: "这个原始等级仍需结合战斗场景核对。",
-  trainerEvCurrentParty: "使用当前存档队伍",
-  trainerEvManualParty: "手动设定队伍",
-  trainerEvManualHelp:
-    "填写宝可梦、本来速度、性格、道具、特性槽位和当前 HP；道具对速度的修正由 ROM 例程计算。",
-  trainerEvAddMon: "添加同行宝可梦",
-  trainerEvNeedsParty: "填写有效宝可梦和速度后开始计算。",
   trainerEvCalculating: "正在按当前 ROM 计算…",
-  trainerEvComputed:
-    "下方个体值和努力值由当前 ROM 的对手生成例程按此情景算出。",
-  trainerEvLevel: "模拟对战等级",
   trainerEvTotal: "努力值合计",
   trainerEvAlternate: "原生随机分支有两种结果；不同的格子同时显示两个值",
-  trainerEvAbilitySlot: "特性槽位",
-  trainerEvCurrentHp: "当前 HP",
-  trainerDifficultyHelp_1:
-    "养生模式不启用对手的个体／努力培养。下方强化模板仅供查表，不是实战能力值预览。",
-  trainerDifficultyHelp_2:
-    "标准模式的对手努力值总和上限为 508；等级上限和战斗条件会影响实际生成结果。",
-  trainerDifficultyHelp_3:
-    "挑战模式强化所有对手，努力值总和上限仍为 508；具体分配和等级随战斗条件变化。",
-  trainerDifficultyHelp_4:
-    "疯子模式的对手努力值总和最高为 1530，并有额外战斗加成；具体分配和等级随战斗条件变化。",
   trainerFacet_location: "地点",
   trainerFacet_battle: "对战形式",
   trainerFacet_level: "等级规则",
@@ -2225,11 +1735,6 @@ export const zh: Record<Key, string> = {
   nativeTrainerTitle: "原生普通配队情景",
   nativeTrainerScope:
     "在隔离内存中执行当前 ROM 的配队构造器，展示生成后的性格、特性、IV、EV、招式及道具。剧情与情景状态清零；不含脚本换队、特殊设施及实际入战设置，不保证等于当前存档下一场战斗的队伍。",
-  nativeTrainerSeed: "情景随机种子",
-  nativeTrainerSeedHelp:
-    "这是明确设定的模拟种子，并非游戏当前的随机状态。切换种子仅查看另一种情景，不能据此断言已覆盖全部随机结果。",
-  trainerGenerationHelp:
-    "以下为该 ROM 的队伍生成值，不含后续脚本改写和战斗中的临时变化。",
   dynamicLevel: "动态等级",
   partyMaxNoSave: "跟随同行最高等级；打开存档后可预览。",
   partyMaxWithSave: "按当前同行最高等级预览。",

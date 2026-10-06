@@ -1,5 +1,12 @@
 # Ability-item native previews / 特性道具原生预览
 
+> Historical research / 历史逆向记录：the dedicated four-tab feature and its
+> commands/tests were removed during reference cleanup. Procedures below
+> describe commit `f5b085c`, not the current application. Findings and limits
+> remain evidence; use [current key addresses](../research/reference-key-addresses.md)
+> for subsequent investigation. 本文旧页面／命令已撤去，不是当前产品使用说明。
+
+
 The shared read-only Training reference now reads recognized item handlers from
 the loaded ROM, links acquisition → conditions → map/entrance → back, and shows
 native acceptance plus actual ability, PID, effective nature and six-stat results.

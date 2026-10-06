@@ -311,8 +311,15 @@ export function ConditionDetails({
     ),
   );
   return (
-    <div className="condition-details small">
-      <strong>{heading ?? t("acqConditions")}</strong>
+    <details className="condition-details small">
+      <summary>
+        {heading ?? t("acqConditions")} · {rows.length}
+        {rows.some((r) => r.satisfied === false)
+          ? ` · ${t("planConditionNo")}`
+          : rows.some((r) => r.satisfied == null)
+            ? ` · ${t("acqStatus_unknown")}`
+            : ` · ${t("planConditionYes")}`}
+      </summary>
       <ul>
         {rows.map((check, index) => (
           <li key={index}>
@@ -352,6 +359,6 @@ export function ConditionDetails({
         ))}
       </ul>
       {resource && <p className="muted">{t("conditionHoldingsHelp")}</p>}
-    </div>
+    </details>
   );
 }

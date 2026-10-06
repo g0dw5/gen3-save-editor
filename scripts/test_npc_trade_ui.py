@@ -1,4 +1,4 @@
-"""Public read-only fixture: trade offer -> donor -> NPC tile -> collection HTML."""
+"""Public read-only fixture: trade offer -> donor -> NPC tile."""
 import copy
 import json
 import os
@@ -22,8 +22,6 @@ def main():
     world = dict(maps=[map], map_events=[dict(map_id='0-0', markers=[marker], unplaced_rewards=[], unplaced_pokemon=[], stopped_at=[100])], encounters=[], trainers=[], trainer_locations=dict(locations=[]), map_groups=[])
     source = dict(kind='npc_trade', map_id='0-0', region=1, x=1, y=1, underfoot=None, related=[dict(kind='species', id=2), dict(kind='item', id=1)], quantity=None, min_level=None, max_level=None, encounter_percent=None, held_percent=None, periods=[], conditions=[], requirements=[], evolution=None, status='unknown', receipt_flag=None, receipt=None, repeatable=None, offset=100, partial=True, in_scenario=None, script_source=mon, trade_context=dict(party_levels=[44], box_levels=[]))
     save = dict(trainer={'name':'TEST'}, pokemon=[pokemon(2, dict(kind='party',slot=0))], boxes=[dict(index=i,name=f'Box {i}',count=0,wallpaper=0) for i in range(14)], bag=[], dex=[], active_slot=0, counter=1, backup_valid=True, dirty=False, can_undo=False, can_redo=False, changes=[])
-    task = dict(target=dict(kind='species', id=1), family=[1], existing_family_members=[], source=source, alternatives=1)
-    plan = dict(rom_md5='test', basis='individuals', families=True, owned_count=1, missing_count=1, regions=[dict(region=1,tasks=[task])], entrances=[], partial=True)
     errors, requests = [], []
 
     def respond(route):
@@ -35,7 +33,6 @@ def main():
         elif command == 'acquisition':
             item_source = source | dict(kind='npc_trade_item', quantity=1, related=[dict(kind='species',id=1),dict(kind='species',id=2)])
             data = dict(target=payload, sources=[item_source if payload['kind']=='item' else source] if payload['id']==1 else [], partial=True, clock=None)
-        elif command == 'collection': data = plan
         elif command == 'map_navigation': data = dict(map_id='0-0', outgoing=[], incoming=[], approaches=[], truncated=False, diagnostics=[])
         elif command in ('map_image','sprite','object_sprite','trainer_sprite'): data = dict(url='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="lightblue"/></svg>')
         else: raise AssertionError(req)
@@ -67,20 +64,11 @@ def main():
         expect(panel).to_contain_text('No source was found within the parsed coverage.')
         page.get_by_role('button', name='Back to previous reference', exact=False).click()
         expect(details).to_contain_text('NPC Pokémon trade')
-        page.get_by_role('button', name='Collection planning', exact=True).click()
-        expect(page.locator('.collection-panel')).to_contain_text('Lv. 44')
-        for locale, note in [('en','received level equals'),('zh','等级与交出的宝可梦相同')]:
-            if locale == 'zh': page.get_by_role('button',name='简体中文',exact=True).click()
-            expect(page.locator('.collection-panel')).to_contain_text(note)
-            with page.expect_download() as info:
-                page.get_by_role('button',name='Export standalone HTML' if locale=='en' else '导出独立 HTML',exact=True).click()
-            html = Path(info.value.path()).read_text()
-            assert note in html and 'Lv. 44' in html
-            assert 'Donor &lt;script&gt;alert(1)&lt;/script&gt;' in html and '<script>' not in html
+        page.get_by_role('button',name='简体中文',exact=True).click();expect(details).to_contain_text('等级与交出的宝可梦相同')
         assert not errors, errors
         assert all(r['command'] not in ['action','export_save','save_bytes'] for r in requests)
         browser.close()
-        print('Trade donor/held-item/level, source -> donor -> map -> back, planning and escaped bilingual HTML passed; no writes')
+        print('Trade donor/held-item/level, source -> donor -> map -> back passed; no writes')
 
 
 if __name__ == '__main__': main()

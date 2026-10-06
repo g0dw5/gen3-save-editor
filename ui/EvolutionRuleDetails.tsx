@@ -1,10 +1,8 @@
 import { evolutionLabel } from "./referenceLabels";
 import { speciesDisplayName } from "./speciesDisplay";
 import { useI18n } from "./i18n";
-import { EntranceRoutes } from "./EntranceRoutes";
 import type {
   Catalog,
-  CollectionPlan,
   GameMap,
   MapFocus,
   QueryTarget,
@@ -39,29 +37,11 @@ export function evolutionLocationMaps(rule: Rule, maps: GameMap[]) {
   };
 }
 
-export function evolutionLocationSummary(
-  rule: Rule,
-  maps: GameMap[],
-  t: (key: string) => string,
-): string[] {
-  const locations = evolutionLocationMaps(rule, maps);
-  if (!locations.hasLocation) return [];
-  return [
-    t("evolutionLocationHelp"),
-    ...(locations.maps.length
-      ? locations.maps.map(
-          (map) => `${map.name || t("unresolved")} · ${map.id}`,
-        )
-      : [t("evolutionNoMatchingMap")]),
-  ];
-}
-
 export function EvolutionRuleDetails({
   rule,
   catalog,
   maps = [],
   related = [],
-  entrances,
   onTarget,
   onMap,
 }: {
@@ -69,7 +49,6 @@ export function EvolutionRuleDetails({
   catalog: Catalog;
   maps?: GameMap[];
   related?: QueryTarget[];
-  entrances?: CollectionPlan["entrances"];
   onTarget: (target: QueryTarget) => void;
   onMap?: (id: string, focus?: MapFocus) => void;
 }) {
@@ -117,15 +96,6 @@ export function EvolutionRuleDetails({
                 >
                   {map.name || t("unresolved")} · {map.id} ↗
                 </button>
-                {onMap && entrances && (
-                  <EntranceRoutes
-                    entry={entrances.find((entry) => entry.map_id === map.id)}
-                    maps={maps}
-                    catalog={catalog}
-                    onTarget={onTarget}
-                    onMap={onMap}
-                  />
-                )}
               </div>
             ))}
           </div>

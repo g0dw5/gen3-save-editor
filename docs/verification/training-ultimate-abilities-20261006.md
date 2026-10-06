@@ -1,5 +1,12 @@
 # Ultimate native ability items / 究极绿宝石原生特性道具
 
+> Historical research / 历史逆向记录：the dedicated four-tab feature and its
+> commands/tests were removed during reference cleanup. Procedures below
+> describe commit `f5b085c`, not the current application. Findings and limits
+> remain evidence; use [current key addresses](../research/reference-key-addresses.md)
+> for subsequent investigation. 本文旧页面／命令已撤去，不是当前产品使用说明。
+
+
 This increment extends the shared read-only Training reference to the exact
 Ultimate Emerald 5.5 fingerprint `17ce9785b33319b3dbda9a5d37c57ec1`. It lists the two
 runtime handlers/variants, supports stored or simulated individuals, shows actual

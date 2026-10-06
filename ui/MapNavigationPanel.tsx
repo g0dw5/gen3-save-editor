@@ -84,7 +84,10 @@ export function MapNavigationPanel({
   return (
     <section className="map-navigation">
       <h3>{t("navTitle")}</h3>
-      <p className="small muted">{t("navHelp")}</p>
+      <details className="reference-help">
+        <summary>{t("referenceSourceHelp")}</summary>
+        <p className="small muted">{t("navHelp")}</p>
+      </details>
       {!report ? (
         <p>{t("loading")}</p>
       ) : (
@@ -124,13 +127,13 @@ export function MapNavigationPanel({
             <p className="small muted">{t("navNoApproach")}</p>
           )}
           {report.truncated && <p className="small muted">{t("navBounded")}</p>}
-          <details open>
+          <details>
             <summary>
               {t("navIncoming")} ({report.incoming.length})
             </summary>
             {report.incoming.map((e, i) => link(e, true, i))}
           </details>
-          <details open>
+          <details>
             <summary>
               {t("navOutgoing")} ({report.outgoing.length})
             </summary>

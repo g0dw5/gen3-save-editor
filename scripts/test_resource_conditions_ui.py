@@ -1,4 +1,4 @@
-"""Read-only resource/player conditions -> item -> map/back and HTML fixture."""
+"""Read-only resource/player conditions -> item -> map/back fixture."""
 import copy
 import json
 import os
@@ -29,8 +29,6 @@ def main():
     world = dict(maps=maps,map_events=[dict(map_id='0-0',markers=[marker],unplaced_rewards=[],unplaced_pokemon=[],unplaced_teaching=[],stopped_at=[])],encounters=[],trainers=[],trainer_locations=dict(locations=[]),map_groups=[])
     source = dict(underfoot=None,kind='gift',map_id='0-0',region=1,x=1,y=1,related=[dict(kind='item',id=1)],quantity=1,min_level=None,max_level=None,encounter_percent=None,held_percent=None,periods=[],conditions=checks,requirements=[],evolution=None,status='blocked',receipt_flag=None,receipt=None,repeatable=None,offset=100,partial=True,in_scenario=None)
     save = dict(trainer={'name':'TEST'},pokemon=[pokemon(2,dict(kind='party',slot=0))],boxes=[dict(index=i,name=f'Box {i}',count=0,wallpaper=0) for i in range(14)],bag=[],dex=[],active_slot=0,counter=1,backup_valid=True,dirty=False,can_undo=False,can_redo=False,changes=[])
-    task = dict(target=dict(kind='item',id=2),family=[],existing_family_members=[],source=source,alternatives=1)
-    plan = dict(rom_md5='test',basis='individuals',families=True,owned_count=1,missing_count=1,regions=[dict(region=1,tasks=[task])],entrances=[],partial=True)
     errors, requests = [], []
     def respond(route):
         req=route.request.post_data_json;command,payload=req['command'],req['payload'];requests.append(req)
@@ -39,9 +37,6 @@ def main():
         elif command=='species': data=dict(species=catalog['species'][payload['id']-1],evolutions=[],learnset=[],encounters=[],origins={})
         elif command=='acquisition': data=dict(target=payload,sources=[source],partial=True,clock=None)
         elif command=='map_navigation': data=dict(map_id=payload['id'],outgoing=[],incoming=[],approaches=[],truncated=False,diagnostics=[])
-        elif command in ('collection','collection_export'):
-            if command=='collection_export': assert payload['expected_rom_md5']=='test' and payload['query']['basis']=='individuals'
-            data=plan
         elif command in ('map_image','sprite','object_sprite','trainer_sprite'): data=dict(url='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="lightblue"/></svg>')
         else: raise AssertionError(req)
         route.fulfill(content_type='application/json',body=json.dumps(dict(ok=True,data=data)))
@@ -58,6 +53,7 @@ def main():
         expect(panel).to_contain_text('Player gender ≠ Boy · SAV value Boy')
         expect(panel).to_contain_text('Earlier script operations may change this resource')
         expect(panel).to_contain_text('No item record in the bag: Required stone <script>')
+        panel.locator('.condition-details > summary').first.click()
         panel.locator('.condition-details').get_by_role('button',name='Required stone <script> ≥ 3',exact=False).click()
         expect(page.locator('.reference-detail h2')).to_contain_text('Required stone <script>')
         panel.get_by_role('button',name='Reward room',exact=False).click()
@@ -65,25 +61,15 @@ def main():
         details=page.locator('.map-marker-details')
         expect(details).to_contain_text('Money held ≥ 70000')
         expect(details).to_contain_text('Player gender = Girl')
+        details.locator('.condition-details > summary').first.click()
         details.locator('.condition-details').get_by_role('button',name='Required stone <script> ≥ 3',exact=False).click()
         expect(page.locator('.reference-detail h2')).to_contain_text('Required stone <script>')
         page.get_by_role('button',name='Back to previous reference',exact=False).click()
         expect(page.locator('.reference-detail h2')).to_contain_text('Reward room')
-        page.get_by_role('button',name='Collection planning',exact=True).click()
-        expect(page.locator('.collection-panel')).to_contain_text('Money held ≥ 70000 · SAV value 500')
-        page.get_by_role('button',name='简体中文',exact=True).click()
-        expect(page.locator('.collection-panel')).to_contain_text('持有金钱 ≥ 70000 · 存档当前值 500')
-        expect(page.locator('.collection-panel')).to_contain_text('玩家性别 = 女孩 · 存档当前值 男孩')
-        with page.expect_download() as info: page.get_by_role('button',name='导出独立 HTML',exact=True).click()
-        html=Path(info.value.path()).read_text()
-        assert 'Required stone &lt;script&gt; ≥ 3' in html and '<script>' not in html
-        assert '持有金钱 ≥ 70000' in html and '此前脚本操作可能改变该资源' in html
-        assert '玩家性别 = 女孩 · 存档当前值 男孩' in html and '玩家性别 ≠ 男孩' in html
-        assert '普通背包数量 0' in html and '持有量检查不代表费用' in html
-        assert 'bag_item 1' not in html and 'default-src' in html
+        page.get_by_role('button',name='简体中文',exact=True).click();expect(details).to_contain_text('玩家性别 = 女孩')
         assert not errors, errors
         assert not any(r['command'] in ('action','save_bytes','export_save','apply','batch','transfer','create') for r in requests)
         browser.close()
-        print('Resource/player conditions -> item -> map/back, bilingual planning and escaped human-readable HTML passed')
+        print('Resource/player conditions -> item -> map/back passed')
 
 if __name__=='__main__': main()

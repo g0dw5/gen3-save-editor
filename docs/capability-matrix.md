@@ -7,6 +7,18 @@ saves and extracted artwork are excluded from Git and releases.
 审计基线：2026-10-05，`f6f347a`。接口存在、能读取表、页面能打开不代表完整支持。
 ROM 和 SAV 仅用于本地验证。矩阵已包含下文增量，证据在本文后续记录中追加。
 
+## Current product scope / 当前产品范围
+
+The latest user-directed cleanup removes the four advanced reference tabs and
+all dedicated product APIs. The increments below are historical research evidence,
+not a current screen/command inventory. Shared map, acquisition, event-condition,
+clock snapshots and SAV editing remain. Collection route/HTML production and
+training/RTC simulation no longer belong to this implementation.
+
+最新范围：六个 ROM 资料页。事件线索、收集规划、游戏时钟、培育机制与专用实现已删除；
+下方旧增量仅保留逆向证据，不代表当前入口。地图、获取途径、领取条件、时间快照和
+安全 SAV 编辑的共用读取仍保留。关键地址见[地址文档](research/reference-key-addresses.md)。
+
 ## Exact supported inputs / 精确支持范围
 
 | Game / 游戏 | MD5 |
@@ -25,27 +37,33 @@ Mercury 1.1 is rejected. Fingerprints establish input identity, not feature comp
 **V 已验证 / verified**: the stated bounded behavior has direct evidence.
 **P 部分解析 / partial**: usable records exist but coverage or semantics are incomplete.
 **U 待验证 / pending**: no adequate implementation/evidence for the requested behavior.
+**R 已移除 / removed**: no current product workflow; historical evidence remains.
 **N 本作不存在 / absent**: requires native evidence of absence; none is inferred merely
 from missing code. A P row can contain individually verified subfeatures.
 
 | Requested workflow / 功能 | BW | DP | Rocket | Ultimate | Mercury 1.2 | Evidence and limit / 证据与边界 |
 |---|---|---|---|---|---|---|
 | Map layouts, NPC art / 地图与 NPC | P | P | P | P | P | `graphics.rs`, `map_events.rs`, [map palettes](research/map-palettes.md), [Rocket maps](research/rocket-map-and-trainer-display.md), [Mercury](research/mercury-fc-11.md). Static initial layouts; [native action references](verification/script-movements-20261006.md) and bilingual initial-tile notices; no live movement/layout replacement simulation. |
-| Entrances, connections, current reachability / 入口与可达性 | P | P | P | P | P | `navigation.rs`, shared map UI and five exact-ROM tests. Map windows now combine static links with [referenced script passages](verification/script-warps-20261006.md), guard overlays, source/target focus and return. 918 native operand cases cover the decoded handlers; activation, full map loading, dynamic destinations and current access remain unresolved. Collection UI/HTML now shares guarded script entrances; see [integration evidence](verification/collection-script-entrances-20261006.md). |
+| Entrances, connections, current reachability / 入口与可达性 | P | P | P | P | P | `navigation.rs`, shared map UI and five exact-ROM tests. Map windows now combine static links with [referenced script passages](verification/script-warps-20261006.md), guard overlays, source/target focus and return. 918 native operand cases cover the decoded handlers; activation, full map loading, dynamic destinations and current access remain unresolved. |
 | Pickup, hidden items, dialogue rewards / 拾取与奖励 | P | P | P | P | P | [map events](research/map-events.md): BW/DP 707 maps, 122 balls, 112 hidden items. Bounded scripts retain stop evidence; ordinary/hidden and qualified NPC receipt protocols have five-fingerprint evidence below. Custom commands, complete resource/runtime guards and access remain partial. |
 | Random encounters, probability, time tables / 随机相遇 | P | P | P | P | P | `world.rs`; [time selection](research/encounter-time-selection.md), Mercury native selector. Slot weights are separate from encounter frequency; no full weekday/clock-state validation. |
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Shared typed map-script sources and [bounded NPC trade quotes](verification/npc-trades-20261006.md); [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers, actual delivery and custom exchanges are not comprehensively indexed. |
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). [Native ordinary daycare scenarios](verification/breeding-20261006.md) execute compatibility/full receipt across five fingerprints with stored/simulated parents and offspring/NPC/map navigation. [Ordinary production checks](verification/breeding-production-20261006.md) execute native step/item branches with explicit bag scenarios. Rocket/Mercury service references and complete setup/inheritance/hatching/access remain unknown. Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. Native ordinary single-wild item selection has five-fingerprint evidence, including tested lead abilities and exceptional layout branches; full encounter modifiers and facilities remain unresolved. See [wild-item evidence](verification/wild-held-20261006.md). |
-| Nature, ability, EV and crown services / 性格特性努力值与王冠 | P | P | P | P | P | Shared read-only native training previews with current-ROM item/source/map links. Ordinary EV effects cover all five; bounded mint effects cover Rocket; bounded ability guards/effects cover Rocket, Mercury and Ultimate. Complete menus/consumption and most NPC services remain unresolved; Ultimate and Mercury now have positioned, qualified [crown-service references](verification/training-crowns-20261006.md). See [ability evidence](verification/training-abilities-20261006.md). |
-| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. [Bounded NPC success/receipt protocols](verification/npc-receipts-20261006.md) cover 80 reward rows. The [prerequisite trace](verification/event-dependencies-20261006.md) links potential referenced writers, guards, ROM text and maps to queries/HTML; it is not a full task DAG. Compound/custom pickups, unqualified NPC protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
-| Item/money prerequisites / 道具与金钱前置条件 | P | P | P | P | P | [Native holdings and Boolean branch verification](verification/resource-conditions-20261006.md), required-item cross-links, readable query/map/planning/HTML conditions. Mercury ordinary checks use the first matching slot; other four retain unknown facility-bag context. Spending, complete eligibility and access remain unverified. |
-| Effective game clock, weekday, next event / 有效时钟与刷新 | P | P | P | P | P | Mercury virtual SAVE clock, native weekday, speed, forced-night state and jump menu verified within [bounded scope](verification/mercury-clock-20261005.md); [Native RTC scenarios](verification/hardware-clock-20261006.md) verify offset subtraction for four hardware-clock profiles; actual RTC and complete weekday refresh remain unresolved. No device-time assumption. |
+| Nature, ability, EV and crown services / 性格特性努力值与王冠 | R | R | R | R | R | Removed dedicated product workflow; reverse-engineering evidence retained in the address document. / 已删除产品专用实现，保留逆向证据。 |
+| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | Shared qualified receipt checks and expandable condition traces in acquisition/maps; runtime writers are clues, not a full task DAG. General event-search and collection dependency aggregation are removed. [Persistent ranges and protocols](verification/event-state-20261005.md), [NPC receipts](verification/npc-receipts-20261006.md). |
+| Item/money prerequisites / 道具与金钱前置条件 | P | P | P | P | P | [Native holdings and Boolean branch verification](verification/resource-conditions-20261006.md), required-item cross-links, readable query/map conditions. Mercury ordinary checks use the first matching slot; other four retain unknown facility-bag context. Spending, complete eligibility and access remain unverified. |
+| Effective game clock, weekday, next event / 有效时钟与刷新 | P | P | P | P | P | Current encounter-hour filter, Mercury saved virtual clock and SAV RTC offset/checkpoint snapshots remain; dedicated RTC projection controls/APIs are removed. Live RTC and unverified refresh/weekday rules stay unknown. [Key addresses](research/reference-key-addresses.md), [Mercury bounded scope](verification/mercury-clock-20261005.md). |
 | Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | P | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury executes its native constructor for explicit zero-context scenarios; independent CPU comparisons are recorded below, while full setup remains unknown. |
-| Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution with party/scenario. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
+| Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution, one difficulty selector, automatic current SAV party, unknowns without a SAV. No manual scenario controls. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
 | Edit, drag/swap, batch, undo/export safety / 编辑事务 | V | V | V | V | V | `session.rs`, [save integrity](research/save-integrity.md). Checksums, record preservation, rollback, backup and source conflict checks; linked mail changes blocked. Scope is represented fields, not all in-game legitimacy rules. |
 | Edited SAV in-game save and re-read / 模拟器再次保存 | V | V | V | V | V | [Five-fingerprint full-frame evidence](verification/save-roundtrip-20261006.md): tested IV/EV/marking and existing inventory changes survive normal-key game save/reboot; native party bytes, entire storage and every pocket are checked. First four include batch/moves/swaps; Mercury's current fixture has no occupied box, so that move scenario is not newly certified. Scope: these 128 KiB fixtures, not all edits/emulators or RTC trailers. Earlier incorrect Mercury vanilla-offset inventory claims remain withdrawn; see [correction](verification/mercury-display-storage-20261005.md). |
-| Missing collection, regional planning, HTML / 缺失与路线规划 | P | P | P | P | P | `collection.rs` and shared Collection planning UI: read-only SAV missing goals, regions, guarded entrance alternatives and standalone HTML. Full task DAG/access/time remain partial. Mercury supports existing-individual and historical-Dex bases through [native split-bank reads](verification/mercury-dex-20261006.md); Dex writing stays disabled. |
+| Missing collection, regional planning, HTML / 缺失与路线规划 | R | R | R | R | R | Removed dedicated product workflow; reverse-engineering evidence retained in the address document. / 已删除产品专用实现，保留逆向证据。 |
+
+## Historical increments / 历史增量
+
+Everything below records earlier research; current product scope is the table above.
+以下均为之前的研究增量，当前产品能力以上方矩阵为准，撤去的功能不再提供入口。
 
 ## Reproducible baseline / 可重复基线
 
@@ -64,7 +82,7 @@ private file paths are not release inputs. Missing evidence is retained as a gap
 
 1. Runtime map topology and source-to-map navigation; preserve unresolved destinations.
 2. Shared acquisition index, with coordinates, conditions and explicit coverage limits.
-3. Read-only SAV overlays and collection planning, with evidence and HTML export.
+3. Read-only SAV receipt overlays in shared queries/maps; the collection UI/HTML planner is removed.
 4. Native clock/reward/generation validation per fingerprint; expand only proven rules.
 
 每阶段交付可操作的流程；未知脚本、动态布局和当前可达性始终保留提示。不存在

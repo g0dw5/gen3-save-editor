@@ -1,5 +1,12 @@
 # Service-menu cancellation / 服务菜单取消规则
 
+> Historical research / 历史逆向记录：the dedicated four-tab feature and its
+> commands/tests were removed during reference cleanup. Procedures below
+> describe commit `f5b085c`, not the current application. Findings and limits
+> remain evidence; use [current key addresses](../research/reference-key-addresses.md)
+> for subsequent investigation. 本文旧页面／命令已撤去，不是当前产品使用说明。
+
+
 Date: 2026-10-06. Exact registered Mercury 1.2 and Ultimate Emerald 5.5 inputs.
 This increment corrects reference text and adds runtime, read-only menu metadata.
 No SAV editing, item consumption or ROM writing is added. Overall training is

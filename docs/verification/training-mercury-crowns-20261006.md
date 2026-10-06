@@ -1,5 +1,12 @@
 # Mercury 1.2 crown service / 水银 1.2 王冠服务
 
+> Historical research / 历史逆向记录：the dedicated four-tab feature and its
+> commands/tests were removed during reference cleanup. Procedures below
+> describe commit `f5b085c`, not the current application. Findings and limits
+> remain evidence; use [current key addresses](../research/reference-key-addresses.md)
+> for subsequent investigation. 本文旧页面／命令已撤去，不是当前产品使用说明。
+
+
 Exact registered fingerprint `f323df1792ac68462a34b42fe8571533`, readonly queries.
 The shared training page now links the runtime service to requirements, item
 acquisition, prerequisite clues and NPC/map/entrance navigation. This increment

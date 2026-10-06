@@ -73,35 +73,6 @@ pub(crate) fn evolution_targets(e: &Evolution) -> Vec<Target> {
     targets
 }
 
-/// Match decoded location requirements, not runtime eligibility or reachability.
-pub(crate) fn evolution_location_maps<'a>(
-    e: &Evolution,
-    maps: &'a [crate::world::Map],
-) -> Vec<&'a crate::world::Map> {
-    let mut requirements = e.requirements.clone();
-    if e.condition == "region" {
-        requirements.push(crate::rom::EvolutionRequirement {
-            kind: "region",
-            value: e.parameter,
-        });
-    }
-    if !requirements
-        .iter()
-        .any(|r| matches!(r.kind, "map" | "region"))
-    {
-        return vec![];
-    }
-    maps.iter()
-        .filter(|map| {
-            requirements.iter().all(|r| match r.kind {
-                "map" => map.id == format!("{}-{}", r.value >> 8, r.value & 255),
-                "region" => map.region as u16 == r.value,
-                "outside_region" => map.region as u16 != r.value,
-                _ => true,
-            })
-        })
-        .collect()
-}
 #[derive(Clone, Debug, Serialize)]
 pub struct ConditionCheck {
     pub condition: EventCondition,
@@ -193,7 +164,6 @@ pub(crate) struct WildCache {
 }
 pub struct AcquisitionIndex {
     pub(crate) wild_cache: RefCell<WildCache>,
-    pub(crate) breeding_cache: RefCell<crate::breeding_collection::Cache>,
     pub world: World,
     pub species: Vec<Species>,
     pub evolutions: BTreeMap<u16, Vec<Evolution>>,
@@ -456,7 +426,6 @@ impl AcquisitionIndex {
         }
         Ok(Self {
             wild_cache: RefCell::default(),
-            breeding_cache: Default::default(),
             world: rom.world()?,
             species,
             evolutions,
@@ -1056,7 +1025,6 @@ mod tests {
         };
         let index = AcquisitionIndex {
             wild_cache: RefCell::default(),
-            breeding_cache: Default::default(),
             world: World {
                 maps: vec![],
                 map_events: vec![],
