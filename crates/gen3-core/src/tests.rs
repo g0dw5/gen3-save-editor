@@ -249,6 +249,12 @@ fn contest_matches_native_feeding_and_npc_bounds() {
 /// Synthetic labels deliberately differ from every supported game's names.
 fn label_fixture(b: &mut [u8], p: profile::Profile) {
     if let Some(rules) = p.event_state.and_then(|r| r.effects) {
+        for (opcode, handler) in [8, 9, 3, 0x66, 0x67, 0x6e, 0x28, 0x68]
+            .into_iter()
+            .zip(rules.presentation_handlers)
+        {
+            put32(b, rules.commands + opcode * 4, 0x08000001 + handler as u32);
+        }
         for (opcode, handler) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
             .into_iter()
             .zip(rules.handlers)
@@ -3954,6 +3960,287 @@ fn local_query_acquisition_and_collection_all_profiles() {
 #[cfg(test)]
 pub(crate) fn query_fixture_rom() -> Rom {
     rom()
+}
+
+#[test]
+fn standard_dialogues_preserve_position_and_keep_choices_unknown_across_profiles() {
+    use crate::event_dependencies::Index;
+    for profile in profile::PROFILES {
+        let (mut rom, map) = npc_trade_fixture(profile);
+        let rules = rom.profile.event_state.unwrap().effects.unwrap();
+        let b = std::sync::Arc::make_mut(&mut rom.data);
+        for (op, handler) in [8, 9, 3, 0x66, 0x67, 0x6e, 0x28, 0x68]
+            .into_iter()
+            .zip(rules.presentation_handlers)
+        {
+            put32(b, rules.commands + op * 4, 0x08000001 + handler as u32);
+        }
+        for (op, handler) in [0x39, 0x3a, 0x3b, 0x3d, 0x3e, 0xd1, 0xd7]
+            .into_iter()
+            .zip(rules.warp_handlers)
+        {
+            if handler != 0 {
+                put32(b, rules.commands + op * 4, 0x08000001 + handler as u32);
+            }
+        }
+        for handler in &rules.presentation_handlers[..2] {
+            put32(b, handler + 0x28, 0x08027500);
+            put32(b, handler + 0x2c, 0x08027520);
+        }
+        if let Some(hook) = rules.standard_call_hook {
+            let handler = rules.presentation_handlers[1];
+            put16(b, handler + 0x12, 0x4b06);
+            put16(b, handler + 0x14, 0x4718);
+            put32(b, handler + 0x2c, 0x08000001 + hook as u32);
+            put16(b, hook + 6, 0x2807);
+            for (offset, index) in [(0x0a, 2), (0x0e, 3), (0x12, 4), (0x16, 6)] {
+                put16(b, hook + offset, 0x2800 + index);
+            }
+        }
+        // A runtime body in slot 7, not a hardcoded standard ID or body address.
+        put32(b, 0x27500 + 7 * 4, 0x08027600);
+        b[0x27600..0x2760a].copy_from_slice(&[0x67, 0, 0, 0, 0, 0x66, 0x6e, 20, 8, 3]);
+        let root = 0x26000;
+        let entry = 0x26100;
+        let yes = 0x26200;
+        b[root..root + 5].copy_from_slice(&[0x2b, 11, 0, 6, 1]);
+        put32(b, root + 5, 0x08000000 + entry as u32);
+        b[root + 9] = 2;
+        b[entry..entry + 24].copy_from_slice(&[
+            0x16, 8, 0x80, 1, 0, 0x16, 9, 0x80, 2, 0, 0x16, 0x0d, 0x80, 1, 0, 9, 7, 0x21, 0x0d,
+            0x80, 1, 0, 6, 1,
+        ]);
+        put32(b, entry + 24, 0x08000000 + yes as u32);
+        b[entry + 28..entry + 33].copy_from_slice(&[0x16, 8, 0x80, 3, 0]);
+        let passage = [0x68, 0x28, 30, 0, 0x3b, 0, 1, 255, 8, 0x80, 9, 0x80, 2];
+        b[entry + 33..entry + 46].copy_from_slice(&passage);
+        b[yes..yes + 13].copy_from_slice(&passage);
+        let mut target = map.clone();
+        target.id = "0-1".into();
+        target.name = "Synthetic interior".into();
+        target.map_type = 4;
+        target.events = None;
+        target.scripts.clear();
+        let maps = vec![map.clone(), target];
+        let before = rom.data.clone();
+        let index = Index::build(&rom, &maps).unwrap();
+        let report = index.map_navigation(&rom, &maps, "0-1", None).unwrap();
+        assert_eq!(report.incoming.len(), 2, "{}", profile.id);
+        let coordinates: std::collections::BTreeSet<_> = report
+            .incoming
+            .iter()
+            .map(|edge| (edge.target_x, edge.target_y))
+            .collect();
+        assert_eq!(coordinates, [(Some(1), Some(2)), (Some(3), Some(2))].into());
+        for edge in &report.incoming {
+            assert!(edge.unresolved.is_none());
+            let script = edge.script.as_ref().unwrap();
+            assert!(script.entry_unresolved);
+            assert!(script
+                .stopped_at
+                .iter()
+                .all(|offset| [entry + 37, yes + 4].contains(offset)));
+            assert!(script.checks.iter().any(|check| check.condition.id == 11));
+            assert!(script
+                .checks
+                .iter()
+                .any(|check| { check.condition.id == 0x800d && check.satisfied.is_none() }));
+        }
+        let save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
+        let saved_before = save.data.clone();
+        let saved = index
+            .map_navigation(&rom, &maps, "0-1", Some(&save))
+            .unwrap();
+        assert_eq!(saved.incoming.len(), 2);
+        assert!(saved.incoming.iter().all(|edge| edge
+            .script
+            .as_ref()
+            .unwrap()
+            .checks
+            .iter()
+            .any(|check| check.condition.id == 0x800d && check.satisfied.is_none())));
+        assert_eq!(save.data, saved_before);
+        assert_eq!(rom.data, before);
+
+        // Script comparisons are cached by the native context. Changing the
+        // later menu result does not erase a previously computed flag comparison.
+        let mut cached = rom.clone();
+        let b = std::sync::Arc::make_mut(&mut cached.data);
+        b[root..root + 19].copy_from_slice(&[
+            0x16, 8, 0x80, 1, 0, 0x16, 9, 0x80, 2, 0, 0x2b, 11, 0, 9, 7, 6, 1, 0, 0,
+        ]);
+        put32(b, root + 17, 0x08000000 + yes as u32);
+        b[root + 21] = 2;
+        let graph = Index::build(&cached, &maps)
+            .unwrap()
+            .navigation_graph(&cached, &maps, None)
+            .unwrap();
+        assert_eq!(graph.edges.len(), 1);
+        assert_eq!(graph.edges[0].target_x, Some(1));
+        assert!(graph.edges[0]
+            .script
+            .as_ref()
+            .unwrap()
+            .checks
+            .iter()
+            .any(|check| check.condition.id == 11));
+
+        // Out-of-range gotoStd consumes its operand and continues; it must not
+        // return out of this root. Valid gotoStd returns out of the current call.
+        let mut ignored = rom.clone();
+        let b = std::sync::Arc::make_mut(&mut ignored.data);
+        b[entry + 15..entry + 17].copy_from_slice(&[8, 255]);
+        let graph = Index::build(&ignored, &maps)
+            .unwrap()
+            .navigation_graph(&ignored, &maps, None)
+            .unwrap();
+        assert_eq!(graph.edges.len(), 1);
+        assert_eq!(graph.edges[0].target_x, Some(1));
+        std::sync::Arc::make_mut(&mut ignored.data)[entry + 16] = 7;
+        let graph = Index::build(&ignored, &maps)
+            .unwrap()
+            .navigation_graph(&ignored, &maps, None)
+            .unwrap();
+        assert!(graph.edges.is_empty());
+
+        // Unknown bodies/native dispatches invalidate positions. A stale index
+        // rejects mutated inputs even when the profile's stored MD5 is unchanged.
+        let mut unknown = rom.clone();
+        let b = std::sync::Arc::make_mut(&mut unknown.data);
+        b[0x27600] = 0x25;
+        let graph = Index::build(&unknown, &maps)
+            .unwrap()
+            .navigation_graph(&unknown, &maps, None)
+            .unwrap();
+        assert!(graph.edges.iter().any(|edge| edge.unresolved.is_some()));
+        assert!(index.navigation_graph(&unknown, &maps, None).is_err());
+        let b = std::sync::Arc::make_mut(&mut unknown.data);
+        b[0x27600] = 0x67;
+        put32(b, rules.commands + 0x6e * 4, 0x08001001);
+        let graph = Index::build(&unknown, &maps)
+            .unwrap()
+            .navigation_graph(&unknown, &maps, None)
+            .unwrap();
+        assert!(graph.edges.iter().any(|edge| edge.unresolved.is_some()));
+
+        let mut retargeted = rom.clone();
+        let b = std::sync::Arc::make_mut(&mut retargeted.data);
+        put32(b, 0x27500 + 7 * 4, 0x08027700);
+        b[0x27700..0x27706].copy_from_slice(&[0x67, 0, 0, 0, 0, 3]);
+        let graph = Index::build(&retargeted, &maps)
+            .unwrap()
+            .navigation_graph(&retargeted, &maps, None)
+            .unwrap();
+        assert_eq!(graph.edges.len(), 1);
+        assert_eq!(graph.edges[0].target_x, Some(1));
+
+        // Item/quantity constants likewise survive a prompt. No receipt flag
+        // or delivery status is fabricated from those readable operands.
+        let mut gift = rom.clone();
+        let b = std::sync::Arc::make_mut(&mut gift.data);
+        b[root..root + 18].copy_from_slice(&[
+            0x16, 0, 0x80, 2, 0, 0x16, 1, 0x80, 1, 0, 9, 7, 0x44, 0, 0x80, 1, 0x80, 2,
+        ]);
+        let rewards = gift.map_events(&map).unwrap();
+        let reward = &rewards.markers[0].rewards[0];
+        assert_eq!((reward.item, reward.quantity), (2, Some(1)));
+        assert!(reward.receipt.is_none());
+    }
+}
+
+#[test]
+#[ignore = "requires all five exact ROMs and GEN3_DIALOGUE_PROBES native mGBA vectors"]
+fn local_standard_dialogues_match_native_and_resolve_referenced_coordinates() {
+    use crate::event_dependencies::Index;
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_DIALOGUE_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let original = std::fs::read(&path).unwrap();
+        let rom = Rom::open(original.clone()).unwrap();
+        let proof = &probes[key];
+        assert_eq!(proof["md5"].as_str().unwrap(), rom.profile.md5);
+        assert_eq!(proof["sha256"].as_str().unwrap(), sha256(&original));
+        let rules = rom.profile.event_state.unwrap().effects.unwrap();
+        for (op, expected) in [8, 9, 3, 0x66, 0x67, 0x6e, 0x28, 0x68]
+            .into_iter()
+            .zip(rules.presentation_handlers)
+        {
+            assert_eq!(
+                proof["handlers"][op.to_string()].as_u64().unwrap() as usize,
+                expected
+            );
+        }
+        assert_eq!(proof["dispatch"].as_array().unwrap().len(), 512);
+        let mut classified = 0;
+        for row in proof["dispatch"].as_array().unwrap() {
+            let op = row["opcode"].as_u64().unwrap() as u8;
+            let index = row["index"].as_u64().unwrap() as u8;
+            // These are operand-decoding contexts, not assertions that arbitrary
+            // matching bytes are referenced scripts or accessible game content.
+            let Some(pc) = original.windows(2).position(|v| v == [op, index]) else {
+                continue;
+            };
+            if let Some(effect) = rom.script_presentation(pc) {
+                classified += 1;
+                assert_eq!(effect.returns, row["valid"].as_bool().unwrap());
+            }
+        }
+        assert!(classified > 100);
+        let prompt = original.windows(2).position(|v| v == [9, 5]).unwrap();
+        let effect = rom.script_presentation(prompt).unwrap();
+        assert!(effect.choice && effect.returns);
+        for row in proof["choices"].as_array().unwrap() {
+            for i in 0..16 {
+                if i != 13 {
+                    assert_eq!(row["before"][i], row["after"][i]);
+                }
+            }
+        }
+        assert!(proof["existing_menu_preserved"].as_bool().unwrap());
+        let maps = rom.maps().unwrap();
+        let index = Index::build(&rom, &maps).unwrap();
+        let graph = index.navigation_graph(&rom, &maps, None).unwrap();
+        let coordinates: Vec<_> = graph
+            .edges
+            .iter()
+            .filter(|edge| {
+                edge.script.is_some()
+                    && original[edge.offset + 3] == 255
+                    && (u16(&original, edge.offset + 4).unwrap() >= 0x4000
+                        || u16(&original, edge.offset + 6).unwrap() >= 0x4000)
+            })
+            .collect();
+        assert_eq!(coordinates.len(), if key == "MERCURY12" { 0 } else { 12 });
+        assert!(coordinates.iter().all(|edge| {
+            edge.unresolved.is_none() && edge.target_x.is_some() && edge.target_y.is_some()
+        }));
+        let save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
+        let before = save.data.clone();
+        let saved = index.navigation_graph(&rom, &maps, Some(&save)).unwrap();
+        for edge in &coordinates {
+            let current = saved
+                .edges
+                .iter()
+                .find(|e| {
+                    e.from == edge.from
+                        && e.offset == edge.offset
+                        && e.script.as_ref().unwrap().root == edge.script.as_ref().unwrap().root
+                })
+                .unwrap();
+            assert_eq!(
+                (edge.target_x, edge.target_y),
+                (current.target_x, current.target_y)
+            );
+            assert!(current.script.as_ref().unwrap().entry_unresolved);
+        }
+        assert_eq!(save.data, before);
+        assert_eq!(rom.data.as_ref(), &original);
+        assert_eq!(std::fs::read(path).unwrap(), original);
+        println!("{key}: native presentation parity and {} referenced variable-coordinate entrances; coordinates preserved across SAV snapshots, access unproven", coordinates.len());
+    }
 }
 
 #[test]

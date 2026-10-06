@@ -349,6 +349,7 @@ impl Rom {
                     stopped.insert(pc);
                     break;
                 }
+                let presentation = self.script_presentation(pc);
                 if !prove && !observe {
                     match self.script_daycare_instruction(pc) {
                         Ok(Some(mut source)) => {
@@ -413,10 +414,12 @@ impl Rom {
                     // Width alone does not establish preservation of local state.
                     // Retain potential later writes, but invalidate known operands
                     // after commands outside this verified event/presentation set.
-                    if !matches!(op,
-                        0x00..=0x07 | 0x0f | 0x16..=0x1a | 0x21 | 0x22 | 0x29..=0x2b |
-                        0x2f..=0x32 | 0x44 | 0x47 | 0x48 | 0x5a | 0x66 | 0x67 | 0x6a..=0x6d | 0x84 | 0x90..=0x92
-                    ) {
+                    if presentation.is_none()
+                        && !matches!(op,
+                            0x00..=0x07 | 0x0f | 0x16..=0x1a | 0x21 | 0x22 | 0x29..=0x2b |
+                            0x2f..=0x32 | 0x44 | 0x47 | 0x48 | 0x5a | 0x6a..=0x6d | 0x84 | 0x90..=0x92
+                        )
+                    {
                         stopped.insert(pc);
                         s.vars.clear();
                         s.flags.clear();
@@ -453,9 +456,10 @@ impl Rom {
                 // Only commands with verified event/variable or presentation
                 // semantics may participate in receipt proofs. Width alone is not proof.
                 if prove
+                    && presentation.is_none()
                     && !matches!(op,
                         0x00..=0x09 | 0x0f | 0x16..=0x19 | 0x1a | 0x21 | 0x22 | 0x29..=0x2b |
-                        0x2f..=0x32 | 0x44 | 0x48 | 0x5a | 0x66 | 0x67 | 0x6a..=0x6d | 0x84
+                        0x2f..=0x32 | 0x44 | 0x48 | 0x5a | 0x6a..=0x6d | 0x84
                     )
                 {
                     complete = false;
@@ -571,34 +575,56 @@ impl Rom {
                     }
                     0x08 | 0x09 => {
                         let std = b[pc + 1];
-                        if matches!(std, 0 | 1) {
+                        if presentation.is_none() && matches!(std, 0 | 1) {
                             reward = Some((
                                 resolve(&s, 0x8000),
                                 resolve(&s, 0x8001),
                                 if std == 1 { "pickup" } else { "gift" },
                             ));
                         }
-                        // Standard-script presentation is qualified for receipt
-                        // tracing, not a proof of unchanged resource state.
-                        s.bag_changed = true;
-                        s.money_changed = true;
-                        s.resource_vars_unknown = true;
-                        s.checks.retain(|k, _| *k < 0x8000);
-                        // Standard scripts can overwrite temporary variables/results.
-                        s.vars.retain(|k, _| *k < 0x8000);
-                        s.comparison = None;
-                        s.boolean_comparison = None;
-                        s.known_comparison = None;
-                        if prove && !matches!(std, 0 | 2..=6) {
-                            complete = false;
+                        if let Some(effect) = presentation {
+                            if effect.choice {
+                                s.vars.remove(&0x800d);
+                                s.checks.remove(&0x800d);
+                            }
+                        } else {
+                            // Unknown standard bodies can write temporary state
+                            // and resources. A width or standard ID is not proof.
+                            s.bag_changed = true;
+                            s.money_changed = true;
+                            s.resource_vars_unknown = true;
+                            s.checks.retain(|k, _| *k < 0x8000);
+                            s.vars.retain(|k, _| *k < 0x8000);
+                            s.comparison = None;
+                            s.boolean_comparison = None;
+                            s.known_comparison = None;
+                            if prove && std != 0 {
+                                complete = false;
+                            }
                         }
-                        if op == 8 {
+                        if op == 8 && presentation.is_none_or(|effect| effect.returns) {
                             if let Some(p) = s.stack.pop() {
                                 s.pc = p;
                             } else {
                                 terminal = true;
                             }
                         }
+                    }
+                    0x6e if presentation.is_some() => {
+                        s.vars.remove(&0x800d);
+                        s.checks.remove(&0x800d);
+                    }
+                    0x28 | 0x66..=0x68 | 0x6e if presentation.is_none() => {
+                        stopped.insert(pc);
+                        s.vars.clear();
+                        s.checks.clear();
+                        s.flags.clear();
+                        s.comparison = None;
+                        s.boolean_comparison = None;
+                        s.known_comparison = None;
+                        s.bag_changed = true;
+                        s.money_changed = true;
+                        s.resource_vars_unknown = true;
                     }
                     // Conditional standard scripts, virtual/RAM jumps and trainer engine
                     // continuations need an interpreter; never walk through their operands.

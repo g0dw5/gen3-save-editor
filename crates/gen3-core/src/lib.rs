@@ -24,6 +24,7 @@ pub mod profile;
 pub mod rom;
 pub mod save;
 pub mod script_pokemon;
+mod script_presentation;
 pub mod script_resources;
 pub mod script_teaching;
 pub mod session;

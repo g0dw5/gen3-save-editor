@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Preserve script-assigned coordinates and item operands through verified field
+  prompts, close-message and delay commands. Read standard bodies from each ROM,
+  account for the expanded message gate, and retain unknown choices and access.
+  Five-ROM native comparison resolves 48 referenced coordinate cases; it does
+  not establish 48 distinct doors or complete field interactions.
+- 修复对话、关闭消息及等待后丢失入口坐标和道具参数的问题。通用脚本按当前 ROM
+  读取，究极绿宝石的额外分派单独处理；选择与可达性仍保留未知。五指纹原生
+  对照后，48 条坐标引用可定位，不将引用数当作独立入口数或完整现场验证。
+
 - Share guarded script entrances across collection sources, evolution preparation,
   prerequisite candidates and standalone HTML. Keep route alternatives separate,
   trace their persistent guards to affected goals, preserve unresolved incoming

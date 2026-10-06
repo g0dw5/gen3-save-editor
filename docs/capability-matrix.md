@@ -580,3 +580,17 @@ references. Coverage, cycles and bounded-search warnings are retained.
 五指纹共用入口查询与 UI，按当前 SAV 重查条件；不将各条备选路线当成一组必做
 任务，不将领取状态或可达性从入口推断出来。真实 ROM、原生参数对照、合成 SAV
 及合成界面测试分别说明。[验证与未完成范围](verification/collection-script-entrances-20261006.md)。
+
+## Presentation dataflow / 对话后的脚本数据流
+
+Map access, acquisition and planning remain **P** for every profile. Runtime
+standard-script summaries now preserve verified field dataflow through prompts,
+close-message and delays. The expanded standard-call gate is isolated from the
+ordinary engine; unknown bodies/dispatches invalidate operands rather than inherit
+another ROM's rules. Player choices remain unknown. A real-ROM survey resolves
+12 variable-coordinate references each in BW/DP/Rocket/Ultimate, with none in
+Mercury 1.2. References are not distinct doors or proof of current access.
+
+五指纹的 2,560 次原生通用分派、消息／选择／等待字段验证，与真实 ROM 引用扫描
+分别记录；没有新增存档写入、完整现场交互或可达性证明。坐标改善由共用入口图
+进入地图与收集规划／HTML。见[验证及复现](verification/script-dialogues-20261006.md)。

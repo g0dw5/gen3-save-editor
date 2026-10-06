@@ -40,6 +40,12 @@ Satisfied saved guards do not prove access or a return route. See the
 [native verification and limits](docs/verification/script-warps-20261006.md) and
 [collection entrance integration](docs/verification/collection-script-entrances-20261006.md).
 
+Verified presentation commands preserve script-assigned entrance coordinates
+across prompts, message closing and delays. Standard bodies are read from the
+current ROM; player choices, unsupported bodies and current access remain unknown.
+The expanded engine's message gate is handled separately. See
+[native evidence and limits](docs/verification/script-dialogues-20261006.md).
+
 
 Missing species also show a bounded, directed permanent-evolution preparation
 chain when a current non-egg ancestor or referenced ancestor source is found.

@@ -27,9 +27,18 @@ pub struct Rules {
     /// Native warp, silent, door, teleport, setwarp, spin and gym dispatch.
     /// Zero means unsupported/unverified; destination setters are not passages.
     pub warp_handlers: [usize; 7],
+    /// Standard jump/call, return, wait/message, yes/no, delay and close-message.
+    /// Addresses identify verified native behavior, never standard-script content.
+    pub presentation_handlers: [usize; 8],
+    /// Optional native message-preparation gate in the standard-call dispatcher.
+    pub standard_call_hook: Option<usize>,
 }
 const OPCODES: [u8; 8] = [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f];
 pub const EMERALD: Rules = Rules {
+    standard_call_hook: None,
+    presentation_handlers: [
+        0x99508, 0x99538, 0x99380, 0x9ac78, 0x9abd4, 0x9acd4, 0x99db4, 0x9ac8c,
+    ],
     warp_handlers: [
         0x99ebc, 0x99f44, 0x99fcc, 0x9a0c8, 0x9a1d8, 0x9bcdc, 0x9a150,
     ],
@@ -62,6 +71,10 @@ pub const EMERALD: Rules = Rules {
     ],
 };
 pub const ROCKET: Rules = Rules {
+    standard_call_hook: None,
+    presentation_handlers: [
+        0xcf3f8, 0xcf428, 0xcf270, 0xd0bac, 0xd0b08, 0xd0c08, 0xcfcfc, 0xd0bc0,
+    ],
     warp_handlers: [
         0xcfe04, 0xcfe8c, 0xcff14, 0xd0010, 0xd0120, 0xd1cac, 0xd0098,
     ],
@@ -76,6 +89,10 @@ pub const ROCKET: Rules = Rules {
     ],
 };
 pub const MERCURY: Rules = Rules {
+    standard_call_hook: None,
+    presentation_handlers: [
+        0x6a150, 0x6a180, 0x69fc8, 0x6b878, 0x1d5df26, 0x6ba80, 0x6a9b0, 0x6b88c,
+    ],
     warp_handlers: [0x6aa64, 0x6aaec, 0x6ab74, 0x6ac70, 0x6ad8c, 0x6acf8, 0],
     battle_roles: [
         "primary",
@@ -104,6 +121,10 @@ pub const MERCURY: Rules = Rules {
     handlers: [
         0x6a390, 0x6a584, 0x6a5ac, 0x6a3b4, 0x6a3e0, 0x6a82c, 0x6a840, 0x6a2b4,
     ],
+};
+pub const EXPANDED: Rules = Rules {
+    standard_call_hook: Some(0x14a332c),
+    ..EMERALD
 };
 pub(crate) fn validate(rom: &Rom) -> Result<()> {
     let rules = rom

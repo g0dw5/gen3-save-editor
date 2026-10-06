@@ -18,6 +18,10 @@
 见[原生验证与边界](docs/verification/script-warps-20261006.md)及
 [收集入口整合记录](docs/verification/collection-script-entrances-20261006.md)。
 
+经过已验证的对话、关闭消息及等待指令后，保留脚本已赋值的入口坐标。通用对话
+脚本实时读取当前 ROM，玩家选择与未知脚本仍保留未知；究极绿宝石的额外分派逻辑
+单独核对，不沿用其他版本。见[原生对照与边界](docs/verification/script-dialogues-20261006.md)。
+
 ## 金手指
 
 先打开完整指纹匹配的 ROM，再从顶栏打开“金手指”，无需存档。金手指窗口沿用
