@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Read Dark Phantom BW/DP's native seven-row alternate evolution table instead
+  of omitting its last two routes. Mercury item-evolution references now include
+  the native gender requirement, resolved from current ROM operands. Tree,
+  reverse uses and collection/HTML share these facts; full eligibility remains
+  separate from the verified item-selector scenarios.
+- 漆黑 BW／DP 按原生七条扩展进化表读取，补回遗漏的两条；水银道具进化补充
+  原生性别限制，道具参数与性别均读取当前 ROM。进化树、用途反查和收集／HTML
+  共用这些条件；道具判定情景验证不冒充完整进化资格、消耗或动画验证。
+
 - Link evolution requirements to current-ROM items/moves and add separate reverse
   evolution uses. Share decoded location maps/entrances across reference queries,
   collection preparation and HTML; preserve compound conditions when deduplicating

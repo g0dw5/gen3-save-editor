@@ -15,11 +15,16 @@ These are table-backed references, **not proof of current evolution eligibility*
 | Ultimate 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | 95 | 13 | 1 | 48 |
 | Mercury 1.2 | `f323df1792ac68462a34b42fe8571533` | 142 | 20 | 1 | 61 |
 
+These counts record the reader before the subsequent native-selector correction;
+BW/DP's alternate table was **not yet configured** in this revision. See
+[the correction and native evidence](item-evolutions-20261006.md). The earlier
+claim below that the BW/DP alternate table was already read is withdrawn.
+
 Counts are decoded resource references, not distinct evolutions, obtainable
 species or completed tasks. A compound rule can reference two items. Zero move/
 companion references in this BW/DP scan do not prove absence of every custom
-progression mechanic. Runtime rows and the BW/DP alternate evolution table stay
-bound to the opened ROM; no names, rules catalog or images are bundled.
+progression mechanic. Runtime rows stay bound to the opened ROM; no names, rules
+catalog or images are bundled.
 
 ## Shared model and navigation / 共用模型与跳转
 

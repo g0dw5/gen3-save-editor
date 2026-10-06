@@ -248,6 +248,10 @@ fn contest_matches_native_feeding_and_npc_bounds() {
 
 /// Synthetic labels deliberately differ from every supported game's names.
 fn label_fixture(b: &mut [u8], p: profile::Profile) {
+    if let Some(check) = p.item_evolution_gender_check {
+        // Synthetic item operand; never copy an extracted item-name catalog.
+        put16(b, check, 0x2a01);
+    }
     if let Some(rules) = p.event_state.and_then(|r| r.effects) {
         put32(
             b,
@@ -11993,4 +11997,230 @@ fn evolution_requirements_link_resources_without_becoming_acquisition_sources() 
         assert_eq!(save.data, before);
         assert_eq!(r.data, original);
     }
+}
+
+#[test]
+fn extended_evolution_tables_read_current_bytes_and_remain_profile_scoped() {
+    for p in [profile::BW, profile::DP] {
+        let mut r = adapter_rom(p);
+        let (species, table) = p.evolution_overrides[0];
+        assert_eq!((species, table.count, table.stride), (133, 7, 8));
+        let ordinary = p.evolutions.offset + species as usize * p.evolutions.stride;
+        let data = std::sync::Arc::make_mut(&mut r.data);
+        // Deliberately disagree with the legacy table; extracted constants cannot
+        // satisfy the mutated runtime records, including the two extended rows.
+        for row in 0..table.count {
+            put16(data, table.offset + row * 8, 7);
+            put16(data, table.offset + row * 8 + 2, 10 + row as u16);
+            put16(data, table.offset + row * 8 + 4, 1 + row as u16);
+        }
+        put16(data, ordinary, 7);
+        put16(data, ordinary + 2, 99);
+        put16(data, ordinary + 4, 99);
+        let before = r.data.clone();
+        let rows = r.evolutions(species).unwrap();
+        assert_eq!(rows.len(), 7);
+        for (row, e) in rows.iter().enumerate() {
+            assert_eq!(e.offset, table.offset + row * 8);
+            assert_eq!(e.parameter, 10 + row as u16);
+            assert_eq!(e.target, 1 + row as u16);
+            assert_eq!(e.condition, "item");
+        }
+        assert_eq!(r.data, before);
+        put16(
+            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+            table.offset + 50,
+            77,
+        );
+        assert_eq!(r.evolutions(species).unwrap()[6].parameter, 77);
+        assert_eq!(r.evolutions(species + 1).unwrap().len(), 0);
+    }
+    assert!(profile::ROCKET.evolution_overrides.is_empty());
+    assert!(crate::mercury::PROFILE.evolution_overrides.is_empty());
+    let (_, table) = crate::ultimate::PROFILE.evolution_overrides[0];
+    assert_eq!((table.offset, table.count), (0x1f0b760, 10));
+}
+
+#[test]
+fn native_item_gender_requirements_follow_operands_without_leaking_to_other_profiles() {
+    for p in profile::PROFILES {
+        let mut r = adapter_rom(p);
+        let offset = r.profile.evolutions.offset + r.profile.evolutions.stride;
+        let bytes = std::sync::Arc::make_mut(&mut r.data);
+        bytes[offset..offset + r.profile.evolutions.stride].fill(0);
+        put16(bytes, offset, 7);
+        put16(bytes, offset + 2, 1);
+        put16(bytes, offset + 4, 2);
+        put16(bytes, offset + 6, 254);
+        let has_gender_check = p.item_evolution_gender_check.is_some();
+        let row = r.evolutions(1).unwrap().remove(0);
+        assert_eq!(row.requirements.len(), usize::from(has_gender_check));
+        if let Some(check) = p.item_evolution_gender_check {
+            assert_eq!(
+                (row.requirements[0].kind, row.requirements[0].value),
+                ("gender", 254)
+            );
+            put16(
+                std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+                check,
+                0x2a02,
+            );
+            assert!(r.evolutions(1).unwrap()[0].requirements.is_empty());
+            put16(
+                std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+                offset + 2,
+                2,
+            );
+            assert_eq!(r.evolutions(1).unwrap()[0].requirements[0].value, 254);
+            put16(
+                std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+                check,
+                0x4770,
+            );
+            assert_eq!(r.evolutions(1).unwrap_err().code, "evolution_gender_check");
+        }
+    }
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_ITEM_EVOLUTION_PROBES complete native observations"]
+fn local_item_evolutions_match_native_selectors_and_reference_closure() {
+    use crate::acquisition::{AcquisitionIndex, Target, TargetKind};
+    use sha2::{Digest, Sha256};
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_ITEM_EVOLUTION_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    let mut calls = 0;
+    let mut gender_calls = 0;
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
+        assert_eq!(probes[key]["md5"], rom.profile.md5);
+        assert_eq!(
+            probes[key]["sha256"],
+            format!("{:x}", Sha256::digest(&*rom.data))
+        );
+        let index = AcquisitionIndex::build(&rom).unwrap();
+        let mut expected = std::collections::BTreeSet::new();
+        for (source, rows) in &index.evolutions {
+            let items: std::collections::BTreeSet<_> = rows
+                .iter()
+                .filter(|e| e.method == 7 && e.parameter != 0)
+                .map(|e| e.parameter)
+                .collect();
+            if items.is_empty() {
+                continue;
+            }
+            for pid in [42, 255] {
+                for mode in [2, 3] {
+                    for item in std::iter::once(0).chain(items.iter().copied()) {
+                        expected.insert((*source, pid, mode, item));
+                    }
+                }
+            }
+        }
+        let mut actual = std::collections::BTreeSet::new();
+        for row in probes[key]["rows"].as_array().unwrap() {
+            let number = |name: &str| row[name].as_u64().unwrap() as u16;
+            let source = number("species");
+            assert!(actual.insert((source, number("pid"), number("mode"), number("item"))));
+            let evolutions = &index.evolutions[&source];
+            for e in evolutions {
+                let native_row = row["rows"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .find(|r| r["offset"].as_u64() == Some(e.offset as u64))
+                    .unwrap();
+                assert_eq!(native_row["method"].as_u64(), Some(e.method as u64));
+                assert_eq!(native_row["parameter"].as_u64(), Some(e.parameter as u64));
+                assert_eq!(native_row["target"].as_u64(), Some(e.target as u64));
+            }
+            let target = number("target");
+            if target != 0 {
+                assert!(
+                    evolutions.iter().any(|e| e.target == target),
+                    "{key}: {row}"
+                );
+            }
+            if key == "BW" || key == "DP" {
+                assert_eq!(
+                    target,
+                    evolutions
+                        .iter()
+                        .find(|e| e.method == 7 && e.parameter == number("item"))
+                        .map_or(0, |e| e.target)
+                );
+                assert!(row["changed_bytes"].as_array().unwrap().is_empty());
+            }
+            calls += 1;
+        }
+        assert_eq!(
+            actual, expected,
+            "every runtime ordinary item-row scenario must be covered: {key}"
+        );
+        if key == "BW" || key == "DP" {
+            let rows = rom.evolutions(133).unwrap();
+            assert_eq!(rows.len(), 7);
+            assert_eq!(probes[key]["hook"]["rows"], 7);
+            for e in &rows[5..] {
+                let used = index
+                    .query(
+                        &rom,
+                        None,
+                        Target {
+                            kind: TargetKind::Item,
+                            id: e.parameter,
+                        },
+                    )
+                    .unwrap();
+                assert!(used
+                    .evolution_uses
+                    .iter()
+                    .any(|u| u.source == 133 && u.evolution.offset == e.offset));
+                let obtained = index
+                    .query(
+                        &rom,
+                        None,
+                        Target {
+                            kind: TargetKind::Species,
+                            id: e.target,
+                        },
+                    )
+                    .unwrap();
+                assert!(obtained.sources.iter().any(|s| s.kind == "evolution"
+                    && s.evolution.as_ref().is_some_and(|r| r.offset == e.offset)));
+                assert!(rom
+                    .species_relations(e.target)
+                    .unwrap()
+                    .evolutions
+                    .iter()
+                    .any(|r| r.source == 133 && r.evolution.offset == e.offset));
+            }
+        }
+        for row in probes[key]["gender_rows"].as_array().unwrap() {
+            let source = row["species"].as_u64().unwrap() as u16;
+            let item = row["item"].as_u64().unwrap() as u16;
+            let gender = row["gender"].as_u64().unwrap() as u16;
+            let target = row["target"].as_u64().unwrap() as u16;
+            let expected = index.evolutions[&source].iter().find(|e| {
+                e.method == 7
+                    && e.parameter == item
+                    && e.requirements
+                        .iter()
+                        .any(|r| r.kind == "gender" && r.value == gender)
+            });
+            assert_eq!(target, expected.map_or(0, |e| e.target));
+            gender_calls += 1;
+        }
+        assert_eq!(rom.data.as_slice(), std::fs::read(&path).unwrap());
+        eprintln!(
+            "{key}: {} complete native item-selector observations and {} gender/selector pairs",
+            actual.len(),
+            probes[key]["gender_rows"].as_array().unwrap().len()
+        );
+    }
+    assert_eq!(calls, 3344);
+    assert_eq!(gender_calls, 1024);
 }

@@ -300,6 +300,7 @@ pub const PROFILE: Profile = Profile {
         stride: 128,
     },
     evolution_overrides: &[],
+    item_evolution_gender_check: Some(0x1d2870e),
     learnsets: 0x17c32bc,
     eggs: 0x1781b64,
     teaching: TeachingRules {

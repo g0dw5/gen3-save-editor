@@ -740,3 +740,21 @@ conditions retain auxiliary items and region/map/weather/time requirements.
 Five-ROM reader/query regressions and bilingual ROM-switch/navigation fixtures
 are bounded evidence, not complete native eligibility or consumption. See
 [evidence and limits](verification/evolution-links-20261006.md).
+
+## Native item-evolution corrections / 原生道具进化修正
+
+[Complete selector evidence](verification/item-evolutions-20261006.md) corrects
+BW/DP's omitted alternate-table rows and Mercury's auxiliary gender gate.
+The baseline scans every ordinary item-row species at the true internal-ID
+bounds across all five exact fingerprints: 3,344 selector calls. Mercury adds
+1,024 selector/gender pairs over all PID low bytes. Tree, item reverse queries,
+target acquisition and bilingual collection/HTML share the decoded references.
+Runtime operands, not a bundled item/species catalog, select the gender rule.
+The earlier resource-link record incorrectly implied the BW/DP alternate table
+was already configured; that statement is explicitly withdrawn in its record.
+
+These selectors and the tested Mercury gender cases are **V within the stated
+synthetic RAM boundary**. Full evolution eligibility, contextual methods,
+consumption, animations and post-evolution SAV behavior remain **P/U**. Existing
+preparation counts describe possession, not proof that every individual meets
+all steps. Overall evolution and collection retain **P** for all five inputs.

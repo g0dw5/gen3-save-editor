@@ -42,7 +42,7 @@ def main():
     task = dict(target=dict(kind='species',id=1),family=[1],existing_family_members=[],source=source,alternatives=1)
     catalog['species'][1]['name'] = 'ROM parent'
     capture = dict(source, kind='grass',underfoot=None,min_level=5,max_level=8,encounter_percent=20,periods=['night'],in_scenario=False)
-    evolution = dict(method=7,condition='item',parameter=1,auxiliary=0,target=1,offset=300,requirements=[])
+    evolution = dict(method=7,condition='item',parameter=1,auxiliary=254,target=1,offset=300,requirements=[dict(kind='gender',value=254)])
     catalog['species'].append(species(3))
     evolution['target'] = 3
     location_evolution = dict(method=33,condition='level',parameter=20,auxiliary=0,target=1,offset=310,requirements=[dict(kind='map',value=1)])
@@ -189,6 +189,7 @@ def main():
         expect(page.locator('.collection-panel')).not_to_contain_text('Historical Dex records are read-only here')
         prep = page.locator('.collection-preparation')
         expect(prep).to_contain_text('Evolution preparation suggestion')
+        expect(prep).to_contain_text('Required gender: Female')
         expect(prep).to_contain_text('Use Test stone')
         prep.locator('.evolution-locations > summary').click()
         expect(prep.locator('.evolution-locations')).to_contain_text('specific tile, dynamic layout and current access are unverified')
@@ -209,6 +210,7 @@ def main():
         page.get_by_role('button',name='简体中文',exact=True).click()
         expect(page.locator('.collection-preparation')).to_contain_text('进化准备建议')
         expect(page.locator('.collection-preparation')).to_contain_text('使用「Test stone」')
+        expect(page.locator('.collection-preparation')).to_contain_text('要求性别：雌性')
         page.get_by_role('button',name='English',exact=True).click()
         with page.expect_download() as info:
             page.get_by_role('button',name='Export standalone HTML',exact=True).click()
@@ -216,6 +218,7 @@ def main():
         assert '&lt;script&gt;alert(1)&lt;/script&gt;' in html
         assert '<script>' not in html and 'default-src' in html
         assert 'Test cave floor · 0-1' in html and 'evolution-location-entrances' in html
+        assert 'Required gender: Female' in html
         assert 'specific tile, dynamic layout and current access are unverified' in html
         assert 'Two opponents in this encounter' in html and 'ROM parent · Lv. 21' in html
         assert 'Capture permissions and battle-start conditions remain unverified' in html
@@ -226,6 +229,7 @@ def main():
         assert 'Find prerequisite clues' in html and 'prerequisite-flag' in html and '&lt;script&gt;context&lt;/script&gt;' in html
         assert 'May set this event' in html and 'Test region entrance (2, 1)' in html
         assert 'Evolution preparation suggestion' in html and 'ROM parent → Test species' in html and 'Use Test stone' in html
+        assert 'Required gender: Female' in html
         assert 'Encounter slot probability 20%' in html and 'Outside the query period' in html
         task['preparation'] = dict(task['preparation'],current_count=2,source=None)
         page.get_by_role('checkbox',name='Permanent evolution family',exact=True).uncheck()
@@ -253,6 +257,7 @@ def main():
         assert '能否通过捕捉或夺取道具的招式获得仍待确认' in html
         assert '追查前置线索' in html and '可能设置此事件' in html
         assert 'Test cave floor · 0-1' in html and 'evolution-location-entrances' in html
+        assert '要求性别：雌性' in html
         assert '具体格位、动态布局及当前可达性未确认' in html
         assert '孵蛋与进化准备建议' in html and '2048 / 5050' in html
         assert '&lt;script&gt;parent&lt;/script&gt;' in html and '<script>' not in html

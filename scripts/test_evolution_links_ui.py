@@ -73,12 +73,14 @@ def main():
                 auxiliary=2,
                 related=[dict(kind="item", id=1), dict(kind="item", id=2)],
             )
+            rules[0]["requirements"] = [dict(kind="gender", value=254)]
             rules.append(
                 dict(
                     rules[0],
                     offset=101,
                     auxiliary=3,
                     related=[dict(kind="item", id=1), dict(kind="item", id=3)],
+                    requirements=[dict(kind="gender", value=0)],
                 )
             )
         if key in ["Rocket", "Ultimate", "Mercury"]:
@@ -289,6 +291,9 @@ def main():
             expect(
                 tree.locator('.evolution-card[data-species="2"] .evolution-condition')
             ).to_have_count(2 if key in ["Ultimate", "Mercury"] else 1)
+            if key == "Mercury":
+                expect(tree).to_contain_text("Required gender: Female")
+                expect(tree).to_contain_text("Required gender: Male")
             tree.get_by_role("button", name=f"{key} stone ↗", exact=True).first.click()
             expect(pane.locator(".reference-detail h2")).to_contain_text(f"{key} stone")
             uses = pane.locator(".evolution-uses")
@@ -313,6 +318,9 @@ def main():
             uses.locator("summary").first.click()
             page.get_by_role("button", name="简体中文", exact=True).click()
             expect(uses).to_contain_text("这是用途，不是获取方式")
+            if key == "Mercury":
+                expect(uses).to_contain_text("要求性别：雌性")
+                expect(uses).to_contain_text("要求性别：雄性")
             page.get_by_role("button", name="English", exact=True).click()
             if key == "Mercury":
                 uses.get_by_role("button", name=f"{key} held A ↗", exact=True).click()

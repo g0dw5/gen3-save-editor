@@ -377,3 +377,8 @@ Fixed-encounter readers follow the native single/pair inputs and expose known co
 Item reference queries include explicit held items from referenced fixed encounters, with Pokémon/map links and optional unconfirmed collection suggestions. Native setup fields are verified separately from capture, access and receipt; see [evidence](docs/verification/static-held-items-20261006.md).
 
 Evolution requirements now link to current-ROM resources and separate reverse uses; decoded location maps and entrance suggestions also appear in collection/HTML. Eligibility remains qualified; see [verification](docs/verification/evolution-links-20261006.md).
+
+Native item-selector checks corrected BW/DP's missing extended evolution rows
+and Mercury's auxiliary gender requirement. The shared tree, reverse queries and
+collection/HTML read these facts from the loaded ROM. They do not assert full
+current eligibility or item consumption; see [scope](docs/verification/item-evolutions-20261006.md).

@@ -105,6 +105,9 @@ pub struct Profile {
     pub items: Table,
     pub evolutions: Table,
     pub evolution_overrides: &'static [(u16, Table)],
+    /// Thumb `cmp r2, #item` whose matching item additionally checks the row's
+    /// auxiliary halfword against native gender (0 male, 254 female, 255 none).
+    pub item_evolution_gender_check: Option<usize>,
     pub learnsets: usize,
     pub eggs: usize,
     pub teaching: TeachingRules,
@@ -449,7 +452,18 @@ pub const BW: Profile = Profile {
         count: 377,
         stride: 44,
     },
-    evolution_overrides: &[],
+    // The native item-evolution hook extends this species from five to seven
+    // rows (0x6d3a4 -> 0x1196250). DP inherits the same verified table layout.
+    // The entries themselves are always read from the currently opened ROM.
+    evolution_overrides: &[(
+        133,
+        Table {
+            offset: 0x1196300,
+            count: 7,
+            stride: 8,
+        },
+    )],
+    item_evolution_gender_check: None,
     evolutions: Table {
         offset: 0x32531c,
         count: 412,
@@ -699,6 +713,7 @@ pub const ROCKET: Profile = Profile {
         stride: 44,
     },
     evolution_overrides: &[],
+    item_evolution_gender_check: None,
     evolutions: Table {
         offset: 0x5f96d4,
         count: 1395,

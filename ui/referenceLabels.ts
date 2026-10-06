@@ -52,6 +52,13 @@ export function evolutionLabel(
     (_, key: string) => values[key] ?? t("unknown"),
   );
   const extra = (evolution.requirements ?? []).map(({ kind, value }) => {
+    if (kind === "gender")
+      return [0, 254, 255].includes(value)
+        ? t("evoExtra_gender").replace(
+            "{gender}",
+            t(value === 0 ? "male" : value === 254 ? "female" : "genderless"),
+          )
+        : t("evoExtra_genderUnknown");
     const region =
       catalog.met_locations.find((r) => r.id === value)?.name ??
       t("unresolved");

@@ -165,7 +165,8 @@ pub struct Evolution {
     pub condition: &'static str,
     pub requirements: Vec<EvolutionRequirement>,
     pub parameter: u16,
-    /// CFRU uses the last halfword for compound requirements (item, type, time).
+    /// CFRU uses the last halfword for compound requirements (item, type, time,
+    /// or the native gender code used by a guarded item evolution).
     pub auxiliary: u16,
     pub target: u16,
     pub offset: usize,
@@ -571,15 +572,33 @@ impl Rom {
                     u16(&self.data, o)?
                 };
             if method != 0 && !crate::forms::is_battle_method(self.profile.battle_forms, method) {
+                let mut requirements = if self.profile.formats.evolutions
+                    == crate::adapter::EvolutionFormat::Ultimate55
+                {
+                    crate::ultimate::evolution_requirements(&self.data, o)?
+                } else {
+                    Vec::new()
+                };
+                if let Some(check) = self.profile.item_evolution_gender_check {
+                    let instruction = u16(&self.data, check)?;
+                    if instruction & 0xff00 != 0x2a00 {
+                        return Err(err("evolution_gender_check", check));
+                    }
+                    // The native selector applies this extra check to matching
+                    // item methods, including ordinary method 7. Do not infer
+                    // it from species names or an official-game item catalog.
+                    if matches!(method, 7 | 34 | 36 | 39)
+                        && u16(&self.data, o + 2)? == instruction & 0xff
+                    {
+                        requirements.push(EvolutionRequirement {
+                            kind: "gender",
+                            value: u16(&self.data, o + 6)?,
+                        });
+                    }
+                }
                 result.push(Evolution {
                     method,
-                    requirements: if self.profile.formats.evolutions
-                        == crate::adapter::EvolutionFormat::Ultimate55
-                    {
-                        crate::ultimate::evolution_requirements(&self.data, o)?
-                    } else {
-                        Vec::new()
-                    },
+                    requirements,
                     condition: if self.profile.formats.evolutions
                         == crate::adapter::EvolutionFormat::Ultimate55
                     {
