@@ -66,7 +66,7 @@ readonly runner and compares all 600 party bytes:
 - Mask, pre/post marker bytes, all unrelated individual bytes and other slots
   agree with independent mGBA results; source ROM SHA-256 stays unchanged.
 - Five exact-ROM service queries isolate the adapter. Ultimate alone has this
-  verified service reference. Its seven choice records, NPC tile, ROM dialogue,
+  verified flag-based service reference; Mercury now has a distinct base-IV service. Its seven choice records, NPC tile, ROM dialogue,
   and SAV credit values 0/1/65535 are checked without changing the SAV.
 - Public API regression rejects stale fingerprints and retains the empty,
   explicitly partial result for an unconfigured profile.
@@ -97,12 +97,12 @@ fully replayed. The existing free editor training checkbox is separate from this
 reference and does not prove a legitimate full NPC transaction. No new edited-SAV
 emulator round trip is claimed here.
 
-Mercury 1.2 has runtime gold/silver crown items, but no verified consumption or IV
-service path yet. Empty BW/DP/Rocket/Mercury service results mean **unverified**,
-not that the games lack the mechanism. An adjacent Ultimate trampoline investigated
-before locating this NPC actually handles forms/fusion; it is not crown evidence.
+Mercury 1.2 now has a separately verified base-IV service reference; see
+[its distinct mechanism/payment evidence](training-mercury-crowns-20261006.md).
+Empty BW/DP/Rocket service results remain **unverified**, not absence. Full
+transactions are still partial for both configured service adapters. The adjacent
+Ultimate trampoline investigated earlier handles forms/fusion, not crown training.
 
-水银王冠的名字、道具表项与兑换文字不能代替服务逆向。其他四个指纹暂不展示未确认
-服务，也不标记为“本作不存在”。此前附近的一段原生入口实际处理形态／融合，不能
-作为王冠训练证据。当前支持的是完整的只读资料跳转流程和字段步骤证据，未声称
-全套 NPC 操作及其正规编辑等价性已经完成。
+水银已另行接入基础个体值训练服务，不能沿用究极绿宝石的训练位规则。
+漆黑 BW／DP、西班牙火箭队空服务结果仍表示尚未验证，不代表没有机制。
+两个已配置服务的完整交易仍有缺口，见水银独立证据说明。

@@ -21,7 +21,7 @@ pub struct Rules {
     pub context_item: u16,
     pub nature: Option<NatureRules>,
     pub abilities: &'static [AbilityRules],
-    pub crown_service: Option<crate::training_services::CrownRules>,
+    pub crown_service: Option<crate::training_services::ServiceRules>,
 }
 pub const EMERALD: Rules = Rules {
     classify: 0x081b7cec,
@@ -83,7 +83,9 @@ pub const ROCKET: Rules = Rules {
     ],
 };
 pub const MERCURY: Rules = Rules {
-    crown_service: None,
+    crown_service: Some(crate::training_services::ServiceRules::BaseIvs(
+        crate::training_services::MERCURY_CROWNS,
+    )),
     classify: 0x08126c68,
     apply: 0x08042414,
     medicine_handlers: &[0x080a16e1],
@@ -107,7 +109,9 @@ pub const MERCURY: Rules = Rules {
     }],
 };
 pub const ULTIMATE: Rules = Rules {
-    crown_service: Some(crate::training_services::ULTIMATE_CROWNS),
+    crown_service: Some(crate::training_services::ServiceRules::Flags(
+        crate::training_services::ULTIMATE_CROWNS,
+    )),
     abilities: &[AbilityRules {
         handler: 0x08f7f111,
         mechanism: "normal_swap",

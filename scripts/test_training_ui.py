@@ -71,13 +71,11 @@ def main():
                             price=100,
                         )
                     )
-            if key == "ULTIMATE":
+            if key in ["ULTIMATE", "MERCURY12"]:
                 catalog["items"].extend(
                     [
-                        dict(id=5, name="ULTIMATE runtime gold", tm_move=None, price=0),
-                        dict(
-                            id=6, name="ULTIMATE runtime silver", tm_move=None, price=0
-                        ),
+                        dict(id=5, name=key + " runtime gold", tm_move=None, price=0),
+                        dict(id=6, name=key + " runtime silver", tm_move=None, price=0),
                     ]
                 )
             requests = []
@@ -197,8 +195,36 @@ def main():
                     services = (
                         [
                             dict(
-                                kind="hyper_training_flags",
-                                minimum_level=100,
+                                kind=(
+                                    "base_iv_training"
+                                    if key == "MERCURY12"
+                                    else "hyper_training_flags"
+                                ),
+                                minimum_level=(50 if key == "MERCURY12" else 100),
+                                conditions=(
+                                    []
+                                    if key == "ULTIMATE"
+                                    else [
+                                        dict(
+                                            condition=dict(
+                                                kind="flag",
+                                                id=0xB15,
+                                                value=1,
+                                                comparison=1,
+                                                taken=True,
+                                            ),
+                                            actual=(
+                                                int(bool(count[0]))
+                                                if count[0]
+                                                else None
+                                            ),
+                                            satisfied=(
+                                                bool(count[0]) if count[0] else None
+                                            ),
+                                            unresolved=None,
+                                        )
+                                    ]
+                                ),
                                 choices=[
                                     dict(
                                         menu_index=i,
@@ -211,8 +237,18 @@ def main():
                                         quantity=1,
                                         stat=(None if i == 0 else i - 1),
                                         mask=(126 if i == 0 else 1 << i),
-                                        credit=credit,
+                                        credit=(credit if key == "ULTIMATE" else None),
                                         item_requirement=requirement,
+                                        payment=dict(
+                                            item=(
+                                                5 if key == "MERCURY12" or i == 0 else 6
+                                            ),
+                                            quantity=1,
+                                            before_stat_selection=(
+                                                key == "MERCURY12" and i != 0
+                                            ),
+                                            result_checked=False,
+                                        ),
                                     )
                                     for i in range(7)
                                 ],
@@ -225,13 +261,13 @@ def main():
                                         visibility=[],
                                     )
                                 ],
-                                text=["ULTIMATE runtime service dialogue"],
+                                text=[key + " runtime service dialogue"],
                                 evidence=dict(root=123),
                                 partial=True,
                             )
                         ]
-                        if key == "ULTIMATE"
-                        and catalog["profile"]["md5"] == "fixture-ULTIMATE"
+                        if key in ["ULTIMATE", "MERCURY12"]
+                        and catalog["profile"]["md5"] == "fixture-" + key
                         else []
                     )
                     data = dict(
@@ -408,9 +444,12 @@ def main():
             expect(
                 panel.get_by_role("combobox", name="Training item", exact=True)
             ).to_have_value(key + " EV item · HP · Increase EVs")
-            if key == "ULTIMATE":
+            if key in ["ULTIMATE", "MERCURY12"]:
                 service = panel.locator(".training-service")
-                expect(service).to_contain_text("Required level: at least 100")
+                expect(service).to_contain_text(
+                    "Required level: at least "
+                    + ("50" if key == "MERCURY12" else "100")
+                )
                 expect(service.locator(".training-service-choice")).to_have_count(1)
                 expect(
                     service.get_by_role(
@@ -418,7 +457,9 @@ def main():
                     )
                 ).to_have_value("All stats (gold)")
                 expect(service).to_contain_text(
-                    "A crown and a corresponding earned certification credit"
+                    "The referenced NPC script has an unlock flag"
+                    if key == "MERCURY12"
+                    else "A crown and a corresponding earned certification credit"
                 )
                 service.get_by_role(
                     "button", name="Test map · (3, 4) ↗", exact=True
@@ -429,8 +470,8 @@ def main():
                 ).click()
                 expect(service).to_be_visible()
                 service.get_by_role(
-                    "button", name="ULTIMATE runtime gold × 1 ↗", exact=True
-                ).click()
+                    "button", name=key + " runtime gold × 1 ↗", exact=True
+                ).first.click()
                 expect(page.locator(".acquisition-panel")).to_be_visible()
                 assert any(
                     r["command"] == "acquisition" and r["payload"]["id"] == 5
@@ -450,9 +491,20 @@ def main():
                 page.get_by_role("option", name="Stat 3 (silver)", exact=True).click()
                 expect(
                     service.get_by_role(
-                        "button", name="ULTIMATE runtime silver × 1 ↗", exact=True
+                        "button", name=key + " runtime silver × 1 ↗", exact=True
                     )
                 ).to_be_visible()
+                if key == "MERCURY12":
+                    expect(service).to_contain_text(
+                        "The ROM checks one item but attempts to remove a different one"
+                    )
+                    expect(service).to_contain_text("Before the cancellable stat menu")
+                    expect(
+                        service.get_by_role(
+                            "button", name="MERCURY12 runtime gold × 1 ↗", exact=True
+                        )
+                    ).to_be_visible()
+                    expect(service).not_to_contain_text("Saved certification credits")
             else:
                 expect(panel.locator(".training-service")).to_have_count(0)
             panel.get_by_label("HP EVs", exact=True).fill("90")
@@ -744,6 +796,25 @@ def main():
                 expect(panel.locator(".training-service")).to_contain_text(
                     "存档中的认证次数 · 6"
                 )
+            if key == "MERCURY12":
+                # Reloading the SAV remounts this service card, so select the
+                # silver option again before asserting its Chinese-only warning.
+                menu = panel.locator(".training-service").get_by_role(
+                    "combobox", name="选择训练项目", exact=True
+                )
+                menu.fill("silver")
+                page.get_by_role("listbox").get_by_role(
+                    "option", name="Stat 3 (silver)", exact=True
+                ).click()
+                expect(panel.locator(".training-service")).to_contain_text(
+                    "NPC 基础个体值训练"
+                )
+                expect(panel.locator(".training-service")).to_contain_text(
+                    "ROM 检查的道具与尝试扣除的不同"
+                )
+                expect(panel.locator(".training-service")).not_to_contain_text(
+                    "存档中的认证次数"
+                )
             page.set_viewport_size(dict(width=720, height=740))
             expect(panel).to_be_visible()
             assert panel.evaluate("(e)=>e.scrollWidth <= e.clientWidth + 1")
@@ -753,9 +824,9 @@ def main():
                 d = Path(os.environ["GEN3_UI_ARTIFACTS"])
                 d.mkdir(parents=True, exist_ok=True)
                 panel.screenshot(path=str(d / f"training-{key}.png"))
-                if key == "ULTIMATE":
+                if key in ["ULTIMATE", "MERCURY12"]:
                     panel.evaluate("e => e.scrollTop = 0")
-                    page.screenshot(path=str(d / "training-ULTIMATE-service.png"))
+                    page.screenshot(path=str(d / f"training-{key}-service.png"))
             if key in ["ROCKET", "MERCURY12", "ULTIMATE"]:
                 page.get_by_role("button", name="English", exact=True).click()
                 hold[0] = True

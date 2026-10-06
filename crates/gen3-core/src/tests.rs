@@ -8277,6 +8277,11 @@ fn local_crown_services_match_native_and_isolate_save_progress() {
         let report = rom.training_services(None).unwrap();
         assert!(report.partial);
         assert_eq!(report.rom_md5, rom.profile.md5);
+        if key == "MERCURY12" {
+            assert_eq!(report.services.len(), 1);
+            assert_eq!(report.services[0].kind, "base_iv_training");
+            continue;
+        }
         if key != "ULTIMATE" {
             assert!(
                 report.services.is_empty(),
@@ -8299,11 +8304,11 @@ fn local_crown_services_match_native_and_isolate_save_progress() {
         assert!(service.text[3].contains("放入电脑"));
         for choice in &service.choices {
             assert_eq!(choice.quantity, 1);
-            assert_eq!(choice.credit.satisfied, None);
+            assert_eq!(choice.credit.as_ref().unwrap().satisfied, None);
             assert_eq!(choice.item_requirement.satisfied, None);
             assert_eq!(choice.item, if choice.menu_index == 0 { 687 } else { 688 });
             assert_eq!(
-                choice.credit.condition.id,
+                choice.credit.as_ref().unwrap().condition.id,
                 if choice.menu_index == 0 {
                     0x40fb
                 } else {
@@ -8330,8 +8335,8 @@ fn local_crown_services_match_native_and_isolate_save_progress() {
             let saved = save.data.clone();
             let overlay = rom.training_services(Some(&save)).unwrap();
             for choice in &overlay.services[0].choices {
-                assert_eq!(choice.credit.actual, Some(amount as u32));
-                assert_eq!(choice.credit.satisfied, Some(amount != 0));
+                assert_eq!(choice.credit.as_ref().unwrap().actual, Some(amount as u32));
+                assert_eq!(choice.credit.as_ref().unwrap().satisfied, Some(amount != 0));
             }
             assert_eq!(save.data, saved);
         }
@@ -8339,7 +8344,9 @@ fn local_crown_services_match_native_and_isolate_save_progress() {
             serde_json::to_value(rom.training_services(None).unwrap()).unwrap(),
             before_report
         );
-        let rules = service.evidence;
+        let crate::training_services::ServiceRules::Flags(rules) = service.evidence else {
+            panic!("wrong service mechanism");
+        };
         let party = rom.profile.breeding.unwrap().party;
         let raw =
             pokemon::to_party(&pokemon::create(&rom, 25, 1, "", 100, 42).unwrap(), &rom).unwrap();
@@ -8396,4 +8403,221 @@ fn local_crown_services_match_native_and_isolate_save_progress() {
         assert_eq!(sha256(&std::fs::read(path).unwrap()), digest);
         eprintln!("{key}: 48 native readers, 10,752 native crown mutations, 7 positioned offers and certificate overlays verified");
     }
+}
+
+#[test]
+#[ignore = "requires exact private Mercury 1.2 ROM and GEN3_MERCURY_CROWN_PROBES independent mGBA vectors"]
+fn local_mercury_crown_services_match_native_fields_and_payment_anomaly() {
+    use armv4t_emu::Memory;
+    let r =
+        Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap()).unwrap();
+    let vectors: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_MERCURY_CROWN_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    let digest = sha256(&r.data);
+    let report = r.training_services(None).unwrap();
+    assert_eq!(report.services.len(), 1);
+    let service = &report.services[0];
+    assert_eq!(service.kind, "base_iv_training");
+    assert_eq!(service.minimum_level, 50);
+    assert_eq!(service.choices.len(), 7);
+    assert_eq!(
+        (
+            &*service.locations[0].map_id,
+            service.locations[0].x,
+            service.locations[0].y,
+            service.locations[0].local_id
+        ),
+        ("46-0", 14, 10, Some(20))
+    );
+    assert_eq!(service.conditions[0].condition.id, 0xb15);
+    assert_eq!(service.conditions[0].satisfied, None);
+    for choice in &service.choices {
+        assert!(choice.credit.is_none());
+        assert_eq!(choice.item, if choice.menu_index == 0 { 640 } else { 639 });
+        assert_eq!(choice.payment.item, 640);
+        assert_eq!(choice.payment.before_stat_selection, choice.menu_index != 0);
+        assert!(!choice.payment.result_checked);
+        assert_eq!(
+            choice.stat,
+            (choice.menu_index != 0).then(|| choice.menu_index as usize - 1)
+        );
+    }
+    let crate::training_services::ServiceRules::BaseIvs(rules) = service.evidence else {
+        panic!("wrong mechanism");
+    };
+    let party = r.profile.breeding.unwrap().party;
+    let mut ram = crate::native_trainer::Sandbox::new(&r.data);
+    assert_eq!(vectors["rom_md5"], r.profile.md5);
+    assert_eq!(vectors["levels"].as_array().unwrap().len(), 216);
+    assert_eq!(vectors["rows"].as_array().unwrap().len(), 1512);
+    let array = |row: &serde_json::Value, name: &str| {
+        row[name]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_u64().unwrap() as u8)
+            .collect::<Vec<_>>()
+    };
+    for row in vectors["levels"].as_array().unwrap() {
+        let slot = row["slot"].as_u64().unwrap() as u32;
+        let raw = array(row, "before").repeat(6);
+        for (i, byte) in raw.iter().enumerate() {
+            ram.w8(party + i as u32, *byte);
+        }
+        ram.w16(rules.selected_individual, slot as u16);
+        ram.call(rules.level_reader, [0; 4], [0; 2], 100_000)
+            .unwrap();
+        assert_eq!(
+            ram.r16(rules.selected_individual + 4) as u64,
+            row["actual"].as_u64().unwrap()
+        );
+        assert_eq!((0..600).map(|i| ram.r8(party + i)).collect::<Vec<_>>(), raw);
+        for (branch, check_at) in rules.level_checks.iter().enumerate() {
+            for (op, at) in [(0x21u32, *check_at), (0x06, *check_at + 5)] {
+                let entry = crate::binary::u32(&r.data, 0x15f9b4 + op as usize * 4).unwrap() & !1;
+                ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
+                ram.call(entry, [0x02010000, 0, 0, 0], [0; 2], 100_000)
+                    .unwrap();
+            }
+            assert_eq!(
+                ram.r32(0x02010008) == 0x08000000 + *check_at as u32 + 11,
+                row["accepted"][branch].as_bool().unwrap()
+            );
+        }
+    }
+    for row in vectors["rows"].as_array().unwrap() {
+        let slot = row["slot"].as_u64().unwrap() as u32;
+        let mut raw = array(row, "before").repeat(6);
+        for (i, byte) in raw.iter().enumerate() {
+            ram.w8(party + i as u32, *byte);
+        }
+        ram.w16(rules.selected_individual - 2, 0);
+        ram.w16(rules.selected_individual, slot as u16);
+        ram.w16(
+            rules.selected_individual + 2,
+            row["selector"].as_u64().unwrap() as u16,
+        );
+        ram.w16(rules.selected_individual + 4, 31);
+        ram.call(rules.setter, [0; 4], [0; 2], 100_000).unwrap();
+        raw[slot as usize * 100..slot as usize * 100 + 100].copy_from_slice(&array(row, "after"));
+        assert_eq!((0..600).map(|i| ram.r8(party + i)).collect::<Vec<_>>(), raw);
+    }
+
+    for slot in vectors["invalid_slots"].as_array().unwrap() {
+        let before: Vec<u8> = (0..600).map(|i| ram.r8(party + i)).collect();
+        ram.w16(rules.selected_individual, slot.as_u64().unwrap() as u16);
+        ram.w16(rules.selected_individual + 2, 6);
+        ram.w16(rules.selected_individual + 4, 31);
+        ram.call(rules.setter, [0; 4], [0; 2], 100_000).unwrap();
+        assert_eq!(
+            (0..600).map(|i| ram.r8(party + i)).collect::<Vec<_>>(),
+            before
+        );
+        ram.call(rules.level_reader, [0; 4], [0; 2], 100_000)
+            .unwrap();
+        assert_eq!(ram.r16(rules.selected_individual + 4), 0);
+    }
+    let mut ram = crate::native_trainer::Sandbox::new(&r.data);
+    ram.w32(0x03005008, 0x02020000);
+    ram.w32(0x0300500c, 0x02030000);
+    let result = ram
+        .call(0x0806e454, [0x800d, 0, 0, 0], [0; 2], 100_000)
+        .unwrap();
+    assert_eq!(vectors["payments"].as_array().unwrap().len(), 32);
+    for row in vectors["payments"].as_array().unwrap() {
+        let silver = row["silver"].as_u64().unwrap() as u16;
+        let gold = row["gold"].as_u64().unwrap() as u16;
+        for i in 0..40 {
+            ram.w8(0x02009000 + i, 0);
+        }
+        ram.w16(0x02009000, 639);
+        ram.w16(0x02009002, silver);
+        ram.w16(0x02009004, 640);
+        ram.w16(0x02009006, gold);
+        ram.w32(0x0203988c, 0x02009000);
+        ram.w16(0x02039890, 10);
+        let branch = usize::from(row["branch"] == "silver");
+        for (op, at, expected) in [
+            (0x47u32, rules.item_checks[branch], "check_result"),
+            (0x45, rules.payments[branch], "remove_result"),
+        ] {
+            let entry = crate::binary::u32(&r.data, 0x15f9b4 + op as usize * 4).unwrap() & !1;
+            ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
+            ram.w16(result, 7);
+            ram.call(entry, [0x02010000, 0, 0, 0], [0; 2], 100_000)
+                .unwrap();
+            assert_eq!(ram.r16(result) as u64, row[expected].as_u64().unwrap());
+        }
+        let mut actual = std::collections::BTreeMap::new();
+        for i in 0..10 {
+            let item = ram.r16(0x02009000 + i * 4);
+            if item != 0 {
+                actual.insert(item.to_string(), ram.r16(0x02009002 + i * 4));
+            }
+        }
+        assert_eq!(serde_json::to_value(actual).unwrap(), row["bag"]);
+    }
+    // Current SAVE unlock overlays are separate from the ROM-only reference.
+    let base_report = serde_json::to_value(&report).unwrap();
+    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+    let range = r
+        .profile
+        .event_state
+        .unwrap()
+        .flags
+        .iter()
+        .find(|v| 0xb15 >= v.first && 0xb15 - v.first < v.count)
+        .unwrap();
+    assert!(matches!(
+        range.block,
+        crate::event_state::EventBlock::Extensions
+    ));
+    let bit = (0xb15 - range.first) as usize;
+    let logical = range.offset + bit / 8;
+    assert!(logical < 0xff0 - save.layout.sizes[0]);
+    let absolute = save.sections[0] + save.layout.sizes[0] + logical;
+    for set in [false, true] {
+        save.data[absolute] =
+            (save.data[absolute] & !(1 << (bit % 8))) | (u8::from(set) << (bit % 8));
+        let before = save.data.clone();
+        assert_eq!(
+            r.training_services(Some(&save)).unwrap().services[0].conditions[0].satisfied,
+            Some(set)
+        );
+        assert_eq!(save.data, before);
+    }
+
+    let pocket = r
+        .profile
+        .save
+        .pockets
+        .iter()
+        .find(|p| p.category == 1)
+        .unwrap()
+        .id;
+    for amount in [0, 1, 2] {
+        save.edit_bag(
+            pocket,
+            0,
+            if amount == 0 { 0 } else { 639 },
+            amount,
+            &r,
+            Policy::Standard,
+        )
+        .unwrap();
+        let before = save.data.clone();
+        let overlay = r.training_services(Some(&save)).unwrap();
+        assert_eq!(
+            overlay.services[0].choices[1].item_requirement.satisfied,
+            Some(amount >= 1)
+        );
+        assert_eq!(save.data, before);
+    }
+    assert_eq!(
+        serde_json::to_value(r.training_services(None).unwrap()).unwrap(),
+        base_report
+    );
+    assert_eq!(sha256(&r.data), digest);
 }

@@ -247,6 +247,17 @@ export const en = {
   trainingPIDNature: "Use PID nature (scenario default)",
   trainingNatureScope:
     "This previews the mint callback's persistent nature-and-stat stage and its unchanged-nature rejection. PID, trainer identity and unrelated individual data are retained. Menu eligibility, consumption, inheritance and current access remain outside this scenario.",
+  trainingIvService: "NPC base-IV training",
+  trainingIvEffect:
+    "This service changes the selected base IVs to 31 and immediately recalculates party stats. It preserves PID, trainer identity, EVs and unrelated history. These are base IVs, unlike Hyper Training flags. This reference does not edit or pay for training.",
+  trainingIvAccess:
+    "The referenced NPC script has an unlock flag and a level check. Map references and SAV conditions do not prove current access; complete party/stat menus and the full transaction remain partially verified.",
+  trainingServiceRequired: "Required holding:",
+  trainingServicePayment: "Script attempts to remove:",
+  trainingServiceEarlyPayment:
+    "Before the cancellable stat menu; do not assume cancellation refunds this attempt",
+  trainingServicePaymentMismatch:
+    "The ROM checks one item but attempts to remove a different one. Native removal failure is not guarded before continuing. Do not assume the listed required item is consumed; the complete NPC transaction remains unverified.",
   trainingCrownChoice: "Choose a training option",
   trainingCrownService: "NPC Hyper Training",
   trainingCrownLevel: "Required level: at least",
@@ -1407,6 +1418,17 @@ export const zh: Record<Key, string> = {
   trainingPIDNature: "使用 PID 性格（情景默认）",
   trainingNatureScope:
     "本次预览薄荷入口的持久化性格与能力处理阶段，以及性格不变时的拒绝使用分支。保留 PID、训练家身份和无关个体数据；菜单资格、消耗、遗传和当前可达性不在此情景验证范围内。",
+  trainingIvService: "NPC 基础个体值训练",
+  trainingIvEffect:
+    "服务将所选基础个体值改为 31，并立即重算同行能力，保留 PID、训练家身份、努力值和无关历史。这会改变基础个体值，与极限特训标记不同。当前页面只读，不修改个体、不支付费用。",
+  trainingIvAccess:
+    "引用的 NPC 脚本检查解锁标记和等级。地图引用与存档条件不能证明当前可达；完整同行／单项菜单和整套交易仍有待验证部分。",
+  trainingServiceRequired: "需要持有：",
+  trainingServicePayment: "脚本尝试扣除：",
+  trainingServiceEarlyPayment:
+    "在可取消的单项选择菜单之前尝试扣除；不要假定取消会退还",
+  trainingServicePaymentMismatch:
+    "ROM 检查的道具与尝试扣除的不同。原生命令扣除失败后，后续没有立即检查结果再继续。不要将所需道具等同于实际消耗，完整 NPC 交易仍待验证。",
   trainingCrownChoice: "选择训练项目",
   trainingCrownService: "NPC 极限特训",
   trainingCrownLevel: "要求等级：至少",

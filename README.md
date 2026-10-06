@@ -294,6 +294,10 @@ service: runtime menu choices, crown fees, separate earned-credit requirements,
 SAV condition overlays and NPC-to-map/item-acquisition navigation. Native helpers
 keep base IVs and unrelated party data unchanged; existing stored party stats are
 not refreshed by this script stage. Full menus, credit acquisition and access
-remain partial; Mercury crown item names do not establish a verified service.
+remain partial. Mercury 1.2 now has a referenced base-IV service: level/unlock
+checks, seven runtime options and a separate required-item/payment display.
+Native calls confirm that its silver branch checks silver but attempts to remove
+gold before the stat menu; this anomaly is shown without certifying the full
+transaction.
 Read-only CLI: `gen3 training-services ROM [SAVE]`.
 [Evidence and scope](docs/verification/training-crowns-20261006.md).

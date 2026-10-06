@@ -21,8 +21,14 @@ type Service = {
     quantity: number;
     stat: number | null;
     mask: number;
-    credit: Check;
+    credit: Check | null;
     item_requirement: Check;
+    payment: {
+      item: number;
+      quantity: number;
+      before_stat_selection: boolean;
+      result_checked: boolean;
+    };
   }[];
   locations: {
     map_id: string;
@@ -32,6 +38,7 @@ type Service = {
     visibility: Check[];
   }[];
   text: string[];
+  conditions: Check[];
   evidence: unknown;
 };
 type Report = { rom_md5: string; services: Service[]; partial: boolean };
@@ -100,12 +107,36 @@ function ServiceCard({
     service.choices[0];
   return (
     <article className="training-service">
-      <h3>{t("trainingCrownService")}</h3>
+      <h3>
+        {t(
+          service.kind === "base_iv_training"
+            ? "trainingIvService"
+            : "trainingCrownService",
+        )}
+      </h3>
       <p>
         {t("trainingCrownLevel")} {service.minimum_level}
       </p>
-      <p className="small muted">{t("trainingCrownEffect")}</p>
-      <p className="small muted">{t("trainingCrownAccess")}</p>
+      <p className="small muted">
+        {t(
+          service.kind === "base_iv_training"
+            ? "trainingIvEffect"
+            : "trainingCrownEffect",
+        )}
+      </p>
+      <p className="small muted">
+        {t(
+          service.kind === "base_iv_training"
+            ? "trainingIvAccess"
+            : "trainingCrownAccess",
+        )}
+      </p>
+      <ConditionDetails
+        checks={service.conditions}
+        catalog={catalog}
+        onMap={onMap}
+        onTarget={onTarget}
+      />
       {service.locations.map((location) => (
         <div key={`${location.map_id}:${location.x}:${location.y}`}>
           <button
@@ -137,6 +168,7 @@ function ServiceCard({
         <section className="training-service-choice" key={choice.menu_index}>
           <strong>{choice.name}</strong>
           {" · "}
+          {t("trainingServiceRequired")}{" "}
           <button
             className="link-button"
             onClick={() => onTarget({ kind: "item", id: choice.item })}
@@ -145,22 +177,51 @@ function ServiceCard({
               choice.item}{" "}
             × {choice.quantity} ↗
           </button>
-          <p className="small">
-            {t("trainingCrownCredit")} ·{" "}
-            {choice.credit.actual ?? t("acqStatus_unknown")}
-            {" · "}
-            {t(
-              choice.credit.satisfied === true
-                ? "planConditionYes"
-                : choice.credit.satisfied === false
-                  ? "planConditionNo"
-                  : "acqStatus_unknown",
-            )}
-          </p>
+          {service.kind === "base_iv_training" && (
+            <p className="small">
+              {t("trainingServicePayment")}{" "}
+              <button
+                className="link-button"
+                onClick={() =>
+                  onTarget({ kind: "item", id: choice.payment.item })
+                }
+              >
+                {catalog.items.find((item) => item.id === choice.payment.item)
+                  ?.name ?? choice.payment.item}{" "}
+                × {choice.payment.quantity} ↗
+              </button>
+              {choice.payment.before_stat_selection && (
+                <span> · {t("trainingServiceEarlyPayment")}</span>
+              )}
+            </p>
+          )}
+          {choice.payment.item !== choice.item && (
+            <p className="small warning-text">
+              {t("trainingServicePaymentMismatch")}
+            </p>
+          )}
+          {choice.credit && (
+            <p className="small">
+              {t("trainingCrownCredit")} ·{" "}
+              {choice.credit.actual ?? t("acqStatus_unknown")}
+              {" · "}
+              {t(
+                choice.credit.satisfied === true
+                  ? "planConditionYes"
+                  : choice.credit.satisfied === false
+                    ? "planConditionNo"
+                    : "acqStatus_unknown",
+              )}
+            </p>
+          )}
           <details>
             <summary>{t("trainingCrownConditions")}</summary>
             <ConditionDetails
-              checks={[choice.credit, choice.item_requirement]}
+              checks={
+                choice.credit
+                  ? [choice.credit, choice.item_requirement]
+                  : [choice.item_requirement]
+              }
               catalog={catalog}
               onMap={onMap}
               onTarget={onTarget}

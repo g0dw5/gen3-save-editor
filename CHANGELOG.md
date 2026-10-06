@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add Mercury's runtime NPC base-IV training choices, unlock/level checks and
+  item/map/prerequisite links. Separate required holdings from attempted payment:
+  native silver checks silver but removes gold before stat selection, without an
+  immediate removal-result guard. Keep full transactions qualified and read-only.
+- 水银新增实时读取的 NPC 基础个体值训练：选择、解锁／等级检查、道具来源与
+  地图／前置跳转。区分持有与尝试支付：原生银色分支检查银冠却在单项菜单前扣
+  金冠，没有立即检查扣除结果；完整交易保留未知，资料页只读，不新增存档写入。
+
 - Add runtime NPC Hyper Training reference for Ultimate: actual menu choices,
   item fees, earned-credit conditions and positioned NPC/map links. Keep base IVs
   distinct from training flags and explain the delayed party-stat refresh. SAV
