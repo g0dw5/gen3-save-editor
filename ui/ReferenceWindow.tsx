@@ -93,8 +93,10 @@ export function ReferenceWindow({
   const [mapFocus, setMapFocus] = useState<MapFocus | undefined>();
   const [search, setSearch] = useState("");
   const [trainingVisited, setTrainingVisited] = useState(false);
+  const [collectionVisited, setCollectionVisited] = useState(false);
   useEffect(() => {
     if (tab === "training") setTrainingVisited(true);
+    if (tab === "collection") setCollectionVisited(true);
   }, [tab]);
   const [eventMap, setEventMap] = useState("");
   const [eventOffset, setEventOffset] = useState(0);
@@ -424,7 +426,20 @@ export function ReferenceWindow({
           />
         </div>
       )}
-      {tab === "training" ? null : tab === "clock" ? (
+      {(collectionVisited || tab === "collection") && (
+        <div className="collection-container" hidden={tab !== "collection"}>
+          <CollectionPanel
+            key={catalog.profile.md5}
+            catalog={catalog}
+            maps={world?.maps ?? []}
+            save={save}
+            onTarget={goTarget}
+            onMap={goMap}
+            onError={onError}
+          />
+        </div>
+      )}
+      {tab === "training" || tab === "collection" ? null : tab === "clock" ? (
         <ClockPanel key={catalog.profile.md5} catalog={catalog} save={save} />
       ) : tab === "events" ? (
         <EventCluesPanel
@@ -447,15 +462,6 @@ export function ReferenceWindow({
             setSearch("");
             setTrainerFilters(emptyTrainerFilters);
           }}
-        />
-      ) : tab === "collection" ? (
-        <CollectionPanel
-          catalog={catalog}
-          maps={world?.maps ?? []}
-          save={save}
-          onTarget={goTarget}
-          onMap={goMap}
-          onError={onError}
         />
       ) : (
         <div className="reference-layout">

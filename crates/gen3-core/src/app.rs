@@ -221,7 +221,12 @@ impl App {
                     request,
                 )?)?)
             }
-            "world" | "acquisition" | "collection" | "collection_export" | "daycare_sources" => {
+            "world"
+            | "acquisition"
+            | "collection"
+            | "collection_export"
+            | "collection_prerequisites"
+            | "daycare_sources" => {
                 let session = self.session()?;
                 if self
                     .acquisition_cache
@@ -239,7 +244,10 @@ impl App {
                     Ok(serde_json::to_value(
                         index.daycare_sources(&session.rom, session.save.as_ref()),
                     )?)
-                } else if input.command == "collection_export" {
+                } else if matches!(
+                    input.command.as_str(),
+                    "collection_export" | "collection_prerequisites"
+                ) {
                     #[derive(Deserialize)]
                     #[serde(deny_unknown_fields)]
                     struct Input {

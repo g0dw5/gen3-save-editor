@@ -680,6 +680,16 @@ export interface CollectionBreedingRoute {
 export interface CollectionPlan {
   prerequisites?: {
     reports: EventDependencyReport[];
+    routes?: {
+      report_index: number;
+      goals: [number, number][];
+      candidates: {
+        writer_index: number;
+        requires: number[];
+        untraced_conditions: AcquisitionSource["conditions"];
+        recursive: boolean;
+      }[];
+    }[];
     entrances: { map_id: string; chains: MapLink[][]; truncated: boolean }[];
     skipped_conditions: number;
     truncated: boolean;

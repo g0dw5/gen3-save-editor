@@ -56,16 +56,41 @@ export function collectionHtml(
       ? `<a href="#${esc(prerequisiteId(c.condition))}">${esc(label)}</a>`
       : esc(label);
   };
+  const routeHtml = (index: number) => {
+    const route = plan.prerequisites?.routes?.find(
+      (r) => r.report_index === index,
+    );
+    if (!route?.goals.length) return "";
+    return `<p>${esc(t("planAffectedGoals"))}: ${route.goals
+      .map(([region, task]) => {
+        const goal = plan.regions[region]?.tasks[task];
+        return goal
+          ? `<a href="#${anchor(region, task)}">${esc(name(goal.target))}</a>`
+          : "";
+      })
+      .join(" / ")}</p>`;
+  };
+  const candidateHtml = (reportIndex: number, writerIndex: number) => {
+    const route = plan.prerequisites?.routes?.find(
+      (r) => r.report_index === reportIndex,
+    );
+    const candidate = route?.candidates.find(
+      (c) => c.writer_index === writerIndex,
+    );
+    if (!candidate) return "";
+    return `${candidate.recursive ? `<p>${esc(t("planRecursiveClue"))}</p>` : ""}${candidate.untraced_conditions.length ? `<p>${esc(t("planUntracedGuards"))}</p>` : ""}`;
+  };
   const appendix = plan.prerequisites
-    ? `<section id="prerequisites"><h2>${esc(t("dependencyTrace"))}</h2><p>${esc(t("dependencyHelp"))}</p>${plan.prerequisites.truncated || plan.prerequisites.skipped_conditions ? `<p>${esc(t("dependencyAppendixLimit"))}</p>` : ""}${plan.prerequisites.reports
+    ? `<section id="prerequisites"><h2>${esc(t("dependencyTrace"))}</h2><p>${esc(t("dependencyHelp"))}</p><p>${esc(t("planPrerequisiteHelp"))}</p>${plan.prerequisites.truncated || plan.prerequisites.skipped_conditions ? `<p>${esc(t("dependencyAppendixLimit"))}</p>` : ""}${plan.prerequisites.reports
         .map(
-          (report) =>
-            `<article id="${esc(prerequisiteId(report.condition.condition))}"><h3>${esc(conditionLabel(report.condition, catalog, t))}</h3>${!report.writers.length ? `<p>${esc(t("dependencyNone"))}</p>` : ""}${report.writers
-              .map((w) => {
+          (report, reportIndex) =>
+            `<article id="${esc(prerequisiteId(report.condition.condition))}"><h3>${esc(t("planPrerequisiteNumber").replace("{n}", String(reportIndex + 1)))} · ${esc(conditionLabel(report.condition, catalog, t))}</h3>${routeHtml(reportIndex)}<p>${esc(t(report.condition.satisfied === true ? "planConditionYes" : report.condition.satisfied === false ? "planConditionNo" : "acqStatus_unknown"))}</p>${!report.writers.length ? `<p>${esc(t("dependencyNone"))}</p>` : ""}${report.writers
+              .map((w, writerIndex) => {
+                if (report.condition.satisfied === true) return "";
                 const entry = plan.prerequisites?.entrances.find(
                   (e) => e.map_id === w.reference.map_id,
                 );
-                return `<div class="task"><strong>${esc(effectLabel(w.effect, t))} · ${esc(t(`dependency_${w.reference.kind}`))}</strong><p>${esc(w.reference.map_name)}${w.reference.x != null ? ` (${w.reference.x}, ${w.reference.y})` : ` · ${esc(t("acqNoTile"))}`}</p><p>${esc(t("dependencyAccessUnknown"))}</p>${w.text.length ? `<details><summary>${esc(t("dependencyText"))}</summary><p>${esc(t("dependencyTextHelp"))}</p>${w.text.map((r) => `<blockquote>${esc(r.text)}</blockquote>`).join("")}</details>` : ""}${w.conditions.length ? `<p>${esc(t("acqConditions"))}: ${w.conditions.map(checkHtml).join("; ")}</p>` : ""}${
+                return `<div class="task">${candidateHtml(reportIndex, writerIndex)}<strong>${esc(effectLabel(w.effect, t))} · ${esc(t(`dependency_${w.reference.kind}`))}</strong><p>${esc(w.reference.map_name)}${w.reference.x != null ? ` (${w.reference.x}, ${w.reference.y})` : ` · ${esc(t("acqNoTile"))}`}</p><p>${esc(t("dependencyAccessUnknown"))}</p>${w.text.length ? `<details><summary>${esc(t("dependencyText"))}</summary><p>${esc(t("dependencyTextHelp"))}</p>${w.text.map((r) => `<blockquote>${esc(r.text)}</blockquote>`).join("")}</details>` : ""}${w.conditions.length ? `<p>${esc(t("acqConditions"))}: ${w.conditions.map(checkHtml).join("; ")}</p>` : ""}${
                   entry?.chains.length
                     ? `<p>${esc(t("navApproaches"))}</p><ul>${entry.chains
                         .slice(0, 3)

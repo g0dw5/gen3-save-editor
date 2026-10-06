@@ -17,7 +17,11 @@ def main():
     expect.set_options(timeout=30000)
     with sync_playwright() as p:
         browser = p.chromium.launch(channel="chrome", headless=True)
-        for index, key in enumerate(["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"]):
+        for index, key in enumerate(
+            os.environ.get(
+                "GEN3_UI_COLLECTION_PROFILES", "BW,DP,ROCKET,ULTIMATE,MERCURY12"
+            ).split(",")
+        ):
             tag = [key]
             catalog = copy.deepcopy(CATALOG)
             save = dict(
@@ -194,6 +198,144 @@ def main():
 
             configure(key)
             requests, errors = [], []
+            hold_trace, pending_traces = [False], []
+            prerequisites_enabled = os.environ.get("GEN3_UI_PREREQUISITES") == "1"
+
+            def prerequisites():
+                def guard(identifier, met=False):
+                    return dict(
+                        condition=dict(
+                            kind="flag",
+                            id=identifier,
+                            value=1,
+                            comparison=1,
+                            taken=True,
+                        ),
+                        actual=int(met),
+                        satisfied=met,
+                        unresolved=None,
+                    )
+
+                coverage = dict(
+                    checked_scripts=3,
+                    total_scripts=3,
+                    failed_scripts=0,
+                    truncated=False,
+                )
+
+                def writer(identifier, guards, number):
+                    return dict(
+                        effect=dict(
+                            kind="flag",
+                            id=identifier,
+                            operation="set",
+                            operand=None,
+                            value=1,
+                            offset=300 + number,
+                            conditions=[g["condition"] for g in guards],
+                        ),
+                        reference=dict(
+                            map_id="0-1",
+                            map_name=tag[0] + " Floor",
+                            region=1,
+                            kind="npc",
+                            x=1,
+                            y=1,
+                            local_id=1,
+                            offset=400 + number,
+                            root=300 + number,
+                            entry_unresolved=True,
+                        ),
+                        conditions=guards,
+                        text=[
+                            dict(
+                                offset=500 + number,
+                                text=tag[0]
+                                + " event <script>clue</script> "
+                                + str(number),
+                            )
+                        ],
+                        stopped_at=[],
+                        path_complete=True,
+                    )
+
+                writers = [writer(11, [guard(12)], 0)] + [
+                    writer(11, [], i) for i in range(1, 9)
+                ]
+                reports = [
+                    dict(
+                        rom_md5=catalog["profile"]["md5"],
+                        condition=guard(11),
+                        writers=writers,
+                        coverage=coverage,
+                        total_matches=9,
+                        next_offset=None,
+                        partial=True,
+                    ),
+                    dict(
+                        rom_md5=catalog["profile"]["md5"],
+                        condition=guard(12),
+                        writers=[writer(12, [guard(11)], 9)],
+                        coverage=coverage,
+                        total_matches=1,
+                        next_offset=None,
+                        partial=True,
+                    ),
+                    dict(
+                        rom_md5=catalog["profile"]["md5"],
+                        condition=guard(13, True),
+                        writers=[
+                            dict(
+                                writer(13, [guard(11)], 10),
+                                text=[
+                                    dict(
+                                        offset=510,
+                                        text="Do not replay completed-only event",
+                                    )
+                                ],
+                            )
+                        ],
+                        coverage=coverage,
+                        total_matches=0,
+                        next_offset=None,
+                        partial=True,
+                    ),
+                ]
+                return dict(
+                    reports=reports,
+                    routes=[
+                        dict(
+                            report_index=0,
+                            goals=[[0, 0]],
+                            candidates=[
+                                dict(
+                                    writer_index=i,
+                                    requires=[1] if i == 0 else [],
+                                    untraced_conditions=[],
+                                    recursive=i == 0,
+                                )
+                                for i in range(9)
+                            ],
+                        ),
+                        dict(
+                            report_index=1,
+                            goals=[[0, 0]],
+                            candidates=[
+                                dict(
+                                    writer_index=0,
+                                    requires=[0],
+                                    untraced_conditions=[],
+                                    recursive=True,
+                                )
+                            ],
+                        ),
+                        dict(report_index=2, goals=[[0, 0]], candidates=[]),
+                    ],
+                    entrances=[dict(map_id="0-1", chains=[[edge]], truncated=False)],
+                    skipped_conditions=0,
+                    truncated=False,
+                    partial=True,
+                )
 
             def respond(route):
                 req = route.request.post_data_json
@@ -210,10 +352,27 @@ def main():
                         map_groups=[],
                         trainer_locations=dict(locations=[]),
                     )
-                elif cmd in ["collection", "collection_export"]:
-                    if cmd == "collection_export":
+                elif cmd in [
+                    "collection",
+                    "collection_export",
+                    "collection_prerequisites",
+                ]:
+                    if cmd != "collection":
                         assert payload["expected_rom_md5"] == catalog["profile"]["md5"]
-                    data = plan
+                    data = dict(
+                        plan,
+                        prerequisites=(
+                            prerequisites()
+                            if prerequisites_enabled and cmd != "collection"
+                            else None
+                        ),
+                    )
+                    if cmd == "collection_prerequisites" and hold_trace[0]:
+                        hold_trace[0] = False
+                        pending_traces.append(
+                            (route, json.dumps(dict(ok=True, data=data)))
+                        )
+                        return
                 elif cmd == "species":
                     data = dict(
                         species=catalog["species"][payload["id"] - 1],
@@ -239,7 +398,13 @@ def main():
                         diagnostics=[],
                     )
                 elif cmd in ["map_image", "sprite", "object_sprite"]:
-                    data = dict(url="")
+                    data = dict(
+                        url=(
+                            'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="lightblue"/></svg>'
+                            if cmd == "map_image"
+                            else ""
+                        )
+                    )
                 elif cmd == "open_rom":
                     configure(key + "-SWITCH")
                     data = dict(catalog=catalog)
@@ -312,10 +477,59 @@ def main():
             page.get_by_role(
                 "button", name="Back to previous reference", exact=False
             ).click()
+            if prerequisites_enabled:
+                panel.get_by_role(
+                    "button", name="Trace prerequisites", exact=True
+                ).click()
+                prerequisites_panel = panel.locator(".collection-prerequisites")
+                expect(prerequisites_panel).to_be_visible()
+                expect(
+                    prerequisites_panel.locator(".prerequisite-route")
+                ).to_have_count(3)
+                first = prerequisites_panel.locator(".prerequisite-route").nth(0)
+                first.locator("summary").first.click()
+                expect(first.locator(".prerequisite-candidate")).to_have_count(8)
+                expect(first).to_contain_text("contains a recursive clue")
+                expect(first).to_contain_text("Parsed conditions met")
+                first.get_by_role(
+                    "button", name="Show more matching clues", exact=True
+                ).click()
+                expect(first.locator(".prerequisite-candidate")).to_have_count(9)
+                met = prerequisites_panel.locator(".prerequisite-route").nth(2)
+                met.locator("summary").first.click()
+                expect(met.locator(".prerequisite-candidate")).to_have_count(0)
+                first.locator(".prerequisite-candidate").first.get_by_role(
+                    "button", name="Prerequisite clue 2", exact=False
+                ).click()
+                second = prerequisites_panel.locator(".prerequisite-route").nth(1)
+                expect(second).to_have_attribute("open", "")
+                second.locator("summary").first.click()
+                first.locator(".prerequisite-candidate").first.get_by_role(
+                    "button", name="Prerequisite clue 2", exact=False
+                ).click()
+                expect(second).to_have_attribute("open", "")
+                first.locator(".prerequisite-candidate").first.get_by_role(
+                    "button", name=key + " Floor (1, 1) ↗", exact=True
+                ).click()
+                expect(page.locator(".map-focus")).to_be_visible()
+                page.get_by_role(
+                    "button", name="Back to previous reference", exact=False
+                ).click()
+                expect(prerequisites_panel).to_be_visible()
+                expect(first.locator(".prerequisite-candidate")).to_have_count(9)
+                first.locator(".prerequisite-candidate").first.get_by_text(
+                    "Text referenced by this script", exact=True
+                ).click()
+                expect(first.locator("blockquote").first).to_have_text(
+                    key + " event <script>clue</script> 0"
+                )
             page.get_by_role("button", name="简体中文", exact=True).click()
             expect(card).to_contain_text("相遇槽位概率 20%")
             expect(card).to_contain_text("时间条件:")
             expect(card).to_contain_text("关联资料")
+            if prerequisites_enabled:
+                expect(prerequisites_panel).to_contain_text("按区域查看前置线索")
+                expect(first).to_contain_text("循环不代表目标无法完成")
             page.set_viewport_size(dict(width=720, height=780))
             assert panel.evaluate("e => e.scrollWidth <= e.clientWidth + 1")
             if os.environ.get("GEN3_UI_ARTIFACTS"):
@@ -331,9 +545,50 @@ def main():
                 "&lt;script&gt;unsafe&lt;/script&gt;" in html and "<script>" not in html
             )
             assert key + " required move" in html and "default-src 'none'" in html
+            if prerequisites_enabled:
+                assert "关联收集目标" in html and 'href="#task-0-0"' in html
+                assert "循环不代表目标无法完成" in html
+                assert "&lt;script&gt;clue&lt;/script&gt;" in html
+                assert "Do not replay completed-only event" not in html
             if os.environ.get("GEN3_UI_ARTIFACTS"):
                 (out / (key + "-collection.html")).write_text(html)
             page.get_by_role("button", name="English", exact=True).click()
+            pending_test = (
+                prerequisites_enabled and os.environ.get("GEN3_UI_PENDING") == "1"
+            )
+            if pending_test:
+                hold_trace[0] = True
+                with page.expect_request(
+                    lambda request: request.url.endswith("/api")
+                    and request.post_data_json["command"] == "collection_prerequisites"
+                ):
+                    panel.get_by_role(
+                        "button", name="Trace prerequisites", exact=True
+                    ).click()
+                with page.expect_file_chooser() as chooser:
+                    page.get_by_role(
+                        "button", name="Open save", exact=True
+                    ).first.click()
+                chooser.value.set_files(
+                    dict(
+                        name="synthetic-reload.sav",
+                        mimeType="application/octet-stream",
+                        buffer=b"fixture-only",
+                    )
+                )
+                expect(page.locator(".collection-prerequisites")).to_have_count(0)
+                assert len(pending_traces) == 1
+                route, body = pending_traces.pop()
+                route.fulfill(content_type="application/json", body=body)
+                expect(page.locator(".collection-prerequisites")).to_have_count(0)
+                hold_trace[0] = True
+                with page.expect_request(
+                    lambda request: request.url.endswith("/api")
+                    and request.post_data_json["command"] == "collection_prerequisites"
+                ):
+                    panel.get_by_role(
+                        "button", name="Trace prerequisites", exact=True
+                    ).click()
             with page.expect_file_chooser() as chooser:
                 page.get_by_role("button", name="Open ROM", exact=True).first.click()
             chooser.value.set_files(
@@ -343,10 +598,15 @@ def main():
                     buffer=b"fixture-only",
                 )
             )
+            if pending_test:
+                assert len(pending_traces) == 1
+                route, body = pending_traces.pop()
+                route.fulfill(content_type="application/json", body=body)
             # No previous SAV collection remains after a ROM switch.
             page.get_by_role("button", name="ROM reference", exact=True).click()
             page.get_by_role("button", name="Collection planning", exact=True).click()
             expect(page.locator(".collection-panel")).to_contain_text("Open a SAV")
+            expect(page.locator(".collection-prerequisites")).to_have_count(0)
             with page.expect_file_chooser() as chooser:
                 page.get_by_role("button", name="Open save", exact=True).first.click()
             chooser.value.set_files(
@@ -359,6 +619,8 @@ def main():
             expect(
                 page.locator(".collection-panel .acquisition-source-facts").first
             ).to_contain_text(key + "-SWITCH ROM rod 1")
+            if prerequisites_enabled:
+                expect(page.locator(".collection-prerequisites")).to_have_count(0)
             assert not errors, errors
             assert not any(
                 r["command"] in ["edit", "edit_bag", "batch", "export_save", "drag"]
@@ -366,7 +628,13 @@ def main():
             )
             print(
                 key
-                + " collection source facts / target-map-back / HTML / switch passed",
+                + " collection source facts / target-map-back / HTML / switch passed"
+                + (
+                    "; prerequisite alternatives/cycles/pagination/return passed"
+                    if prerequisites_enabled
+                    else ""
+                )
+                + ("; pending SAV/ROM responses discarded" if pending_test else ""),
                 flush=True,
             )
             page.close()

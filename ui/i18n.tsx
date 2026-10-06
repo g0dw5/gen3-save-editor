@@ -420,6 +420,21 @@ export const en = {
   planExport: "Export standalone HTML",
   planAlternatives: "Parsed source alternatives",
   planClickSources: "Open target for sources and conditions",
+  planTracePrerequisites: "Trace prerequisites",
+  planPrerequisites: "Prerequisites by region",
+  planPrerequisiteNumber: "Prerequisite clue {n}",
+  planPrerequisiteHelp:
+    "Each event below is a possible alternative for a condition. Its own guards must hold together. Parsed conditions and static entrances do not establish current access or a complete quest sequence.",
+  planPrerequisiteNone:
+    "No traced persistent prerequisites in this snapshot; this does not prove that all goals are accessible.",
+  planAffectedGoals: "Related collection goals",
+  planMoreGoals: "Show more related goals",
+  planCandidateEvent: "Possible prerequisite event",
+  planCandidateRequires: "Trace these conditions first",
+  planRecursiveClue:
+    "This alternative contains a recursive clue. Check other alternatives; recursion is not proof that the goal is impossible.",
+  planUntracedGuards:
+    "Some guards have no indexed prerequisite route. Read their conditions separately; no unlocking task is inferred.",
   planPeriods: "Time conditions",
   acqRelatedTargets: "Related references",
   planConditionYes: "Satisfied",
@@ -1622,6 +1637,21 @@ export const zh: Record<Key, string> = {
   planExport: "导出独立 HTML",
   planAlternatives: "已解析来源数量",
   planClickSources: "点击目标查看来源及条件",
+  planTracePrerequisites: "分析前置条件",
+  planPrerequisites: "按区域查看前置线索",
+  planPrerequisiteNumber: "前置线索 {n}",
+  planPrerequisiteHelp:
+    "同一条件下的事件是可能的替代途径；每个事件自身的条件需要同时满足。脚本条件与静态入口不证明当前可达，也不代表完整任务顺序。",
+  planPrerequisiteNone:
+    "本次没有可追溯的持久前置条件；不代表所有目标均可到达。",
+  planAffectedGoals: "关联收集目标",
+  planMoreGoals: "显示更多关联目标",
+  planCandidateEvent: "可能的前置事件",
+  planCandidateRequires: "先追查这些条件",
+  planRecursiveClue:
+    "这个候选途径存在循环线索。可查看其他途径；循环不代表目标无法完成。",
+  planUntracedGuards:
+    "部分条件没有已索引的前置途径。请分别查看其条件，不据此推断解锁任务。",
   planPeriods: "时间条件",
   acqRelatedTargets: "关联资料",
   planConditionYes: "已满足",

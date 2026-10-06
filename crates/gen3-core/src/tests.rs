@@ -6730,9 +6730,14 @@ fn collection_export_traces_current_prerequisites_without_save_or_rom_writes() {
     put32(b, 0x26005, 0x08026100);
     b[0x26009] = 2;
     b[0x26100..0x2610d].copy_from_slice(&[0x16, 0, 0x80, 1, 0, 0x16, 1, 0x80, 1, 0, 9, 0, 2]);
-    b[0x26200..0x26204].copy_from_slice(&[0x29, 11, 0, 2]);
+    b[0x26200..0x26205].copy_from_slice(&[0x2b, 12, 0, 6, 1]);
+    put32(b, 0x26205, 0x08026400);
+    b[0x26209] = 2;
+    b[0x26400..0x26404].copy_from_slice(&[0x29, 11, 0, 2]);
+    b[0x26300..0x26304].copy_from_slice(&[0x29, 12, 0, 2]);
     let mut map = map;
     map.scripts.push(0x26200);
+    map.scripts.push(0x26300);
     let report = r.map_events(&map).unwrap();
     let bytes = save_bytes(&r);
     let original = r.data.clone();
@@ -6781,6 +6786,30 @@ fn collection_export_traces_current_prerequisites_without_save_or_rom_writes() {
                 .iter()
                 .any(|w| w["reference"]["kind"] == "map_script")));
     assert!(result["prerequisites"]["partial"].as_bool().unwrap());
+    let routes = result["prerequisites"]["routes"].as_array().unwrap();
+    let route = routes
+        .iter()
+        .find(|route| {
+            prerequisites[route["report_index"].as_u64().unwrap() as usize]["condition"]
+                ["condition"]["id"]
+                == 11
+        })
+        .unwrap();
+    assert!(!route["goals"].as_array().unwrap().is_empty());
+    assert!(prerequisites
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|r| r["condition"]["condition"]["id"] == 12));
+    for goal in route["goals"].as_array().unwrap() {
+        let task = &result["regions"][goal[0].as_u64().unwrap() as usize]["tasks"]
+            [goal[1].as_u64().unwrap() as usize];
+        assert!(task["source"]["conditions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|c| c["condition"]["id"] == 11));
+    }
     assert_eq!(
         app.session.as_ref().unwrap().save.as_ref().unwrap().data,
         bytes
@@ -6794,6 +6823,16 @@ fn collection_export_traces_current_prerequisites_without_save_or_rom_writes() {
         })
         .unwrap();
     assert_eq!(result, repeated);
+    let preview = app.dispatch(Request {
+        command: "collection_prerequisites".into(),
+        payload: serde_json::json!({"expected_rom_md5":md5,"query":{"basis":"individuals","families":true,"include_unknown_rewards":true}}),
+    }).unwrap();
+    assert_eq!(preview, result);
+    let stale_preview = app.dispatch(Request {
+        command: "collection_prerequisites".into(),
+        payload: serde_json::json!({"expected_rom_md5":profile::ROCKET.md5,"query":{"basis":"individuals","families":true,"include_unknown_rewards":true}}),
+    }).unwrap_err();
+    assert_eq!(stale_preview.code, "rom_mismatch");
     assert!(std::sync::Arc::ptr_eq(
         &cache,
         &app.event_dependency_cache.as_ref().unwrap().0
@@ -6806,6 +6845,39 @@ fn collection_export_traces_current_prerequisites_without_save_or_rom_writes() {
         app.session.as_ref().unwrap().save.as_ref().unwrap().data,
         bytes
     );
+    // Generated fixture only: an already-met condition must not suggest its
+    // writers' prerequisites as additional work. No production flag-edit API.
+    let session = app.session.as_mut().unwrap();
+    let range = session
+        .rom
+        .profile
+        .event_state
+        .unwrap()
+        .flags
+        .iter()
+        .find(|r| 11 >= r.first && 11 - r.first < r.count)
+        .unwrap();
+    assert!(matches!(range.block, crate::event_state::EventBlock::Main));
+    let offset = range.offset + (11 - range.first) as usize / 8;
+    let save = session.save.as_mut().unwrap();
+    save.data[save.sections[1 + offset / 0xf80] + offset % 0xf80] |= 1 << ((11 - range.first) % 8);
+    let satisfied_bytes = save.data.clone();
+    let satisfied = app.dispatch(Request {
+        command: "collection_prerequisites".into(),
+        payload: serde_json::json!({"expected_rom_md5":md5,"query":{"basis":"individuals","families":true,"include_unknown_rewards":true}}),
+    }).unwrap();
+    let satisfied_reports = satisfied["prerequisites"]["reports"].as_array().unwrap();
+    assert!(satisfied_reports
+        .iter()
+        .any(|r| r["condition"]["condition"]["id"] == 11 && r["condition"]["satisfied"] == true));
+    assert!(!satisfied_reports
+        .iter()
+        .any(|r| r["condition"]["condition"]["id"] == 12));
+    assert_eq!(
+        app.session.as_ref().unwrap().save.as_ref().unwrap().data,
+        satisfied_bytes
+    );
+    assert_eq!(app.session.as_ref().unwrap().rom.data, original);
 }
 
 #[test]
@@ -9180,4 +9252,122 @@ fn local_training_party_selection_matches_native_and_keeps_individuals_unchanged
         assert_eq!(sha256(&rom.data), digest);
     }
     assert_eq!(total, 288);
+}
+
+#[test]
+#[ignore = "requires five local exact ROMs; synthetic persistent-state SAV scenarios"]
+fn local_collection_prerequisite_routes_all_profiles() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        collection::{CollectionBasis, CollectionPlan, CollectionRegion, CollectionTask},
+        event_dependencies::Index,
+    };
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let original = std::fs::read(&path).unwrap();
+        let rom = Rom::open(original.clone()).unwrap();
+        let acquisition = AcquisitionIndex::build(&rom).unwrap();
+        let save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
+        let before = save.data.clone();
+        let ids: std::collections::BTreeSet<_> = acquisition
+            .world
+            .map_events
+            .iter()
+            .flat_map(|map| {
+                map.markers
+                    .iter()
+                    .flat_map(|m| &m.rewards)
+                    .chain(&map.unplaced_rewards)
+            })
+            .filter(|reward| {
+                reward
+                    .conditions
+                    .iter()
+                    .any(|c| matches!(c.kind, "flag" | "variable"))
+            })
+            .map(|reward| reward.item)
+            .collect();
+        let mut tasks = Vec::new();
+        for id in ids {
+            let target = Target {
+                kind: TargetKind::Item,
+                id,
+            };
+            let source = acquisition
+                .query(&rom, Some(&save), target.clone())
+                .unwrap()
+                .sources
+                .into_iter()
+                .find(|s| {
+                    s.map_id.is_some()
+                        && s.conditions
+                            .iter()
+                            .any(|c| matches!(c.condition.kind, "flag" | "variable"))
+                });
+            if let Some(source) = source {
+                tasks.push(CollectionTask {
+                    target,
+                    family: vec![],
+                    existing_family_members: vec![],
+                    source: Some(source),
+                    alternatives: 1,
+                    preparation: None,
+                });
+            }
+            if tasks.len() == 3 {
+                break;
+            }
+        }
+        assert!(!tasks.is_empty(), "{key}: no guarded runtime source");
+        let plan = CollectionPlan {
+            prerequisites: None,
+            clock: None,
+            rom_md5: rom.profile.md5,
+            basis: CollectionBasis::Individuals,
+            families: true,
+            owned_count: 0,
+            missing_count: 0,
+            regions: vec![CollectionRegion {
+                region: None,
+                tasks,
+            }],
+            entrances: vec![],
+            breeding_coverage: None,
+            partial: true,
+        };
+        let index = Index::build(&rom, &acquisition.world.maps).unwrap();
+        let bundle = index
+            .trace_plan(&rom, &save, &acquisition.world.maps, &plan)
+            .unwrap();
+        assert!(!bundle.routes.is_empty(), "{key}: no prerequisite routes");
+        for route in &bundle.routes {
+            let report = &bundle.reports[route.report_index];
+            assert!(!route.goals.is_empty());
+            assert!(route
+                .goals
+                .iter()
+                .all(|g| g[0] == 0 && g[1] < plan.regions[0].tasks.len()));
+            for candidate in &route.candidates {
+                let writer = &report.writers[candidate.writer_index];
+                for required in &candidate.requires {
+                    let guard = &bundle.reports[*required].condition;
+                    assert!(writer
+                        .conditions
+                        .iter()
+                        .any(|c| c.satisfied != Some(true) && c.condition == guard.condition));
+                }
+                for untraced in &candidate.untraced_conditions {
+                    assert!(untraced.satisfied != Some(true));
+                    assert!(!bundle
+                        .reports
+                        .iter()
+                        .any(|r| r.condition.condition == untraced.condition));
+                }
+            }
+        }
+        assert_eq!(save.data, before);
+        assert_eq!(rom.data.as_ref(), &original);
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+        println!("{key}: {} runtime goals, {} condition routes, {} candidate events; truncation={} (synthetic SAV, no accessibility claim)",plan.regions[0].tasks.len(),bundle.routes.len(),bundle.routes.iter().map(|r|r.candidates.len()).sum::<usize>(),bundle.truncated);
+    }
 }

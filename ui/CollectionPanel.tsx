@@ -2,6 +2,7 @@ import { WildHeldDetails } from "./WildHeldDetails";
 import { AcquisitionSourceFacts } from "./AcquisitionSourceFacts";
 import { acquisitionTargetName } from "./acquisitionLabels";
 import { CollectionPreparation } from "./CollectionPreparation";
+import { CollectionPrerequisites } from "./CollectionPrerequisites";
 import { breedingCoverageSummary } from "./CollectionBreeding";
 import { evolutionLabel } from "./referenceLabels";
 import { ConditionDetails } from "./ConditionDetails";
@@ -43,11 +44,13 @@ export function CollectionPanel({
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [exporting, setExporting] = useState(false);
+  const [tracing, setTracing] = useState(false);
   const generation = useRef(0);
   useEffect(() => {
     let active = true;
     generation.current++;
     setExporting(false);
+    setTracing(false);
     setPlan(null);
     if (save)
       api<CollectionPlan>("collection", {
@@ -152,6 +155,37 @@ export function CollectionPanel({
                   ))}
                 </select>
                 <button
+                  disabled={tracing}
+                  onClick={async () => {
+                    const ticket = generation.current;
+                    setTracing(true);
+                    try {
+                      const latest = await api<CollectionPlan>(
+                        "collection_prerequisites",
+                        {
+                          expected_rom_md5: catalog.profile.md5,
+                          query: {
+                            basis,
+                            families,
+                            include_unknown_rewards: unknown,
+                          },
+                        },
+                      );
+                      if (
+                        ticket === generation.current &&
+                        latest.rom_md5 === catalog.profile.md5
+                      )
+                        setPlan(latest);
+                    } catch (e) {
+                      if (ticket === generation.current) onError(e);
+                    } finally {
+                      if (ticket === generation.current) setTracing(false);
+                    }
+                  }}
+                >
+                  {t(tracing ? "loading" : "planTracePrerequisites")}
+                </button>
+                <button
                   disabled={exporting}
                   onClick={async () => {
                     const ticket = generation.current;
@@ -193,6 +227,13 @@ export function CollectionPanel({
                   {t(exporting ? "dependencyExporting" : "planExport")}
                 </button>
               </div>
+              <CollectionPrerequisites
+                plan={plan}
+                catalog={catalog}
+                maps={maps}
+                onTarget={onTarget}
+                onMap={onMap}
+              />
               {plan.regions.map((r, i) => {
                 const tasks = r.tasks.filter(
                   (task) =>

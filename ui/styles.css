@@ -2694,7 +2694,8 @@ summary {
   flex: 1;
   min-height: 0;
 }
-.training-container[hidden] {
+.training-container[hidden],
+.collection-container[hidden] {
   display: none;
 }
 
@@ -2731,4 +2732,14 @@ summary {
 }
 .training-service-result thead {
   background: var(--soft);
+}
+
+.prerequisite-candidate {
+  margin: 12px 0;
+  padding: 12px;
+  border-left: 3px solid var(--line, #dce3e9);
+  overflow-wrap: anywhere;
+}
+.collection-prerequisites blockquote {
+  white-space: pre-wrap;
 }

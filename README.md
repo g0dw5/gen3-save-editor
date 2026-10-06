@@ -25,6 +25,13 @@ Receipt status is independent of inventory; unknown rewards are opt-in.
 Collection rows and HTML include known source types, quantities, slot probabilities,
 periods and repeatability. Related references open current-ROM targets; report
 links point to existing tasks only. Period hours require verified clock rules.
+Use **Trace prerequisites** to inspect regional event alternatives, related goals,
+recursive conditions and exterior entrances. Reference/back navigation retains
+the plan; reopening a SAV or ROM invalidates it. Already-met conditions stop
+unnecessary prerequisite expansion. These are bounded clues, not a complete quest
+sequence. CLI: `gen3 collection-plan ROM SAVE QUERY.json`. See the
+[route evidence](docs/verification/collection-prerequisites-20261006.md).
+
 
 Missing species also show a bounded, directed permanent-evolution preparation
 chain when a current non-egg ancestor or referenced ancestor source is found.

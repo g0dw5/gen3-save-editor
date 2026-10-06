@@ -535,3 +535,18 @@ semantics or task-DAG completeness is implied. See
 五份 ROM 的收集规划仍为部分支持。本次补齐清单和 HTML 的来源事实及关联跳转，
 未知规则不补猜；真实查询回归与合成界面场景的证据分别说明。没有新增完整任务
 依赖、动态可达性或模拟器内路线验证。
+
+## Collection prerequisite routes / 收集前置关联增量
+
+Collection and story-dependency rows remain **P** for BW/DP/Rocket/Ultimate/Mercury.
+Runtime report routes now connect guarded writer alternatives to plan goals and
+other unmet conditions. The live regional panel and HTML expose this relation,
+static entrances, cycles and unresolved guards; already-met conditions stop
+prerequisite expansion. Reference/back preserves panel state, while ROM/SAV
+reload invalidates it. The five exact-ROM scenarios and current Mercury SAV
+read-only CLI run retain truncation/access limits; see
+[route verification](verification/collection-prerequisites-20261006.md).
+
+五款游戏的前置关联仍为部分支持。候选事件不是已确认任务目录，不保证完整任务
+顺序或当前可达；条件已满足不等于任务已完成。五指纹真实脚本来源回归与合成
+界面测试分别记录，水银另有真实 SAV 只读规划。没有新增存档写入或模拟器保存验证。

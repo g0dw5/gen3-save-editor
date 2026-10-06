@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Connect collection goals to regional prerequisite-event alternatives in the
+  live UI and HTML. Preserve state when following references, discard stale
+  ROM/SAV responses, retain cycles and unknown guards, and stop tracing already-met
+  conditions. Add read-only `gen3 collection-plan`; full story/access remain partial.
+- 收集规划新增按区域查看前置事件、关联目标及地图入口，并贯通独立 HTML。
+  跨资料返回保留分析状态，换 ROM／SAV 丢弃旧响应；保留循环与未知条件，
+  已满足条件不再推荐其解锁任务。新增只读命令行规划，完整剧情与可达性仍部分支持。
+
 - Show acquisition type, known quantity, encounter-slot probability, periods and
   repeatability in collection rows and standalone HTML, with related item/move/
   Pokémon links. Period hours use the loaded adapter's verified rules; unknown

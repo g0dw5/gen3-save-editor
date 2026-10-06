@@ -257,10 +257,120 @@ pub struct Report {
 #[derive(Serialize)]
 pub struct Bundle {
     pub reports: Vec<Report>,
+    pub routes: Vec<PlanningRoute>,
     pub entrances: Vec<crate::collection::EntranceSuggestion>,
     pub skipped_conditions: usize,
     pub truncated: bool,
     pub partial: bool,
+}
+
+/// A guarded writer is one alternative, not an additional mandatory task.
+#[derive(Serialize)]
+pub struct PlanningCandidate {
+    pub writer_index: usize,
+    pub requires: Vec<usize>,
+    pub untraced_conditions: Vec<ConditionCheck>,
+    /// The indexed alternatives contain a path back to the requested condition.
+    /// This does not make the condition impossible: another alternative may exit.
+    pub recursive: bool,
+}
+#[derive(Serialize)]
+pub struct PlanningRoute {
+    pub report_index: usize,
+    /// Region/task indices in this exact plan snapshot, never persistent task IDs.
+    pub goals: Vec<[usize; 2]>,
+    pub candidates: Vec<PlanningCandidate>,
+}
+
+pub(crate) fn planning_routes(
+    reports: &[Report],
+    plan: &crate::collection::CollectionPlan,
+) -> Vec<PlanningRoute> {
+    let indices: BTreeMap<_, _> = reports
+        .iter()
+        .enumerate()
+        .map(|(i, r)| (r.condition.condition.clone(), i))
+        .collect();
+    let mut routes: Vec<_> = reports
+        .iter()
+        .enumerate()
+        .map(|(report_index, report)| PlanningRoute {
+            report_index,
+            goals: Vec::new(),
+            candidates: report
+                .writers
+                .iter()
+                .enumerate()
+                .map(|(writer_index, writer)| {
+                    let mut requires = BTreeSet::new();
+                    let mut untraced_conditions = Vec::new();
+                    for guard in writer
+                        .conditions
+                        .iter()
+                        .filter(|c| c.satisfied != Some(true))
+                    {
+                        if let Some(i) = indices.get(&guard.condition) {
+                            requires.insert(*i);
+                        } else {
+                            untraced_conditions.push(guard.clone());
+                        }
+                    }
+                    PlanningCandidate {
+                        writer_index,
+                        requires: requires.into_iter().collect(),
+                        untraced_conditions,
+                        recursive: false,
+                    }
+                })
+                .collect(),
+        })
+        .collect();
+    let edges: Vec<Vec<usize>> = routes
+        .iter()
+        .map(|r| {
+            if reports[r.report_index].condition.satisfied == Some(true) {
+                return Vec::new();
+            }
+            r.candidates
+                .iter()
+                .flat_map(|c| &c.requires)
+                .copied()
+                .collect()
+        })
+        .collect();
+    let reachable = |starts: Vec<usize>| {
+        let mut seen = BTreeSet::new();
+        let mut pending = starts;
+        while let Some(i) = pending.pop() {
+            if seen.insert(i) {
+                pending.extend(&edges[i]);
+            }
+        }
+        seen
+    };
+    for (region_index, region) in plan.regions.iter().enumerate() {
+        for (task_index, task) in region.tasks.iter().enumerate() {
+            let starts = [
+                task.source.as_ref(),
+                task.preparation.as_ref().and_then(|p| p.source.as_ref()),
+            ]
+            .into_iter()
+            .flatten()
+            .flat_map(|s| &s.conditions)
+            .filter_map(|c| indices.get(&c.condition).copied())
+            .collect();
+            for i in reachable(starts) {
+                routes[i].goals.push([region_index, task_index]);
+            }
+        }
+    }
+    for route in &mut routes {
+        for candidate in &mut route.candidates {
+            candidate.recursive =
+                reachable(candidate.requires.clone()).contains(&route.report_index);
+        }
+    }
+    routes
 }
 
 #[derive(Deserialize)]
@@ -535,7 +645,7 @@ impl Index {
                 .writers
                 .iter()
                 .flat_map(|w| &w.conditions)
-                .filter(|g| g.satisfied != Some(true))
+                .filter(|g| report.condition.satisfied != Some(true) && g.satisfied != Some(true))
             {
                 if depth < 3 {
                     queue.push_back((guard.condition.clone(), depth + 1));
@@ -564,8 +674,10 @@ impl Index {
                 }
             })
             .collect();
+        let routes = planning_routes(&reports, plan);
         Ok(Bundle {
             reports,
+            routes,
             entrances,
             skipped_conditions,
             truncated,
@@ -815,5 +927,117 @@ impl Index {
             next_offset: (next < matches.len()).then_some(next),
             partial: true,
         })
+    }
+}
+
+#[cfg(test)]
+mod route_tests {
+    use super::*;
+    fn guard(id: u16, satisfied: Option<bool>) -> ConditionCheck {
+        ConditionCheck {
+            condition: EventCondition {
+                kind: "flag",
+                id,
+                value: 1,
+                comparison: 1,
+                taken: true,
+            },
+            satisfied,
+            actual: satisfied.map(|s| u32::from(s)),
+            unresolved: None,
+        }
+    }
+    fn report(id: u16, guards: Vec<Vec<ConditionCheck>>) -> Report {
+        Report {
+            rom_md5: "fixture".into(),
+            condition: guard(id, Some(false)),
+            writers: guards
+                .into_iter()
+                .map(|conditions| Writer {
+                    effect: Effect {
+                        kind: "flag",
+                        id,
+                        operation: "set",
+                        operand: None,
+                        value: Some(1),
+                        offset: 100,
+                        conditions: vec![],
+                    },
+                    reference: Reference {
+                        map_id: "0-0".into(),
+                        map_name: "Fixture".into(),
+                        region: 1,
+                        kind: "npc",
+                        x: Some(1),
+                        y: Some(1),
+                        local_id: Some(1),
+                        offset: 200,
+                        root: 100,
+                        conditions: vec![],
+                        entry_unresolved: true,
+                    },
+                    conditions,
+                    text: vec![],
+                    stopped_at: vec![],
+                    path_complete: true,
+                })
+                .collect(),
+            coverage: Coverage {
+                checked_scripts: 2,
+                total_scripts: 2,
+                failed_scripts: 0,
+                truncated: false,
+            },
+            total_matches: 2,
+            next_offset: None,
+            partial: true,
+        }
+    }
+    #[test]
+    fn prerequisite_routes_keep_alternatives_cycles_and_untraced_guards_separate() {
+        let plan = crate::collection::CollectionPlan {
+            prerequisites: None,
+            clock: None,
+            rom_md5: "fixture",
+            basis: crate::collection::CollectionBasis::Individuals,
+            families: true,
+            owned_count: 0,
+            missing_count: 0,
+            regions: vec![],
+            entrances: vec![],
+            breeding_coverage: None,
+            partial: true,
+        };
+        let mut resource = guard(30, None);
+        resource.condition.kind = "bag_item";
+        let reports = vec![
+            report(
+                11,
+                vec![
+                    vec![
+                        guard(12, Some(false)),
+                        guard(12, Some(false)),
+                        guard(13, Some(true)),
+                        resource,
+                    ],
+                    vec![],
+                ],
+            ),
+            report(12, vec![vec![guard(11, Some(false))]]),
+            report(13, vec![]),
+        ];
+        let routes = planning_routes(&reports, &plan);
+        assert_eq!(routes[0].candidates.len(), 2);
+        let first = &routes[0].candidates[0];
+        assert_eq!(first.requires, vec![1]);
+        assert_eq!(first.untraced_conditions.len(), 1);
+        assert_eq!(first.untraced_conditions[0].condition.kind, "bag_item");
+        assert!(first.recursive);
+        assert!(routes[1].candidates[0].recursive);
+        let alternate = &routes[0].candidates[1];
+        assert!(alternate.requires.is_empty());
+        assert!(!alternate.recursive);
+        assert!(routes[2].candidates.is_empty());
+        assert!(routes.iter().all(|r| r.goals.is_empty()));
     }
 }
