@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Verify production SAV edits through full-frame mGBA Continue, in-game Save and
+  fresh reboot for all five fingerprints. Native party/storage bytes and every
+  inventory pocket preserve tested IV/EV/marking, batch/move/swap and quantity
+  results. Mercury's empty-box fixture and RTC trailers retain explicit limits.
+- 五个精确 ROM 补齐正常按键的编辑、游戏内保存与重启回读验证，独立核对同行／
+  整块盒子和所有背包栏位。本轮多字段、批量、移动／交换及数量修改保留结果；
+  水银无盒子个体的副本、RTC 尾部和其他未测试操作明确保留边界。
+
 - Preserve script-assigned coordinates and item operands through verified field
   prompts, close-message and delay commands. Read standard bodies from each ROM,
   account for the expanded message gate, and retain unknown choices and access.

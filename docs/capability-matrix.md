@@ -44,7 +44,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | P | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury executes its native constructor for explicit zero-context scenarios; independent CPU comparisons are recorded below, while full setup remains unknown. |
 | Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution with party/scenario. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
 | Edit, drag/swap, batch, undo/export safety / 编辑事务 | V | V | V | V | V | `session.rs`, [save integrity](research/save-integrity.md). Checksums, record preservation, rollback, backup and source conflict checks; linked mail changes blocked. Scope is represented fields, not all in-game legitimacy rules. |
-| Edited SAV in-game save and re-read / 模拟器再次保存 | P | P | P | P | V | Mercury 1.2 mGBA party/box core fields and corrected expanded-bag editing/re-save verified; earlier vanilla-offset inventory claims were withdrawn. [Correction evidence](verification/mercury-display-storage-20261005.md). Other individual emulator experiments do not certify every edit or format. |
+| Edited SAV in-game save and re-read / 模拟器再次保存 | V | V | V | V | V | [Five-fingerprint full-frame evidence](verification/save-roundtrip-20261006.md): tested IV/EV/marking and existing inventory changes survive normal-key game save/reboot; native party bytes, entire storage and every pocket are checked. First four include batch/moves/swaps; Mercury's current fixture has no occupied box, so that move scenario is not newly certified. Scope: these 128 KiB fixtures, not all edits/emulators or RTC trailers. Earlier incorrect Mercury vanilla-offset inventory claims remain withdrawn; see [correction](verification/mercury-display-storage-20261005.md). |
 | Missing collection, regional planning, HTML / 缺失与路线规划 | P | P | P | P | P | `collection.rs` and shared Collection planning UI: read-only SAV missing goals, regions, guarded entrance alternatives and standalone HTML. Full task DAG/access/time remain partial. Mercury uses existing individuals; expanded Dex flags stay disabled. |
 
 ## Reproducible baseline / 可重复基线
@@ -594,3 +594,20 @@ Mercury 1.2. References are not distinct doors or proof of current access.
 五指纹的 2,560 次原生通用分派、消息／选择／等待字段验证，与真实 ROM 引用扫描
 分别记录；没有新增存档写入、完整现场交互或可达性证明。坐标改善由共用入口图
 进入地图与收集规划／HTML。见[验证及复现](verification/script-dialogues-20261006.md)。
+
+
+## Full-frame edited-SAV persistence / 游戏内保存闭环
+
+[Native save/reload evidence](verification/save-roundtrip-20261006.md) now covers
+all five fingerprints. Production CLI edits are loaded by normal Continue, saved
+through the game's menu, exported and loaded again into a fresh mGBA core.
+Native party bytes, the whole storage block and 2,658 inventory slots are checked
+at both loads. Simultaneous speed IV/EV changes, markings and quantities persist;
+the first four fixtures also exercise batch marks, occupied party/box exchanges
+and moves to empty box slots. Incorrect memory addresses/quantities and attempts
+to overwrite an existing test export are rejected. Input hashes remain unchanged.
+
+五指纹的上述 128 KiB 测试副本已形成编辑、游戏内保存、再读的完整闭环。
+水银当前副本没有盒子个体，不能据此升级其占用盒子移动的验证范围；RTC 尾部、
+所有字段、完整正规操作与其他模拟器也未覆盖。只将本矩阵的明确限定保存行标为
+V，地图／收集／训练家等部分解析行不变。当前增量没有构建新包或修改版本。

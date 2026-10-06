@@ -118,6 +118,13 @@ trailer). Emulator save states are not supported.
 Renaming a ROM cannot change its compatibility. The ROM is read-only; edits
 and exports apply only to save files.
 
+Five exact-ROM 128 KiB fixtures now pass normal-key mGBA edit → game Save →
+reboot checks for tested IV/EV/marking and inventory changes. First-four fixtures
+also cover batch edits and existing party/box moves/swaps; Mercury's current
+fixture has no occupied box. This is bounded persistence evidence, not a claim
+about all edits, RTC trailers, emulators or gameplay equivalence. See the
+[native round-trip record](docs/verification/save-roundtrip-20261006.md).
+
 ## Workspace
 
 The same editor registers five exact ROMs across four games. Rocket adds its packed nature,
