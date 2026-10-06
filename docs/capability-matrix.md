@@ -611,3 +611,21 @@ to overwrite an existing test export are rejected. Input hashes remain unchanged
 水银当前副本没有盒子个体，不能据此升级其占用盒子移动的验证范围；RTC 尾部、
 所有字段、完整正规操作与其他模拟器也未覆盖。只将本矩阵的明确限定保存行标为
 V，地图／收集／训练家等部分解析行不变。当前增量没有构建新包或修改版本。
+
+
+## Native pocket category correction / 原生栏位分类修正
+
+[Inventory evidence](verification/inventory-categories-20261006.md) corrects
+BW/DP's reversed berry/key-item category IDs. Stored offsets remain correct;
+standard edits, ordinary quantity projections and ROM-reference labels now use
+the verified category. Normal UI choices are scoped to that ROM/pocket; existing
+mismatches stay visible and free editing remains available.
+
+All five profiles passed 28 native bag-pocket checks / 1,008 quantity vectors,
+real-catalog bilingual browser fixtures and a new game-save/reboot run including
+berry/key actions. The 128 public tests and separate actual-ROM acquisition /
+collection regression pass. Alternate bags, PC gameplay rules and full resource
+payment/receipt remain partial; no broader map/story/access upgrade is implied.
+
+五指纹均完成交叉核对；仅修正漆黑 BW／DP 的错误分类配置，其他三款保留已验证
+定义。已存在的错放数据不会自动移动。原文件不改动，版本不递增，不构建发布包。

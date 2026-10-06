@@ -153,6 +153,9 @@ See [coverage, verification and extension rules](docs/multi-rom-adapters.md).
   separately attributed numeric reference is the only bundled Pokémon catalog;
   ambiguous or custom species require manual reference selection. See the
   [runtime-data audit](docs/research/runtime-data-and-evolution-tree.md).
+- Normal bag choices follow the current ROM's pocket categories; free editing
+  and PC storage retain the full list. Existing mismatched items remain visible
+  with a warning. See [native inventory classification](docs/verification/inventory-categories-20261006.md).
 - Edit player identity, money, coins, bags, box names and Pokédex flags. Inspect
   before/after changes, undo/redo, then export. Existing output is backed up.
 - Free editing permits game-rule exceptions. Binary bounds, native checksum rules and supported

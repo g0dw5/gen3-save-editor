@@ -1019,6 +1019,8 @@ export const en = {
   special_items: "Special items",
   random: "Random",
   bagItems: "General items",
+  bagWrongPocket:
+    "This item's ROM category does not match this pocket. Choose a matching item or use free editing; existing data is preserved.",
   inventoryHelp:
     "Choose a pocket or PC items, then select a slot to edit. Choose an item in an empty slot to add it; clear a slot to remove it. Apply changes, then export your save.",
   clearSlot: "Clear slot",
@@ -2221,6 +2223,8 @@ export const zh: Record<Key, string> = {
   special_items: "特殊道具",
   random: "随机",
   bagItems: "普通道具",
+  bagWrongPocket:
+    "此道具在 ROM 中的分类与当前栏位不符。请选择本栏位道具，或使用自由编辑；现有数据不会自动改动。",
   inventoryHelp:
     "选择道具栏位，再选择槽位修改。空槽位选择道具即可添加；清空槽位即可移除。应用修改后，请导出存档。",
   clearSlot: "清空槽位",

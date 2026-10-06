@@ -101,7 +101,7 @@ pub const POCKETS: [Pocket; 6] = [
         offset: 0x5d8,
         count: 30,
         encrypted: true,
-        category: 4,
+        category: 5,
     },
     Pocket {
         block: PocketBlock::Main,
@@ -125,7 +125,7 @@ pub const POCKETS: [Pocket; 6] = [
         offset: 0x790,
         count: 46,
         encrypted: true,
-        category: 5,
+        category: 4,
     },
 ];
 // Native bag initializer at 0x10e8d0 maps all eight categories independently.

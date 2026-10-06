@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Correct Dark Phantom BW/DP berry/key-item ROM category IDs. Standard pocket
+  edits, ordinary holdings and reference labels now select the proper category.
+  Normal choices follow the loaded ROM; free/PC choices stay broad and existing
+  mismatches remain visible. Verified with five-ROM native pockets and save/reload.
+- 修正漆黑 BW／DP 的树果与重要道具分类编号，恢复正确的栏位编辑校验、持有量
+  判断和资料标签。普通选择按当前 ROM 分类筛选，自由编辑／电脑保留完整选择；
+  已有错放道具保留并提示。五指纹原生栏位与游戏内保存回读已交叉验证。
+
 - Verify production SAV edits through full-frame mGBA Continue, in-game Save and
   fresh reboot for all five fingerprints. Native party/storage bytes and every
   inventory pocket preserve tested IV/EV/marking, batch/move/swap and quantity

@@ -10032,3 +10032,116 @@ fn local_collection_prerequisite_routes_all_profiles() {
         println!("{key}: {} runtime goals, {} condition routes, {} candidate events; truncation={} (synthetic SAV, no accessibility claim)",plan.regions[0].tasks.len(),bundle.routes.len(),bundle.routes.iter().map(|r|r.candidates.len()).sum::<usize>(),bundle.truncated);
     }
 }
+
+#[test]
+fn native_pocket_categories_isolate_stored_items_and_standard_edits() {
+    use crate::event_state::EventSnapshot;
+    for p in profile::PROFILES {
+        let mut r = adapter_rom(p);
+        let (berry_category, key_category) = if p.id == profile::ROCKET.id {
+            (5, 8)
+        } else if p.id == crate::mercury::PROFILE.id {
+            (5, 2)
+        } else {
+            (4, 5)
+        };
+        // Synthetic native ID sanitizer is identity; no real ROM is patched.
+        let sanitizer = r.profile.resource_checks.unwrap().item_sanitizer as usize - 0x08000000;
+        let table = r.profile.items;
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        put16(b, sanitizer, 0x4770);
+        for (id, category) in [(2, berry_category), (3, key_category)] {
+            b[table.offset + id * table.stride + 26] = category;
+        }
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        for (pocket, other, id, category, amount) in [
+            ("berries", "key_items", 2, berry_category, 7),
+            ("key_items", "berries", 3, key_category, 1),
+        ] {
+            assert_eq!(
+                r.profile
+                    .save
+                    .pockets
+                    .iter()
+                    .find(|s| s.id == pocket)
+                    .unwrap()
+                    .category,
+                category,
+                "{} {pocket}",
+                p.id
+            );
+            save.edit_bag(pocket, 0, id, amount, &r, Policy::Standard)
+                .unwrap();
+            let before = save.data.clone();
+            assert_eq!(
+                save.edit_bag(other, 0, id, 1, &r, Policy::Standard)
+                    .unwrap_err()
+                    .code,
+                "item_pocket"
+            );
+            assert_eq!(save.data, before);
+            save.edit_bag(other, 1, id, 99, &r, Policy::Free).unwrap();
+            save.edit_bag("pc", 0, id, 999, &r, Policy::Standard)
+                .unwrap();
+            let state = EventSnapshot::new(&save, r.profile.event_state.unwrap());
+            assert_eq!(state.normal_bag_item(&r, id), Some((amount as u32, true)));
+            save.edit_bag(pocket, 0, 0, 0, &r, Policy::Standard)
+                .unwrap();
+            let state = EventSnapshot::new(&save, r.profile.event_state.unwrap());
+            assert_eq!(state.normal_bag_item(&r, id), Some((0, false)));
+        }
+    }
+}
+
+#[test]
+#[ignore = "requires all five exact ROMs and GEN3_INVENTORY_CATEGORY_PROBES booted native vectors"]
+fn local_inventory_categories_match_booted_native_pockets_and_checks() {
+    use crate::event_state::EventSnapshot;
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_INVENTORY_CATEGORY_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        assert_eq!(probes[key]["md5"], r.profile.md5);
+        for pocket in probes[key]["pockets"].as_array().unwrap() {
+            let id = pocket["id"].as_str().unwrap();
+            let item = pocket["item"].as_u64().unwrap() as u16;
+            let layout = r.profile.save.pockets.iter().find(|s| s.id == id).unwrap();
+            assert_eq!(
+                layout.category as u64,
+                pocket["category"].as_u64().unwrap(),
+                "{key} {id}"
+            );
+            assert_eq!(layout.count as u64, pocket["capacity"].as_u64().unwrap());
+            assert_eq!(
+                r.resource_item_pocket(item).unwrap() as u64,
+                pocket["category"].as_u64().unwrap()
+            );
+            for vector in pocket["vectors"].as_array().unwrap() {
+                let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+                for (slot, quantity) in vector["quantities"].as_array().unwrap().iter().enumerate()
+                {
+                    let quantity = quantity.as_u64().unwrap() as u16;
+                    save.edit_bag(id, slot, item, quantity.max(1), &r, Policy::Free)
+                        .unwrap();
+                    if quantity == 0 {
+                        fixture_zero_bag_quantity(&mut save, id, slot);
+                    }
+                }
+                let before = save.data.clone();
+                let state = EventSnapshot::new(&save, r.profile.event_state.unwrap());
+                let (quantity, present) = state.normal_bag_item(&r, item).unwrap();
+                assert_eq!(
+                    u8::from(present && quantity >= vector["value"].as_u64().unwrap() as u32)
+                        as u64,
+                    vector["result"].as_u64().unwrap(),
+                    "{key} {id}: {vector}"
+                );
+                assert_eq!(save.data, before);
+            }
+        }
+    }
+}

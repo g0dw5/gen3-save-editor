@@ -1126,6 +1126,14 @@ function BagEditor({
   const selected = entries.find((e) => e.slot === selectedSlot);
   const [item, setItem] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const category = catalog.profile.save?.pockets.find(
+    (p) => p.id === pocket,
+  )?.category;
+  const wrongPocket =
+    !!item &&
+    category !== undefined &&
+    category !== 0 &&
+    catalog.items.find((i) => i.id === item)?.pocket !== category;
   useEffect(() => {
     setItem(selected?.item ?? 0);
     setQuantity(selected?.item ? selected.quantity : 1);
@@ -1250,12 +1258,23 @@ function BagEditor({
                   label={t("items")}
                   value={item}
                   onChange={(v) => setItem(+v)}
-                  options={catalog.items.map((i) =>
-                    i.id
-                      ? itemOption(catalog, i)
-                      : { value: 0, label: t("emptyMove") },
-                  )}
+                  options={catalog.items
+                    .filter(
+                      (i) =>
+                        free ||
+                        category === undefined ||
+                        category === 0 ||
+                        !i.id ||
+                        i.id === item ||
+                        i.pocket === category,
+                    )
+                    .map((i) =>
+                      i.id
+                        ? itemOption(catalog, i)
+                        : { value: 0, label: t("emptyMove") },
+                    )}
                 />
+                {wrongPocket && <p className="hint">{t("bagWrongPocket")}</p>}
                 <NumberField
                   label={t("quantity")}
                   value={quantity}
