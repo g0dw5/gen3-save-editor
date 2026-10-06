@@ -4920,6 +4920,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
                 pokemon: vec![],
                 teaching: vec![],
                 daycare: vec![],
+                scripted_movements: vec![],
                 rewards: vec![ItemReward {
                     item: 1,
                     quantity: Some(1),
@@ -4942,6 +4943,7 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
                     unplaced_pokemon: vec![],
                     unplaced_teaching: vec![],
                     unplaced_daycare: vec![],
+                    unplaced_movements: vec![],
                     stopped_at: vec![],
                 }],
                 encounters: vec![],
@@ -5426,6 +5428,7 @@ fn gift_receipt_queries_and_plans_use_the_qualified_reward_not_visibility() {
                 pokemon: vec![],
                 teaching: vec![],
                 daycare: vec![],
+                scripted_movements: vec![],
                 rewards: vec![reward],
                 stopped_at: vec![],
             }],
@@ -5433,6 +5436,7 @@ fn gift_receipt_queries_and_plans_use_the_qualified_reward_not_visibility() {
             unplaced_pokemon: vec![],
             unplaced_teaching: vec![],
             unplaced_daycare: vec![],
+            unplaced_movements: vec![],
             stopped_at: vec![],
         }];
         let target = Target {
@@ -11085,4 +11089,212 @@ fn invalid_native_dex_records_remain_missing_in_collection() {
         [1]
     );
     assert_eq!(save.data, before);
+}
+
+#[test]
+fn scripted_actor_references_keep_initial_tiles_and_unverified_execution_boundaries() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        world::{Map, TrainerLocationIndex, World},
+    };
+    for profile in profile::PROFILES {
+        let mut r = adapter_rom(profile);
+        let rules = profile.event_state.unwrap().effects.unwrap();
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        for (i, handler) in rules.movement_handlers.iter().enumerate() {
+            put32(
+                b,
+                rules.commands + (0x4f + i) * 4,
+                0x08000001 + *handler as u32,
+            );
+        }
+        b[0x24000] = 1;
+        put32(b, 0x24004, 0x08024100);
+        b[0x24100] = 7;
+        put16(b, 0x24104, 2);
+        put16(b, 0x24106, 3);
+        put32(b, 0x24110, 0x08024200);
+        // The direct reference retains the resolved low-byte actor identity.
+        // Waiting reuses live engine state, never an inferred current position.
+        let script = [
+            0x16, 0x00, 0x80, 0x07, 0x01, 0x4f, 0x00, 0x80, 0x00, 0x45, 0x02, 0x08, 0x51, 0, 0,
+            0x44, 1, 0, 2, 0, 0x02,
+        ];
+        b[0x24200..0x24200 + script.len()].copy_from_slice(&script);
+        b[0x24400..0x2440f].copy_from_slice(&[
+            0x50, 8, 0, 0x00, 0x45, 0x02, 0x08, 9, 4, 0x52, 0, 0, 9, 4, 0x02,
+        ]);
+        b[0x24500] = 0xfe;
+        let map = Map {
+            id: "2-4".into(),
+            group: 2,
+            number: 4,
+            name: "Initial tiles".into(),
+            region: 1,
+            width: 10,
+            height: 10,
+            map_type: 1,
+            header: 0,
+            layout: 0,
+            invalid_events: false,
+            events: Some(0x24000),
+            scripts: vec![0x24200, 0x24400],
+            objects: vec![],
+        };
+        let before = r.data.clone();
+        let report = r.map_events(&map).unwrap();
+        let marker = &report.markers[0];
+        assert_eq!((marker.x, marker.y, marker.local_id), (2, 3, Some(7)));
+        assert_eq!(marker.scripted_movements.len(), 2);
+        assert_eq!(
+            (
+                marker.scripted_movements[0].kind,
+                marker.scripted_movements[0].local_id,
+                marker.scripted_movements[0].movement_script
+            ),
+            ("apply", Some(7), Some(0x24500))
+        );
+        assert!(marker.scripted_movements[1].reuses_last_actor);
+        assert_eq!(marker.scripted_movements[1].local_id, None);
+        assert_eq!(report.unplaced_movements.len(), 2);
+        assert!(report
+            .unplaced_movements
+            .iter()
+            .all(|m| m.map_id.as_deref() == Some("9-4")));
+        assert!(marker.stopped_at.contains(&0x24205) && marker.stopped_at.contains(&0x2420c));
+        assert!(marker.rewards.iter().all(|r| r.receipt.is_none()));
+        assert!(
+            r.script_warp_instruction(0x24400, |_| Some(8))
+                .unwrap()
+                .is_none(),
+            "actor-map operands are not passages"
+        );
+        let index = AcquisitionIndex {
+            wild_cache: Default::default(),
+            breeding_cache: Default::default(),
+            world: World {
+                maps: vec![map],
+                map_events: vec![report],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: vec![],
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        let sources = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap()
+            .sources;
+        assert_eq!(sources.len(), 1);
+        assert_eq!(
+            (
+                sources[0].map_id.as_deref(),
+                sources[0].x,
+                sources[0].y,
+                sources[0].status
+            ),
+            (Some("2-4"), Some(2), Some(3), "unknown")
+        );
+        assert!(sources[0].partial);
+        assert_eq!(r.data, before);
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        put32(b, rules.commands + 0x4f * 4, 0x08000001);
+        assert!(r
+            .script_movement_instruction(0x24205, |_| Some(7))
+            .is_none());
+    }
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_MOVEMENT_PROBES"]
+fn local_script_movement_operands_match_native_dispatch_and_lifecycle() {
+    use sha2::{Digest, Sha256};
+    let proofs: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_MOVEMENT_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    let mut cases = 0;
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let bytes = std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap();
+        let mut r = Rom::open(bytes.clone()).unwrap();
+        let p = &proofs[key];
+        assert_eq!(p["md5"], r.profile.md5);
+        assert_eq!(p["rom_sha256"], format!("{:x}", Sha256::digest(&bytes)));
+        let rules = r.profile.event_state.unwrap().effects.unwrap();
+        assert_eq!(
+            p["handlers"],
+            serde_json::to_value(rules.movement_handlers).unwrap()
+        );
+        let rows = p["rows"].as_array().unwrap();
+        assert_eq!(rows.len(), 128);
+        for row in rows {
+            let operand = row["operand"].as_u64().unwrap() as u16;
+            let value = row["resolved"].as_u64().unwrap() as u16;
+            let parts = row["map_id"]
+                .as_str()
+                .unwrap()
+                .split('-')
+                .map(|v| v.parse::<u8>().unwrap())
+                .collect::<Vec<_>>();
+            for name in ["apply_opcode", "wait_opcode"] {
+                let op = row[name].as_u64().unwrap() as u8;
+                let wait = op >= 0x51;
+                let mut code = vec![op];
+                code.extend(operand.to_le_bytes());
+                if !wait {
+                    code.extend(0x02018000u32.to_le_bytes());
+                }
+                if op == 0x50 || op == 0x52 {
+                    code.extend(&parts);
+                }
+                let b = std::sync::Arc::make_mut(&mut r.data);
+                b[0x26000..0x26000 + code.len()].copy_from_slice(&code);
+                let trace = r
+                    .script_movement_instruction(0x26000, |_| Some(value))
+                    .unwrap();
+                assert_eq!(trace.kind, if wait { "wait" } else { "apply" });
+                assert_eq!(trace.reuses_last_actor, wait && value == 0);
+                assert_eq!(
+                    trace.local_id,
+                    if wait && value == 0 {
+                        None
+                    } else {
+                        Some(value as u8)
+                    }
+                );
+                assert_eq!(
+                    trace.map_id,
+                    if op == 0x50 || op == 0x52 {
+                        Some(row["map_id"].as_str().unwrap().into())
+                    } else {
+                        None
+                    }
+                );
+                assert!(
+                    trace.movement_script.is_none(),
+                    "RAM-only movement bodies are not ROM offsets"
+                );
+            }
+            assert_eq!(row["finished"], 1);
+            cases += 1;
+        }
+        assert_eq!(
+            bytes,
+            std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap()
+        );
+    }
+    assert_eq!(cases, 640);
 }

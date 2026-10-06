@@ -30,7 +30,7 @@ from missing code. A P row can contain individually verified subfeatures.
 
 | Requested workflow / 功能 | BW | DP | Rocket | Ultimate | Mercury 1.2 | Evidence and limit / 证据与边界 |
 |---|---|---|---|---|---|---|
-| Map layouts, NPC art / 地图与 NPC | P | P | P | P | P | `graphics.rs`, `map_events.rs`, [map palettes](research/map-palettes.md), [Rocket maps](research/rocket-map-and-trainer-display.md), [Mercury](research/mercury-fc-11.md). Static initial layouts; no live movement/layout replacement simulation. |
+| Map layouts, NPC art / 地图与 NPC | P | P | P | P | P | `graphics.rs`, `map_events.rs`, [map palettes](research/map-palettes.md), [Rocket maps](research/rocket-map-and-trainer-display.md), [Mercury](research/mercury-fc-11.md). Static initial layouts; [native action references](verification/script-movements-20261006.md) and bilingual initial-tile notices; no live movement/layout replacement simulation. |
 | Entrances, connections, current reachability / 入口与可达性 | P | P | P | P | P | `navigation.rs`, shared map UI and five exact-ROM tests. Map windows now combine static links with [referenced script passages](verification/script-warps-20261006.md), guard overlays, source/target focus and return. 918 native operand cases cover the decoded handlers; activation, full map loading, dynamic destinations and current access remain unresolved. Collection UI/HTML now shares guarded script entrances; see [integration evidence](verification/collection-script-entrances-20261006.md). |
 | Pickup, hidden items, dialogue rewards / 拾取与奖励 | P | P | P | P | P | [map events](research/map-events.md): BW/DP 707 maps, 122 balls, 112 hidden items. Bounded scripts retain stop evidence; ordinary/hidden and qualified NPC receipt protocols have five-fingerprint evidence below. Custom commands, complete resource/runtime guards and access remain partial. |
 | Random encounters, probability, time tables / 随机相遇 | P | P | P | P | P | `world.rs`; [time selection](research/encounter-time-selection.md), Mercury native selector. Slot weights are separate from encounter frequency; no full weekday/clock-state validation. |
@@ -690,3 +690,16 @@ never clear bits or mark the Dex. Explicit legacy edits retain synchronized
 flag writes; Mercury's Dex write capability stays disabled. Flag allocation
 counts are not counts of obtainable species/forms. Complete regional collection,
 all acquisition methods and current task/access dependencies remain **P**.
+
+
+## Actor-action references / 角色行动引用
+
+[Native lifecycle evidence](verification/script-movements-20261006.md) verifies
+640 apply/wait/end-only task scenarios across five exact fingerprints. The shared
+map reader recognizes the four native dispatches, low-byte actor references,
+wait's live last-actor reuse and explicit actor-map operands. Map markers and
+map-level actions explain initial ROM positions; actor maps do not become
+passages. Command references and operand reads are **V within this boundary**;
+actual motion, arbitrary action-body effects, collisions, entry and current
+reachability remain **P/U**. Conservative dataflow and receipt-proof boundaries
+remain in force. No source SAV/ROM edits, version bump, packaging or release.

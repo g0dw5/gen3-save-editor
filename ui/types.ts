@@ -349,6 +349,7 @@ export interface MapMarker {
   pokemon: PokemonSource[];
   teaching?: TeachingSource[];
   daycare?: DaycareSource[];
+  scripted_movements?: ScriptMovement[];
   stopped_at: number[];
 }
 export interface MapEventReport {
@@ -358,7 +359,17 @@ export interface MapEventReport {
   unplaced_pokemon: PokemonSource[];
   unplaced_teaching?: TeachingSource[];
   unplaced_daycare?: DaycareSource[];
+  unplaced_movements?: ScriptMovement[];
   stopped_at: number[];
+}
+export interface ScriptMovement {
+  offset: number;
+  kind: "apply" | "wait";
+  local_id: number | null;
+  reuses_last_actor: boolean;
+  map_id: string | null;
+  movement_script: number | null;
+  conditions: ItemReward["conditions"];
 }
 export interface GameMap {
   invalid_events?: boolean;

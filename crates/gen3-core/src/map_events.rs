@@ -51,6 +51,8 @@ pub struct MapMarker {
     pub pokemon: Vec<crate::script_pokemon::PokemonSource>,
     pub teaching: Vec<crate::script_teaching::TeachingSource>,
     pub daycare: Vec<crate::breeding::DaycareSource>,
+    /// Referenced action/wait commands, not a simulation of the actor's location.
+    pub scripted_movements: Vec<ScriptMovement>,
     pub stopped_at: Vec<usize>,
 }
 #[derive(Serialize)]
@@ -62,7 +64,20 @@ pub struct MapEventReport {
     pub unplaced_pokemon: Vec<crate::script_pokemon::PokemonSource>,
     pub unplaced_teaching: Vec<crate::script_teaching::TeachingSource>,
     pub unplaced_daycare: Vec<crate::breeding::DaycareSource>,
+    pub unplaced_movements: Vec<ScriptMovement>,
     pub stopped_at: Vec<usize>,
+}
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ScriptMovement {
+    pub offset: usize,
+    pub kind: &'static str,
+    /// Effective low-byte actor ID; None for unknown variables or wait's reuse.
+    pub local_id: Option<u8>,
+    pub reuses_last_actor: bool,
+    /// Explicit map operand only. An actor reference is not a navigation edge.
+    pub map_id: Option<String>,
+    pub movement_script: Option<usize>,
+    pub conditions: Vec<EventCondition>,
 }
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct RewardKey {
@@ -88,6 +103,7 @@ struct AwardTrace {
     sets: BTreeMap<u16, BTreeSet<usize>>,
 }
 struct Walk {
+    movements: Vec<ScriptMovement>,
     warps: Vec<crate::navigation::ScriptWarp>,
     battles: Vec<crate::event_dependencies::BattleSource>,
     effects: Vec<crate::event_dependencies::Effect>,
@@ -218,6 +234,41 @@ fn resolve(s: &State, v: u16) -> Option<u16> {
     }
 }
 impl Rom {
+    pub(crate) fn script_movement_instruction(
+        &self,
+        pc: usize,
+        resolve: impl Fn(u16) -> Option<u16>,
+    ) -> Option<ScriptMovement> {
+        let opcode = *self.data.get(pc)?;
+        let index = opcode.checked_sub(0x4f)? as usize;
+        let rules = self.profile.event_state?.effects?;
+        let handler = *rules.movement_handlers.get(index)?;
+        if handler == 0
+            || pointer(&self.data, rules.commands + opcode as usize * 4).ok()? & !1 != handler
+        {
+            return None;
+        }
+        let width = [7, 9, 3, 5][index];
+        bytes(&self.data, pc, width).ok()?;
+        let wait = index >= 2;
+        let actor = resolve(u16(&self.data, pc + 1).ok()?);
+        let reuse = wait && actor == Some(0);
+        let map_at = if wait { pc + 3 } else { pc + 7 };
+        Some(ScriptMovement {
+            offset: pc,
+            kind: if wait { "wait" } else { "apply" },
+            local_id: actor.filter(|_| !reuse).map(|value| value as u8),
+            reuses_last_actor: reuse,
+            map_id: (index % 2 == 1)
+                .then(|| format!("{}-{}", self.data[map_at], self.data[map_at + 1])),
+            movement_script: if wait {
+                None
+            } else {
+                pointer(&self.data, pc + 3).ok()
+            },
+            conditions: Vec::new(),
+        })
+    }
     pub(crate) fn trainer_battle_length(&self, pc: usize) -> Result<usize> {
         let rules = self
             .profile
@@ -311,6 +362,7 @@ impl Rom {
         let mut text = BTreeSet::new();
         let mut battles = BTreeSet::new();
         let mut warps = BTreeSet::new();
+        let mut movements = BTreeSet::new();
         let mut stopped = BTreeSet::new();
         let mut steps = 0;
         let mut complete = true;
@@ -353,6 +405,15 @@ impl Rom {
                 let presentation = self.script_presentation(pc);
                 let player_gender = self.script_player_gender(pc);
                 let buffer_preserves = self.script_buffer_preserves(pc, |v| resolve(&s, v));
+                if let Some(mut movement) = self.script_movement_instruction(pc, |v| resolve(&s, v))
+                {
+                    movement.conditions = s.conditions.clone();
+                    movements.insert(movement);
+                    // Background actions/collisions are not simulated. Retain
+                    // the existing conservative dataflow and receipt boundary.
+                    stopped.insert(pc);
+                    complete = false;
+                }
                 if !prove && !observe {
                     match self.script_daycare_instruction(pc) {
                         Ok(Some(mut source)) => {
@@ -1094,6 +1155,7 @@ impl Rom {
             }
         }
         Ok(Walk {
+            movements: movements.into_iter().collect(),
             warps: warps.into_iter().collect(),
             battles: battles.into_iter().collect(),
             effects: effects.into_iter().collect(),
@@ -1146,6 +1208,7 @@ impl Rom {
                         pokemon: Vec::new(),
                         teaching: Vec::new(),
                         daycare: Vec::new(),
+                        scripted_movements: Vec::new(),
                         stopped_at: Vec::new(),
                     };
                     if count_off == 0 {
@@ -1221,6 +1284,7 @@ impl Rom {
                         marker.pokemon = report.pokemon;
                         marker.teaching = report.teaching;
                         marker.daycare = report.daycare;
+                        marker.scripted_movements = report.movements;
                         marker.stopped_at = report.stopped;
                         if count_off == 2 {
                             let id = u16(b, o + 6)?;
@@ -1261,6 +1325,7 @@ impl Rom {
                         || !marker.pokemon.is_empty()
                         || !marker.teaching.is_empty()
                         || !marker.daycare.is_empty()
+                        || !marker.scripted_movements.is_empty()
                     {
                         markers.push(marker);
                     }
@@ -1271,6 +1336,7 @@ impl Rom {
         let mut unplaced_pokemon = BTreeSet::new();
         let mut unplaced_teaching = BTreeSet::new();
         let mut unplaced_daycare = BTreeSet::new();
+        let mut unplaced_movements = BTreeSet::new();
         let mut stopped = BTreeSet::new();
         for root in map.scripts.iter().filter(|p| !positioned.contains(p)) {
             let report = self.event_script(*root)?;
@@ -1278,6 +1344,7 @@ impl Rom {
             unplaced_pokemon.extend(report.pokemon);
             unplaced_teaching.extend(report.teaching);
             unplaced_daycare.extend(report.daycare);
+            unplaced_movements.extend(report.movements);
             stopped.extend(report.stopped);
         }
         Ok(MapEventReport {
@@ -1287,6 +1354,7 @@ impl Rom {
             unplaced_pokemon: unplaced_pokemon.into_iter().collect(),
             unplaced_teaching: unplaced_teaching.into_iter().collect(),
             unplaced_daycare: unplaced_daycare.into_iter().collect(),
+            unplaced_movements: unplaced_movements.into_iter().collect(),
             stopped_at: stopped.into_iter().collect(),
         })
     }

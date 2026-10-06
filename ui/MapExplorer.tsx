@@ -518,6 +518,9 @@ export function MapExplorer({
               {marker.movement_type === 76 && (
                 <p className="small muted">{t("mapInvisibleObject")}</p>
               )}
+              {!!marker.scripted_movements?.length && (
+                <p className="small muted">{t("mapScriptedMovement")}</p>
+              )}
               {marker.stopped_at.length > 0 && (
                 <p className="small muted">{t("mapPartialScript")}</p>
               )}
@@ -536,6 +539,11 @@ export function MapExplorer({
                     ? ` · ${t("acqReceiptEvidence")} 0x${marker.receipt_flag.toString(16)}`
                     : ""}
                 </code>
+                {!!marker.scripted_movements?.length && (
+                  <pre>
+                    {JSON.stringify(marker.scripted_movements, null, 2)}
+                  </pre>
+                )}
                 {!!marker.pokemon?.length && (
                   <pre>{JSON.stringify(marker.pokemon, null, 2)}</pre>
                 )}
@@ -567,6 +575,13 @@ export function MapExplorer({
           <p className="muted">{t("mapSelectMarker")}</p>
         )}
       </div>
+      {!!report?.unplaced_movements?.length && (
+        <details>
+          <summary>{t("mapScriptedMovementEntry")}</summary>
+          <p className="small muted">{t("mapScriptedMovement")}</p>
+          <pre>{JSON.stringify(report.unplaced_movements, null, 2)}</pre>
+        </details>
+      )}
       {!!report?.unplaced_rewards.length && (
         <details>
           <summary>{t("mapUnplacedRewards")}</summary>

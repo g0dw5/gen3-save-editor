@@ -41,9 +41,13 @@ pub struct Rules {
     /// Optional native item-format branch reading an unsaved/custom berry name.
     /// Read the compared ID from this ROM instruction; do not bundle item content.
     pub buffer_item_dynamic_compare: Option<usize>,
+    /// Native applymovement/applymovementat/waitmovement/waitmovementat.
+    /// Identifies commands; does not certify background actions or current tiles.
+    pub movement_handlers: [usize; 4],
 }
 const OPCODES: [u8; 8] = [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f];
 pub const EMERALD: Rules = Rules {
+    movement_handlers: [0x9a5e8, 0x9a62c, 0x9a698, 0x9a6ec],
     buffer_item_dynamic_compare: None,
     buffer_destinations: [0x02021cc4, 0x02021dc4, 0x02021ec4],
     buffer_handlers: [0x9afbc, 0x9b090, 0x9b150, 0x9b190, 0x9b248],
@@ -84,6 +88,7 @@ pub const EMERALD: Rules = Rules {
     ],
 };
 pub const ROCKET: Rules = Rules {
+    movement_handlers: [0xd0530, 0xd0574, 0xd05e0, 0xd0634],
     buffer_item_dynamic_compare: None,
     buffer_destinations: EMERALD.buffer_destinations,
     buffer_handlers: [0xd0ef0, 0xd0fc4, 0xd1084, 0xd10c4, 0xd117c],
@@ -106,6 +111,7 @@ pub const ROCKET: Rules = Rules {
     ],
 };
 pub const MERCURY: Rules = Rules {
+    movement_handlers: [0x6b200, 0x6b244, 0x6b2b0, 0x6b304],
     buffer_item_dynamic_compare: Some(0x99e98),
     buffer_destinations: [0x02021cd0, 0x02021cf0, 0x02021d04],
     buffer_handlers: [0x6bc88, 0x6bd5c, 0x6be50, 0x6be90, 0x6bf14],

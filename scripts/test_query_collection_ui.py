@@ -21,7 +21,9 @@ def main():
     maps = [dict(id='0-0',name='Test region entrance',region=1,width=4,height=4,map_type=1),dict(id='0-1',name='Test cave floor',region=1,width=4,height=4,map_type=4)]
     reward = dict(item=1,quantity=1,offset=100,via='pickup',conditions=[])
     marker = dict(id='pickup-1',kind='pickup',x=1,y=1,elevation=0,local_id=1,graphics_id=None,movement_type=0,flag=10,receipt_flag=10,offset=100,script=100,rewards=[reward],stopped_at=[])
-    world = dict(maps=maps,map_events=[dict(map_id='0-1',markers=[marker],unplaced_rewards=[],stopped_at=[])],encounters=[],trainers=[],trainer_locations=dict(locations=[]),map_groups=[])
+    movement=dict(offset=90,kind='apply',local_id=1,reuses_last_actor=False,map_id=None,movement_script=900,conditions=[])
+    marker['scripted_movements']=[movement]
+    world = dict(maps=maps,map_events=[dict(map_id='0-1',markers=[marker],unplaced_movements=[dict(movement,offset=95,kind='wait',movement_script=None,reuses_last_actor=True,local_id=None)],unplaced_rewards=[],stopped_at=[])],encounters=[],trainers=[],trainer_locations=dict(locations=[]),map_groups=[])
     world['trainers']=[dict(id=1,name='ROM trainer',class_name='Test class',portrait=1,female=False,double_battle=False,items=[],ai=0,diagnostics=[],offset=250,party=[dict(species=2,level=10,iv_quality=0,level_rule='fixed',generation=None,held_item=0,moves=[0,0,0,0],moves_explicit=True,offset=250)],**{'class':0})]
     edge = dict(from_='0-0',to='0-1',kind='warp',x=2,y=1,target_x=1,target_y=1,warp_index=0,target_warp=0,direction=None,displacement=None,offset=200,unresolved=None)
     edge['from'] = edge.pop('from_')
@@ -130,6 +132,14 @@ def main():
         page.get_by_role('button',name='Back to previous reference',exact=False).click()
         expect(page.locator('.map-navigation')).to_contain_text('Test cave floor')
         page.locator('.map-focus').click()
+        expect(page.locator('.map-marker-details')).to_contain_text("Sprites mark the ROM's initial tiles")
+        expect(page.get_by_text('Map-level actor actions',exact=True)).to_be_visible()
+        page.get_by_role('button',name='简体中文',exact=True).click()
+        expect(page.locator('.map-marker-details')).to_contain_text('小人标注 ROM 初始格位')
+        expect(page.get_by_text('地图级角色行动',exact=True)).to_be_visible()
+        page.get_by_role('button',name='English',exact=True).click()
+        if os.environ.get('GEN3_UI_ARTIFACTS'):
+            page.locator('.map-marker-details').screenshot(path=str(Path(os.environ['GEN3_UI_ARTIFACTS'])/'scripted-movement-marker.png'))
         # Map conditions are ROM-only data; the open trace must recheck a new SAV
         # even when its outer condition and map report did not change.
         maptrace=page.locator('.map-marker-details .event-dependencies').first

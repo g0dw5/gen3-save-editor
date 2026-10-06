@@ -204,6 +204,9 @@ export const en = {
   conditionEventUnset: "Event condition must be unset",
   conditionUnnamed: "Unnamed event value",
   conditionUnknown: "Condition not resolved",
+  mapScriptedMovement:
+    "This event references actor actions or waiting. Sprites mark the ROM's initial tiles; live positions, completion and collision need in-game confirmation.",
+  mapScriptedMovementEntry: "Map-level actor actions",
   conditionAlways: "This event check always passes",
   conditionImpossible: "This event check cannot pass",
   conditionHoldingsHelp:
@@ -1470,6 +1473,9 @@ export const zh: Record<Key, string> = {
   conditionEventUnset: "需要事件条件未触发",
   conditionUnnamed: "未命名事件数值",
   conditionUnknown: "条件尚未解析",
+  mapScriptedMovement:
+    "此事件含角色行动或等待指令。小人标注 ROM 初始格位；实际位置、动作是否完成及碰撞条件需在游戏内确认。",
+  mapScriptedMovementEntry: "地图级角色行动",
   conditionAlways: "该事件检查总是通过",
   conditionImpossible: "该事件检查无法通过",
   conditionHoldingsHelp:

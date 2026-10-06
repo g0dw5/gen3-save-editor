@@ -67,6 +67,9 @@ Pokédex planning through its verified native split banks. An uninitialized
 extended range is explained and projected as unseen/uncaught without changing
 the SAV; Dex editing remains disabled. See [native Dex evidence](docs/verification/mercury-dex-20261006.md)
 and the [exact-ROM capability matrix](docs/capability-matrix.md).
+Maps identify referenced actor actions/waits and explain that sprites use initial
+ROM tiles. Live motion, completion and collision remain unverified; explicit
+actor-map operands are not entrances. See [native action evidence](docs/verification/script-movements-20261006.md).
 Legacy Dex reads also follow each ROM's [native seen/caught checks](docs/verification/dex-read-checks-20261006.md):
 inconsistent positive records are explained and remain missing in planning;
 queries preserve raw save bytes. Rocket keeps its independent flag semantics.

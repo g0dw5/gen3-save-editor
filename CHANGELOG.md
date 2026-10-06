@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Identify native actor-action/wait references across all five ROM fingerprints.
+  Maps explain initial actor tiles and expose map-level action evidence; movement
+  operands do not become navigation edges. Background execution and receipt
+  boundaries remain conservative, verified with native lifecycle fixtures.
+- 五指纹识别原生角色行动／等待引用，地图明确提示小人为初始格位，并展示地图级
+  行动证据；行动中的地图参数不作为入口。保留后台执行与领取判断的未知边界，
+  已用原生动作生命周期测试核对。
+
 - Follow native Dex mirror and seen/caught dependencies in Dark Phantom BW/DP
   and Ultimate; retain independent Rocket flags and Mercury split banks. Explain
   invalid positive records in the editor, collection planner and standalone HTML
