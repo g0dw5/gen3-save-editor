@@ -1,4 +1,5 @@
-import { encounterPeriodName } from "./acquisitionLabels";
+import { LearnsetPanel } from "./LearnsetPanel";
+import { MapEncounters } from "./MapEncounters";
 import { speciesDisplayName } from "./speciesDisplay";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Search, ArrowUpRight } from "lucide-react";
@@ -69,25 +70,11 @@ export function ReferenceWindow({
   onError,
 }: Props) {
   const { t, locale } = useI18n();
-  const rods = catalog.profile.fishing_rods ?? [];
-  const fishingRodItems: Record<string, number> = {
-    old_rod: rods[0],
-    good_rod: rods[1],
-    super_rod: rods[2],
-  };
-  const encounterMethod = (method: string) =>
-    catalog.items.find((item) => item.id === fishingRodItems[method])?.name ||
-    t(method);
-  const encounterPeriods = (encounter: Encounter) =>
-    (encounter.periods ?? [])
-      .map((period) =>
-        encounterPeriodName(period, t, catalog.profile.clock?.starts),
-      )
-      .join(" / ");
   const [tab, setTab] = useState<RefTab>(info.tab);
   const [selected, setSelected] = useState<number | string>(info.selected ?? 1);
-  const [mapFocus, setMapFocus] = useState<MapFocus | undefined>();
+  const [mapFocus, setMapFocus] = useState<MapFocus | undefined>(info.focus);
   const [search, setSearch] = useState("");
+  const [showUnused, setShowUnused] = useState(false);
   const [navigation, setNavigation] = useState<MapNavigation | null>(null);
   const [history, setHistory] = useState<
     {
@@ -202,12 +189,25 @@ export function ReferenceWindow({
     tab === "species"
       ? catalog.species.find((species) => species.id === selected)?.id
       : undefined;
+  const hidden =
+    tab === "maps"
+      ? world?.reference_visibility?.maps
+      : tab === "items"
+        ? world?.reference_visibility?.items
+        : undefined;
+  const hiddenIds = new Set(hidden?.map((row) => row.id));
+  const visibleRows = rows.filter(
+    (row) =>
+      showUnused ||
+      !hiddenIds.has(row.id as never) ||
+      (tab === "items" && save?.bag.some((entry) => entry.item === row.id)),
+  );
   const filtered =
     tab === "trainers"
       ? searchTrainers(trainerEntries, search, trainerFilters).map(
           (entry) => entry.trainer,
         )
-      : rows.filter((row) =>
+      : visibleRows.filter((row) =>
           `${row.id} ${row.name}`
             .toLocaleLowerCase()
             .includes(search.toLocaleLowerCase()),
@@ -399,6 +399,16 @@ export function ReferenceWindow({
               onChange={(e) => setSearch(e.target.value)}
             />
           </label>
+          {(tab === "items" || tab === "maps") && !!hidden?.length && (
+            <label className="reference-optional">
+              <input
+                type="checkbox"
+                checked={showUnused}
+                onChange={(e) => setShowUnused(e.target.checked)}
+              />
+              {t("showUnusedReferences")} <small>({hidden.length})</small>
+            </label>
+          )}
           {tab === "trainers" && (
             <div className="trainer-filters">
               {catalog.profile.id === "ultimate-emerald-55" && (
@@ -449,6 +459,12 @@ export function ReferenceWindow({
                 )}
               </div>
             </div>
+          )}
+          {!!hidden?.length && (tab === "items" || tab === "maps") && (
+            <details className="reference-help">
+              <summary>{t("referenceSourceHelp")}</summary>
+              <p className="small muted">{t("referenceFilteredHelp")}</p>
+            </details>
           )}
           <div className="reference-rows">
             {filtered.map((row) => (
@@ -587,76 +603,11 @@ export function ReferenceWindow({
                     goSpecies(id);
                   }}
                 />
-                <details
-                  className="reference-section"
-                  key={`learnset:${speciesId}`}
-                >
-                  <summary>
-                    {t("learnset")} · {detail.learnset.length}
-                  </summary>
-                  {detail.teaching_list_present === false && (
-                    <p className="small muted">{t("missingTeachingList")}</p>
-                  )}
-                  {catalog.profile.teaching?.shared_lists != null && (
-                    <p className="small muted">{t("sharedTeachingHelp")}</p>
-                  )}
-                  {catalog.profile.capabilities?.complete_learnsets ===
-                    false && (
-                    <p className="small muted">{t("partialLearnsetHelp")}</p>
-                  )}
-                  <div className="learnset-table">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>{t("move")}</th>
-                          <th>{t("source")}</th>
-                          <th>{t("level")}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {detail.learnset.map((s, i) => (
-                          <tr key={`${s.offset}:${i}`}>
-                            <td>
-                              <button
-                                className="link-button"
-                                onClick={() =>
-                                  goTarget({ kind: "move", id: s.move_id })
-                                }
-                              >
-                                {catalog.moves.find(
-                                  (move) => move.id === s.move_id,
-                                )?.name ?? s.move_id}
-                              </button>
-                            </td>
-                            <td>
-                              {t(
-                                s.source === "level"
-                                  ? "levelSource"
-                                  : s.source === "egg"
-                                    ? "eggSource"
-                                    : s.source,
-                              )}
-                              {s.species !== +selected && (
-                                <small>
-                                  {" "}
-                                  ·{" "}
-                                  {
-                                    catalog.species.find(
-                                      (p) => p.id === s.species,
-                                    )?.name
-                                  }
-                                </small>
-                              )}
-                            </td>
-                            <td>
-                              {s.level ?? (s.index ? `#${s.index}` : "—")}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </details>
+                <LearnsetPanel
+                  detail={detail}
+                  catalog={catalog}
+                  onMove={(id) => goTarget({ kind: "move", id })}
+                />
                 <AcquisitionPanel
                   target={{ kind: "species", id: +selected }}
                   catalog={catalog}
@@ -667,22 +618,6 @@ export function ReferenceWindow({
                   onError={onError}
                   onTemplate={onTemplate}
                 />
-                <details>
-                  <summary>{t("evidence")}</summary>
-                  <pre>
-                    {JSON.stringify(
-                      {
-                        offset: detail.species.offset,
-                        evolutions: detail.evolutions,
-                        relations: detail.relations,
-                        learnset: detail.learnset,
-                        encounters: detail.encounters,
-                      },
-                      null,
-                      2,
-                    )}
-                  </pre>
-                </details>
               </>
             ) : (
               <p className="muted">{t("loading")}</p>
@@ -734,21 +669,6 @@ export function ReferenceWindow({
                   values={[(current as Move).move_type]}
                 />
               )}
-              <details>
-                <summary>{t("evidence")}</summary>
-                <pre>
-                  {JSON.stringify(
-                    {
-                      effect: (current as Move).effect,
-                      target: (current as Move).target,
-                      flags: (current as Move).flags,
-                      offset: (current as Move).offset,
-                    },
-                    null,
-                    2,
-                  )}
-                </pre>
-              </details>
             </>
           )}
           {tab === "moves" && current && (
@@ -800,6 +720,10 @@ export function ReferenceWindow({
           )}
           {tab === "maps" && current && (
             <>
+              {hidden?.find((row) => row.id === current.id)?.reason ===
+                "invalid_layout" && (
+                <p className="small muted">{t("referenceInvalidMap")}</p>
+              )}
               <div className="muted">
                 {(current as GameMap).width} × {(current as GameMap).height}
               </div>
@@ -856,66 +780,15 @@ export function ReferenceWindow({
                     </div>
                   ))}
               </details>
-              <details
-                className="reference-section"
-                key={`encounters:${selected}`}
-              >
-                <summary>{t("encounter")}</summary>
-                {world?.encounters
-                  .filter((e) => e.map_id === selected)
-                  .map((e, i) => (
-                    <div
-                      className="encounter-card"
-                      key={`${e.offset}:${i}`}
-                      draggable={
-                        catalog.profile.capabilities?.save_edit !== false
-                      }
-                      onDragStart={(event) =>
-                        drag(event, {
-                          species: e.species,
-                          level: e.min_level,
-                          met_location: e.region,
-                          egg: e.method === "egg",
-                        })
-                      }
-                    >
-                      <div>
-                        <button
-                          className="link-button"
-                          onClick={() => goSpecies(e.species)}
-                        >
-                          {
-                            catalog.species.find((s) => s.id === e.species)
-                              ?.name
-                          }
-                        </button>
-                        <span>
-                          Lv. {e.min_level}–{e.max_level}
-                        </span>
-                      </div>
-                      <span className="muted small">
-                        {encounterMethod(e.method)}
-                        {e.weight !== null ? ` · ${e.weight}%` : ""}
-                        {e.selector &&
-                          ` · ${e.selector.fallback ? t("encounterDefault") : `${t("encounterVariant")} ${e.selector.value + 1}`}`}
-                        {!!e.periods?.length && ` · ${encounterPeriods(e)}`}
-                      </span>
-                      <button
-                        className="link-button small"
-                        onClick={() =>
-                          onTemplate({
-                            species: e.species,
-                            level: e.min_level,
-                            met_location: e.region,
-                            egg: e.method === "egg",
-                          })
-                        }
-                      >
-                        {t("pickDestination")} ↗
-                      </button>
-                    </div>
-                  ))}
-              </details>
+              <MapEncounters
+                catalog={catalog}
+                save={save}
+                encounters={(world?.encounters ?? []).filter(
+                  (e) => e.map_id === selected,
+                )}
+                onSpecies={goSpecies}
+                onTemplate={onTemplate}
+              />
             </>
           )}
           {tab === "trainers" && current && filtered.length > 0 && (
@@ -946,10 +819,7 @@ export function ReferenceWindow({
                 ))}
               </div>
               {!!(current as Opponent).diagnostics.length && (
-                <details className="warning-text">
-                  <summary>{t("trainerDiagnostics")}</summary>
-                  <pre>{(current as Opponent).diagnostics.join("\n")}</pre>
-                </details>
+                <p className="warning-text">{t("trainerIncompleteRecord")}</p>
               )}
               <div className="muted small">
                 {(current as Opponent).party.length} Pokémon · {t("items")}{" "}
@@ -981,19 +851,6 @@ export function ReferenceWindow({
                 onMap={goMap}
                 onTarget={goTarget}
               />
-              <details>
-                <summary>{t("evidence")}</summary>
-                <pre>
-                  {JSON.stringify(
-                    {
-                      ai_flags: (current as Opponent).ai,
-                      offset: (current as Opponent).offset,
-                    },
-                    null,
-                    2,
-                  )}
-                </pre>
-              </details>
             </>
           )}
         </div>

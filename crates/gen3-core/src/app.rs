@@ -21,8 +21,10 @@ pub struct Request {
 #[derive(Default)]
 pub struct App {
     pub session: Option<Session>,
-    pub(crate) event_dependency_cache:
-        Option<(std::sync::Arc<Vec<u8>>, crate::event_dependencies::Index)>,
+    pub(crate) event_dependency_cache: Option<(
+        std::sync::Arc<Vec<u8>>,
+        std::sync::Arc<crate::event_dependencies::Index>,
+    )>,
     pub(crate) acquisition_cache: Option<(
         std::sync::Arc<Vec<u8>>,
         crate::acquisition::AcquisitionIndex,
@@ -164,6 +166,54 @@ impl App {
                 let id = serde_json::from_value(p["id"].clone())?;
                 Ok(serde_json::to_value(self.session()?.rom.detail(id)?)?)
             }
+            "adventure_guide" => {
+                let expected = required(&p, "expected_rom_md5")?;
+                let session = self.session()?;
+                if expected != session.rom.profile.md5 {
+                    return Err(err("rom_mismatch", expected));
+                }
+                if self
+                    .event_dependency_cache
+                    .as_ref()
+                    .is_none_or(|(data, _)| !std::sync::Arc::ptr_eq(data, &session.rom.data))
+                {
+                    let index = crate::event_dependencies::Index::build(
+                        &session.rom,
+                        &session.rom.maps()?,
+                    )?;
+                    self.event_dependency_cache =
+                        Some((session.rom.data.clone(), std::sync::Arc::new(index)));
+                }
+                let session = self.session()?;
+                if self
+                    .acquisition_cache
+                    .as_ref()
+                    .is_none_or(|(data, _)| !std::sync::Arc::ptr_eq(data, &session.rom.data))
+                {
+                    let events = self
+                        .event_dependency_cache
+                        .as_ref()
+                        .filter(|(data, _)| std::sync::Arc::ptr_eq(data, &session.rom.data))
+                        .map(|(_, index)| index.clone());
+                    let index = crate::acquisition::AcquisitionIndex::build_with_events(
+                        &session.rom,
+                        events,
+                    )?;
+                    let data = session.rom.data.clone();
+                    self.event_dependency_cache = index
+                        .event_index
+                        .as_ref()
+                        .map(|events| (data.clone(), events.clone()));
+                    self.acquisition_cache = Some((data, index));
+                }
+                let session = self.session()?;
+                Ok(serde_json::to_value(crate::adventure::build(
+                    &session.rom,
+                    session.save.as_ref(),
+                    &self.event_dependency_cache.as_ref().unwrap().1,
+                    &self.acquisition_cache.as_ref().unwrap().1.world,
+                )?)?)
+            }
             "event_dependencies" | "trainer_references" => {
                 let expected = required(&p, "expected_rom_md5")?;
                 let trainer_request = if input.command == "trainer_references" {
@@ -189,7 +239,8 @@ impl App {
                 {
                     let maps = session.rom.maps()?;
                     let index = crate::event_dependencies::Index::build(&session.rom, &maps)?;
-                    self.event_dependency_cache = Some((session.rom.data.clone(), index));
+                    self.event_dependency_cache =
+                        Some((session.rom.data.clone(), std::sync::Arc::new(index)));
                 }
                 let session = self.session()?;
                 let index = &self.event_dependency_cache.as_ref().unwrap().1;
@@ -214,8 +265,21 @@ impl App {
                     .as_ref()
                     .is_none_or(|(data, _)| !std::sync::Arc::ptr_eq(data, &session.rom.data))
                 {
-                    let index = crate::acquisition::AcquisitionIndex::build(&session.rom)?;
-                    self.acquisition_cache = Some((session.rom.data.clone(), index));
+                    let events = self
+                        .event_dependency_cache
+                        .as_ref()
+                        .filter(|(data, _)| std::sync::Arc::ptr_eq(data, &session.rom.data))
+                        .map(|(_, index)| index.clone());
+                    let index = crate::acquisition::AcquisitionIndex::build_with_events(
+                        &session.rom,
+                        events,
+                    )?;
+                    let data = session.rom.data.clone();
+                    self.event_dependency_cache = index
+                        .event_index
+                        .as_ref()
+                        .map(|events| (data.clone(), events.clone()));
+                    self.acquisition_cache = Some((data, index));
                 }
                 let index = &self.acquisition_cache.as_ref().unwrap().1;
                 if input.command == "world" {
@@ -320,7 +384,8 @@ impl App {
                     .is_none_or(|(data, _)| !std::sync::Arc::ptr_eq(data, &session.rom.data))
                 {
                     let index = crate::event_dependencies::Index::build(&session.rom, &maps)?;
-                    self.event_dependency_cache = Some((session.rom.data.clone(), index));
+                    self.event_dependency_cache =
+                        Some((session.rom.data.clone(), std::sync::Arc::new(index)));
                 }
                 Ok(serde_json::to_value(
                     self.event_dependency_cache

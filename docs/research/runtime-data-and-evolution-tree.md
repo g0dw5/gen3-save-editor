@@ -1,5 +1,13 @@
 # Runtime data and evolution references / 实时数据与进化树
 
+> Current player UI: manual reference selection and guessed name links were
+> removed. Reviewed configurations supply fixed identity/comparison captions;
+> fallback name references are labelled unreviewed. Native tables alone define
+> ancestry. Earlier manual-selection details below are historical.
+>
+> 当前玩家页面已删除手选参照与猜测名称关联；下文对应段落只保留历史设计记录。
+
+
 2026-09-19. Applies to all three fingerprinted profiles. No ROMs, saves, extracted
 images or full wiki pages belong in release inputs.
 

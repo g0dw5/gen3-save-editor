@@ -52,6 +52,8 @@ def main():
                     "profiles": [{"id": "ultimate-emerald-55", "label": "Ultimate Emerald 5.5", "md5": UE}]}
         elif command == "species":
             data = {"species": species(payload["id"]), "evolutions": [], "learnset": [], "encounters": []}
+        elif command == "acquisition":
+            data = dict(target=payload,sources=[],partial=True,clock=None)
         elif command == "sprite":
             data = {"url": ""}
         elif command == "world":
@@ -110,8 +112,9 @@ def main():
             body = open(dl.value.path()).read()
             assert UE in body and "GameShark Advance V1/V2" in body
             assert code["compact_lines"][0] in body
-            dialog.locator("summary").filter(has_text="模拟器验证" if locale == "zh" else "Emulator verification").click()
-            expect(dialog).to_contain_text("测试范围" if locale == "zh" else "Test scope")
+            expect(dialog.locator(".cheats-evidence")).to_have_count(0)
+            expect(dialog).not_to_contain_text("测试范围" if locale == "zh" else "Test scope")
+            assert "测试范围" not in body and "Test scope" not in body
             search = dialog.get_by_role("textbox")
             search.fill("no-such-cheat")
             expect(dialog.locator(".cheats-list button")).to_have_count(0)

@@ -67,6 +67,13 @@ class ReleaseChecks(unittest.TestCase):
         self.assertEqual(info["commit"], "test-sha")
         self.assertEqual(info["signing"], "unsigned")
         self.assertEqual(len(info["files"]), 2)
+        import zipfile
+        archive = next(output.glob("*-docs.zip"))
+        with zipfile.ZipFile(archive) as docs:
+            self.assertIn("README.md", docs.namelist())
+            self.assertIn("README.zh-CN.md", docs.namelist())
+            self.assertFalse(any("research/" in p or "verification/" in p for p in docs.namelist()))
+            self.assertEqual(set(docs.namelist()), set(release.DOCS.values()))
         with self.assertRaisesRegex(ValueError, "empty staging"):
             release.stage(self.root, output, "windows-x64")
 

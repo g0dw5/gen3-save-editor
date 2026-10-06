@@ -76,18 +76,6 @@ export function TrainerArt({
         {!graphics.length && (
           <p className="small muted">{t("overworldUnknown")}</p>
         )}
-        {!!graphics.length && (
-          <details className="small muted">
-            <summary>{t("artMapEvidence")}</summary>
-            {links.flatMap((link) =>
-              link.actors.map((actor) => (
-                <div key={`${link.map_id}:${actor.local_id}`}>
-                  {link.map_name} · #{actor.local_id} → {actor.graphics_id}
-                </div>
-              )),
-            )}
-          </details>
-        )}
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ branch. Historical Pokédex reads use its verified split banks; Pokédex writing
 ## ROM reference
 
 The read-only floating window has six tabs: Pokémon, moves, items, abilities,
-maps and trainers. Learnsets, conditions, connections and evidence expand on
+maps and trainers. Learnsets support source/category/type/name filters; conditions and connections expand on
 demand; acquisition links and map locations still read the current ROM.
 Ultimate Emerald has one difficulty selector. Dynamic trainers automatically use
 the current SAV party; without a SAV, fixed records remain and unknowns are marked.
@@ -26,6 +26,8 @@ There are no manual roster, level-override or random-seed controls.
 The four advanced tabs and their dedicated APIs have been removed. Their findings
 are preserved as [reverse-engineering addresses](docs/research/reference-key-addresses.md),
 not advertised as current product features.
+
+The separate Adventure guide links runtime NPC rewards, dialogue and prerequisite clues, with map thumbnails and SAV receipt checks. Spanish Rocket also exposes its bounded main-story state; other games’ full story tracking remains unverified. No developer JSON or evidence panels are included in the player UI or documentation bundle. See the [player guide](docs/USER-GUIDE.md).
 
 ## Cheat codes
 
@@ -91,12 +93,12 @@ See [coverage, verification and extension rules](docs/multi-rom-adapters.md).
   alternative; modifier-click selects multiple Pokémon for batch edits.
 - Browse Pokémon, learning sources, items, abilities, maps and trainers in movable
   nonmodal windows. Trainers and maps link to each other through parsed battle
-  scripts, with evidence offsets and unresolved-condition labels. Drag an encounter to an empty slot to create an editable draft.
+  scripts, with readable condition and unresolved-access labels. Drag an encounter to an empty slot to create an editable draft.
 - Follow the evolution tree in both directions, including sibling branches and
   separately labeled battle/form families. Compare vertical ROM base stats and
   totals with the latest available official values from 52Poké Wiki. This small,
   separately attributed numeric reference is the only bundled Pokémon catalog;
-  ambiguous or custom species require manual reference selection. See the
+  ambiguous or custom species may have no official reference. See the
   [runtime-data audit](docs/research/runtime-data-and-evolution-tree.md).
 - Normal bag choices follow the current ROM's pocket categories; free editing
   and PC storage retain the full list. Existing mismatched items remain visible

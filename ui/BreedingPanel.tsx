@@ -255,10 +255,6 @@ export function BreedingPanel({
                   {t("daycareUseDeposited")}
                 </button>
               )}
-              <details>
-                <summary>{t("evidence")}</summary>
-                <pre>{JSON.stringify(current, null, 2)}</pre>
-              </details>
             </>
           ) : (
             <p>{t("daycareSavedUnknown")}</p>
@@ -540,10 +536,6 @@ export function BreedingPanel({
               </table>
             </>
           )}
-          <details>
-            <summary>{t("breedEvidence")}</summary>
-            <pre>{JSON.stringify(result, null, 2)}</pre>
-          </details>
         </section>
       )}
       <h4>{t("breedServices")}</h4>

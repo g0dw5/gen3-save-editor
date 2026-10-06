@@ -79,6 +79,28 @@ fn contest_api_rejects_stale_rom_and_malformed_values() {
 }
 
 #[test]
+fn guide_rejects_an_old_rom_context_before_populating_caches() {
+    use crate::app::{App, Request};
+    let mut app = App {
+        session: Some(Session::new(rom())),
+        ..Default::default()
+    };
+    let original = app.session.as_ref().unwrap().rom.data.clone();
+    assert_eq!(
+        app.dispatch(Request {
+            command: "adventure_guide".into(),
+            payload: serde_json::json!({"expected_rom_md5": profile::ROCKET.md5}),
+        })
+        .unwrap_err()
+        .code,
+        "rom_mismatch"
+    );
+    assert!(app.event_dependency_cache.is_none());
+    assert!(app.acquisition_cache.is_none());
+    assert_eq!(app.session.as_ref().unwrap().rom.data, original);
+}
+
+#[test]
 fn contest_feeding_caps_after_the_last_block_and_obeys_gain_direction() {
     use crate::contest::feed;
     assert_eq!(
@@ -2126,8 +2148,10 @@ fn tutor_sources_preserve_native_selector_guards_tiles_and_read_only_queries() {
         assert!(report.unplaced_teaching.is_empty());
         assert_eq!(marker.receipt_flag, None);
         let index = AcquisitionIndex {
+            event_index: None,
             wild_cache: std::cell::RefCell::default(),
             world: crate::world::World {
+                reference_visibility: Default::default(),
                 maps: vec![map.clone()],
                 map_events: vec![report],
                 encounters: vec![],
@@ -2968,20 +2992,17 @@ fn local_rocket_adapter_regression() {
     let path = std::env::var("GEN3_ROM_ROCKET").unwrap();
     let r = Rom::open(std::fs::read(path).unwrap()).unwrap();
     assert_eq!(r.profile.id, profile::ROCKET.id);
-    for id in [9, 899, 980] {
+    for id in [9, 980] {
         let family = r.species_relations(id).unwrap();
-        assert_eq!(family.species, [7, 8, 9, 899, 980]);
+        assert_eq!(family.species, [7, 8, 9, 980]);
         assert_eq!(family.evolutions.len(), 2);
         assert!(family
             .battle_forms
             .iter()
             .any(|f| f.source == 9 && f.target == 980));
         assert!(family.form_families.iter().any(|f| f.species == [9, 980]));
-        assert!(family
-            .name_relations
-            .iter()
-            .any(|f| f.source == 9 && f.target == 899));
     }
+    assert_eq!(r.species_relations(899).unwrap().species, [899]);
     assert_eq!(
         r.ancestors(899).unwrap().into_iter().collect::<Vec<_>>(),
         [899]
@@ -3416,9 +3437,8 @@ fn relation_graph_uses_runtime_tables_and_does_not_expand_legal_ancestry_from_na
             put16(b, evolution + row * 8 + 4, target);
         }
         let graph = r.species_relations(2).unwrap();
-        assert_eq!(graph.species, [1, 2, 3, 4]);
+        assert_eq!(graph.species, [1, 2, 3]);
         assert_eq!(graph.evolutions.len(), 2);
-        assert_eq!(graph.name_relations.len(), 1);
         assert_eq!(r.ancestors(4).unwrap().into_iter().collect::<Vec<_>>(), [4]);
         // A newly edited table row must immediately change the graph.
         let b = std::sync::Arc::make_mut(&mut r.data);
@@ -4767,8 +4787,10 @@ fn resource_conditions_query_item_links_without_mutating_or_claiming_receipt() {
             Some((if rules.alternate_bag { 3 } else { 1 }, true))
         );
         let index = AcquisitionIndex {
+            event_index: None,
             wild_cache: std::cell::RefCell::default(),
             world: crate::world::World {
+                reference_visibility: Default::default(),
                 maps: vec![map.clone()],
                 map_events: vec![r.map_events(&map).unwrap()],
                 encounters: vec![],
@@ -5089,8 +5111,10 @@ fn held_sources_follow_random_references_time_and_preserve_unreferenced_uncertai
         fixed.method = "static".into();
         fixed.offset = 126;
         let index = AcquisitionIndex {
+            event_index: None,
             wild_cache: Default::default(),
             world: World {
+                reference_visibility: Default::default(),
                 maps: vec![map],
                 map_events: vec![],
                 encounters: vec![base, water, night, fixed],
@@ -5194,8 +5218,10 @@ fn daycare_queries_preserve_guards_tiles_and_reject_changed_dispatch() {
         );
         assert!(report.unplaced_daycare.is_empty());
         let index = crate::acquisition::AcquisitionIndex {
+            event_index: None,
             wild_cache: std::cell::RefCell::default(),
             world: crate::world::World {
+                reference_visibility: Default::default(),
                 maps: vec![map.clone()],
                 map_events: vec![report],
                 encounters: vec![],
@@ -6011,7 +6037,7 @@ fn trainer_references_keep_guarded_roots_actors_and_unresolved_access_separate()
         assert_eq!(r.data, original);
         let mut app = crate::app::App {
             session: Some(Session::new(r.clone())),
-            event_dependency_cache: Some((r.data.clone(), index)),
+            event_dependency_cache: Some((r.data.clone(), std::sync::Arc::new(index))),
             ..Default::default()
         };
         let output = app
@@ -6599,8 +6625,10 @@ fn text_buffers_keep_reward_parameters_player_checks_and_guarded_map_routes() {
                 .iter()
                 .any(|c| c.condition.kind == "player_gender" && c.satisfied.is_none()));
             let acquisition = AcquisitionIndex {
+                event_index: None,
                 wild_cache: Default::default(),
                 world: crate::world::World {
+                    reference_visibility: Default::default(),
                     maps: maps.clone(),
                     map_events: vec![events],
                     encounters: vec![],
@@ -7115,8 +7143,10 @@ fn scripted_actor_references_keep_initial_tiles_and_unverified_execution_boundar
             "actor-map operands are not passages"
         );
         let index = AcquisitionIndex {
+            event_index: None,
             wild_cache: Default::default(),
             world: World {
+                reference_visibility: Default::default(),
                 maps: vec![map],
                 map_events: vec![report],
                 encounters: vec![],
@@ -7913,7 +7943,13 @@ fn local_query_acquisition_all_profiles() {
             )
             .unwrap();
         assert!(mon.sources.iter().any(|s| s.map_id.is_some()), "{name}");
-        let move_id = index.learnsets.values().flatten().next().unwrap().move_id;
+        let move_id = r
+            .catalog()
+            .unwrap()
+            .items
+            .iter()
+            .find_map(|i| i.tm_move)
+            .unwrap();
         assert!(!index
             .query(
                 &r,
@@ -8003,8 +8039,10 @@ fn evolution_requirements_link_resources_without_becoming_acquisition_sources() 
         }
         let original = r.data.clone();
         let index = AcquisitionIndex {
+            event_index: None,
             wild_cache: Default::default(),
             world: crate::world::World {
+                reference_visibility: Default::default(),
                 maps: vec![],
                 map_events: vec![],
                 encounters: vec![],
@@ -8121,8 +8159,10 @@ fn paired_fixed_encounters_keep_both_members_unknown_inputs_and_query_links() {
         let report = r.map_events(&map).unwrap();
         assert_eq!(report.markers[0].pokemon.len(), if double { 2 } else { 1 });
         let index = AcquisitionIndex {
+            event_index: None,
             wild_cache: Default::default(),
             world: crate::world::World {
+                reference_visibility: Default::default(),
                 maps: vec![map],
                 map_events: vec![report],
                 encounters: vec![],
@@ -8473,8 +8513,10 @@ fn receipt_queries_use_native_flags_not_bag_or_npc_visibility() {
             })
             .collect();
         let index = AcquisitionIndex {
+            event_index: None,
             wild_cache: std::cell::RefCell::default(),
             world: World {
+                reference_visibility: Default::default(),
                 maps: vec![map],
                 map_events: vec![MapEventReport {
                     map_id: "0-0".into(),
@@ -8575,4 +8617,163 @@ fn removed_reference_commands_have_no_side_effects() {
     let session = app.session.as_ref().unwrap();
     assert_eq!(session.rom.data, original);
     assert_eq!(session.save.as_ref().unwrap().data, before);
+}
+
+#[test]
+#[ignore = "requires five exact private ROMs and optional GEN3_SAVE_* inputs"]
+fn local_player_references_and_adventure_are_read_only_across_profiles() {
+    use crate::acquisition::{AcquisitionIndex, Target, TargetKind};
+    for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let r =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{name}")).unwrap()).unwrap())
+                .unwrap();
+        let before_rom = r.data.clone();
+        let index = AcquisitionIndex::build(&r).unwrap();
+        let events = index.event_index.as_ref().unwrap();
+        let family = r.species_relations(25).unwrap();
+        assert!(family.species.contains(&25));
+        assert_eq!(
+            family
+                .species
+                .iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            family.species.len()
+        );
+        for rule in r.evolutions(25).unwrap() {
+            assert!(family.species.contains(&rule.target));
+        }
+        assert!(family
+            .evolutions
+            .iter()
+            .all(|rule| family.species.contains(&rule.source)
+                && family.species.contains(&rule.evolution.target)));
+        if name == "ROCKET" {
+            let ordinary = r.species_relations(9).unwrap();
+            assert!(ordinary.species.contains(&980));
+            assert!(!ordinary.species.contains(&899));
+            assert_eq!(r.species_relations(899).unwrap().species, vec![899]);
+        }
+        let guide = crate::adventure::build(&r, None, events, &index.world).unwrap();
+        assert_eq!(guide.rom_md5, r.profile.md5);
+        assert_eq!(guide.story_supported, name == "ROCKET");
+        assert!(
+            guide.tasks.len() > 10,
+            "{name}: guide must contain usable referenced scenes"
+        );
+        assert!(guide
+            .tasks
+            .iter()
+            .all(|t| !t.next_candidate && t.status == "unknown"));
+        let by_id: std::collections::BTreeMap<_, _> =
+            guide.tasks.iter().map(|t| (&t.id, t)).collect();
+        assert_eq!(by_id.len(), guide.tasks.len());
+        for task in &guide.tasks {
+            assert!(index.world.maps.iter().any(|m| m.id == task.map_id));
+            for link in task.prerequisites.iter().flatten() {
+                assert!(by_id.contains_key(link));
+                assert_ne!(link, &task.id);
+            }
+        }
+        let mut routes = 0;
+        for item in r
+            .catalog()
+            .unwrap()
+            .items
+            .iter()
+            .filter(|i| i.tm_move.is_some())
+            .take(6)
+        {
+            let move_id = item.tm_move.unwrap();
+            let report = index
+                .query(
+                    &r,
+                    None,
+                    Target {
+                        kind: TargetKind::Move,
+                        id: move_id,
+                    },
+                )
+                .unwrap();
+            assert!(report
+                .sources
+                .iter()
+                .all(|s| !matches!(s.kind.as_str(), "learn_level" | "learn_tm" | "learn_tutor")));
+            let direct = index
+                .query(
+                    &r,
+                    None,
+                    Target {
+                        kind: TargetKind::Item,
+                        id: item.id,
+                    },
+                )
+                .unwrap();
+            for source in direct.sources.iter().filter(|s| s.map_id.is_some()) {
+                assert!(report.sources.iter().any(|s| s.offset == source.offset
+                    && s.map_id == source.map_id
+                    && s.related
+                        .iter()
+                        .any(|g| g.kind == TargetKind::Item && g.id == item.id)));
+                routes += 1;
+            }
+        }
+        assert!(!index.world.reference_visibility.maps.is_empty());
+        for entry in &index.world.reference_visibility.items {
+            let item = r.item(entry.id).unwrap();
+            if entry.reason == "reserved" {
+                assert!(
+                    item.name.trim().is_empty()
+                        || item
+                            .name
+                            .chars()
+                            .all(|c| matches!(c, '?' | '？' | '-' | '—' | ' '))
+                );
+            }
+        }
+        if let Ok(path) = std::env::var(format!("GEN3_SAVE_{name}")) {
+            let original = std::fs::read(path).unwrap();
+            let save = Save::open(original.clone(), r.profile.save).unwrap();
+            let saved = crate::adventure::build(&r, Some(&save), &events, &index.world).unwrap();
+            if name == "ROCKET" {
+                assert!(saved.current_stage.is_some());
+            }
+            assert_eq!(save.data, original);
+            eprintln!(
+                "{name}: saved guide statuses checked; current main stage {:?}",
+                saved.current_stage
+            );
+        }
+        assert_eq!(&*r.data, &*before_rom);
+        eprintln!("{name}: {} runtime tasks, {} main transitions, {} linked prerequisites; {routes} machine acquisition routes; {} hidden items and {} hidden maps (not access proofs)", guide.tasks.len(), guide.tasks.iter().filter(|t| t.kind == "main").count(), guide.tasks.iter().map(|t| t.prerequisites.len()).sum::<usize>(), index.world.reference_visibility.items.len(), index.world.reference_visibility.maps.len());
+        let events = events.clone();
+        let mut app = crate::app::App {
+            session: Some(Session::new(r.clone())),
+            event_dependency_cache: Some((r.data.clone(), events.clone())),
+            acquisition_cache: Some((r.data.clone(), index)),
+            ..Default::default()
+        };
+        let output = app
+            .dispatch(crate::app::Request {
+                command: "adventure_guide".into(),
+                payload: serde_json::json!({"expected_rom_md5": r.profile.md5}),
+            })
+            .unwrap();
+        assert_eq!(output["rom_md5"], r.profile.md5);
+        assert!(std::sync::Arc::ptr_eq(
+            &events,
+            &app.event_dependency_cache.as_ref().unwrap().1
+        ));
+        assert!(std::sync::Arc::ptr_eq(
+            &events,
+            app.acquisition_cache
+                .as_ref()
+                .unwrap()
+                .1
+                .event_index
+                .as_ref()
+                .unwrap()
+        ));
+        assert_eq!(&*r.data, &*before_rom);
+    }
 }

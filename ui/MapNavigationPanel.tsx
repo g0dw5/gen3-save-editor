@@ -139,10 +139,6 @@ export function MapNavigationPanel({
             </summary>
             {report.outgoing.map((e, i) => link(e, false, i))}
           </details>
-          <details>
-            <summary>{t("evidence")}</summary>
-            <pre>{JSON.stringify(report, null, 2)}</pre>
-          </details>
         </>
       )}
     </section>

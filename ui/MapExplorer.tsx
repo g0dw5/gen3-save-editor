@@ -380,10 +380,7 @@ export function MapExplorer({
               group[0];
             const title =
               group
-                .map(
-                  (m) =>
-                    `${label(m.kind)}${m.local_id !== null ? ` #${m.local_id}` : ""} · ${rewardNames(m)}`,
-                )
+                .map((m) => `${label(m.kind)} · ${rewardNames(m)}`)
                 .join("\n") + `\n(${first.x}, ${first.y})`;
             return (
               <MapEventPin
@@ -414,9 +411,8 @@ export function MapExplorer({
           chosen.map((marker) => (
             <div key={marker.id}>
               <strong>
-                <MapPin size={14} /> {label(marker.kind)}{" "}
-                {marker.local_id !== null ? `#${marker.local_id}` : ""} · (
-                {marker.x}, {marker.y})
+                <MapPin size={14} /> {label(marker.kind)} · ({marker.x},{" "}
+                {marker.y})
               </strong>
               {marker.underfoot === true && (
                 <p className="small muted">{t("mapHiddenUnderfoot")}</p>
@@ -553,64 +549,15 @@ export function MapExplorer({
               {marker.stopped_at.length > 0 && (
                 <p className="small muted">{t("mapPartialScript")}</p>
               )}
-              <details>
-                <summary>{t("mapEventEvidence")}</summary>
-                <code>
-                  {t("mapElevation")} {marker.elevation} · {t("mapEventOffset")}{" "}
-                  0x{marker.offset.toString(16)}
-                  {marker.script !== null
-                    ? ` · Script 0x${marker.script.toString(16)}`
-                    : ""}
-                  {marker.flag !== null
-                    ? ` · Flag 0x${marker.flag.toString(16)}`
-                    : ""}
-                  {marker.receipt_flag != null
-                    ? ` · ${t("acqReceiptEvidence")} 0x${marker.receipt_flag.toString(16)}`
-                    : ""}
-                </code>
-                {!!marker.scripted_movements?.length && (
-                  <pre>
-                    {JSON.stringify(marker.scripted_movements, null, 2)}
-                  </pre>
-                )}
-                {!!marker.pokemon?.length && (
-                  <pre>{JSON.stringify(marker.pokemon, null, 2)}</pre>
-                )}
-                {!!marker.teaching?.length && (
-                  <pre>{JSON.stringify(marker.teaching, null, 2)}</pre>
-                )}
-                {marker.rewards
-                  .filter((r) => r.receipt)
-                  .map((r, i) => (
-                    <p key={i} className="small">
-                      {t("acqReceiptEvidence")} ·{" "}
-                      {items.get(r.item)?.name ?? `#${r.item}`} ·
-                      <code>
-                        {" "}
-                        Flag 0x{r.receipt!.flag.toString(16)} · Script 0x
-                        {r.receipt!.root.toString(16)} ·{" "}
-                        {r
-                          .receipt!.success_set_offsets.map(
-                            (o) => `0x${o.toString(16)}`,
-                          )
-                          .join(" / ")}
-                      </code>
-                    </p>
-                  ))}
-              </details>
             </div>
           ))
         ) : (
           <p className="muted">{t("mapSelectMarker")}</p>
         )}
       </div>
-      {!!report?.unplaced_movements?.length && (
-        <details>
-          <summary>{t("mapScriptedMovementEntry")}</summary>
-          <p className="small muted">{t("mapScriptedMovement")}</p>
-          <pre>{JSON.stringify(report.unplaced_movements, null, 2)}</pre>
-        </details>
-      )}
+      {!!report?.unplaced_movements?.some(
+        (action) => action.kind === "apply",
+      ) && <p className="small muted">{t("mapSceneMovement")}</p>}
       {!!report?.unplaced_rewards.length && (
         <details>
           <summary>{t("mapUnplacedRewards")}</summary>

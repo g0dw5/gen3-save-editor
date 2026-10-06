@@ -3,7 +3,7 @@ import { evolutionGraph } from '../ui/evolutionGraph.ts';
 const edge=(source,target,parameter=1,offset=1)=>({source,target,method:7,condition:'item',parameter,offset});
 const detail={species:{id:25},evolutions:[],relations:{species:[25,26,172,1048,1083,1084,1097,1386],evolutions:[edge(25,26),edge(25,26,1,2),edge(25,26,2,3),edge(25,1048),edge(172,25),edge(1048,26),edge(26,1386)],battle_forms:[],form_families:[{species:[25,1083,1084],offset:1},{species:[26,1048],offset:2},{species:[172,1097],offset:3},{species:[25,1083,1084],offset:4}],name_relations:[]}};
 const before=JSON.stringify(detail);
-const all=v=>[...v.main,...v.battleIds,...v.families.flatMap(f=>f.members),...v.nameIds];
+const all=v=>[...v.main,...v.battleIds,...v.families.flatMap(f=>f.members)];
 let graph=evolutionGraph(detail);
 assert.equal(all(graph).length,8);
 assert.equal(new Set(all(graph)).size,8);
@@ -15,7 +15,7 @@ const cycle=structuredClone(detail);cycle.relations.evolutions.push(edge(26,25))
 assert.equal(new Set(all(evolutionGraph(cycle))).size,8,'cycles do not duplicate nodes');
 const mega={source:9,target:980,kind:'mega',trigger:{kind:'held_item',id:297},offset:1};
 const forms={species:{id:980},evolutions:[],relations:{species:[9,980,899],evolutions:[],battle_forms:[mega,{...mega,offset:2}],form_families:[{species:[9,980],offset:3}],name_relations:[{source:9,target:899},{source:9,target:899}]}};
-graph=evolutionGraph(forms);assert.deepEqual(all(graph),[9,980,899]);assert.equal(graph.battles.length,1);assert.equal(graph.families.length,0);
+graph=evolutionGraph(forms);assert.deepEqual(all(graph),[980,9]);assert.equal(graph.battles.length,1);assert.equal(graph.families.length,1);
 assert.deepEqual(evolutionGraph({species:{id:1},evolutions:[]}).main,[1]);
 
 const compound=structuredClone(detail);
@@ -30,4 +30,8 @@ compound.relations.evolutions=[
 assert.equal(evolutionGraph(compound).evolutions.length,5,'held items and location/time requirements survive dedup; requirement order does not duplicate a rule');
 assert.equal(new Set(all(evolutionGraph(compound))).size,all(evolutionGraph(compound)).length);
 
-console.log('Passed: unique species cards, compound requirements, auxiliary items, cycles, overlapping families, Mega/name links and immutable inputs.');
+console.log('Passed: unique species cards, compound requirements, auxiliary items, cycles, overlapping families, Mega isolation from guessed name links and immutable inputs.');
+
+assert(!all(graph).includes(899), "A similar name or official mapping never creates ancestry");
+
+const unrelated=structuredClone(forms);unrelated.species.id=899;assert.deepEqual(all(evolutionGraph(unrelated)),[899],"Unrelated native form groups cannot leak into a guessed-name entry");

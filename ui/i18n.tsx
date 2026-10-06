@@ -1,5 +1,81 @@
 import { createContext, useContext } from "react";
 export const en = {
+  guideReadingHelp: "Guide scope and progress notes",
+
+  guideShowUnconfirmedEntrances: "Include clues with unconfirmed map entrances",
+
+  trainerIncompleteRecord: "Some details of this opponent cannot be confirmed.",
+
+  guideScope:
+    "This guide reads the loaded ROM. It covers identified main-story branches and NPC rewards; some side quests and special conditions remain unknown.",
+  guideStage: "Story stage {n}",
+  guideReward: "NPC reward",
+  guideClue: "Prerequisite clue",
+  guideAlternatives: "Alternative actions that may satisfy a prerequisite",
+  guideDependencyLimit: "This branch repeats or reaches the expansion limit.",
+  guideNoDialogue: "No readable dialogue was found for this action.",
+  guideOpenSave: "Open a SAV to locate your current story stage.",
+  guideCurrentStage: "Your saved story stage: {n}",
+  guideStageHelp:
+    "Stage numbers are game states. They can move backward or count parallel objectives; they do not prove that every earlier task is complete.",
+  guideNext: "Next story actions to investigate",
+  guideNextUnknown:
+    "No next action could be confirmed from the current stage. Check nearby dialogue and prerequisites; do not assume the next number is the next task.",
+  guideStoryUnknown:
+    "This ROM’s overall story progression is not yet verified. NPC rewards and their prerequisite clues are available below.",
+  guideSearch: "Search tasks, dialogue, rewards or areas",
+  guideSection: "Section",
+  guideStatus: "Progress",
+  guideKind_main: "Main story",
+  guideKind_side: "NPC rewards",
+  guideKind_prerequisite: "Prerequisite clues",
+  guideStatus_completed: "Collected",
+  guideStatus_ready: "Known conditions met",
+  guideStatus_blocked: "Prerequisite missing",
+  guideStatus_unknown: "Undetermined",
+  guideLoadError: "Guide unavailable.",
+  guideRetry: "Retry",
+  guideBack: "Previous task",
+  guideReceipt: "The saved receipt marker confirms this reward was collected.",
+  guideStatusHelp:
+    "Checks use saved progress. Conditions being met do not guarantee access or that every requirement has been identified.",
+  guideDialogue: "Dialogue clues",
+  guideDialogueHelp:
+    "These lines belong to the related scene and may include other choices or stages.",
+  guideDependencies: "Prerequisite tree",
+  guideDependencyHelp:
+    "Links identify possible ways to unlock conditions. Alternatives are not a required sequence; unidentified conditions stay unknown.",
+  guideNoDependency:
+    "No linked prerequisite action found. This does not mean there are no requirements.",
+  guideOpenMap: "Open the map and locate this action",
+
+  filterAll: "All",
+  learnsetSearch: "Search learnable moves",
+  moveHowToLearn: "How to obtain and learn this move",
+  moveSourcesHelp:
+    "Find a machine, buy it, visit a tutor or breed an offspring. Each Pokémon’s page lists its own learnable moves.",
+  moveInheritance: "Egg-move offspring",
+  moveInheritanceHelp:
+    "These offspring have this egg move in the ROM. Check compatible parents and their known moves on the Pokémon page; this list does not guarantee a particular pairing.",
+  mapPokemonEncounter: "Pokémon Encounter",
+  encounterSearch: "Find Pokémon on this map",
+  encounterNone: "No Pokémon encounters found on this map.",
+  encounterTime: "Time of day",
+  encounterUnknownTime: "Current time unknown; showing all time tables.",
+  encounterProbability: "Chance",
+  encounterProbabilityHelp:
+    "Chance applies after this encounter method triggers. Separate time/condition tables are alternatives, not different patches of grass. “—” means no verified probability.",
+  encounterConditionalTable: "Requires an additional condition",
+  mapSceneMovement:
+    "Characters may move during this scene. Map markers show their starting positions.",
+  referenceComparisonOnly: "Comparison only",
+  showUnusedReferences: "Show entries with uncertain use",
+  referenceFilteredHelp:
+    "Reserved item slots and maps with broken layouts or no known entrances are hidden. Unparsed or special access may still exist.",
+  referenceInvalidMap:
+    "This retained map has a mismatched layout; it may be an unused original map.",
+  guide: "Adventure guide",
+
   referenceSourceHelp: "Scope and reading notes",
   trainerDifficultySimple:
     "Ultimate Emerald adjusts battle levels, IVs and EVs by difficulty. Species base stats remain the ROM values; these are different from an individual’s battle stats.",
@@ -7,7 +83,7 @@ export const en = {
     "Dynamic preview uses the current saved party automatically. Random branches show alternatives; this is not a prediction of the next battle.",
   trainerAutomaticNoSave:
     "Open a SAV to calculate values that depend on your party. Unknown values stay “?”; fixed records are still available.",
-  trainerPreviewError: "Preview unavailable · details",
+  trainerPreviewError: "Preview unavailable",
   nativeTrainerSample:
     "Randomly generated values are one reproducible sample, not guaranteed values for the next battle.",
 
@@ -54,32 +130,31 @@ export const en = {
   dependencyExporting: "Building latest plan and prerequisite appendix…",
   dependencyTrace: "Find prerequisite clues",
   dependencyHelp:
-    "These referenced scripts may change this prerequisite. This is a partial static trace, not a verified quest list or proof of current access. Native calls, dynamic scripts and unreferenced records are not exhaustive.",
-  dependencySnapshot: "Current query snapshot",
+    "These are possible ways to fulfil this prerequisite. Some tasks and access conditions remain unknown.",
+  dependencySnapshot: "Saved progress",
   dependencyRefresh: "Refresh saved-state checks",
   dependencyNone:
-    "No matching writer was located in the parsed map scripts. This does not mean the prerequisite cannot be fulfilled.",
+    "No related task clue was found. This does not mean the prerequisite cannot be fulfilled.",
   dependencyLimit:
     "This dependency repeats or reaches the expansion limit. Continue from another clue; a cycle does not prove impossibility.",
   dependencyError: "Prerequisite trace could not be verified",
-  dependencySetEvent: "May set this event",
+  dependencySetEvent: "May unlock this condition",
   dependencyClearEvent: "May clear this event",
   dependencyChangeStage: "May change this stage",
   dependencyUnknownStage: "May change this stage; resulting value unresolved",
-  dependency_npc: "NPC script",
-  dependency_trigger: "Tile-triggered event",
+  dependency_npc: "Talk to the character",
+  dependency_trigger: "Walk to this tile",
   dependency_sign: "Interaction on a map tile",
-  dependency_map_script: "Map-level event",
-  dependencyText: "Text referenced by this script",
+  dependency_map_script: "Area story event",
+  dependencyText: "Related dialogue",
   dependencyTextHelp:
-    "Text references are context clues across the root script, not confirmed dialogue on this branch or a quest title.",
+    "These lines belong to the related scene and may include other choices or stages.",
   dependencyAccessUnknown:
     "Map reference and parsed checks do not establish activation, access or completion.",
-  dependencyPathPartial:
-    "This script contains unresolved commands or bounded branches. See evidence.",
+  dependencyPathPartial: "Some conditions for this action remain unknown.",
   dependencyMore: "Show more matching clues",
   dependencyCoverage:
-    "Inspected {checked} of {total} referenced script roots; overall coverage is partial.",
+    "Only identified events are shown. Other requirements may remain unknown.",
 
   breedTitle: "Native daycare egg preview",
   daycareSavedTitle: "Saved ordinary daycare",
@@ -94,8 +169,7 @@ export const en = {
     "The saved ordinary daycare state could not be determined.",
   daycareSavedUnknown: "Saved ordinary daycare state is unavailable.",
   daycareSavedEmptySlot: "Empty slot",
-  daycareSavedInvalidParent:
-    "Individual data cannot be verified; see evidence.",
+  daycareSavedInvalidParent: "Individual data cannot be verified.",
   daycareStoredLevel: "Level at deposit",
   daycareAccumulatedSteps: "Accumulated daycare steps",
   daycareNextCheck:
@@ -154,7 +228,7 @@ export const en = {
   breedEvidence: "Native scenario details",
   breedServices: "Located egg-receiving services",
   breedServicesHelp:
-    "These NPC scripts call the verified ordinary receiving routine. Script conditions and map connections do not prove current access, egg availability or a free party slot.",
+    "These Talk to the characters call the verified ordinary receiving routine. Script conditions and map connections do not prove current access, egg availability or a free party slot.",
   breedNoService:
     "No receiving script was located by the current parser; this does not prove the game has no daycare.",
   breeding_unverified:
@@ -174,10 +248,10 @@ export const en = {
   conditionOrdinaryBag: "Ordinary bag count",
   conditionEventSet: "Event condition must be set",
   conditionEventUnset: "Event condition must be unset",
-  conditionUnnamed: "Unnamed event value",
+  conditionUnnamed: "Story condition (name unconfirmed)",
   conditionUnknown: "Condition not resolved",
   mapScriptedMovement:
-    "This event references actor actions or waiting. Sprites mark the ROM's initial tiles; live positions, completion and collision need in-game confirmation.",
+    "This character may move during the scene; the map shows their starting position.",
   mapScriptedMovementEntry: "Map-level actor actions",
   staticBattlePair: "Two opponents in this encounter",
   staticBattlePairHelp:
@@ -325,7 +399,7 @@ export const en = {
   navScriptConditions: "Passage conditions and source",
   navUnplaced: "No reliable tile location",
   navTalkPassage:
-    "This passage is referenced by an NPC script. The tile locates the NPC; stepping on it does not establish a warp.",
+    "This passage is referenced by an Talk to the character. The tile locates the NPC; stepping on it does not establish a warp.",
   navScriptHelp:
     "This is a referenced script transition. Its activation and entry selectors are not fully resolved.",
   navScriptAccessUnknown:
@@ -410,8 +484,7 @@ export const en = {
   currentPokemon: "Current",
   referenceConfiguredDirect: "Game mapping · confirmed identity",
   referenceConfiguredComparison: "Game mapping · comparison only",
-  referenceConfiguredNone:
-    "The game mapping marks this entry as having no official counterpart.",
+  referenceConfiguredNone: "This entry has no official reference.",
   officialReference: "Official reference",
   currentRom: "Current ROM",
   statDifference: "Difference",
@@ -423,7 +496,7 @@ export const en = {
   referenceMatched: "Automatic name suggestion · not reviewed",
   referenceChosen: "Manually selected comparison",
   referenceUnmatched:
-    "No unique official match. Choose a reference to compare; custom forms may have no official counterpart.",
+    "No unique official reference. Custom forms may have no official counterpart.",
   referenceHelp:
     "Latest-generation numeric reference; absent entries use their most recent included generation. ROM names, values and artwork are read from your ROM. Choosing a reference does not edit the ROM or enable official-name search.",
 
@@ -474,7 +547,7 @@ export const en = {
   evo_move_male: "Male: level up knowing {move}",
   evo_move_female: "Female: level up knowing {move}",
   evo_item_night: "Use {item} at night",
-  evo_unknown: "Evolution condition not yet verified; see developer evidence",
+  evo_unknown: "Evolution condition not yet verified",
   unknownItem: "an unresolved item",
   unknownMove: "an unresolved move",
   abilityFixed: "Fixed ability",
@@ -541,7 +614,7 @@ export const en = {
   mapNoReward: "No item reward identified in this object's parsed script.",
   mapConditionalReward:
     "Alternative rewards and prerequisite branches may be included; these are not necessarily available together or right now.",
-  mapPartialScript: "Some native or dynamic behavior remains unresolved.",
+  mapPartialScript: "This event may have additional conditions.",
   mapEventEvidence: "ROM evidence",
   mapEventOffset: "Event",
   mapSelectMarker: "Select a marker to view its items and tile coordinates.",
@@ -1048,6 +1121,78 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  guideReadingHelp: "攻略范围与进度说明",
+
+  guideShowUnconfirmedEntrances: "包含地图入口未确认的线索",
+
+  trainerIncompleteRecord: "此对手的部分资料尚未确认。",
+
+  guideScope:
+    "攻略实时读取当前 ROM，覆盖已识别的主线分支与 NPC 奖励。部分支线、特殊条件与实际可达性仍未确认。",
+  guideStage: "主线阶段 {n}",
+  guideReward: "NPC 奖励",
+  guideClue: "前置任务线索",
+  guideAlternatives: "以下为可能满足同一前置条件的替代行动",
+  guideDependencyLimit: "此分支重复或已达到展开层数。",
+  guideNoDialogue: "此节点尚未找到可读对话。",
+  guideOpenSave: "打开存档后可定位当前主线阶段。",
+  guideCurrentStage: "存档当前主线阶段：{n}",
+  guideStageHelp:
+    "序号是游戏的剧情状态，可能回写或累计并行任务，不代表之前的任务全部完成。",
+  guideNext: "下一步主线线索",
+  guideNextUnknown:
+    "当前阶段尚未确认下一节点。请结合附近对话与前置条件；不能直接把下一个序号当作下个任务。",
+  guideStoryUnknown:
+    "本 ROM 的全局主线进度尚未核实；下方可查询 NPC 奖励及其前置线索。",
+  guideSearch: "搜索任务、对话、奖励或区域",
+  guideSection: "分组",
+  guideStatus: "进度",
+  guideKind_main: "主线节点",
+  guideKind_side: "NPC 奖励任务",
+  guideKind_prerequisite: "前置线索",
+  guideStatus_completed: "已领取",
+  guideStatus_ready: "已知条件满足",
+  guideStatus_blocked: "尚缺前置条件",
+  guideStatus_unknown: "无法确定",
+  guideLoadError: "暂时无法读取攻略。",
+  guideRetry: "重试",
+  guideBack: "返回上一任务",
+  guideReceipt: "存档中的领取标记显示此奖励已领取。",
+  guideStatusHelp:
+    "按存档检查已知条件。条件满足仍不保证当前能到达或已查明全部要求。",
+  guideDialogue: "对话线索",
+  guideDialogueHelp: "这些对话来自相关场景，可能包含其他选项或阶段的内容。",
+  guideDependencies: "前置任务依赖树",
+  guideDependencyHelp:
+    "连接表示可能解锁条件的行动。替代选项不代表必须逐项完成；未识别的条件仍保持未知。",
+  guideNoDependency: "尚未找到关联的前置行动，不代表没有前置条件。",
+  guideOpenMap: "打开地图并定位此任务",
+
+  filterAll: "全部",
+  learnsetSearch: "搜索可学招式",
+  moveHowToLearn: "招式获取与学习",
+  moveSourcesHelp:
+    "查看招式机的拾取与购买地点、定点教学和遗传途径。每只宝可梦的可学招式请在宝可梦页面筛选。",
+  moveInheritance: "可遗传此招式的子代",
+  moveInheritanceHelp:
+    "这些宝可梦的遗传招式表包含此招式。请在宝可梦页查看亲代与孵蛋条件；列在此处不代表任意配对都能遗传。",
+  mapPokemonEncounter: "宝可梦 Encounter",
+  encounterSearch: "搜索本地图宝可梦",
+  encounterNone: "本地图未发现宝可梦相遇记录。",
+  encounterTime: "时段",
+  encounterUnknownTime: "当前有效时间无法确定，暂显示全部时段。",
+  encounterProbability: "出现概率",
+  encounterProbabilityHelp:
+    "概率指使用该方式遇怪后的出现比例。不同时间或条件的表是替换关系，不代表不同草丛。“—”表示没有确认的概率。",
+  encounterConditionalTable: "另有触发条件",
+  mapSceneMovement: "进入或触发剧情后，角色可能移动；地图小人标的是起始位置。",
+  referenceComparisonOnly: "仅数值参照",
+  showUnusedReferences: "显示用途未确认的条目",
+  referenceFilteredHelp:
+    "已隐藏道具空位，以及贴图异常或尚未发现入口的地图。用途未确认的条目仍可能通过特殊方式获得或进入。",
+  referenceInvalidMap: "这张保留地图的贴图异常，可能是改版未使用的原版地图。",
+  guide: "冒险攻略",
+
   referenceSourceHelp: "解析范围与阅读说明",
   trainerDifficultySimple:
     "究极绿宝石会按难度调整实战等级、个体值和努力值。种族值仍取 ROM 中的数据，与个体的实战能力不同。",
@@ -1095,31 +1240,29 @@ export const zh: Record<Key, string> = {
   dependencyExporting: "正在生成最新建议与前置线索附录…",
   dependencyTrace: "追查前置线索",
   dependencyHelp:
-    "这些被地图引用的脚本可能改变此前置条件。这是部分静态线索，不是已验证任务清单或当前可达证明；原生调用、动态脚本与无引用记录尚未完整覆盖。",
-  dependencySnapshot: "本次查询快照",
+    "下方是可能满足此前置条件的行动线索；部分任务和进入条件仍未确认。",
+  dependencySnapshot: "当前存档进度",
   dependencyRefresh: "重新核对存档条件",
-  dependencyNone:
-    "已解析地图脚本中未找到匹配的改变来源；不表示无法完成该条件。",
+  dependencyNone: "还没有找到相关任务线索，不代表无法满足此条件。",
   dependencyLimit:
     "该依赖重复或达到展开上限。可从其他线索继续追查；循环不代表无法完成。",
   dependencyError: "前置线索未能核实",
-  dependencySetEvent: "可能设置此事件",
+  dependencySetEvent: "可能解锁此前置条件",
   dependencyClearEvent: "可能清除此事件",
   dependencyChangeStage: "可能改变此阶段",
   dependencyUnknownStage: "可能改变此阶段，结果值尚未确定",
-  dependency_npc: "NPC 对话脚本",
-  dependency_trigger: "格位触发事件",
+  dependency_npc: "与 NPC 对话",
+  dependency_trigger: "走到此格位",
   dependency_sign: "地图格位交互",
-  dependency_map_script: "地图级事件",
-  dependencyText: "此脚本引用的文字",
+  dependency_map_script: "区域剧情",
+  dependencyText: "相关对话",
   dependencyTextHelp:
-    "文字为整个根脚本的上下文线索，不保证由此分支实际说出，也不是已确认的任务名称。",
+    "这些对话属于相关场景，可能包含其他选项或剧情阶段的内容。",
   dependencyAccessUnknown:
     "地图引用与已解析检查不代表可激活、当前可达或任务完成。",
-  dependencyPathPartial: "此脚本包含未确定的命令或有界分支，详见证据。",
+  dependencyPathPartial: "此前置线索仍有未确认的条件。",
   dependencyMore: "查看更多匹配线索",
-  dependencyCoverage:
-    "检查了 {checked} / {total} 个被引用根脚本；整体仍为部分覆盖。",
+  dependencyCoverage: "只展示已找到的相关事件，可能还有尚未确认的要求。",
 
   breedTitle: "原生寄养孵蛋预览",
   daycareSavedTitle: "已保存的普通寄养状态",
@@ -1132,7 +1275,7 @@ export const zh: Record<Key, string> = {
   daycareSaved_unknown: "无法确定保存的普通寄养状态。",
   daycareSavedUnknown: "暂无法读取保存的普通寄养状态。",
   daycareSavedEmptySlot: "空栏位",
-  daycareSavedInvalidParent: "无法验证个体数据，请展开证据。",
+  daycareSavedInvalidParent: "暂时无法确认这只宝可梦的寄养数据。",
   daycareStoredLevel: "寄养时等级",
   daycareAccumulatedSteps: "累计寄养步数",
   daycareNextCheck:
@@ -1187,7 +1330,7 @@ export const zh: Record<Key, string> = {
   breedEvidence: "原生情景技术详情",
   breedServices: "已定位的领蛋服务",
   breedServicesHelp:
-    "这些 NPC 脚本调用了已验证的普通领蛋例程。脚本条件和地图连接不能证明当前可达、有蛋可领或同行有空位。",
+    "这些 与此角色交谈调用了已验证的普通领蛋例程。脚本条件和地图连接不能证明当前可达、有蛋可领或同行有空位。",
   breedNoService: "当前解析器没有定位到领蛋脚本；不能据此判断本作没有寄养屋。",
   breeding_unverified: "本 ROM 的原生寄养例程尚未验证。",
   breeding_gender: "该宝可梦没有所选性别。",
@@ -1207,8 +1350,7 @@ export const zh: Record<Key, string> = {
   conditionEventUnset: "需要事件条件未触发",
   conditionUnnamed: "未命名事件数值",
   conditionUnknown: "条件尚未解析",
-  mapScriptedMovement:
-    "此事件含角色行动或等待指令。小人标注 ROM 初始格位；实际位置、动作是否完成及碰撞条件需在游戏内确认。",
+  mapScriptedMovement: "此角色可能随剧情移动；地图小人标的是起始位置。",
   mapScriptedMovementEntry: "地图级角色行动",
   staticBattlePair: "本次相遇的两只对手",
   staticBattlePairHelp:
@@ -1347,7 +1489,7 @@ export const zh: Record<Key, string> = {
   navScriptConditions: "通行条件与触发来源",
   navUnplaced: "无可靠格位",
   navTalkPassage:
-    "此通道来自 NPC 脚本。格位用于定位 NPC，不表示踩上该格就会传送。",
+    "此通道来自 与此角色交谈。格位用于定位 NPC，不表示踩上该格就会传送。",
   navScriptHelp:
     "这是已引用脚本中的传送记录，触发方式及入口选择条件尚未完整解析。",
   navScriptAccessUnknown:
@@ -1438,11 +1580,10 @@ export const zh: Record<Key, string> = {
   generation: "第 {n} 世代",
   referenceConfiguredDirect: "游戏映射表 · 已确认对应",
   referenceConfiguredComparison: "游戏映射表 · 仅作数值参照",
-  referenceConfiguredNone: "游戏映射表已标注：无官方对应条目。",
+  referenceConfiguredNone: "此条目没有官方参照。",
   referenceMatched: "按名称自动建议 · 未经审核",
   referenceChosen: "手动选择的对照条目",
-  referenceUnmatched:
-    "尚无唯一的官方对应条目，可手动选择参照；自创形态可能没有官方对应形态。",
+  referenceUnmatched: "尚无唯一的官方对应条目；自创形态可能没有官方参照。",
   referenceHelp:
     "采用最新世代数值，未收录条目补用最近收录世代。ROM 名称、数值和图片仍从你打开的 ROM 读取；选择参照不会修改 ROM，也不启用官译名搜索。",
   evo_friendship: "亲密度足够高时升级",
@@ -1489,7 +1630,7 @@ export const zh: Record<Key, string> = {
   evo_move_male: "雄性，学会「{move}」后升级",
   evo_move_female: "雌性，学会「{move}」后升级",
   evo_item_night: "夜晚使用「{item}」",
-  evo_unknown: "进化条件尚未核实，原始数据见开发者证据",
+  evo_unknown: "进化条件尚未确认",
   unknownItem: "尚未识别的道具",
   unknownMove: "尚未识别的招式",
   abilityFixed: "固定特性",
@@ -1552,7 +1693,7 @@ export const zh: Record<Key, string> = {
   mapNoReward: "已解析的此对象脚本中未识别到道具奖励。",
   mapConditionalReward:
     "可能包含不同选项或前置条件下的奖励，不代表当前可全部领取。",
-  mapPartialScript: "部分原生程序调用或动态行为尚未解析。",
+  mapPartialScript: "此事件可能还有其他触发条件。",
   mapEventEvidence: "ROM 事件证据",
   mapEventOffset: "事件",
   mapSelectMarker: "点击标记，查看道具与精确格位。",

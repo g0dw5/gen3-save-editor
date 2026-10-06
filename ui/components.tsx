@@ -157,6 +157,8 @@ export function Toggle({
     </label>
   );
 }
+// New reference windows must appear above the window that opened them.
+let floatingOrder = 100;
 export function Floating({
   title,
   children,
@@ -175,7 +177,7 @@ export function Floating({
     x: Math.min(90 + initial * 24, window.innerWidth - 440),
     y: 85 + (initial % 4) * 24,
   });
-  const [z, setZ] = useState(100 + initial);
+  const [z, setZ] = useState(() => ++floatingOrder);
   const drag = useRef<{ x: number; y: number } | null>(null);
   const ref = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
@@ -215,7 +217,7 @@ export function Floating({
         top: Math.max(8, position.y),
         zIndex: z,
       }}
-      onPointerDown={() => setZ((Date.now() % 1_000_000) + 100)}
+      onPointerDown={() => setZ(++floatingOrder)}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
           e.stopPropagation();

@@ -82,20 +82,11 @@ export function EvolutionTree({
             </span>
           </div>
         ))}
-      {graph.names
-        .filter((e) => e.target === value)
-        .map((edge) => (
-          <div className="evolution-condition" key={`n:${edge.source}`}>
-            {sourceLink(edge.source, "⋯")}
-            <span>{t("nameLinkOnly")}</span>
-          </div>
-        ))}
     </article>
   );
   return (
     <section className="evolution-tree" aria-label={t("evolutionTree")}>
       <h3>{t("evolutionTree")}</h3>
-      <p className="small muted">{t("evolutionTreeHelp")}</p>
       {!graph.evolutions.length && (
         <p className="small muted">{t("noEvolutionRecorded")}</p>
       )}
@@ -121,15 +112,6 @@ export function EvolutionTree({
           <div className="evolution-cards">{family.members.map(card)}</div>
         </details>
       ))}
-      {!!graph.nameIds.length && (
-        <>
-          <h4>{t("relatedNames")}</h4>
-          <p className="small muted">{t("relatedNamesHelp")}</p>
-          <div className="evolution-cards name-edge">
-            {graph.nameIds.map(card)}
-          </div>
-        </>
-      )}
     </section>
   );
 }

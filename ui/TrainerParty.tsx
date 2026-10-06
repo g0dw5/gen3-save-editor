@@ -232,10 +232,7 @@ export function TrainerParty({
           )}
           {loading && <p role="status">{t("trainerEvCalculating")}</p>}
           {(battleError || previewError) && (
-            <details>
-              <summary>{t("trainerPreviewError")}</summary>
-              <pre>{battleError || previewError}</pre>
-            </details>
+            <p role="alert">{t("trainerPreviewError")}</p>
           )}
         </details>
       )}
@@ -464,31 +461,6 @@ export function TrainerParty({
               </p>
             )}
             {g && !g.ivs && <p className="small muted">{t("randomIVs")}</p>}
-            <details className="trainer-evidence">
-              <summary>{t("rawParameters")}</summary>
-              <p className="small muted">
-                {t(
-                  template
-                    ? "ultimateTemplateEvidence"
-                    : g?.context === "ultimate_plain"
-                      ? "ultimatePlainEvidence"
-                      : "ivQualityHelp",
-                )}
-              </p>
-              <pre>
-                {JSON.stringify(
-                  {
-                    offset: `0x${p.offset.toString(16).toUpperCase()}`,
-                    raw_level: p.level,
-                    iv_quality: p.iv_quality,
-                    personality_parameter: g?.personality_parameter,
-                    level_rule: p.level_rule,
-                  },
-                  null,
-                  2,
-                )}
-              </pre>
-            </details>
           </article>
         );
       })}

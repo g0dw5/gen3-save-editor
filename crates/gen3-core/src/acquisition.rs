@@ -163,6 +163,7 @@ pub(crate) struct WildCache {
     values: BTreeMap<(u16, u16, Vec<u8>), crate::wild_items::HeldDistribution>,
 }
 pub struct AcquisitionIndex {
+    pub(crate) event_index: Option<Arc<crate::event_dependencies::Index>>,
     pub(crate) wild_cache: RefCell<WildCache>,
     pub world: World,
     pub species: Vec<Species>,
@@ -415,6 +416,12 @@ impl AcquisitionIndex {
         s
     }
     pub fn build(rom: &Rom) -> Result<Self> {
+        Self::build_with_events(rom, None)
+    }
+    pub(crate) fn build_with_events(
+        rom: &Rom,
+        events: Option<Arc<crate::event_dependencies::Index>>,
+    ) -> Result<Self> {
         let species: Vec<_> = (1..rom.profile.species.count as u16)
             .filter_map(|id| rom.valid_species(id).ok())
             .collect();
@@ -424,9 +431,17 @@ impl AcquisitionIndex {
             evolutions.insert(s.id, rom.evolutions(s.id)?);
             learnsets.insert(s.id, rom.learnset(s.id)?);
         }
+        let mut world = rom.world()?;
+        let events = match events {
+            Some(events) => events,
+            None => Arc::new(crate::event_dependencies::Index::build(rom, &world.maps)?),
+        };
+        events.check_rom(rom)?;
+        world.reference_visibility = crate::reference_visibility::classify(rom, &world, &events)?;
         Ok(Self {
+            event_index: Some(events),
             wild_cache: RefCell::default(),
-            world: rom.world()?,
+            world,
             species,
             evolutions,
             learnsets,
@@ -848,7 +863,10 @@ impl AcquisitionIndex {
                     }
                 }
                 for (species, list) in &self.learnsets {
-                    for l in list.iter().filter(|l| l.move_id == target.id) {
+                    for l in list
+                        .iter()
+                        .filter(|l| l.move_id == target.id && l.source == "egg")
+                    {
                         let mut s = source(&format!("learn_{}", l.source), l.offset);
                         s.related.push(Target {
                             kind: TargetKind::Species,
@@ -867,6 +885,26 @@ impl AcquisitionIndex {
                                 id,
                             });
                             sources.push(s);
+                            // A compatibility bit is not a location. Follow the actual
+                            // machine item through the same runtime item-source reader.
+                            let item_sources = self.query(
+                                rom,
+                                save,
+                                Target {
+                                    kind: TargetKind::Item,
+                                    id,
+                                },
+                            )?;
+                            for mut location in item_sources.sources {
+                                location.related.insert(
+                                    0,
+                                    Target {
+                                        kind: TargetKind::Item,
+                                        id,
+                                    },
+                                );
+                                sources.push(location);
+                            }
                         }
                     }
                 }
@@ -1024,8 +1062,10 @@ mod tests {
             conditional: true,
         };
         let index = AcquisitionIndex {
+            event_index: None,
             wild_cache: RefCell::default(),
             world: World {
+                reference_visibility: Default::default(),
                 maps: vec![],
                 map_events: vec![],
                 encounters: vec![encounter],

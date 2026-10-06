@@ -15,34 +15,63 @@ export function evolutionGraph(detail: SpeciesDetail) {
     })),
     battle_forms: detail.battle_forms ?? [],
     form_families: [],
-    name_relations: [],
   };
-  const evolutions = unique(relations.evolutions, (e) =>
-    JSON.stringify([
-      e.source,
-      e.target,
-      e.method,
-      e.condition,
-      e.parameter,
-      e.auxiliary ?? 0,
-      [...(e.requirements ?? [])].sort(
-        (a, b) => a.kind.localeCompare(b.kind) || a.value - b.value,
-      ),
-    ]),
+  const connected = new Set([detail.species.id]);
+  let discovered = true;
+  while (discovered) {
+    discovered = false;
+    const groups = [
+      ...relations.evolutions.map((e) => [e.source, e.target]),
+      ...relations.battle_forms.map((e) => [e.source, e.target]),
+      ...relations.form_families.map((f) => f.species),
+    ];
+    for (const group of groups)
+      if (group.some((id) => connected.has(id)))
+        for (const id of group)
+          if (!connected.has(id)) {
+            connected.add(id);
+            discovered = true;
+          }
+  }
+  const evolutions = unique(
+    relations.evolutions.filter((e) => connected.has(e.source)),
+    (e) =>
+      JSON.stringify([
+        e.source,
+        e.target,
+        e.method,
+        e.condition,
+        e.parameter,
+        e.auxiliary ?? 0,
+        [...(e.requirements ?? [])].sort(
+          (a, b) => a.kind.localeCompare(b.kind) || a.value - b.value,
+        ),
+      ]),
   );
-  const battles = unique(relations.battle_forms, (e) =>
-    JSON.stringify([e.source, e.target, e.kind, e.trigger.kind, e.trigger.id]),
+  const battles = unique(
+    relations.battle_forms.filter((e) => connected.has(e.source)),
+    (e) =>
+      JSON.stringify([
+        e.source,
+        e.target,
+        e.kind,
+        e.trigger.kind,
+        e.trigger.id,
+      ]),
   );
-  const names = unique(
-    relations.name_relations,
-    (e) => `${e.source}:${e.target}`,
-  );
-  const primary = new Set(evolutions.flatMap((e) => [e.source, e.target]));
-  battles.forEach((e) => primary.add(e.source));
-  relations.form_families.forEach((f) => {
-    if (f.species.length) primary.add(f.species[0]);
-  });
-  names.forEach((e) => primary.add(e.source));
+  // Normal ancestry is a separate connected component. Form tables must not
+  // promote every alternate form and its descendants into the ordinary tree.
+  const primary = new Set([detail.species.id]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const e of evolutions)
+      if (primary.has(e.source) || primary.has(e.target)) {
+        if (!primary.has(e.source) || !primary.has(e.target)) changed = true;
+        primary.add(e.source);
+        primary.add(e.target);
+      }
+  }
   // Roots first. Cyclic in-ROM transitions retain their incoming conditions and
   // are visited once rather than recursively duplicating a branch forever.
   const pending = [...primary].sort((a, b) => a - b);
@@ -60,15 +89,19 @@ export function evolutionGraph(detail: SpeciesDetail) {
       shown.add(id);
       return true;
     });
-  const battleIds = claim(battles.map((e) => e.target));
+  const battleIds = claim(
+    battles
+      .filter((e) => primary.has(e.source) || e.target === detail.species.id)
+      .map((e) => e.target),
+  );
   const families = relations.form_families
+    .filter((f) => f.species.some((id) => connected.has(id)))
     .map((f) => ({
       ...f,
       members: claim(f.species),
     }))
     .filter((f) => f.members.length);
-  const nameIds = claim(names.map((e) => e.target));
   // Unrelated/no-evolution entries still have a single selectable card.
   if (!shown.has(detail.species.id)) main.push(...claim([detail.species.id]));
-  return { main, battleIds, families, nameIds, evolutions, battles, names };
+  return { main, battleIds, families, evolutions, battles };
 }

@@ -30,7 +30,7 @@ const normalized = (value: string) =>
 
 /** Names, not reused National Dex slots, identify reference candidates.
  * Battle forms must not silently inherit their ordinary form's official stats.
- * Ambiguous translations/forms require the user's explicit reference selection.
+ * Ambiguous translations/forms stay unmatched; fallback suggestions are labelled unreviewed.
  */
 export function suggestedReference(
   detail: SpeciesDetail,

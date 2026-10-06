@@ -3,7 +3,7 @@ import copy
 import json
 import os
 from playwright.sync_api import sync_playwright, expect
-from test_reference_navigation import CATALOG, species
+from test_reference_navigation import CATALOG, WORLD, species
 
 
 def main():
@@ -14,6 +14,8 @@ def main():
     def api(route):
         req=route.request.post_data_json
         if req['command']=='state': data=dict(catalog=catalog,save=None)
+        elif req['command']=='world': data=WORLD
+        elif req['command']=='acquisition': data=dict(target=req['payload'], sources=[],partial=True,clock=None)
         elif req['command']=='sprite': data=dict(url='')
         elif req['command']=='species':
             s=next(s for s in catalog['species'] if s['id']==req['payload']['id'])
@@ -30,7 +32,7 @@ def main():
         page.goto(os.environ.get('GEN3_UI_URL','http://127.0.0.1:5173'))
         page.get_by_role('button',name='ROM 资料',exact=True).click()
         dialog=page.get_by_role('dialog')
-        for id,label in [(990,'游戏映射表 · 已确认对应'),(991,'游戏映射表 · 仅作数值参照'),(9,'游戏映射表已标注：无官方对应条目。')]:
+        for id,label in [(990,'超级超梦Ｘ'),(991,'仅数值参照'),(9,'此条目没有官方参照。')]:
             dialog.locator('.reference-rows button').filter(has_text=str(id)).first.click()
             expect(dialog.locator('.species-stats')).to_contain_text(label)
             if id==9:expect(dialog.locator('.base-stats-comparison tbody tr').first.locator('td').first).to_have_text('—')

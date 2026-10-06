@@ -260,7 +260,6 @@ export interface SpeciesDetail {
     })[];
     battle_forms: NonNullable<SpeciesDetail["battle_forms"]>;
     form_families: { species: number[]; offset: number }[];
-    name_relations: { source: number; target: number }[];
   };
   teaching_list_present?: boolean;
   encounters_verified?: boolean;
@@ -462,6 +461,10 @@ export interface TrainerBattlePreview {
   }[];
 }
 export interface World {
+  reference_visibility?: {
+    items: { id: number; reason: string }[];
+    maps: { id: string; reason: string }[];
+  };
   map_events: MapEventReport[];
   map_groups: { kind: string; map_ids: string[] }[];
   trainer_locations: {
@@ -488,6 +491,7 @@ export interface RefWindow {
   id: number;
   tab: RefTab;
   selected?: number | string;
+  focus?: MapFocus;
 }
 export interface Template {
   species: number;
@@ -755,5 +759,29 @@ export interface TrainerReferenceReport {
   total_matches: number;
   next_offset: number | null;
   coverage: EventDependencyReport["coverage"];
+  partial: boolean;
+}
+
+export interface AdventureTask {
+  id: string;
+  kind: "main" | "side" | "prerequisite";
+  map_id: string;
+  x: number | null;
+  y: number | null;
+  actor: number | null;
+  goals: QueryTarget[];
+  text: string[];
+  checks: AcquisitionSource["conditions"];
+  status: "completed" | "blocked" | "ready" | "unknown";
+  stage: number | null;
+  next_candidate: boolean;
+  prerequisites: string[][];
+  partial: boolean;
+}
+export interface AdventureGuide {
+  rom_md5: string;
+  current_stage: number | null;
+  story_supported: boolean;
+  tasks: AdventureTask[];
   partial: boolean;
 }

@@ -2531,3 +2531,158 @@ summary {
 .trainer-mode-note:not([open]) {
   padding: 9px 12px;
 }
+
+.reference-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0;
+}
+.reference-filters label {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 12px;
+}
+.reference-filters input {
+  min-width: 140px;
+  flex: 1;
+}
+.reference-filters select {
+  max-width: 210px;
+}
+.reference-optional {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 5px;
+  font-size: 12px;
+}
+.encounter-method-table {
+  overflow-x: auto;
+  margin: 12px 0;
+}
+.encounter-method-table table {
+  width: 100%;
+}
+.encounter-method-table h4 {
+  margin: 4px 0;
+}
+.encounter-method-table th,
+.encounter-method-table td {
+  padding: 3px 7px;
+}
+.encounter-pokemon {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  text-align: left;
+}
+.encounter-pokemon img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.learnset-table .types {
+  display: inline-flex;
+}
+
+.guide-scope {
+  padding: 0 12px;
+}
+.guide-next {
+  margin: 5px 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--surface-alt, #eef5f0);
+}
+.guide-next h4 {
+  margin: 5px 0;
+}
+.guide-next-action {
+  display: inline-block;
+  margin: 3px;
+  font-size: 12px;
+}
+.guide-task-meta,
+.guide-task-excerpt {
+  display: block;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.guide-task-excerpt {
+  opacity: 0.7;
+  margin-top: 3px;
+}
+.guide-map {
+  position: relative;
+  display: block;
+  max-width: 420px;
+  margin: 10px 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+}
+.guide-map > img {
+  display: block;
+  width: 100%;
+  image-rendering: pixelated;
+}
+.guide-map-pin {
+  position: absolute;
+  transform: translate(-50%, -65%);
+  background: #fff9;
+  border: 2px solid #db6b2c;
+  border-radius: 50%;
+  padding: 3px;
+}
+.guide-map-pin img {
+  width: 22px;
+  image-rendering: pixelated;
+}
+.quest-dependency-tree {
+  padding-left: 18px;
+  border-left: 2px solid #aabeb4;
+}
+.quest-dependency-tree > li {
+  margin: 10px 0;
+}
+.quest-dependency-tree summary {
+  padding: 5px 0;
+}
+.adventure-layout blockquote {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-left: 3px solid #aabeb4;
+  background: #8881;
+  white-space: pre-line;
+}
+
+.reference-filters label {
+  white-space: nowrap;
+}
+.reference-filters input[type="checkbox"] {
+  min-width: 0;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+.guide-filters {
+  padding: 0 12px;
+}
+.guide-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 12px;
+}
+.guide-next h4 {
+  display: inline;
+  font-size: 12px;
+}
+.guide-task-excerpt {
+  max-height: 2.8em;
+  overflow: hidden;
+}

@@ -118,6 +118,7 @@ pub struct TrainerLocationIndex {
 }
 #[derive(Serialize)]
 pub struct World {
+    pub reference_visibility: crate::reference_visibility::Visibility,
     pub maps: Vec<Map>,
     pub map_events: Vec<crate::map_events::MapEventReport>,
     pub encounters: Vec<Encounter>,
@@ -160,6 +161,7 @@ impl Rom {
         let maps = self.maps()?;
         let trainer_locations = self.trainer_locations_for_maps(&maps)?;
         Ok(World {
+            reference_visibility: Default::default(),
             map_events: maps
                 .iter()
                 .map(|m| self.map_events(m))

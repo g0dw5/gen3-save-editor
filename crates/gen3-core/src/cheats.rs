@@ -54,6 +54,7 @@ pub struct Recipe {
     pub scope: Text,
     pub steps: Vec<Text>,
     pub limitations: Vec<Text>,
+    #[serde(skip_serializing)]
     pub verification: Vec<Text>,
     pub formats: Vec<Format>,
 }
@@ -690,6 +691,16 @@ mod tests {
             .filter(|p| p.md5 != ULTIMATE_MD5 && !bindings(p.md5).is_empty())
         {
             let rom = CheatRom::identify(p.md5, p.size).unwrap();
+            let displayed = serde_json::to_value(rom.catalog()).unwrap();
+            assert!(displayed["entries"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|entry| {
+                    entry.get("verification").is_none()
+                        && entry.get("steps").is_some()
+                        && entry.get("limitations").is_some()
+                }));
             assert_eq!(
                 rom.catalog().entries.len(),
                 if p.md5 == crate::profile::ROCKET.md5 {

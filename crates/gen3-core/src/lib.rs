@@ -1,6 +1,7 @@
 //! ROM-backed Gen III editing. No UI, process-global ROM or bundled game assets.
 pub mod acquisition;
 pub mod adapter;
+pub mod adventure;
 pub mod app;
 pub mod binary;
 pub mod breeding;
@@ -63,6 +64,7 @@ impl From<serde_json::Error> for Error {
 pub mod forms;
 pub mod mercury;
 
+pub mod reference_visibility;
 pub mod relations;
 
 pub mod ultimate;

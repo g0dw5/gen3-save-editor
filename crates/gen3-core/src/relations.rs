@@ -22,17 +22,11 @@ pub struct FormFamily {
     pub offset: usize,
 }
 #[derive(Serialize)]
-pub struct NameRelation {
-    pub source: u16,
-    pub target: u16,
-}
-#[derive(Serialize)]
 pub struct SpeciesRelations {
     pub species: Vec<u16>,
     pub evolutions: Vec<EvolutionEdge>,
     pub battle_forms: Vec<BattleForm>,
     pub form_families: Vec<FormFamily>,
-    pub name_relations: Vec<NameRelation>,
 }
 
 impl Rom {
@@ -78,7 +72,7 @@ impl Rom {
     }
 
     /// Entire connected family, including incoming edges and sibling branches.
-    /// Only the reference viewer consumes name links; origin validation does not.
+    /// Only verified ROM evolution and form tables define membership.
     pub fn species_relations(&self, id: u16) -> Result<SpeciesRelations> {
         self.valid_species(id)?;
         let species = (1..self.profile.species.count as u16)
@@ -99,32 +93,6 @@ impl Rom {
             }
         }
         let form_families = self.form_families()?;
-        let mut name_relations = Vec::new();
-        for row in &species {
-            let stem = row.name.trim_end_matches(|c: char| {
-                c.is_ascii_uppercase() || matches!(c, '&' | '♀' | '♂' | '-' | ' ')
-            });
-            if stem.len() < 3 || stem == row.name {
-                continue;
-            }
-            for base in &species {
-                if base.name == stem
-                    && base.id != row.id
-                    && !battle_forms.iter().any(|form| form.target == base.id)
-                    && !evolutions
-                        .iter()
-                        .any(|edge| edge.source == base.id && edge.evolution.target == row.id)
-                    && !battle_forms
-                        .iter()
-                        .any(|form| form.source == base.id && form.target == row.id)
-                {
-                    name_relations.push(NameRelation {
-                        source: base.id,
-                        target: row.id,
-                    });
-                }
-            }
-        }
         let mut connected = BTreeSet::from([id]);
         loop {
             let count = connected.len();
@@ -132,7 +100,6 @@ impl Rom {
                 .iter()
                 .map(|e| (e.source, e.evolution.target))
                 .chain(battle_forms.iter().map(|e| (e.source, e.target)))
-                .chain(name_relations.iter().map(|e| (e.source, e.target)))
             {
                 if connected.contains(&source) || connected.contains(&target) {
                     connected.extend([source, target]);
@@ -159,10 +126,6 @@ impl Rom {
             form_families: form_families
                 .into_iter()
                 .filter(|f| f.species.iter().any(|s| connected.contains(s)))
-                .collect(),
-            name_relations: name_relations
-                .into_iter()
-                .filter(|e| connected.contains(&e.source))
                 .collect(),
             species: connected.into_iter().collect(),
         })

@@ -10,6 +10,28 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Replace developer JSON/evidence widgets with concise player-facing notes; ship
+  bilingual user guides instead of research/verification documents.
+- 移除玩家界面的研发 JSON／证据控件；说明包改为中英文使用说明，不附逆向与验证文档。
+- Move references focus on machine pickups/shops, positioned tutors and egg-move
+  offspring. Learnsets filter by source, category, type and current-ROM name.
+  Map encounters use compact method/time tables with verified per-ROM time labels.
+- 招式页改按招式机拾取／购买、定点教学及遗传组织；宝可梦可学招式支持来源、分类、
+  属性与本 ROM 名字筛选。地图相遇改成分类紧凑表格，按各 ROM 已核实的时段筛选。
+- Filter reserved/uncertain items and retained mismatched/unreferenced maps without
+  deleting ROM data. Reduce official-reference controls and stop guessed name
+  links from joining evolution families; keep native forms separately grouped.
+- 筛掉空位、用途未确认的道具及贴图异常／入口未确认的地图，保留还原与直接跳转。
+  官方参照展示精简；进化关系不再按相似名字串联，原生形态单独分组。
+- Add a read-only illustrated adventure guide from loaded-ROM scenes/rewards and
+  persistent checks, searchable with prerequisite alternatives and map targeting.
+  Rocket’s main-story states are non-monotonic; only matched branches suggest next
+  actions. Full story tracking in other ROMs and complete side-quest coverage remain
+  unverified. Newly opened reference windows now appear above their source window.
+- 新增只读图文冒险攻略：读取当前 ROM 的对白／奖励及存档条件，可搜索任务、展开
+  前置候选并定位地图。西班牙火箭队主线按分支给下一步线索，不用序号大小推断完成；
+  其他 ROM 的完整主线及全部支线仍未核实。新打开的资料浮窗显示在来源窗口上方。
+
 - Simplify ROM reference to six tabs. Remove Event clues, Collection planning,
   Game time and Training reference, their dedicated UI/helpers and product APIs,
   collection planner and training/RTC projection implementations. Preserve key

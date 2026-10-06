@@ -263,8 +263,8 @@ struct IndexedEffect {
 pub struct Index {
     rom_md5: &'static str,
     rom_data: std::sync::Arc<Vec<u8>>,
-    scripts: BTreeMap<usize, ScriptEffects>,
-    references: Vec<Reference>,
+    pub(crate) scripts: BTreeMap<usize, ScriptEffects>,
+    pub(crate) references: Vec<Reference>,
     writers: BTreeMap<(&'static str, u16), Vec<IndexedEffect>>,
     pub coverage: Coverage,
 }
@@ -526,7 +526,7 @@ impl Index {
             partial: true,
         })
     }
-    fn check_rom(&self, rom: &Rom) -> Result<()> {
+    pub(crate) fn check_rom(&self, rom: &Rom) -> Result<()> {
         if self.rom_md5 != rom.profile.md5 || !std::sync::Arc::ptr_eq(&self.rom_data, &rom.data) {
             return Err(err(
                 "rom_mismatch",

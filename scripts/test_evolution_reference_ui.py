@@ -7,7 +7,7 @@ import json
 import os
 import re
 from playwright.sync_api import sync_playwright, expect
-from test_reference_navigation import CATALOG, species
+from test_reference_navigation import CATALOG, WORLD, species
 
 
 def main():
@@ -28,6 +28,8 @@ def main():
         req = route.request.post_data_json
         calls.append(req['command'])
         if req['command'] == 'state': data = {'catalog': catalog, 'save': None}
+        elif req['command'] == 'world': data=WORLD
+        elif req['command'] == 'acquisition': data=dict(target=req['payload'],sources=[],partial=True,clock=None)
         elif req['command'] == 'sprite': data = {'url': ''}
         elif req['command'] == 'species':
             i = req['payload']['id']
@@ -61,8 +63,9 @@ def main():
             expect(table.locator('thead th').nth(2)).to_have_text('当前 ROM')
             tree = dialog.locator('.evolution-tree')
             cards = tree.locator('.evolution-card')
-            expect(cards).to_have_count(len(names))
-            for identifier in names:
+            expect(cards).to_have_count(4)
+            expect(tree.locator('.evolution-card[data-species="899"]')).to_have_count(0)
+            for identifier in (7, 8, 9, 980):
                 expect(tree.locator(f'.evolution-card[data-species="{identifier}"]')).to_have_count(1)
             if profile == 'Rocket fixture':
                 for width in (900, 1440):
@@ -75,30 +78,25 @@ def main():
                     dialog.screenshot(path=os.path.join(output, 'stats-and-evolution.png'))
                     tree.scroll_into_view_if_needed()
                     dialog.screenshot(path=os.path.join(output, 'evolution-tree.png'))
-            for target in (8, 7, 9, 980, 899, 9, 899):
+            for target in (8, 7, 9, 980, 9):
                 tree.locator('.evolution-node').filter(has_text=re.compile(rf'#{target}(?: ·|$)')).first.click()
                 expect(dialog.locator('.reference-detail h2')).to_contain_text(f'#{target}')
-                expect(tree).to_contain_text('转换方法未确认')
                 if target == 980:
+                    # The selected battle form has one card; the ordinary family
+                    # remains navigable separately, without name-only candidates.
+                    expect(tree.locator('.evolution-card[data-species="980"]')).to_have_count(1)
+                    tree.locator('.evolution-forms summary').click()
                     expect(table.locator('tfoot')).to_contain_text('630')
                     expect(table.locator('tfoot')).to_contain_text('650')
-                if target == 899:
-                    expect(table.locator('tbody tr').first.locator('td').first).to_have_text('—')
-            # Custom species using official dex 899 must not pick Wyrdeer.
-            expect(dialog.locator('.species-stats')).to_contain_text('尚无唯一的官方对应条目')
-            choice = dialog.get_by_role('combobox', name='参照宝可梦／形态', exact=True)
-            choice.fill('水箭龟')
-            page.get_by_role('option', name='#9 水箭龟', exact=True).click()
-            expect(table.locator('tfoot')).to_contain_text('530')
-            tree.locator('.evolution-node').filter(has_text=re.compile(r'#9(?: ·|$)')).first.click()
-            expect(dialog.locator('.reference-detail h2')).to_contain_text('#9')
-            tree.locator('.evolution-node').filter(has_text=re.compile(r'#899(?: ·|$)')).first.click()
+            # A dex-number collision or similar name cannot create ancestry.
+            dialog.locator('.reference-rows button').filter(has_text=re.compile(r'^899水箭龟Z(?: ·|$)')).click()
             expect(dialog.locator('.reference-detail h2')).to_contain_text('#899')
-            expect(dialog.locator('.species-stats')).to_contain_text('手动选择的对照条目')
-            expect(table.locator('tfoot')).to_contain_text('530')
+            expect(table.locator('tbody tr').first.locator('td').first).to_have_text('—')
+            expect(dialog.locator('.species-stats')).to_contain_text('尚无唯一的官方对应条目')
+            expect(dialog.get_by_role('combobox', name='参照宝可梦／形态', exact=True)).to_have_count(0)
         assert 'action' not in calls and not errors, errors
         browser.close()
-    print('Passed: all-profile reference UI, six vertical stats + totals, Mega/ordinary distinction, custom dex collision, bidirectional family traversal, local reference persistence and read-only navigation.')
+    print('Passed: all-profile reference UI, six vertical stats + totals, Mega/ordinary distinction, custom dex collision, native family traversal without guessed name links and read-only navigation.')
 
 
 if __name__ == '__main__': main()

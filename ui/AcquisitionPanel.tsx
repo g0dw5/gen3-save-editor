@@ -44,6 +44,7 @@ export function AcquisitionPanel({
   const [report, setReport] = useState<AcquisitionReport | null>(null);
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(6);
+  const [method, setMethod] = useState("all");
   const [time, setTime] = useState(() => (save ? "save" : "all"));
   const hour = time !== "all" && time !== "save" ? Number(time) : null;
   useEffect(() => {
@@ -54,6 +55,7 @@ export function AcquisitionPanel({
     setReport(null);
     setQuery("");
     setLimit(6);
+    setMethod("all");
     api<AcquisitionReport>("acquisition", {
       ...target,
       hour,
@@ -80,12 +82,19 @@ export function AcquisitionPanel({
   const kindName = (kind: string) => acquisitionKindName(kind, catalog, t);
   const filtered = useMemo(
     () =>
-      (report?.sources ?? []).filter((s) =>
-        `${kindName(s.kind)} ${s.map_id ? mapName(s.map_id) : ""} ${s.related.map(name).join(" ")}`
-          .toLowerCase()
-          .includes(query.toLowerCase()),
-      ),
-    [report, query, catalog, maps, t],
+      (report?.sources ?? [])
+        .filter(
+          (s) =>
+            s.kind !== "learn_egg" &&
+            (target.kind !== "move" || !s.kind.startsWith("learn_")) &&
+            (method === "all" || s.kind === method),
+        )
+        .filter((s) =>
+          `${kindName(s.kind)} ${s.map_id ? mapName(s.map_id) : ""} ${s.related.map(name).join(" ")}`
+            .toLowerCase()
+            .includes(query.toLowerCase()),
+        ),
+    [report, query, method, catalog, maps, t],
   );
   const draft = (s: AcquisitionSource): Template => ({
     species: target.id,
@@ -95,7 +104,66 @@ export function AcquisitionPanel({
   });
   return (
     <section className="acquisition-panel">
-      <h3>{t("acqTitle")}</h3>
+      <h3>{t(target.kind === "move" ? "moveHowToLearn" : "acqTitle")}</h3>
+      {target.kind === "move" && (
+        <>
+          <p className="small muted">{t("moveSourcesHelp")}</p>
+          <details className="reference-section">
+            <summary>
+              {t("moveInheritance")} ·{" "}
+              {
+                new Set(
+                  report?.sources
+                    .filter((s) => s.kind === "learn_egg")
+                    .flatMap((s) => s.related.map((r) => r.id)),
+                ).size
+              }
+            </summary>
+            <p className="small muted">{t("moveInheritanceHelp")}</p>
+            <div className="source-related">
+              {[
+                ...new Set(
+                  report?.sources
+                    .filter((s) => s.kind === "learn_egg")
+                    .flatMap((s) => s.related.map((r) => r.id)),
+                ),
+              ].map((id) => (
+                <button
+                  key={id}
+                  className="link-button"
+                  onClick={() => onTarget({ kind: "species", id })}
+                >
+                  {catalog.species.find((s) => s.id === id)?.name} ↗
+                </button>
+              ))}
+            </div>
+          </details>
+          <label>
+            {t("method")}{" "}
+            <select
+              aria-label={t("method")}
+              value={method}
+              onChange={(e) => {
+                setMethod(e.target.value);
+                setLimit(6);
+              }}
+            >
+              <option value="all">{t("filterAll")}</option>
+              {[
+                ...new Set(
+                  report?.sources
+                    .filter((s) => s.kind !== "learn_egg")
+                    .map((s) => s.kind),
+                ),
+              ].map((kind) => (
+                <option key={kind} value={kind}>
+                  {kindName(kind)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </>
+      )}
       <EvolutionUsesPanel
         rows={report?.evolution_uses ?? []}
         catalog={catalog}
@@ -258,7 +326,15 @@ export function AcquisitionPanel({
                   {t("acqEncounterChance")} {s.encounter_percent}%
                 </p>
               )}
-              <WildHeldDetails source={s} item={target.id} catalog={catalog} />
+              <WildHeldDetails
+                source={s}
+                item={
+                  target.kind === "move"
+                    ? (s.related.find((r) => r.kind === "item")?.id ?? 0)
+                    : target.id
+                }
+                catalog={catalog}
+              />
               {!!s.periods.length && (
                 <p>
                   {s.periods
@@ -308,10 +384,6 @@ export function AcquisitionPanel({
                   {t("pickDestination")} ↗
                 </button>
               )}
-              <details>
-                <summary>{t("evidence")}</summary>
-                <pre>{JSON.stringify(s, null, 2)}</pre>
-              </details>
             </article>
           );
         })

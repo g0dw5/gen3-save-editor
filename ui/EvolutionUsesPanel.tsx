@@ -53,10 +53,6 @@ export function EvolutionUsesPanel({
             onTarget={onTarget}
             onMap={onMap}
           />
-          <details>
-            <summary>{t("evidence")}</summary>
-            <pre>{JSON.stringify(row, null, 2)}</pre>
-          </details>
         </article>
       ))}
       {rows.length > limit && (

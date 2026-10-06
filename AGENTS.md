@@ -105,11 +105,25 @@ items, abilities, maps and trainers. Do not reintroduce the removed event-clue,
 collection-planning, clock-simulation or training-preview tabs or their dedicated
 product APIs without a new user request. Preserve their reverse-engineering
 findings in developer address documents. Shared map, encounter, receipt and SAV
-readers remain valid. Use progressive disclosure for conditions and evidence.
+readers remain valid. Use progressive disclosure for player-readable conditions.
 Only adapters with verified difficulty-dependent trainers show a simple difficulty
 selector; use the current SAV party automatically and mark unresolved values.
 
 用户已要求移除事件线索、收集规划、游戏时钟、培育机制四个资料页及专用实现，
 相关逆向知识保存在开发地址文档中，不因早先的任务目标自动重新加入。
-ROM 资料保留六个核心页，条件和技术证据按需展开；已验证的难度差异用简单选择
+ROM 资料保留六个核心页，条件按需展开；已验证的难度差异用简单选择
 与说明表达，动态预览自动使用当前 SAV 同行，未确定的数值不伪装成固定值。
+
+## Player-facing references and adventure guide
+
+Developer evidence, raw script traces and verification records stay in developer
+sources; do not display or attach them to user distributions. ROM references
+use concise player language. The separately requested adventure guide may read
+story states, dialogue, rewards and prerequisite links from the current ROM and
+SAV. Never ship an extracted quest catalog or infer completion from stage ordering
+or bag holdings. Keep normal evolution, forms and battle transformations distinct;
+reviewed official mappings are comparison/identity references, not ROM ancestry.
+
+玩家界面与发包不交付研发证据或脚本 JSON。冒险攻略是用户新要求的独立入口，
+不恢复已删除的四个资料页；使用当前 ROM 的对白、事件及存档领取标记，
+未知剧情保持未知，不用进度序号大小或道具持有推断完成。官方映射不构造进化关系。

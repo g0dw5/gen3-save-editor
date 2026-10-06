@@ -34,7 +34,6 @@ interface Recipe {
   scope: Text;
   steps: Text[];
   limitations: Text[];
-  verification: Text[];
   formats: Format[];
 }
 interface CheatCatalog {
@@ -170,7 +169,6 @@ export function CheatWindow({
       lines,
       ...entry.steps.map((s, i) => `${i + 1}. ${txt(s)}`),
       ...entry.limitations.map(txt),
-      ...entry.verification.map(txt),
     ].join("\n\n");
     download(
       `cheats-${catalog.rom.md5.slice(0, 8)}-${entry.id}.txt`,
@@ -337,14 +335,6 @@ export function CheatWindow({
                     <li key={i}>{txt(s)}</li>
                   ))}
                 </ul>
-                <details className="cheats-evidence">
-                  <summary>{t("cheatsEvidence")}</summary>
-                  <ul>
-                    {entry.verification.map((s, i) => (
-                      <li key={i}>{txt(s)}</li>
-                    ))}
-                  </ul>
-                </details>
               </article>
             )}
           </div>

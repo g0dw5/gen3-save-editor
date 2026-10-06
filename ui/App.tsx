@@ -46,6 +46,7 @@ import { romOption, itemOption } from "./names";
 import { PokemonEditor, type PokemonEditorTab } from "./PokemonEditor";
 import { CheatWindow } from "./CheatWindow";
 import { ReferenceWindow } from "./ReferenceWindow";
+import { AdventureWindow } from "./AdventureWindow";
 import {
   fromKey,
   locationKey,
@@ -87,6 +88,7 @@ export default function App() {
   const [trainerDifficulty, setTrainerDifficulty] =
     useState<TrainerDifficulty>(2);
   const [windows, setWindows] = useState<RefWindow[]>([]);
+  const [guideOpen, setGuideOpen] = useState(false);
   const nextWindow = useRef(0);
   const [free, setFree] = useState(false);
   const [formDirty, setFormDirty] = useState(false);
@@ -219,10 +221,14 @@ export default function App() {
       });
   }, [catalog, world, onError]);
   const openRef = useCallback(
-    (tab: RefTab = "species", id?: number | string) =>
+    (
+      tab: RefTab = "species",
+      id?: number | string,
+      focus?: RefWindow["focus"],
+    ) =>
       setWindows((old) => [
         ...old,
-        { id: nextWindow.current++, tab, selected: id },
+        { id: nextWindow.current++, tab, selected: id, focus },
       ]),
     [],
   );
@@ -248,6 +254,7 @@ export default function App() {
         setSave(null);
         setWorld(null);
         setWindows([]);
+        setGuideOpen(false);
         setCheatsOpen(false);
         setTrainerDifficulty(2);
         setFree(false);
@@ -563,6 +570,10 @@ export default function App() {
             <button onClick={() => setCheatsOpen(true)} disabled={!catalog}>
               <Code2 size={15} />
               {t("cheatsTitle")}
+            </button>
+            <button onClick={() => setGuideOpen(true)} disabled={!catalog}>
+              <BookOpen size={15} />
+              {t("guide")}
             </button>
             <button onClick={() => openRef()} disabled={!catalog}>
               <BookOpen size={15} />
@@ -987,6 +998,27 @@ export default function App() {
         )}
         {catalog && (
           <ConditionQueryRevision.Provider value={revision}>
+            {guideOpen && (
+              <AdventureWindow
+                key={catalog.profile.md5}
+                catalog={catalog}
+                save={save}
+                world={world}
+                loadWorld={loadWorld}
+                onClose={() => setGuideOpen(false)}
+                onMap={(id, focus) => openRef("maps", id, focus)}
+                onTarget={(target) =>
+                  openRef(
+                    target.kind === "species"
+                      ? "species"
+                      : target.kind === "item"
+                        ? "items"
+                        : "moves",
+                    target.id,
+                  )
+                }
+              />
+            )}
             {windows.map((info) => (
               <ReferenceWindow
                 key={`${catalog.profile.md5}:${info.id}`}

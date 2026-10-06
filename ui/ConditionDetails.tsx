@@ -116,12 +116,7 @@ function Dependencies({
         <>
           <p className="muted">{t("dependencyHelp")}</p>
           {busy && <p role="status">{t("loading")}</p>}
-          {!!error && (
-            <details>
-              <summary>{t("dependencyError")}</summary>
-              <pre>{JSON.stringify(error, null, 2)}</pre>
-            </details>
-          )}
+          {!!error && <p role="alert">{t("dependencyError")}</p>}
           {report && (
             <>
               <p>
@@ -194,10 +189,6 @@ function Dependencies({
                   {!w.path_complete && (
                     <p className="muted">{t("dependencyPathPartial")}</p>
                   )}
-                  <details>
-                    <summary>{t("evidence")}</summary>
-                    <pre>{JSON.stringify(w, null, 2)}</pre>
-                  </details>
                 </article>
               ))}
               {report.next_offset != null && (
@@ -205,15 +196,7 @@ function Dependencies({
                   {t("dependencyMore")}
                 </button>
               )}
-              <p className="muted">
-                {t("dependencyCoverage")
-                  .replace("{checked}", String(report.coverage.checked_scripts))
-                  .replace("{total}", String(report.coverage.total_scripts))}
-              </p>
-              <details>
-                <summary>{t("evidence")}</summary>
-                <pre>{JSON.stringify(report.coverage, null, 2)}</pre>
-              </details>
+              <p className="muted">{t("dependencyCoverage")}</p>
             </>
           )}
         </>
@@ -253,25 +236,23 @@ export function conditionLabel(
             : "conditionEventUnset",
     );
   } else if (c.kind === "variable") {
-    label = `${t("conditionUnnamed")} ${symbol} ${c.value}`;
+    label = t("conditionUnnamed");
   } else {
     label = t("conditionUnknown");
   }
-  if (check.actual != null) {
+  if (check.actual != null && !["variable", "flag"].includes(c.kind)) {
     const caption =
       check.unresolved === "alternate_bag_unresolved"
         ? "conditionOrdinaryBag"
         : "conditionActual";
     const actual =
-      c.kind === "flag" && [0, 1].includes(check.actual)
-        ? t(check.actual === 1 ? "conditionFlagSet" : "conditionFlagUnset")
-        : c.kind === "player_gender" && [0, 1].includes(check.actual)
-          ? t(
-              check.actual === 0
-                ? "conditionPlayerMale"
-                : "conditionPlayerFemale",
-            )
-          : String(check.actual);
+      c.kind === "player_gender" && [0, 1].includes(check.actual)
+        ? t(
+            check.actual === 0
+              ? "conditionPlayerMale"
+              : "conditionPlayerFemale",
+          )
+        : String(check.actual);
     label += ` · ${t(caption)} ${actual}`;
   }
   return label;

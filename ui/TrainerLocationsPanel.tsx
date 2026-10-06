@@ -97,12 +97,7 @@ export function TrainerLocationsPanel({
         {t("dependencyRefresh")}
       </button>
       {busy && <p role="status">{t("loading")}</p>}
-      {!!error && (
-        <details open>
-          <summary>{t("trainerReferenceError")}</summary>
-          <pre>{JSON.stringify(error, null, 2)}</pre>
-        </details>
-      )}
+      {!!error && <p role="status">{t("trainerReferenceError")}</p>}
       {report && (
         <>
           {!report.references.length && (
@@ -152,10 +147,6 @@ export function TrainerLocationsPanel({
                   onMap={onMap}
                 />
               )}
-              <details>
-                <summary>{t("evidence")}</summary>
-                <pre>{JSON.stringify(row, null, 2)}</pre>
-              </details>
             </article>
           ))}
           {report.next_offset != null && (
@@ -163,20 +154,6 @@ export function TrainerLocationsPanel({
               {t("eventCluesNext")}
             </button>
           )}
-          <details>
-            <summary>{t("evidence")}</summary>
-            <pre>
-              {JSON.stringify(
-                {
-                  total_matches: report.total_matches,
-                  coverage: report.coverage,
-                  partial: report.partial,
-                },
-                null,
-                2,
-              )}
-            </pre>
-          </details>
         </>
       )}
     </details>

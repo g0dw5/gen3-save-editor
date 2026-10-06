@@ -12,12 +12,15 @@ ROM 和 SAV 仅用于本地验证。矩阵已包含下文增量，证据在本�
 The latest user-directed cleanup removes the four advanced reference tabs and
 all dedicated product APIs. The increments below are historical research evidence,
 not a current screen/command inventory. Shared map, acquisition, event-condition,
-clock snapshots and SAV editing remain. Collection route/HTML production and
-training/RTC simulation no longer belong to this implementation.
+clock snapshots and SAV editing remain. A separately requested Adventure guide now
+links runtime dialogue, NPC rewards and bounded prerequisite clues. Collection
+route/HTML production and training/RTC simulation remain removed. Developer
+traces and verification documentation are excluded from player distributions.
 
 最新范围：六个 ROM 资料页。事件线索、收集规划、游戏时钟、培育机制与专用实现已删除；
 下方旧增量仅保留逆向证据，不代表当前入口。地图、获取途径、领取条件、时间快照和
-安全 SAV 编辑的共用读取仍保留。关键地址见[地址文档](research/reference-key-addresses.md)。
+安全 SAV 编辑的共用读取仍保留。独立冒险攻略是新要求的入口，只覆盖下文明确
+的剧情／奖励线索范围；玩家界面和说明包不再交付研发证据。关键地址见[地址文档](research/reference-key-addresses.md)。
 
 ## Exact supported inputs / 精确支持范围
 
@@ -51,7 +54,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). [Native ordinary daycare scenarios](verification/breeding-20261006.md) execute compatibility/full receipt across five fingerprints with stored/simulated parents and offspring/NPC/map navigation. [Ordinary production checks](verification/breeding-production-20261006.md) execute native step/item branches with explicit bag scenarios. Rocket/Mercury service references and complete setup/inheritance/hatching/access remain unknown. Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. Native ordinary single-wild item selection has five-fingerprint evidence, including tested lead abilities and exceptional layout branches; full encounter modifiers and facilities remain unresolved. See [wild-item evidence](verification/wild-held-20261006.md). |
 | Nature, ability, EV and crown services / 性格特性努力值与王冠 | R | R | R | R | R | Removed dedicated product workflow; reverse-engineering evidence retained in the address document. / 已删除产品专用实现，保留逆向证据。 |
-| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | Shared qualified receipt checks and expandable condition traces in acquisition/maps; runtime writers are clues, not a full task DAG. General event-search and collection dependency aggregation are removed. [Persistent ranges and protocols](verification/event-state-20261005.md), [NPC receipts](verification/npc-receipts-20261006.md). |
+| SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | Shared qualified receipt checks and expandable condition traces in acquisition/maps; runtime writers are clues, not a full task DAG. The separate Adventure guide aggregates bounded reward/prerequisite clues, but general event-search and collection planning remain removed. [Persistent ranges and protocols](verification/event-state-20261005.md), [NPC receipts](verification/npc-receipts-20261006.md). |
 | Item/money prerequisites / 道具与金钱前置条件 | P | P | P | P | P | [Native holdings and Boolean branch verification](verification/resource-conditions-20261006.md), required-item cross-links, readable query/map conditions. Mercury ordinary checks use the first matching slot; other four retain unknown facility-bag context. Spending, complete eligibility and access remain unverified. |
 | Effective game clock, weekday, next event / 有效时钟与刷新 | P | P | P | P | P | Current encounter-hour filter, Mercury saved virtual clock and SAV RTC offset/checkpoint snapshots remain; dedicated RTC projection controls/APIs are removed. Live RTC and unverified refresh/weekday rules stay unknown. [Key addresses](research/reference-key-addresses.md), [Mercury bounded scope](verification/mercury-clock-20261005.md). |
 | Ordinary trainer construction / 普通训练家实战值 | P | P | P | P | P | [trainer generation](research/trainer-search-and-generation.md): BW/DP 20 parties, 106 mons match native constructor; Rocket expanded EV fields and random ability/gender are distinguished. Mercury executes its native constructor for explicit zero-context scenarios; independent CPU comparisons are recorded below, while full setup remains unknown. |
@@ -59,6 +62,27 @@ from missing code. A P row can contain individually verified subfeatures.
 | Edit, drag/swap, batch, undo/export safety / 编辑事务 | V | V | V | V | V | `session.rs`, [save integrity](research/save-integrity.md). Checksums, record preservation, rollback, backup and source conflict checks; linked mail changes blocked. Scope is represented fields, not all in-game legitimacy rules. |
 | Edited SAV in-game save and re-read / 模拟器再次保存 | V | V | V | V | V | [Five-fingerprint full-frame evidence](verification/save-roundtrip-20261006.md): tested IV/EV/marking and existing inventory changes survive normal-key game save/reboot; native party bytes, entire storage and every pocket are checked. First four include batch/moves/swaps; Mercury's current fixture has no occupied box, so that move scenario is not newly certified. Scope: these 128 KiB fixtures, not all edits/emulators or RTC trailers. Earlier incorrect Mercury vanilla-offset inventory claims remain withdrawn; see [correction](verification/mercury-display-storage-20261005.md). |
 | Missing collection, regional planning, HTML / 缺失与路线规划 | R | R | R | R | R | Removed dedicated product workflow; reverse-engineering evidence retained in the address document. / 已删除产品专用实现，保留逆向证据。 |
+
+## Player references and adventure increment / 玩家资料与冒险攻略增量
+
+See [bounded verification](verification/player-reference-guide-20261006.md).
+This does not upgrade P rows to complete support.
+
+| Added workflow | BW | DP | Rocket | Ultimate | Mercury 1.2 | Scope |
+|---|---|---|---|---|---|---|
+| Learnset/source filters and compact map encounters / 筛选与相遇分类 | V | V | V | V | V | Bilingual synthetic UI tests verify presentation, source/map/back links and separation of time tables. Native acquisition regression verifies decoded machine item routes; not every real game's route/access/time behavior. |
+| Reserved-item and uncertain-map presentation / 空位与地图显示 | P | P | P | P | P | Runtime references plus native item handlers; known layout mismatches and absent decoded incoming references. Reveal switch/direct links remain. An absent parsed reference is not proof of inaccessibility; Mercury had no safely classified nonzero blank item. |
+| Runtime illustrated reward/prerequisite guide / 图文奖励与前置线索 | P | P | P | P | P | Reads referenced scripts, NPC tiles/dialogue and qualified SAV receipt flags; alternative setters are clues. Full quest names, all side quests, actual eligibility, branch-perfect dialogue and access remain unknown. |
+| Main-story stage and next-action clues / 主线下一步 | U | U | P | U | U | Exact Rocket variable `0x40f7`, native branch conditions and fresh SAV snapshot. Current local SAV stage 19 selects the Golden Bridge branch leading to Bill dialogue. No monotonic stage-order completion or fabricated chronological quest catalog. Other ROMs' overall main-story state remains unverified. |
+
+The official mapping only supplies reviewed identity/comparison captions and stats.
+Native evolution/form tables define graph membership. Similar names never create
+an ancestry link. All developer evidence remains in source/private verification,
+not a player panel or shipped documentation archive.
+
+官方映射不构造进化关系；普通进化、原生形态家族与战斗变身分开。隐藏分类可撤销，
+不从“无引用”推断一定无法获得或进入。完整水银支线攻略、其他 ROM 的主线识别及
+地图实际可达性仍是缺口，不能把生成的线索数量当作完整任务覆盖率。
 
 ## Historical increments / 历史增量
 

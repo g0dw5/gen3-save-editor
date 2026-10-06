@@ -21,7 +21,7 @@ fn run() -> Result<()> {
         println!("{}", serde_json::to_string_pretty(&v).unwrap());
     };
     if command == "help" {
-        println!("gen3 profiles\ngen3 identify ROM\ngen3 cheats ROM\ngen3 cheat-code ROM CHEAT_ID gameshark_v1_v2|codebreaker [PARAMETERS.json]\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 daycare-state ROM SAVE\ngen3 event-dependencies ROM CONDITION.json [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]");
+        println!("gen3 profiles\ngen3 identify ROM\ngen3 cheats ROM\ngen3 cheat-code ROM CHEAT_ID gameshark_v1_v2|codebreaker [PARAMETERS.json]\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 adventure-guide ROM [SAVE]\ngen3 fishing-spots ROM [SAVE]\ngen3 daycare-state ROM SAVE\ngen3 event-dependencies ROM CONDITION.json [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]");
         return Ok(());
     }
     if command == "profiles" {
@@ -61,6 +61,19 @@ fn run() -> Result<()> {
     let rom = Rom::open(data)?;
     match command {
         "catalog" => print(serde_json::to_value(rom.catalog()?)?),
+        "adventure-guide" => {
+            let md5 = rom.profile.md5;
+            let mut session = gen3_core::session::Session::new(rom);
+            if let Some(path) = a.get(2) {
+                session.load(fs::read(path)?, None)?;
+            }
+            let mut app = gen3_core::app::App::default();
+            app.session = Some(session);
+            print(app.dispatch(gen3_core::app::Request {
+                command: "adventure_guide".into(),
+                payload: serde_json::json!({"expected_rom_md5": md5}),
+            })?);
+        }
         "contest-check" => {
             let nature = arg(2)?.parse().map_err(|_| err("arguments", "nature ID"))?;
             let condition: [u8; 6] = serde_json::from_slice(&fs::read(arg(3)?)?)?;

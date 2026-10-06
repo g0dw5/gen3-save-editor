@@ -1,5 +1,4 @@
 import { configuredReference } from "./configuredReferences";
-import { SelectField } from "./components";
 import {
   officialStats,
   referenceSource,
@@ -7,7 +6,6 @@ import {
 } from "./officialStats";
 import { statKeys, useI18n } from "./i18n";
 import type { Catalog, SpeciesDetail } from "./types";
-import { useState } from "react";
 
 export function SpeciesStats({
   detail,
@@ -17,19 +15,6 @@ export function SpeciesStats({
   catalog: Catalog;
 }) {
   const { t } = useI18n();
-  const [choices, setChoices] = useState<Record<string, string>>(() => {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem("gen3.statReferences") ?? "{}",
-      );
-      return saved && typeof saved === "object" && !Array.isArray(saved)
-        ? saved
-        : {};
-    } catch {
-      return {};
-    }
-  });
-  const identity = `${catalog.profile.md5}:${detail.species.id}`;
   const configured = configuredReference(
     catalog.profile.md5,
     detail.species.id,
@@ -39,11 +24,7 @@ export function SpeciesStats({
         (row) => row.key === configured.target && configured.status !== "none",
       )
     : suggestedReference(detail, catalog);
-  const chosen = choices[identity];
-  const reference =
-    chosen === undefined
-      ? suggestion
-      : officialStats.find((row) => row.key === chosen);
+  const reference = suggestion;
   const stats = detail.species.stats;
   const total = stats.reduce((sum, value) => sum + value, 0);
   const referenceTotal = reference?.stats.reduce(
@@ -102,27 +83,6 @@ export function SpeciesStats({
           </tr>
         </tfoot>
       </table>
-      <SelectField
-        searchable
-        label={t("referenceEntry")}
-        value={reference?.key ?? ""}
-        onChange={(key) => {
-          const next = { ...choices, [identity]: String(key) };
-          setChoices(next);
-          try {
-            localStorage.setItem("gen3.statReferences", JSON.stringify(next));
-          } catch {
-            /* Browsing still works without persistent preferences. */
-          }
-        }}
-        options={[
-          { value: "", label: t("noOfficialReference") },
-          ...officialStats.map((row) => ({
-            value: row.key,
-            label: `#${row.dex} ${row.form || row.name}${row.form && !row.form.includes(row.name) ? ` · ${row.name}` : ""}`,
-          })),
-        ]}
-      />
       <p className="small muted">
         {reference ? (
           <>
@@ -134,26 +94,21 @@ export function SpeciesStats({
               {t("referenceSource")} ·{" "}
               {t("generation").replace("{n}", String(reference.generation))}
             </a>{" "}
-            ·{" "}
-            {chosen === undefined
-              ? t(
-                  configured?.status === "direct"
-                    ? "referenceConfiguredDirect"
-                    : configured?.status === "comparison"
-                      ? "referenceConfiguredComparison"
-                      : "referenceMatched",
-                )
-              : t("referenceChosen")}
+            · {reference.name}
+            {reference.form ? ` · ${reference.form}` : ""}
+            {!configured ? ` · ${t("referenceMatched")}` : ""}
+            {configured?.status === "comparison"
+              ? ` · ${t("referenceComparisonOnly")}`
+              : ""}
           </>
         ) : (
           t(
-            configured?.status === "none" && chosen === undefined
+            configured?.status === "none"
               ? "referenceConfiguredNone"
               : "referenceUnmatched",
           )
         )}
       </p>
-      <p className="small muted">{t("referenceHelp")}</p>
     </section>
   );
 }

@@ -84,10 +84,6 @@ export function ClockDetails({ report }: { report: ClockReport }) {
           <p className="small muted">{t("clockHardwareSnapshotHelp")}</p>
         </details>
       )}
-      <details>
-        <summary>{t("evidence")}</summary>
-        <pre>{JSON.stringify(report, null, 2)}</pre>
-      </details>
     </div>
   );
 }
