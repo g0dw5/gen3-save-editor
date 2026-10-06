@@ -298,7 +298,7 @@ export function MapExplorer({
             navigation?.outgoing
               .filter(
                 (e) =>
-                  e.kind === "warp" &&
+                  (e.kind === "warp" || e.kind === "script_warp") &&
                   e.x !== null &&
                   e.y !== null &&
                   e.x >= 0 &&
@@ -306,16 +306,16 @@ export function MapExplorer({
                   e.x < map.width &&
                   e.y < map.height,
               )
-              .map((edge) => (
+              .map((edge, index) => (
                 <button
-                  key={`warp-${edge.offset}`}
+                  key={`warp-${edge.offset}-${index}`}
                   className="map-marker layer-warp"
                   style={{
                     left: `${(100 * (edge.x! + 0.5)) / map.width}%`,
                     top: `${(100 * (edge.y! + 0.5)) / map.height}%`,
                   }}
-                  title={`${t("navWarp")} → ${edge.to ? edge.to : t("navDynamic")}`}
-                  aria-label={`${t("navWarp")} (${edge.x}, ${edge.y})`}
+                  title={`${t(edge.script ? "navScriptWarp" : "navWarp")} → ${edge.to ? edge.to : t("navDynamic")}${edge.script ? ` · ${t("navScriptAccessUnknown")}` : ""}`}
+                  aria-label={`${t(edge.script ? "navScriptWarp" : "navWarp")} (${edge.x}, ${edge.y})`}
                   onClick={() => {
                     if (edge.to)
                       onMap?.(

@@ -1,4 +1,4 @@
-//! Static ROM topology. An edge is a reference, never a proof of current access.
+//! Referenced ROM topology. An edge is never a proof of current access.
 use crate::{
     binary::{bytes, pointer, u16, u32},
     err,
@@ -8,6 +8,78 @@ use crate::{
 };
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+
+const WARP_OPCODES: [u8; 7] = [0x39, 0x3a, 0x3b, 0x3d, 0x3e, 0xd1, 0xd7];
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct ScriptWarp {
+    pub opcode: u8,
+    pub offset: usize,
+    pub group: u8,
+    pub number: u8,
+    pub warp: u8,
+    pub x: Option<i16>,
+    pub y: Option<i16>,
+    pub conditions: Vec<crate::map_events::EventCondition>,
+}
+
+impl Rom {
+    pub(crate) fn script_warp_instruction(
+        &self,
+        pc: usize,
+        resolve: impl Fn(u16) -> Option<u16>,
+    ) -> Result<Option<ScriptWarp>> {
+        let opcode = bytes(&self.data, pc, 1)?[0];
+        let Some(index) = WARP_OPCODES.iter().position(|v| *v == opcode) else {
+            return Ok(None);
+        };
+        // setwarp only stores a destination. No edge is implied until a native
+        // transition consumes it; dynamic/dive/hole/escape setters are excluded.
+        if opcode == 0x3e {
+            return Ok(None);
+        }
+        let rules = self
+            .profile
+            .event_state
+            .and_then(|r| r.effects)
+            .ok_or_else(|| err("script_warp_unverified", pc))?;
+        let handler = rules.warp_handlers[index];
+        if handler == 0
+            || (pointer(&self.data, rules.commands + opcode as usize * 4)? & !1) != handler
+        {
+            return Err(err("script_warp_dispatch", pc));
+        }
+        let code = bytes(&self.data, pc, 8)?;
+        // Native VarGet(u16), then s8 narrowing before SetWarpDestination.
+        // Preserve unknown variables; never resolve them from a different SAV.
+        let coordinate = |at| -> Result<Option<i16>> {
+            Ok(resolve(u16(code, at)?).map(|v| v as u8 as i8 as i16))
+        };
+        Ok(Some(ScriptWarp {
+            opcode,
+            offset: pc,
+            group: code[1],
+            number: code[2],
+            warp: code[3],
+            x: coordinate(4)?,
+            y: coordinate(6)?,
+            conditions: Vec::new(),
+        }))
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct ScriptPassage {
+    pub root: usize,
+    pub source_kind: &'static str,
+    pub local_id: Option<u8>,
+    pub opcode: u8,
+    pub conditions: Vec<crate::map_events::EventCondition>,
+    pub checks: Vec<crate::acquisition::ConditionCheck>,
+    pub stopped_at: Vec<usize>,
+    /// Activation selectors, movement and branch execution remain unproven.
+    pub entry_unresolved: bool,
+}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct MapLink {
@@ -24,6 +96,7 @@ pub struct MapLink {
     pub displacement: Option<i32>,
     pub offset: usize,
     pub unresolved: Option<&'static str>,
+    pub script: Option<ScriptPassage>,
 }
 #[derive(Serialize)]
 pub struct MapNavigation {
@@ -67,6 +140,7 @@ pub(crate) fn links(data: &[u8], maps: &[Map]) -> Result<(Vec<MapLink>, Vec<Stri
                         direction: None,
                         displacement: None,
                         offset: o,
+                        script: None,
                         unresolved: if target.is_none() {
                             Some("dynamic_or_missing_map")
                         } else {
@@ -141,6 +215,7 @@ pub(crate) fn links(data: &[u8], maps: &[Map]) -> Result<(Vec<MapLink>, Vec<Stri
                     direction: Some(direction),
                     displacement: Some(u32(data, o + 4)? as i32),
                     offset: o,
+                    script: None,
                     unresolved: if !by_id.contains_key(&format!("{}-{}", entry[8], entry[9])) {
                         Some("dynamic_or_missing_map")
                     } else if !(1..=6).contains(&direction) {
@@ -153,6 +228,82 @@ pub(crate) fn links(data: &[u8], maps: &[Map]) -> Result<(Vec<MapLink>, Vec<Stri
         }
     }
     Ok((all, diagnostics))
+}
+
+pub(crate) fn script_link(
+    data: &[u8],
+    maps: &[Map],
+    reference: &crate::event_dependencies::Reference,
+    warp: &ScriptWarp,
+    stopped_at: &[usize],
+) -> Result<MapLink> {
+    let id = format!("{}-{}", warp.group, warp.number);
+    // Negative native group/number operands remain unresolved here. Do not
+    // reinterpret them as unsigned map-table indices to fabricate a destination.
+    let target = maps
+        .iter()
+        .find(|m| m.id == id && warp.group < 128 && warp.number < 128);
+    let mut link = MapLink {
+        from: reference.map_id.clone(),
+        to: target.map(|_| id),
+        kind: "script_warp",
+        x: reference.x,
+        y: reference.y,
+        target_x: None,
+        target_y: None,
+        warp_index: None,
+        target_warp: (warp.warp != 255).then_some(warp.warp),
+        direction: None,
+        displacement: None,
+        offset: warp.offset,
+        unresolved: target.is_none().then_some("dynamic_or_missing_map"),
+        script: Some(ScriptPassage {
+            root: reference.root,
+            source_kind: reference.kind,
+            local_id: reference.local_id,
+            opcode: warp.opcode,
+            conditions: reference
+                .conditions
+                .iter()
+                .chain(&warp.conditions)
+                .cloned()
+                .collect(),
+            checks: Vec::new(),
+            stopped_at: stopped_at.to_vec(),
+            entry_unresolved: true,
+        }),
+    };
+    if let Some(target) = target {
+        if warp.warp == 255 {
+            link.target_x = warp.x;
+            link.target_y = warp.y;
+            if warp.x.is_none() || warp.y.is_none() {
+                link.unresolved = Some("dynamic_coordinates");
+            }
+        } else if warp.warp >= 128 {
+            link.unresolved = Some("dynamic_or_missing_warp");
+        } else if let Some(events) = target.events {
+            if warp.warp < bytes(data, events + 1, 1)?[0] {
+                let entry = pointer(data, events + 8)? + warp.warp as usize * 8;
+                link.target_x = Some(u16(data, entry)? as i16);
+                link.target_y = Some(u16(data, entry + 2)? as i16);
+            } else {
+                link.unresolved = Some("dynamic_or_missing_warp");
+            }
+        } else {
+            link.unresolved = Some("missing_target_events");
+        }
+        if link
+            .target_x
+            .is_some_and(|v| v < 0 || v as u32 >= target.width)
+            || link
+                .target_y
+                .is_some_and(|v| v < 0 || v as u32 >= target.height)
+        {
+            link.unresolved = Some("target_outside_layout");
+        }
+    }
+    Ok(link)
 }
 
 pub(crate) fn approaches(maps: &[Map], all: &[MapLink], id: &str) -> (Vec<Vec<MapLink>>, bool) {
@@ -209,24 +360,33 @@ pub(crate) fn approaches(maps: &[Map], all: &[MapLink], id: &str) -> (Vec<Vec<Ma
 impl Rom {
     pub fn map_navigation(&self, id: &str) -> Result<MapNavigation> {
         let maps = self.maps()?;
-        if !maps.iter().any(|m| m.id == id) {
-            return Err(err("map_id", id));
-        }
-        let (all, diagnostics) = links(&self.data, &maps)?;
-        let (approaches, truncated) = approaches(&maps, &all, id);
-        Ok(MapNavigation {
-            map_id: id.to_owned(),
-            outgoing: all.iter().filter(|e| e.from == id).cloned().collect(),
-            incoming: all
-                .iter()
-                .filter(|e| e.to.as_deref() == Some(id))
-                .cloned()
-                .collect(),
-            approaches,
-            truncated,
-            diagnostics,
-        })
+        let index = crate::event_dependencies::Index::build(self, &maps)?;
+        index.map_navigation(self, &maps, id, None)
     }
+}
+
+pub(crate) fn report(
+    maps: &[Map],
+    all: &[MapLink],
+    diagnostics: Vec<String>,
+    id: &str,
+) -> Result<MapNavigation> {
+    if !maps.iter().any(|m| m.id == id) {
+        return Err(err("map_id", id));
+    }
+    let (approaches, truncated) = approaches(maps, all, id);
+    Ok(MapNavigation {
+        map_id: id.to_owned(),
+        outgoing: all.iter().filter(|e| e.from == id).cloned().collect(),
+        incoming: all
+            .iter()
+            .filter(|e| e.to.as_deref() == Some(id))
+            .cloned()
+            .collect(),
+        approaches,
+        truncated,
+        diagnostics,
+    })
 }
 
 #[cfg(test)]

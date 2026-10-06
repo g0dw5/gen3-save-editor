@@ -295,7 +295,7 @@ export function ReferenceWindow({
     return () => {
       active = false;
     };
-  }, [tab, selected, catalog.profile.md5, onError]);
+  }, [tab, selected, catalog.profile.md5, save, onError]);
   const goSpecies = (id: number) => {
     setTab("species");
     setSelected(id);
@@ -913,6 +913,8 @@ export function ReferenceWindow({
                   report={navigation}
                   maps={world?.maps ?? []}
                   onMap={goMap}
+                  catalog={catalog}
+                  onTarget={goTarget}
                 />
                 <h3>{t("mapTrainers")}</h3>
                 <p className="small muted">{t("trainerMapsHelp")}</p>

@@ -421,8 +421,27 @@ impl App {
             }
             "map_navigation" => {
                 let id = required(&p, "id")?;
+                let session = self.session()?;
+                let maps = session.rom.maps()?;
+                if self
+                    .event_dependency_cache
+                    .as_ref()
+                    .is_none_or(|(data, _)| !std::sync::Arc::ptr_eq(data, &session.rom.data))
+                {
+                    let index = crate::event_dependencies::Index::build(&session.rom, &maps)?;
+                    self.event_dependency_cache = Some((session.rom.data.clone(), index));
+                }
                 Ok(serde_json::to_value(
-                    self.session()?.rom.map_navigation(&id)?,
+                    self.event_dependency_cache
+                        .as_ref()
+                        .unwrap()
+                        .1
+                        .map_navigation(
+                            &self.session()?.rom,
+                            &maps,
+                            &id,
+                            self.session()?.save.as_ref(),
+                        )?,
                 )?)
             }
             "map_report" => {

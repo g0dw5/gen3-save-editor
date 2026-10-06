@@ -491,7 +491,7 @@ export interface FishingReport {
 export interface MapLink {
   from: string;
   to: string | null;
-  kind: "warp" | "connection";
+  kind: "warp" | "connection" | "script_warp";
   x: number | null;
   y: number | null;
   target_x: number | null;
@@ -502,6 +502,16 @@ export interface MapLink {
   displacement: number | null;
   offset: number;
   unresolved: string | null;
+  script?: {
+    root: number;
+    source_kind: "npc" | "trigger" | "sign" | "map_script";
+    local_id: number | null;
+    opcode: number;
+    conditions: ItemReward["conditions"];
+    checks: AcquisitionSource["conditions"];
+    stopped_at: number[];
+    entry_unresolved: boolean;
+  } | null;
 }
 export interface MapNavigation {
   map_id: string;

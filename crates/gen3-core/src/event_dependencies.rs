@@ -24,9 +24,15 @@ pub struct Rules {
     /// Native operand layouts, including opcode. Zero means not yet verified.
     pub battle_lengths: [u8; 17],
     pub battle_roles: [&'static str; 17],
+    /// Native warp, silent, door, teleport, setwarp, spin and gym dispatch.
+    /// Zero means unsupported/unverified; destination setters are not passages.
+    pub warp_handlers: [usize; 7],
 }
 const OPCODES: [u8; 8] = [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f];
 pub const EMERALD: Rules = Rules {
+    warp_handlers: [
+        0x99ebc, 0x99f44, 0x99fcc, 0x9a0c8, 0x9a1d8, 0x9bcdc, 0x9a150,
+    ],
     battle_roles: [
         "primary",
         "primary",
@@ -56,6 +62,9 @@ pub const EMERALD: Rules = Rules {
     ],
 };
 pub const ROCKET: Rules = Rules {
+    warp_handlers: [
+        0xcfe04, 0xcfe8c, 0xcff14, 0xd0010, 0xd0120, 0xd1cac, 0xd0098,
+    ],
     battle_roles: EMERALD.battle_roles,
     commands: 0x22b218,
     battle_handler: 0xd1530,
@@ -67,6 +76,7 @@ pub const ROCKET: Rules = Rules {
     ],
 };
 pub const MERCURY: Rules = Rules {
+    warp_handlers: [0x6aa64, 0x6aaec, 0x6ab74, 0x6ac70, 0x6ad8c, 0x6acf8, 0],
     battle_roles: [
         "primary",
         "primary",
@@ -138,6 +148,7 @@ pub struct TextReference {
     pub text: String,
 }
 pub(crate) struct ScriptEffects {
+    pub warps: Vec<crate::navigation::ScriptWarp>,
     pub effects: Vec<Effect>,
     pub text: Vec<TextReference>,
     pub battles: Vec<BattleSource>,
@@ -503,6 +514,53 @@ fn references(rom: &Rom, maps: &[Map]) -> Result<Vec<Reference>> {
     Ok(out)
 }
 impl Index {
+    /// Reuse the loaded-ROM script index; never cache SAV eligibility in it.
+    pub fn map_navigation(
+        &self,
+        rom: &Rom,
+        maps: &[Map],
+        id: &str,
+        save: Option<&Save>,
+    ) -> Result<crate::navigation::MapNavigation> {
+        self.check_rom(rom)?;
+        let state = save
+            .zip(rom.profile.event_state)
+            .map(|(s, layout)| EventSnapshot::new(s, layout));
+        let (mut edges, mut diagnostics) = crate::navigation::links(&rom.data, maps)?;
+        let mut failures = 0;
+        for reference in &self.references {
+            let Some(script) = self.scripts.get(&reference.root) else {
+                continue;
+            };
+            for warp in &script.warps {
+                match crate::navigation::script_link(
+                    &rom.data,
+                    maps,
+                    reference,
+                    warp,
+                    &script.stopped_at,
+                ) {
+                    Ok(mut link) => {
+                        if let Some(script) = &mut link.script {
+                            script.checks = script
+                                .conditions
+                                .iter()
+                                .map(|c| check(state.as_ref(), Some(rom), c))
+                                .collect();
+                        }
+                        edges.push(link);
+                    }
+                    Err(_) => failures += 1,
+                }
+            }
+        }
+        if failures > 0 || self.coverage.failed_scripts > 0 || self.coverage.truncated {
+            diagnostics.push(format!("Partial script passages: {failures} failed destinations; {} failed roots; bounded={}", self.coverage.failed_scripts, self.coverage.truncated));
+        }
+        diagnostics.push("Script passages retain branch/visibility guards; activation and current reachability remain unverified. Hole, native/special and extended transitions are not fully covered. Destination setters do not create edges.".into());
+        crate::navigation::report(maps, &edges, diagnostics, id)
+    }
+
     pub fn trainer(
         &self,
         rom: &Rom,

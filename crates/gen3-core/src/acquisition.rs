@@ -71,7 +71,7 @@ pub(crate) fn evolution_targets(e: &Evolution) -> Vec<Target> {
     }
     targets
 }
-#[derive(Clone, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ConditionCheck {
     pub condition: EventCondition,
     pub satisfied: Option<bool>,

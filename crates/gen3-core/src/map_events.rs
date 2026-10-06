@@ -88,6 +88,7 @@ struct AwardTrace {
     sets: BTreeMap<u16, BTreeSet<usize>>,
 }
 struct Walk {
+    warps: Vec<crate::navigation::ScriptWarp>,
     battles: Vec<crate::event_dependencies::BattleSource>,
     effects: Vec<crate::event_dependencies::Effect>,
     text: Vec<crate::event_dependencies::TextReference>,
@@ -285,6 +286,7 @@ impl Rom {
         crate::event_dependencies::validate(self)?;
         let walk = self.walk_item_script(root, false, true)?;
         Ok(crate::event_dependencies::ScriptEffects {
+            warps: walk.warps,
             battles: walk.battles,
             effects: walk.effects,
             text: walk.text,
@@ -307,6 +309,7 @@ impl Rom {
         let mut effects = BTreeSet::new();
         let mut text = BTreeSet::new();
         let mut battles = BTreeSet::new();
+        let mut warps = BTreeSet::new();
         let mut stopped = BTreeSet::new();
         let mut steps = 0;
         let mut complete = true;
@@ -394,6 +397,19 @@ impl Rom {
                     }
                 }
                 if observe {
+                    // Read pre-command operands. Unknown earlier native commands
+                    // already invalidated known variables; a warp's own generic
+                    // observer invalidation must not erase its input values first.
+                    match self.script_warp_instruction(pc, |v| resolve(&s, v)) {
+                        Ok(Some(mut warp)) => {
+                            warp.conditions = s.conditions.clone();
+                            warps.insert(warp);
+                        }
+                        Ok(None) => {}
+                        Err(_) => {
+                            stopped.insert(pc);
+                        }
+                    }
                     // Width alone does not establish preservation of local state.
                     // Retain potential later writes, but invalidate known operands
                     // after commands outside this verified event/presentation set.
@@ -992,6 +1008,7 @@ impl Rom {
             }
         }
         Ok(Walk {
+            warps: warps.into_iter().collect(),
             battles: battles.into_iter().collect(),
             effects: effects.into_iter().collect(),
             text: text.into_iter().collect(),

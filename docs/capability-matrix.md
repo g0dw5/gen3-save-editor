@@ -31,7 +31,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Requested workflow / 功能 | BW | DP | Rocket | Ultimate | Mercury 1.2 | Evidence and limit / 证据与边界 |
 |---|---|---|---|---|---|---|
 | Map layouts, NPC art / 地图与 NPC | P | P | P | P | P | `graphics.rs`, `map_events.rs`, [map palettes](research/map-palettes.md), [Rocket maps](research/rocket-map-and-trainer-display.md), [Mercury](research/mercury-fc-11.md). Static initial layouts; no live movement/layout replacement simulation. |
-| Entrances, connections, current reachability / 入口与可达性 | P | P | P | P | P | `navigation.rs`, shared map UI and five exact-ROM tests. Static entrance alternatives, focus and return work; current access and dynamic destinations remain unresolved. |
+| Entrances, connections, current reachability / 入口与可达性 | P | P | P | P | P | `navigation.rs`, shared map UI and five exact-ROM tests. Map windows now combine static links with [referenced script passages](verification/script-warps-20261006.md), guard overlays, source/target focus and return. 918 native operand cases cover the decoded handlers; activation, full map loading, dynamic destinations and current access remain unresolved. Collection HTML entrances still use static links. |
 | Pickup, hidden items, dialogue rewards / 拾取与奖励 | P | P | P | P | P | [map events](research/map-events.md): BW/DP 707 maps, 122 balls, 112 hidden items. Bounded scripts retain stop evidence; ordinary/hidden and qualified NPC receipt protocols have five-fingerprint evidence below. Custom commands, complete resource/runtime guards and access remain partial. |
 | Random encounters, probability, time tables / 随机相遇 | P | P | P | P | P | `world.rs`; [time selection](research/encounter-time-selection.md), Mercury native selector. Slot weights are separate from encounter frequency; no full weekday/clock-state validation. |
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Shared typed map-script sources and [bounded NPC trade quotes](verification/npc-trades-20261006.md); [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers, actual delivery and custom exchanges are not comprehensively indexed. |
@@ -550,3 +550,19 @@ read-only CLI run retain truncation/access limits; see
 五款游戏的前置关联仍为部分支持。候选事件不是已确认任务目录，不保证完整任务
 顺序或当前可达；条件已满足不等于任务已完成。五指纹真实脚本来源回归与合成
 界面测试分别记录，水银另有真实 SAV 只读规划。没有新增存档写入或模拟器保存验证。
+
+## Referenced script passages / 已引用脚本通道增量
+
+Map access stays **P** for all five fingerprints. The live map window now joins
+the static topology to bounded, referenced immediate script transitions, with
+source/target tiles, branch/visibility guards, fresh SAV observations, entrance
+markers and directed exterior-reference chains. Destination setters and
+unreferenced bytes do not become passage edges. **918 independent native operand
+cases** match the shared decoder; public core has **125 passes / 45 opt-in ignored**.
+Five-profile bilingual UI closure passes. Full activation, movement, dynamic
+layout/loading and current reachability remain unresolved. Collection HTML still
+uses the static entrance graph. See [scope and reproduction](verification/script-warps-20261006.md).
+
+五款游戏的地图通道仍为部分解析。脚本入口新增定位、条件叠加、跳转及返回；不自动
+推导返程，不将设置目的地的指令当作通道。参数原生对照不等于完整地图加载或可达性
+验证；独立收集 HTML 的入口图目前仍是静态表。

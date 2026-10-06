@@ -3951,6 +3951,228 @@ pub(crate) fn query_fixture_rom() -> Rom {
 }
 
 #[test]
+fn script_passages_keep_guards_native_coordinate_width_and_rom_bound_state() {
+    use crate::event_dependencies::Index;
+    for profile in profile::PROFILES {
+        let (mut r, map) = npc_trade_fixture(profile);
+        let rules = r.profile.event_state.unwrap().effects.unwrap();
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        for (opcode, handler) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
+            .into_iter()
+            .zip(rules.handlers)
+        {
+            put32(
+                b,
+                rules.commands + opcode as usize * 4,
+                0x08000001 + handler as u32,
+            );
+        }
+        for (opcode, handler) in [0x39, 0x3a, 0x3b, 0x3d, 0x3e, 0xd1, 0xd7]
+            .into_iter()
+            .zip(rules.warp_handlers)
+        {
+            if handler != 0 {
+                put32(
+                    b,
+                    rules.commands + opcode as usize * 4,
+                    0x08000001 + handler as u32,
+                );
+            }
+        }
+        let root = 0x26000;
+        let branch = 0x26100;
+        // The NPC is hidden by flag 12. Flag 11 selects the passage branch.
+        put16(b, 0x25114, 12);
+        b[root..root + 3].copy_from_slice(&[0x2b, 11, 0]);
+        b[root + 3..root + 5].copy_from_slice(&[6, 1]);
+        put32(b, root + 5, 0x08000000 + branch as u32);
+        // setwarp cannot add a passage, including a seemingly valid destination.
+        b[root + 9..root + 18].copy_from_slice(&[0x3e, 0, 1, 255, 1, 0, 2, 0, 2]);
+        // 256 narrows to zero, 511 to -1. Warp index 0 overrides these coords.
+        b[branch..branch + 5].copy_from_slice(&[0x16, 1, 0x40, 0, 1]);
+        b[branch + 5..branch + 14].copy_from_slice(&[0x3b, 0, 1, 0, 1, 0x40, 255, 1, 2]);
+        // Unreferenced apparent passage must not appear in any map.
+        b[0x26200..0x26209].copy_from_slice(&[0x3b, 0, 1, 255, 1, 0, 2, 0, 2]);
+        b[0x25301] = 1;
+        put32(b, 0x25308, 0x08025400);
+        put16(b, 0x25400, 1);
+        put16(b, 0x25402, 2);
+        b[0x25406..0x25408].fill(255);
+        let mut target = map.clone();
+        target.id = "0-1".into();
+        target.map_type = 4;
+        target.events = Some(0x25300);
+        target.scripts.clear();
+        let maps = vec![map, target];
+        let original = r.data.clone();
+        let index = Index::build(&r, &maps).unwrap();
+        let rom_only = index.map_navigation(&r, &maps, "0-1", None).unwrap();
+        assert_eq!(rom_only.incoming.len(), 1, "{}", profile.id);
+        let edge = &rom_only.incoming[0];
+        assert_eq!(
+            (edge.x, edge.y, edge.target_x, edge.target_y),
+            (Some(3), Some(2), Some(1), Some(2))
+        );
+        assert_eq!(edge.kind, "script_warp");
+        assert_eq!(edge.offset, branch + 5);
+        assert!(edge.unresolved.is_none());
+        assert_eq!(rom_only.approaches.len(), 1);
+        let script = edge.script.as_ref().unwrap();
+        assert!(script.entry_unresolved);
+        assert_eq!(script.checks.len(), 2);
+        assert!(script.checks.iter().all(|c| c.satisfied.is_none()));
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let before = save.data.clone();
+        let saved = index.map_navigation(&r, &maps, "0-1", Some(&save)).unwrap();
+        assert!(saved.incoming[0]
+            .script
+            .as_ref()
+            .unwrap()
+            .checks
+            .iter()
+            .any(|c| c.condition.id == 11 && c.satisfied == Some(false)));
+        let range = &profile.event_state.unwrap().flags[0];
+        let bit = (11 - range.first) as usize;
+        let mut main = save.logical(1..=4);
+        main[range.offset + bit / 8] |= 1 << (bit % 8);
+        synthetic_daycare_main(&mut save, &main);
+        let changed = save.data.clone();
+        let saved = index.map_navigation(&r, &maps, "0-1", Some(&save)).unwrap();
+        assert!(saved.incoming[0]
+            .script
+            .as_ref()
+            .unwrap()
+            .checks
+            .iter()
+            .any(|c| c.condition.id == 11 && c.satisfied == Some(true)));
+        assert_eq!(save.data, changed);
+        assert_ne!(save.data, before);
+        let reverse = index.map_navigation(&r, &maps, "0-1", None).unwrap();
+        assert!(
+            reverse
+                .outgoing
+                .iter()
+                .all(|e| e.to.as_deref() != Some("0-0")),
+            "never fabricate a return passage"
+        );
+        assert_eq!(r.data, original);
+        let mut stale = r.clone();
+        std::sync::Arc::make_mut(&mut stale.data)[0] ^= 1;
+        assert_eq!(
+            index
+                .map_navigation(&stale, &maps, "0-1", None)
+                .err()
+                .unwrap()
+                .code,
+            "rom_mismatch"
+        );
+        // Direct coordinates use the native s8 result; unknown variables survive.
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[branch + 8] = 255;
+        let warp = r
+            .script_warp_instruction(branch + 5, |id| {
+                (id == 0x4001)
+                    .then_some(256)
+                    .or_else(|| (id < 0x4000).then_some(id))
+            })
+            .unwrap()
+            .unwrap();
+        assert_eq!((warp.x, warp.y), (Some(0), Some(-1)));
+        let unresolved = r
+            .script_warp_instruction(branch + 5, |id| (id < 0x4000).then_some(id))
+            .unwrap()
+            .unwrap();
+        assert_eq!(unresolved.x, None);
+        assert_eq!(unresolved.y, Some(-1));
+        // An unknown native call invalidates a previously known coordinate.
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[0x26400..0x26413].copy_from_slice(&[
+            0x16, 1, 0x40, 2, 0, 0x23, 0, 0, 0, 8, 0x3b, 0, 1, 255, 1, 0x40, 1, 0, 2,
+        ]);
+        let unknown = r.event_effect_script(0x26400).unwrap();
+        assert_eq!(unknown.warps.len(), 1);
+        assert_eq!(unknown.warps[0].x, None);
+        assert!(unknown.stopped_at.contains(&0x26405));
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        put32(
+            b,
+            rules.commands + 0x3b * 4,
+            0x08000003 + rules.warp_handlers[2] as u32,
+        );
+        assert_eq!(
+            r.script_warp_instruction(branch + 5, Some)
+                .err()
+                .unwrap()
+                .code,
+            "script_warp_dispatch"
+        );
+    }
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_WARP_PROBES independent mGBA vectors"]
+fn local_script_warp_operands_match_native_all_profiles() {
+    let probes: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(std::env::var("GEN3_WARP_PROBES").unwrap()).unwrap())
+            .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let original = Rom::open(std::fs::read(&path).unwrap()).unwrap();
+        let hash = crate::binary::sha256(&original.data);
+        assert_eq!(probes[key]["md5"], original.profile.md5);
+        let mut fixture = original.clone();
+        let pc = fixture.data.len();
+        std::sync::Arc::make_mut(&mut fixture.data).extend_from_slice(&[0; 8]);
+        let mut count = 0;
+        for row in probes[key]["rows"].as_array().unwrap() {
+            let op = row["opcode"].as_u64().unwrap() as u8;
+            let operands: Vec<u8> = serde_json::from_value(row["operands"].clone()).unwrap();
+            let expected: Vec<i32> =
+                serde_json::from_value(row["expected_arguments"].clone()).unwrap();
+            let resolved: Vec<u16> = serde_json::from_value(row["resolved"].clone()).unwrap();
+            let b = std::sync::Arc::make_mut(&mut fixture.data);
+            b[pc] = op;
+            b[pc + 1..pc + 8].copy_from_slice(&operands);
+            let parsed = fixture
+                .script_warp_instruction(pc, |v| match v {
+                    0x4001 => Some(resolved[0]),
+                    0x4002 => Some(resolved[1]),
+                    v if v < 0x4000 => Some(v),
+                    _ => None,
+                })
+                .unwrap();
+            if op == 0x3e {
+                assert!(parsed.is_none());
+            } else {
+                let parsed = parsed.unwrap();
+                assert_eq!(parsed.group as i8 as i32, expected[0]);
+                assert_eq!(parsed.number as i8 as i32, expected[1]);
+                assert_eq!(parsed.warp as i8 as i32, expected[2]);
+                assert_eq!(parsed.x.map(i32::from), Some(expected[3]));
+                assert_eq!(parsed.y.map(i32::from), Some(expected[4]));
+            }
+            count += 1;
+        }
+        let maps = original.maps().unwrap();
+        let index = crate::event_dependencies::Index::build(&original, &maps).unwrap();
+        let mut passages = 0;
+        for map in maps.iter().take(50) {
+            let report = index
+                .map_navigation(&original, &maps, &map.id, None)
+                .unwrap();
+            for edge in report.outgoing.iter().filter(|e| e.kind == "script_warp") {
+                passages += 1;
+                assert!(edge.script.as_ref().unwrap().entry_unresolved);
+                assert_ne!(edge.script.as_ref().unwrap().opcode, 0x3e);
+            }
+        }
+        assert_eq!(crate::binary::sha256(&original.data), hash);
+        assert_eq!(crate::binary::sha256(&std::fs::read(path).unwrap()), hash);
+        println!("{key}: {count} native operand vectors; first 50 maps have {passages} referenced script passages; access remains unverified");
+    }
+}
+
+#[test]
 fn native_extension_configuration_rejects_overlaps_and_invalid_sector_bounds() {
     let r = adapter_rom(crate::mercury::PROFILE);
     let bytes = save_bytes(&r);

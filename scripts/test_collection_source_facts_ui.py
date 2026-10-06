@@ -23,6 +23,8 @@ def main():
             ).split(",")
         ):
             tag = [key]
+            scripted_passages = os.environ.get("GEN3_UI_SCRIPT_WARPS") == "1"
+            passage_satisfied = [False]
             catalog = copy.deepcopy(CATALOG)
             save = dict(
                 trainer=dict(name="TEST"),
@@ -389,11 +391,71 @@ def main():
                         clock=None,
                     )
                 elif cmd == "map_navigation":
+                    scripted = copy.deepcopy(edge)
+                    scripted.update(
+                        kind="script_warp",
+                        offset=201,
+                        x=3,
+                        y=2,
+                        target_x=2,
+                        target_y=2,
+                        script=dict(
+                            root=300,
+                            source_kind="npc",
+                            local_id=1,
+                            opcode=59,
+                            conditions=[
+                                dict(
+                                    kind="flag",
+                                    id=17,
+                                    value=1,
+                                    comparison=1,
+                                    taken=True,
+                                )
+                            ],
+                            checks=[
+                                dict(
+                                    condition=dict(
+                                        kind="flag",
+                                        id=17,
+                                        value=1,
+                                        comparison=1,
+                                        taken=True,
+                                    ),
+                                    satisfied=passage_satisfied[0],
+                                    actual=int(passage_satisfied[0]),
+                                    unresolved=None,
+                                )
+                            ],
+                            stopped_at=[300],
+                            entry_unresolved=True,
+                        ),
+                    )
+                    dynamic = copy.deepcopy(scripted)
+                    dynamic.update(
+                        to=None,
+                        target_x=None,
+                        target_y=None,
+                        offset=202,
+                        unresolved="dynamic_coordinates",
+                    )
                     data = dict(
                         map_id=payload["id"],
-                        outgoing=[],
-                        incoming=[edge],
-                        approaches=[[edge]],
+                        outgoing=(
+                            ([dynamic] if payload["id"] == "0-1" else [edge, scripted])
+                            if scripted_passages
+                            else []
+                        ),
+                        incoming=(
+                            ([edge, scripted] if payload["id"] == "0-1" else [])
+                            if scripted_passages
+                            else [edge]
+                        ),
+                        approaches=(
+                            [[scripted]]
+                            if scripted_passages and payload["id"] == "0-1"
+                            else [[edge]]
+                        ),
                         truncated=False,
                         diagnostics=[],
                     )
@@ -409,7 +471,8 @@ def main():
                     configure(key + "-SWITCH")
                     data = dict(catalog=catalog)
                 elif cmd == "open_save":
-                    data = save
+                    passage_satisfied[0] = True
+                    data = copy.deepcopy(save)
                 else:
                     raise AssertionError(req)
                 route.fulfill(
@@ -418,7 +481,12 @@ def main():
                 )
 
             page = browser.new_page(
-                viewport=dict(width=1050, height=780), accept_downloads=True
+                viewport=(
+                    dict(width=900, height=640)
+                    if os.environ.get("GEN3_UI_COMPACT") == "1"
+                    else dict(width=1050, height=780)
+                ),
+                accept_downloads=True,
             )
             page.add_init_script("localStorage.setItem('gen3.locale','en')")
             page.on("pageerror", lambda error: errors.append(str(error)))
@@ -474,6 +542,64 @@ def main():
             ).fill("")
             card.get_by_role("button", name=key + " Floor ↗", exact=True).click()
             expect(page.locator(".map-navigation")).to_contain_text(key + " Outside")
+            if scripted_passages:
+                navigation = page.locator(".map-navigation")
+                expect(navigation).to_contain_text("Scripted passage")
+                expect(navigation).to_contain_text("access unverified")
+                source_details = navigation.locator(".nav-script-details").first
+                source_details.locator("summary").first.click()
+                expect(source_details).to_contain_text(
+                    "stepping on it does not establish a warp"
+                )
+                expect(source_details).to_contain_text("Missing prerequisite")
+                with page.expect_file_chooser() as chooser:
+                    page.get_by_role(
+                        "button", name="Open save", exact=True
+                    ).first.click()
+                chooser.value.set_files(
+                    dict(
+                        name="synthetic-script-guards.sav",
+                        mimeType="application/octet-stream",
+                        buffer=b"fixture-only",
+                    )
+                )
+                source_details.locator("summary").first.click()
+                expect(source_details).to_contain_text("Satisfied")
+                expect(source_details).to_contain_text(
+                    "do not prove this passage is currently usable"
+                )
+                assert source_details.evaluate(
+                    "el => el.scrollWidth <= el.clientWidth + 1"
+                )
+                if os.environ.get("GEN3_UI_ARTIFACTS"):
+                    pictures = Path(os.environ["GEN3_UI_ARTIFACTS"])
+                    pictures.mkdir(parents=True, exist_ok=True)
+                    source_details.scroll_into_view_if_needed()
+                    page.locator(".floating.wide").first.screenshot(
+                        path=str(pictures / (key + "-script-passages.png"))
+                    )
+                navigation.get_by_role(
+                    "button", name=key + " Outside ↗", exact=True
+                ).first.click()
+                expect(page.locator(".map-focus")).to_be_visible()
+                marker = page.get_by_role(
+                    "button", name="Scripted passage (3, 2)", exact=True
+                )
+                expect(marker).to_be_visible()
+                marker.click()
+                expect(page.locator(".map-navigation")).to_contain_text(
+                    key + " Outside"
+                )
+                expect(page.locator(".map-focus")).to_be_visible()
+                page.get_by_role("button", name="简体中文", exact=True).click()
+                expect(page.locator(".map-navigation")).to_contain_text("脚本通道")
+                expect(page.locator(".map-navigation")).to_contain_text("可达性待验证")
+                page.get_by_role("button", name="English", exact=True).click()
+                # Undo the two map hops to restore the original collection back target.
+                for _ in range(2):
+                    page.get_by_role(
+                        "button", name="Back to previous reference", exact=False
+                    ).click()
             page.get_by_role(
                 "button", name="Back to previous reference", exact=False
             ).click()
@@ -552,6 +678,13 @@ def main():
                 assert "Do not replay completed-only event" not in html
             if os.environ.get("GEN3_UI_ARTIFACTS"):
                 (out / (key + "-collection.html")).write_text(html)
+            # A movable window can overlap the compact wrapped app toolbar.
+            # Move it through its native pointer interaction before using that toolbar.
+            titlebar = page.locator(".floating-header").first.bounding_box()
+            page.mouse.move(titlebar["x"] + 60, titlebar["y"] + 12)
+            page.mouse.down()
+            page.mouse.move(titlebar["x"] + 60, 300, steps=8)
+            page.mouse.up()
             page.get_by_role("button", name="English", exact=True).click()
             pending_test = (
                 prerequisites_enabled and os.environ.get("GEN3_UI_PENDING") == "1"
@@ -629,6 +762,11 @@ def main():
             print(
                 key
                 + " collection source facts / target-map-back / HTML / switch passed"
+                + (
+                    "; scripted passages / fresh SAV guards / bilingual markers passed"
+                    if scripted_passages
+                    else ""
+                )
                 + (
                     "; prerequisite alternatives/cycles/pagination/return passed"
                     if prerequisites_enabled

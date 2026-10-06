@@ -511,13 +511,23 @@ export const en = {
 
   navTitle: "Entrances and connected maps",
   navHelp:
-    "Static ROM references; story gates, collision and dynamic layout changes are not evaluated. These links do not establish current accessibility.",
+    "ROM table and referenced-script links. Script guards may be checked against your SAV; activation, collision and dynamic layouts still need verification. Links do not prove current access or a return route.",
   navApproaches: "Suggested exterior entrance chains",
   navNoApproach:
-    "Exterior map or no verified static entrance chain. Scripted and dynamic access may exist.",
+    "Exterior map or no resolved entrance reference chain. Additional scripted and dynamic access may exist.",
   navIncoming: "Enter from",
   navOutgoing: "Go to",
   navWarp: "Door / warp",
+  navScriptWarp: "Scripted passage",
+  navScriptConditions: "Passage conditions and source",
+  navUnplaced: "No reliable tile location",
+  navTalkPassage:
+    "This passage is referenced by an NPC script. The tile locates the NPC; stepping on it does not establish a warp.",
+  navScriptHelp:
+    "This is a referenced script transition. Its activation and entry selectors are not fully resolved.",
+  navScriptAccessUnknown:
+    "Satisfied saved guards do not prove this passage is currently usable. A return route is not implied.",
+  navConditionalPassage: "[script; access unverified]",
   navConnection: "Boundary connection",
   navWarps: "Entrances",
   navDynamic: "Dynamic or unresolved destination",
@@ -1721,13 +1731,23 @@ export const zh: Record<Key, string> = {
 
   navTitle: "入口与关联地图",
   navHelp:
-    "以下为 ROM 静态引用，未判定剧情门槛、碰撞或动态布局；存在连接不代表当前可达。",
+    "以下为 ROM 表与已引用脚本中的连接。脚本条件可叠加 SAV 判断，但触发方式、碰撞及动态布局仍需验证；存在连接不代表当前可达，也不保证能原路返回。",
   navApproaches: "外部入口链（参考）",
   navNoApproach:
-    "当前已是外部地图，或未找到可确认的静态入口链；可能存在脚本或动态入口。",
+    "当前已是外部地图，或未找到可解析的入口引用链；可能还存在其他脚本或动态入口。",
   navIncoming: "从这些地图进入",
   navOutgoing: "通向这些地图",
   navWarp: "门／传送点",
+  navScriptWarp: "脚本通道",
+  navScriptConditions: "通行条件与触发来源",
+  navUnplaced: "无可靠格位",
+  navTalkPassage:
+    "此通道来自 NPC 脚本。格位用于定位 NPC，不表示踩上该格就会传送。",
+  navScriptHelp:
+    "这是已引用脚本中的传送记录，触发方式及入口选择条件尚未完整解析。",
+  navScriptAccessUnknown:
+    "存档中的条件已满足，也不能据此断言当前可通行；此记录不保证存在返程入口。",
+  navConditionalPassage: "［脚本，可达性待验证］",
   navConnection: "边界连接",
   navWarps: "入口",
   navDynamic: "动态或未解析目标",

@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add referenced script passages to map sources, destination tiles, entrance
+  layers and qualified exterior chains across all five fingerprints. Recheck SAV
+  guards without caching eligibility; exclude destination setters and unreferenced
+  bytes. Verify 918 native operand cases; full activation/access remains partial.
+- 五个精确 ROM 的地图页补入已引用脚本通道、来源／目标格位、入口图层及带提示的
+  外部入口链。SAV 条件实时重查，不缓存资格；设置目的地的指令及无引用数据不当作
+  通道。918 个原生参数用例已对照，触发方式、可达性及完整地图切换仍部分验证。
+
 - Connect collection goals to regional prerequisite-event alternatives in the
   live UI and HTML. Preserve state when following references, discard stale
   ROM/SAV responses, retain cycles and unknown guards, and stop tracing already-met
