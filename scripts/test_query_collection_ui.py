@@ -261,9 +261,10 @@ def main():
         events.get_by_role('button',name='ROM trainer ↗',exact=True).click()
         expect(trainer).to_be_visible()
         before=sum(r['command']=='trainer_references' for r in requests)
-        with page.expect_file_chooser() as choice:
-            page.get_by_role('button',name='Open save',exact=True).first.click()
-        choice.value.set_files(dict(name='synthetic.sav',mimeType='application/octet-stream',buffer=b'fixture-only'))
+        with page.expect_response(lambda response: response.request.method=='POST' and response.request.post_data_json.get('command')=='trainer_references'):
+            with page.expect_file_chooser() as choice:
+                page.get_by_role('button',name='Open save',exact=True).first.click()
+            choice.value.set_files(dict(name='synthetic.sav',mimeType='application/octet-stream',buffer=b'fixture-only'))
         expect(trainer).to_contain_text('SAV value set')
         assert sum(r['command']=='trainer_references' for r in requests)>before
         page.get_by_role('button',name='简体中文',exact=True).click()

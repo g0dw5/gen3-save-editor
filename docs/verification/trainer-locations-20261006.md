@@ -77,3 +77,11 @@ labels, without opening or editing real files.
 能进入或对战。再战基础记录、第二对手准备指令与最终实战队伍不能混为一谈。
 水银扩展类型 10 的边界已修正，未核实的类型停止并保留证据。读取 SAV 只投影
 当前条件，NPC 可见性单独展示，不据此标记任务完成。所有 ROM／SAV 输入保持不变。
+
+Build checks: 118 public core tests pass; 34 private opt-in tests are excluded
+from that public count. Four relevant five-ROM opt-in regressions were rerun:
+trainer references, event search, native persistent effects and acquisition/
+collection/navigation. TypeScript, formatting, editor/reference browser regressions
+and five release-workflow checks pass. Strict Clippy with the installed Rust 1.98
+still reports six existing warnings in emergency/form/Ultimate helpers and a
+legacy world expression; this increment does not claim a clean strict-Clippy run.
