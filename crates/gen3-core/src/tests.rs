@@ -7824,6 +7824,7 @@ fn local_training_classification_and_effect_match_native_all_profiles() {
                         level: 5,
                         evs: [0; 6],
                         friendship: 70,
+                        nature_override: None,
                     },
                 },
             )
@@ -7836,5 +7837,131 @@ fn local_training_classification_and_effect_match_native_all_profiles() {
             catalog.offers.len(),
             vectors[key]["rows"].as_array().unwrap().len()
         );
+    }
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_TRAINING_NATURE_PROBES independent mGBA vectors"]
+fn local_training_nature_items_match_native_and_existing_save_editor() {
+    use crate::training::{Individual, Request};
+    let vectors: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_TRAINING_NATURE_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
+        let hash = crate::binary::sha256(&rom.data);
+        let catalog = rom.training_catalog().unwrap();
+        if key != "ROCKET" {
+            assert!(
+                catalog.nature_items.is_empty(),
+                "unverified handlers must not leak between profiles"
+            );
+            continue;
+        }
+        assert_eq!(vectors["md5"], rom.profile.md5);
+        assert_eq!(
+            catalog.nature_items.len(),
+            vectors["offers"].as_array().unwrap().len()
+        );
+        for offer in &catalog.nature_items {
+            let expected = vectors["offers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|v| v["item"] == offer.item)
+                .unwrap();
+            assert_eq!(expected["nature"], offer.nature);
+            assert_eq!(offer.handler, 0x08136ddd);
+        }
+        let index = crate::acquisition::AcquisitionIndex::build(&rom).unwrap();
+        let mut sources = 0;
+        let mut positioned = 0;
+        for offer in &catalog.nature_items {
+            let report = index
+                .query(
+                    &rom,
+                    None,
+                    crate::acquisition::Target {
+                        kind: crate::acquisition::TargetKind::Item,
+                        id: offer.item,
+                    },
+                )
+                .unwrap();
+            assert_eq!(report.target.id, offer.item);
+            for source in &report.sources {
+                sources += 1;
+                if let Some(map) = &source.map_id {
+                    let navigation = rom.map_navigation(map).unwrap();
+                    assert_eq!(navigation.map_id, *map);
+                    positioned += 1;
+                }
+            }
+        }
+        println!("Rocket mint acquisition: {sources} parsed sources, {positioned} map navigation references (access remains qualified)");
+        let mut save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
+        let first = save.sections[1];
+        save.data[first + save.layout.party_count] = 1;
+        let at = first + save.layout.party;
+        let mut edited = 0;
+        for row in vectors["rows"].as_array().unwrap() {
+            let raw: Vec<u8> = serde_json::from_value(row["before"].clone()).unwrap();
+            let expected: Vec<u8> = serde_json::from_value(row["after"].clone()).unwrap();
+            let item = row["item"].as_u64().unwrap() as u16;
+            let nature = row["nature"].as_u64().unwrap() as u8;
+            let no_effect = row["no_effect"].as_bool().unwrap();
+            save.data[at..at + 100].copy_from_slice(&raw);
+            let original = save.data.clone();
+            let preview = rom
+                .training_preview(
+                    Some(&save),
+                    Request {
+                        expected_rom_md5: rom.profile.md5.into(),
+                        item,
+                        individual: Individual::Stored { location: party() },
+                    },
+                )
+                .unwrap();
+            assert_eq!(
+                preview.raw, expected,
+                "item {item}, PID {}",
+                preview.before.pid
+            );
+            assert_eq!(preview.native_no_effect, no_effect);
+            assert_eq!(preview.effect_scope, "nature_persistent_stage");
+            for i in 0..6 {
+                assert_eq!(
+                    preview.party_stats_before[i],
+                    crate::binary::u16(&raw, 88 + i * 2).unwrap()
+                );
+                assert_eq!(
+                    preview.party_stats_after[i],
+                    crate::binary::u16(&expected, 88 + i * 2).unwrap()
+                );
+            }
+            assert_eq!(preview.before.pid, preview.after.pid);
+            assert_eq!(preview.before.ot_id, preview.after.ot_id);
+            assert_eq!(preview.before.evs, preview.after.evs);
+            assert_eq!(preview.before.ivs, preview.after.ivs);
+            assert_eq!(preview.before.ball, preview.after.ball);
+            assert_eq!(save.data, original);
+            if !no_effect {
+                let patch = PokemonPatch {
+                    nature_override: Some(nature),
+                    ..Default::default()
+                };
+                let (party, _) = pokemon::edit(&raw, &patch, &rom, Policy::Standard).unwrap();
+                let (boxed, _) = pokemon::edit(&raw[..80], &patch, &rom, Policy::Standard).unwrap();
+                assert_eq!(party, expected, "party editor item {item}");
+                assert_eq!(boxed, expected[..80], "box editor item {item}");
+                edited += 1;
+            } else {
+                assert_eq!(expected, raw);
+            }
+        }
+        assert_eq!(crate::binary::sha256(&rom.data), hash);
+        assert_eq!(crate::binary::sha256(&std::fs::read(path).unwrap()), hash);
+        println!("Rocket: {} mint scenarios; {edited} native-equivalent party and boxed nature edits; original ROM/SAV unchanged", vectors["rows"].as_array().unwrap().len());
     }
 }

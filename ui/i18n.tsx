@@ -218,10 +218,16 @@ export const en = {
     "This static ROM layout also renders with mismatched tiles when loaded directly in the native emulator. Whether a normal entrance replaces the layout is unverified; this image does not establish the appearance or accessibility of a playable area.",
   clockScenario: "Game time and query scenario",
   training: "Training reference",
-  trainingPage: "EV items and native field-use preview",
+  trainingPage: "Training items and native previews",
+  trainingNature: "Effective nature",
+  trainingInitialNature: "Initial effective nature",
+  trainingPIDNature: "Use PID nature (scenario default)",
+  trainingNatureScope:
+    "This previews the mint callback's persistent nature-and-stat stage and its unchanged-nature rejection. PID, trainer identity and unrelated individual data are retained. Menu eligibility, consumption, inheritance and current access remain outside this scenario.",
   trainingScope:
-    "This list covers verified ordinary field EV-item handlers. Names and descriptions come from the loaded ROM. It is not a complete catalog of mints, ability changes, Hyper Training or NPC services; omitted mechanisms remain unverified, not absent.",
-  trainingNone: "No supported EV-item offers were identified in this ROM.",
+    "This list covers verified ordinary field EV-item handlers and supported mint persistent stages. Names and descriptions come from the loaded ROM. It is not a complete catalog of all nature changes, ability changes, Hyper Training or NPC services; omitted mechanisms remain unverified, not absent.",
+  trainingNone:
+    "No supported training-item handlers were identified in this ROM.",
   trainingItem: "Training item",
   trainingGetItem: "Find acquisition sources",
   trainingIndividual: "Individual for preview",
@@ -1341,10 +1347,15 @@ export const zh: Record<Key, string> = {
     "此 ROM 静态布局在模拟器直接加载时也出现贴图错乱。正常入口是否会替换布局尚未确认；这张图不能证明实际可游玩区域的样貌或可达性。",
   clockScenario: "游戏时间与查询情景",
   training: "培育资料",
-  trainingPage: "努力值道具与原生战斗外预览",
+  trainingPage: "培育道具与原生效果预览",
+  trainingNature: "实际性格",
+  trainingInitialNature: "初始实际性格",
+  trainingPIDNature: "使用 PID 性格（情景默认）",
+  trainingNatureScope:
+    "本次预览薄荷入口的持久化性格与能力处理阶段，以及性格不变时的拒绝使用分支。保留 PID、训练家身份和无关个体数据；菜单资格、消耗、遗传和当前可达性不在此情景验证范围内。",
   trainingScope:
-    "本列表覆盖已验证的普通战斗外努力值道具处理入口，名称和说明来自当前 ROM。尚非薄荷、特性变更、王冠训练或 NPC 服务的完整目录；未列出表示尚未验证，不代表本作不存在。",
-  trainingNone: "当前 ROM 未识别到已支持的努力值道具入口。",
+    "本列表覆盖已验证的普通战斗外努力值道具入口与已支持的薄荷持久化阶段，名称和说明来自当前 ROM。尚非所有性格调整、特性变更、王冠训练或 NPC 服务的完整目录；未列出表示尚未验证，不代表本作不存在。",
+  trainingNone: "当前 ROM 未识别到已支持的培育道具入口。",
   trainingItem: "培育道具",
   trainingGetItem: "查询获取途径",
   trainingIndividual: "预览个体",

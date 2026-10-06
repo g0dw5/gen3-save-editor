@@ -53,7 +53,7 @@ not a blanket claim that every engine follows Emerald's vitamin formula.
 - Native item effects do not validate menu-level Shedinja checks, pay/consume an
   item, open an NPC service or prove current access. A native success result alone
   is insufficient to claim EV gain or full legitimate-operation equivalence.
-- Custom reduction handlers in Rocket/Mercury, mints, ability changes, Hyper
+- Custom reduction handlers in Rocket/Mercury, complete mint menus, ability changes, Hyper
   Training, complete NPC services and subsequent native/save round trips remain
   gaps. Existing editor fields retain their separately documented validation.
 
@@ -91,3 +91,5 @@ Private vectors, catalogs and source files are not committed or release inputs.
   formatting, version consistency and five release-workflow tests passed.
 
 No new edited-SAV emulator round trip is claimed for this read-only increment.
+
+A subsequent [mint increment](training-natures-20261006.md) adds Rocket runtime targets and verified persistent-stage previews. It supersedes the unverified mint statement only within its documented scope.

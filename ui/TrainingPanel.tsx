@@ -13,17 +13,31 @@ type Offer = {
   native_category: number;
   partial: boolean;
 };
-type TrainingCatalog = { rom_md5: string; offers: Offer[]; partial: boolean };
+type NatureOffer = {
+  item: number;
+  nature: number;
+  handler: number;
+  partial: boolean;
+};
+type TrainingCatalog = {
+  rom_md5: string;
+  offers: Offer[];
+  nature_items?: NatureOffer[];
+  partial: boolean;
+};
 type Preview = {
   rom_md5: string;
   item: number;
   before: Pokemon;
   after: Pokemon;
+  party_stats_before?: number[];
+  party_stats_after?: number[];
   native_no_effect: boolean;
   changed: boolean;
   scenario: string;
   context: string;
   party_state: string;
+  effect_scope?: string;
   partial: boolean;
 };
 const stats = ["hp", "attack", "defense", "speed", "spAttack", "spDefense"];
@@ -47,6 +61,7 @@ export function TrainingPanel({
   const [level, setLevel] = useState(5);
   const [evs, setEvs] = useState([0, 0, 0, 0, 0, 0]);
   const [friendship, setFriendship] = useState(70);
+  const [nature, setNature] = useState(26);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const ticket = useRef(0);
@@ -63,7 +78,7 @@ export function TrainingPanel({
       .then((r) => {
         if (!cancelled && r.rom_md5 === md5) {
           setReport(r);
-          setItem(r.offers[0]?.item ?? 0);
+          setItem(r.offers[0]?.item ?? r.nature_items?.[0]?.item ?? 0);
         }
       })
       .catch((e) => {
@@ -92,7 +107,16 @@ export function TrainingPanel({
         item,
         individual:
           individual === "simulated"
-            ? { kind: "simulated", species, level, evs, friendship }
+            ? {
+                kind: "simulated",
+                species,
+                level,
+                evs,
+                friendship,
+                ...(report?.nature_items?.length
+                  ? { nature_override: nature }
+                  : {}),
+              }
             : { kind: "stored", location: fromKey(individual) },
       });
       if (current === ticket.current && r.rom_md5 === md5 && r.item === item)
@@ -104,23 +128,32 @@ export function TrainingPanel({
     }
   };
   const offer = report?.offers.find((o) => o.item === item);
+  const natureOffer = report?.nature_items?.find((o) => o.item === item);
+  const natureName = (id: number) =>
+    catalog.natures.find((n) => n.id === id)?.name ?? String(id);
   return (
     <section className="training-panel">
       <h2>{t("trainingPage")}</h2>
       <p className="small muted">{t("trainingScope")}</p>
       {!report ? (
         <p>{t("loading")}</p>
-      ) : !report.offers.length ? (
+      ) : !report.offers.length && !report.nature_items?.length ? (
         <p>{t("trainingNone")}</p>
       ) : (
         <>
           <SearchSelect
             label={t("trainingItem")}
             value={item}
-            options={report.offers.map((o) => ({
-              value: o.item,
-              label: `${catalog.items.find((i) => i.id === o.item)?.name ?? o.item} · ${t(stats[o.stat])} · ${t(o.direction === "increase" ? "trainingIncrease" : "trainingDecrease")}`,
-            }))}
+            options={[
+              ...report.offers.map((o) => ({
+                value: o.item,
+                label: `${catalog.items.find((i) => i.id === o.item)?.name ?? o.item} · ${t(stats[o.stat])} · ${t(o.direction === "increase" ? "trainingIncrease" : "trainingDecrease")}`,
+              })),
+              ...(report.nature_items ?? []).map((o) => ({
+                value: o.item,
+                label: `${catalog.items.find((i) => i.id === o.item)?.name ?? o.item} · ${t("trainingNature")} · ${natureName(o.nature)}`,
+              })),
+            ]}
             onChange={(v) => {
               setItem(+v);
               reset();
@@ -203,6 +236,26 @@ export function TrainingPanel({
                   }}
                 />
               </label>
+              {!!report.nature_items?.length && (
+                <label>
+                  {t("trainingInitialNature")}
+                  <select
+                    aria-label={t("trainingInitialNature")}
+                    value={nature}
+                    onChange={(e) => {
+                      setNature(+e.target.value);
+                      reset();
+                    }}
+                  >
+                    <option value={26}>{t("trainingPIDNature")}</option>
+                    {catalog.natures.map((n) => (
+                      <option key={n.id} value={n.id}>
+                        {n.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <div className="clock-offsets">
                 {stats.map((stat, i) => (
                   <label key={stat}>
@@ -246,6 +299,9 @@ export function TrainingPanel({
           {preview && (
             <article className="training-result">
               <h3>{t("trainingResult")}</h3>
+              {preview.effect_scope === "nature_persistent_stage" && (
+                <p className="small muted">{t("trainingNatureScope")}</p>
+              )}
               <p>
                 {t(
                   preview.native_no_effect
@@ -262,6 +318,37 @@ export function TrainingPanel({
                   </tr>
                 </thead>
                 <tbody>
+                  {natureOffer && (
+                    <tr>
+                      <td>{t("trainingNature")}</td>
+                      <td>
+                        {natureName(
+                          preview.before.effective_nature ??
+                            preview.before.nature,
+                        )}
+                      </td>
+                      <td>
+                        {natureName(
+                          preview.after.effective_nature ??
+                            preview.after.nature,
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                  {natureOffer &&
+                    stats.map((s, i) => (
+                      <tr key={`ability-${s}`}>
+                        <td>{t(s)}</td>
+                        <td>
+                          {preview.party_stats_before?.[i] ??
+                            preview.before.stats[i]}
+                        </td>
+                        <td>
+                          {preview.party_stats_after?.[i] ??
+                            preview.after.stats[i]}
+                        </td>
+                      </tr>
+                    ))}
                   {stats.map((s, i) => (
                     <tr key={s}>
                       <td>
@@ -278,9 +365,10 @@ export function TrainingPanel({
                   </tr>
                 </tbody>
               </table>
-              {preview.before.evs.every(
-                (v, i) => preview.after.evs[i] === v,
-              ) && <p className="small muted">{t("trainingUnchangedEV")}</p>}
+              {!natureOffer &&
+                preview.before.evs.every(
+                  (v, i) => preview.after.evs[i] === v,
+                ) && <p className="small muted">{t("trainingUnchangedEV")}</p>}
               {preview.party_state === "boxed_full_hp_scenario" && (
                 <p className="small muted">{t("trainingBoxScenario")}</p>
               )}
@@ -293,7 +381,13 @@ export function TrainingPanel({
               </p>
               <details>
                 <summary>{t("evidence")}</summary>
-                <pre>{JSON.stringify({ offer, preview }, null, 2)}</pre>
+                <pre>
+                  {JSON.stringify(
+                    { offer: natureOffer ?? offer, preview },
+                    null,
+                    2,
+                  )}
+                </pre>
               </details>
             </article>
           )}

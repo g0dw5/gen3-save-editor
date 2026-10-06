@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Read Rocket mint targets from current-ROM handlers and native getters; preview
+  effective nature and stats while retaining PID/identity/history. Link item
+  acquisition and map navigation. Reject unchanged effective-nature scenarios;
+  qualify persistent-stage evidence separately from menus/consumption/access.
+- 从当前 ROM 的入口与原生取值读取西班牙火箭队薄荷目标，预览实际性格与能力，
+  保留 PID、身份和历史并关联道具来源／地图。重复性格情景保持不变；持久化阶段
+  与菜单资格、消耗、可达性分开说明，不新增存档写入操作。
+
 - Add read-only EV-item reference and native field-effect previews for stored or
   simulated individuals, linked to acquisition and map navigation. Read handlers
   from the current ROM; show actual before/after values and unresolved context.

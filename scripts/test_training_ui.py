@@ -29,6 +29,16 @@ def main():
                     price=500,
                 ),
             ]
+            if key == "ROCKET":
+                catalog["items"].append(
+                    dict(
+                        id=2,
+                        name="ROCKET runtime mint",
+                        description="Fixture mint",
+                        tm_move=None,
+                        price=100,
+                    )
+                )
             requests = []
             errors = []
             count = [0]
@@ -65,6 +75,7 @@ def main():
                     data = WORLD
                 elif cmd == "open_rom":
                     catalog["profile"]["md5"] = "fixture-SWITCH"
+                    catalog["items"] = catalog["items"][:2]
                     catalog["items"][1]["name"] = "SWITCH EV item"
                     count[0] = 0
                     data = dict(catalog=catalog)
@@ -134,6 +145,12 @@ def main():
                                 partial=True,
                             )
                         ],
+                        nature_items=(
+                            [dict(item=2, nature=1, handler=2, partial=True)]
+                            if key == "ROCKET"
+                            and catalog["profile"]["md5"] == "fixture-ROCKET"
+                            else []
+                        ),
                         partial=True,
                     )
                 elif cmd == "training_preview":
@@ -143,15 +160,38 @@ def main():
                     if payload["individual"]["kind"] == "simulated":
                         before["evs"] = payload["individual"]["evs"]
                         after["evs"] = copy.deepcopy(before["evs"])
-                    if key != "MERCURY12":
+                    mint = payload["item"] == 2
+                    if mint:
+                        initial = payload["individual"].get("nature_override", 26)
+                        before["effective_nature"] = (
+                            initial if initial < 25 else before["nature"]
+                        )
+                        after["effective_nature"] = 1
+                        after["stats"][1] = (
+                            30 if before["effective_nature"] == 1 else 33
+                        )
+                    elif key != "MERCURY12":
                         after["evs"][0] += 10
                     data = dict(
                         rom_md5=catalog["profile"]["md5"],
-                        item=1,
+                        item=payload["item"],
                         before=before,
                         after=after,
-                        native_no_effect=False,
-                        changed=key != "MERCURY12",
+                        party_stats_before=[30] * 6,
+                        party_stats_after=(
+                            [30, 55, 30, 30, 30, 30]
+                            if mint and before["effective_nature"] != 1
+                            else [30] * 6
+                        ),
+                        native_no_effect=mint and before["effective_nature"] == 1,
+                        effect_scope=(
+                            "nature_persistent_stage" if mint else "field_effect"
+                        ),
+                        changed=(
+                            (before["effective_nature"] != 1)
+                            if mint
+                            else key != "MERCURY12"
+                        ),
                         scenario="simulated_individual",
                         context="save_blocks" if count[0] else "zero_save_blocks",
                         party_state=(
@@ -254,8 +294,69 @@ def main():
                 )
             )
             expect(panel.locator(".training-result")).to_have_count(0)
+            if key == "ROCKET":
+                panel.get_by_label("Individual for preview", exact=True).select_option(
+                    "simulated"
+                )
+                selector = panel.get_by_role(
+                    "combobox", name="Training item", exact=True
+                )
+                selector.fill("runtime mint")
+                page.get_by_role(
+                    "option",
+                    name="ROCKET runtime mint · Effective nature · Nature 1",
+                    exact=True,
+                ).click()
+                panel.get_by_label(
+                    "Initial effective nature", exact=True
+                ).select_option("3")
+                panel.get_by_role(
+                    "button", name="Preview native effect", exact=True
+                ).click()
+                expect(panel.locator(".training-result")).to_contain_text(
+                    "persistent nature-and-stat stage"
+                )
+                expect(panel.locator("tbody tr").first).to_contain_text("Nature 3")
+                expect(panel.locator("tbody tr").first).to_contain_text("Nature 1")
+                expect(panel.locator("tbody tr").nth(2)).to_contain_text("55")
+                expect(panel.locator(".training-result")).not_to_contain_text(
+                    "No EV value changed"
+                )
+                panel.get_by_role(
+                    "button", name="Find acquisition sources", exact=True
+                ).click()
+                page.locator(".acquisition-panel .link-button").filter(
+                    has_text="Test map"
+                ).click()
+                page.get_by_role(
+                    "button", name="← Back to previous reference", exact=True
+                ).click()
+                page.get_by_role(
+                    "button", name="← Back to previous reference", exact=True
+                ).click()
+                expect(selector).to_have_value(
+                    "ROCKET runtime mint · Effective nature · Nature 1"
+                )
+                expect(
+                    panel.get_by_label("Initial effective nature", exact=True)
+                ).to_have_value("3")
+                panel.get_by_label(
+                    "Initial effective nature", exact=True
+                ).select_option("1")
+                panel.get_by_role(
+                    "button", name="Preview native effect", exact=True
+                ).click()
+                expect(panel.locator(".training-result")).to_contain_text(
+                    "reports no effect"
+                )
+            else:
+                expect(
+                    panel.get_by_label("Initial effective nature", exact=True)
+                ).to_have_count(0)
             page.get_by_role("button", name="简体中文", exact=True).click()
-            expect(panel).to_contain_text("努力值道具与原生战斗外预览")
+            expect(panel).to_contain_text("培育道具与原生效果预览")
+            if key == "ROCKET":
+                expect(panel).to_contain_text("持久化性格与能力处理阶段")
             page.set_viewport_size(dict(width=720, height=740))
             expect(panel).to_be_visible()
             assert panel.evaluate("(e)=>e.scrollWidth <= e.clientWidth + 1")
@@ -263,7 +364,7 @@ def main():
                 d = Path(os.environ["GEN3_UI_ARTIFACTS"])
                 d.mkdir(parents=True, exist_ok=True)
                 panel.screenshot(path=str(d / f"training-{key}.png"))
-            if key == "MERCURY12":
+            if key in ["ROCKET", "MERCURY12"]:
                 page.get_by_role("button", name="English", exact=True).click()
                 hold[0] = True
                 panel.get_by_role(
@@ -297,6 +398,9 @@ def main():
                 ).to_have_value("SWITCH EV item · HP · Increase EVs")
                 expect(panel.get_by_label("HP EVs", exact=True)).to_have_value("0")
                 expect(panel.locator(".training-result")).to_have_count(0)
+                expect(
+                    panel.get_by_label("Initial effective nature", exact=True)
+                ).to_have_count(0)
                 expect(
                     panel.get_by_label("Individual for preview", exact=True).locator(
                         "option"

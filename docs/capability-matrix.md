@@ -404,6 +404,16 @@ This supersedes the earlier U classification only for these bounded additions.
 
 All five training/source workflows remain P. The shared read-only training page
 links verified dispatch/classifier offers to acquisition, guards and maps, with
-660 byte-exact native field-effect scenarios. Custom handlers, mints, ability
+660 byte-exact native field-effect scenarios. Custom handlers, complete mint menus, ability
 changes, Hyper Training services and complete normal-operation equivalence remain
 unresolved. See [evidence and limits](verification/training-items-20261006.md).
+
+## Native mint increment / 原生薄荷增量
+
+All five overall training workflows remain **P**. Rocket now reads 21 mint targets
+at runtime and previews effective-nature/stat changes, with acquisition/condition/
+map/back links. Independent mGBA evidence covers 1,512 scenarios; 720 changing
+cases also match existing party and boxed editor patches byte for byte. Other
+profiles have no configured verified mint handler, not a proof of absence.
+Menu eligibility, consumption/access, inheritance and ability/Hyper Training
+services remain incomplete. See [evidence](verification/training-natures-20261006.md).
