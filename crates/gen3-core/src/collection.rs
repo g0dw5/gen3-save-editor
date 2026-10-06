@@ -450,7 +450,7 @@ impl AcquisitionIndex {
                     .iter()
                     .flat_map(|m| &m.pokemon)
                     .chain(&r.unplaced_pokemon)
-                    .filter(|p| p.trade.is_some())
+                    .filter(|p| p.trade.is_some() || p.method == "static")
                     .filter_map(|p| p.held_item.filter(|id| *id != 0))
             }))
             .collect();
@@ -483,7 +483,8 @@ impl AcquisitionIndex {
                     || s.kind == "shop"
                     || s.status == "completed"
                     || s.status == "unknown" && !request.include_unknown_rewards
-                    || s.kind == "npc_trade_item" && !request.include_unknown_rewards
+                    || matches!(s.kind.as_str(), "npc_trade_item" | "static_held")
+                        && !request.include_unknown_rewards
                 {
                     continue;
                 }

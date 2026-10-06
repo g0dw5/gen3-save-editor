@@ -49,6 +49,8 @@ def main():
     pair_mon=dict(species=2,level=21,held_item=1,method='static',offset=600,member=1,conditions=[],trade=None,battle_members=[dict(member=0,species=1,level=20,held_item=0),dict(member=1,species=2,level=21,held_item=1)])
     pair_source=dict(source,kind='static',quantity=None,min_level=21,max_level=21,underfoot=None,conditions=[],script_source=pair_mon,related=[dict(kind='species',id=1)],offset=600)
     plan['regions'][0]['tasks'].append(dict(task,target=dict(kind='species',id=2),family=[],preparation=None,source=pair_source))
+    held_source=dict(pair_source,kind='static_held',quantity=1,offset=601)
+    plan['regions'][0]['tasks'].append(dict(task,target=dict(kind='item',id=1),family=[],preparation=None,source=held_source))
     errors, requests = [], []
     def respond(route):
         req = route.request.post_data_json
@@ -198,6 +200,8 @@ def main():
         assert '<script>' not in html and 'default-src' in html
         assert 'Two opponents in this encounter' in html and 'ROM parent · Lv. 21' in html
         assert 'Capture permissions and battle-start conditions remain unverified' in html
+        assert 'Item assigned to a fixed encounter' in html and 'Explicit setup item: Test stone' in html
+        assert 'capture or a taking move remain unverified' in html
         assert 'Stand on this tile and use the Itemfinder' in html
         assert 'Test region entrance (2, 1)' in html and 'Test cave floor' in html
         assert 'Find prerequisite clues' in html and 'prerequisite-flag' in html and '&lt;script&gt;context&lt;/script&gt;' in html
@@ -226,6 +230,8 @@ def main():
             page.get_by_role('button',name='导出独立 HTML',exact=True).click()
         html=Path(info.value.path()).read_text()
         assert '本次相遇的两只对手' in html and '能否捕捉及开始战斗的条件仍需确认' in html
+        assert '定点宝可梦指定携带的道具' in html and '生成时指定携带: Test stone' in html
+        assert '能否通过捕捉或夺取道具的招式获得仍待确认' in html
         assert '追查前置线索' in html and '可能设置此事件' in html
         assert '孵蛋与进化准备建议' in html and '2048 / 5050' in html
         assert '&lt;script&gt;parent&lt;/script&gt;' in html and '<script>' not in html

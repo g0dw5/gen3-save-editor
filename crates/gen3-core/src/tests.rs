@@ -11373,6 +11373,33 @@ fn paired_fixed_encounters_keep_both_members_unknown_inputs_and_query_links() {
                     && s.encounter_percent.is_none()
                     && s.receipt_flag.is_none()
             );
+            let item_query = index
+                .query(
+                    &r,
+                    None,
+                    Target {
+                        kind: TargetKind::Item,
+                        id,
+                    },
+                )
+                .unwrap();
+            let held = item_query
+                .sources
+                .iter()
+                .filter(|s| s.kind == "static_held")
+                .collect::<Vec<_>>();
+            assert_eq!(held.len(), 1);
+            assert_eq!(held[0].script_source.as_ref().unwrap().species, id);
+            assert_eq!(
+                (held[0].x, held[0].y, held[0].quantity),
+                (Some(3), Some(2), Some(1))
+            );
+            assert!(held[0]
+                .related
+                .iter()
+                .any(|t| t.kind == TargetKind::Species && t.id == id));
+            assert!(held[0].held_percent.is_none() && held[0].encounter_percent.is_none());
+            assert!(held[0].receipt.is_none() && held[0].partial && held[0].status == "unknown");
             if double {
                 let group = &s.script_source.as_ref().unwrap().battle_members;
                 assert_eq!(group.len(), 2);
@@ -11385,6 +11412,42 @@ fn paired_fixed_encounters_keep_both_members_unknown_inputs_and_query_links() {
                 assert!(s.script_source.as_ref().unwrap().battle_members.is_empty());
             }
         }
+        let save = Save::open(save_bytes(&r), p.save).unwrap();
+        let save_before = save.data.clone();
+        for include in [false, true] {
+            let plan = index
+                .collection(
+                    &r,
+                    &save,
+                    crate::collection::CollectionRequest {
+                        basis: crate::collection::CollectionBasis::Individuals,
+                        families: true,
+                        include_unknown_rewards: include,
+                    },
+                )
+                .unwrap();
+            let tasks = plan
+                .regions
+                .iter()
+                .flat_map(|r| &r.tasks)
+                .filter(|t| t.source.as_ref().is_some_and(|s| s.kind == "static_held"))
+                .collect::<Vec<_>>();
+            assert_eq!(
+                tasks.len(),
+                if include {
+                    if double {
+                        2
+                    } else {
+                        1
+                    }
+                } else {
+                    0
+                }
+            );
+            assert!(tasks.iter().all(|t| t.target.kind == TargetKind::Item
+                && t.source.as_ref().unwrap().status == "unknown"));
+        }
+        assert_eq!(save.data, save_before);
         assert_eq!(r.data, original);
         if double {
             // An unresolved Mercury variable must retain its unknown partner,
@@ -11538,4 +11601,132 @@ fn local_static_battle_sources_match_complete_native_setup() {
         );
     }
     assert_eq!(total, 486);
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_REFERENCED_STATIC_PROBES native vectors"]
+fn local_referenced_static_held_items_match_native_setup_and_collection() {
+    use crate::acquisition::{AcquisitionIndex, Target, TargetKind};
+    use sha2::{Digest, Sha256};
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_REFERENCED_STATIC_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    let mut count = 0;
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
+        assert_eq!(probes[key]["md5"], rom.profile.md5);
+        assert_eq!(
+            probes[key]["sha256"],
+            format!("{:x}", Sha256::digest(&*rom.data))
+        );
+        assert!(probes[key]["skipped"].as_array().unwrap().is_empty());
+        let index = AcquisitionIndex::build(&rom).unwrap();
+        let held: Vec<_> = index
+            .world
+            .map_events
+            .iter()
+            .flat_map(|r| {
+                r.markers
+                    .iter()
+                    .flat_map(move |m| {
+                        m.pokemon
+                            .iter()
+                            .map(move |s| (&r.map_id, Some((m.x, m.y)), s))
+                    })
+                    .chain(r.unplaced_pokemon.iter().map(|s| (&r.map_id, None, s)))
+            })
+            .filter(|(_, _, s)| s.method == "static" && s.held_item.is_some_and(|id| id != 0))
+            .collect();
+        assert_eq!(
+            held.len(),
+            probes[key]["held_reference_rows"].as_u64().unwrap() as usize
+        );
+        let mut queries = std::collections::BTreeMap::new();
+        for (map, tile, source) in &held {
+            let item = source.held_item.unwrap();
+            let query = queries.entry(item).or_insert_with(|| {
+                index
+                    .query(
+                        &rom,
+                        None,
+                        Target {
+                            kind: TargetKind::Item,
+                            id: item,
+                        },
+                    )
+                    .unwrap()
+            });
+            let result = query
+                .sources
+                .iter()
+                .find(|s| {
+                    s.kind == "static_held"
+                        && s.map_id.as_ref() == Some(*map)
+                        && s.script_source.as_ref() == Some(*source)
+                        && s.x.zip(s.y) == *tile
+                })
+                .expect("held-item query must preserve each referenced map tile");
+            assert_eq!(
+                query
+                    .sources
+                    .iter()
+                    .filter(|s| s.kind == "static_held")
+                    .count(),
+                held.iter()
+                    .filter(|(_, _, s)| s.held_item == Some(item))
+                    .count(),
+                "held-item query must preserve distinct references to shared scripts"
+            );
+            assert_eq!(result.x.zip(result.y), *tile);
+            assert!(
+                result.partial
+                    && result.receipt_flag.is_none()
+                    && result.held_percent.is_none()
+                    && result.encounter_percent.is_none()
+            );
+            assert_eq!(result.quantity, Some(1));
+            assert!(result
+                .related
+                .iter()
+                .any(|t| t.kind == TargetKind::Species && t.id == source.species));
+        }
+        for row in probes[key]["rows"].as_array().unwrap() {
+            let source = &row["source"];
+            let pc = source["offset"].as_u64().unwrap() as usize;
+            let assignments = &row["assignments"];
+            let resolve = |v: u16| {
+                if v < 0x4000 {
+                    Some(v)
+                } else {
+                    assignments[v.to_string()].as_u64().map(|x| x as u16)
+                }
+            };
+            assert_eq!(
+                rom.wild_command_length(pc).unwrap(),
+                row["length"].as_u64().unwrap() as usize
+            );
+            let sources = rom.script_pokemon_instruction(pc, resolve).unwrap();
+            assert_eq!(sources.len(), row["mons"].as_array().unwrap().len());
+            for (s, native) in sources.iter().zip(row["mons"].as_array().unwrap()) {
+                assert_eq!(
+                    (s.species, s.level, s.held_item),
+                    (
+                        native["species"].as_u64().unwrap() as u16,
+                        Some(native["level"].as_u64().unwrap() as u8),
+                        Some(native["held_item"].as_u64().unwrap() as u16)
+                    )
+                );
+            }
+            count += 1;
+        }
+        assert_eq!(rom.data.as_slice(), std::fs::read(&path).unwrap());
+        eprintln!(
+            "{key}: {} actual held-source rows and {} native original-command calls",
+            held.len(),
+            probes[key]["rows"].as_array().unwrap().len()
+        );
+    }
+    assert_eq!(count, 898);
 }

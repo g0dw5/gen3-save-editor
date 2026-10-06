@@ -292,3 +292,5 @@ ROM 资料的“培育资料”页提供已验证努力值道具的获取跳转�
 见[原生选择证据](docs/verification/training-party-selection-20261006.md)。
 
 定点相遇按本作原生单／双对手指令读取，在查询、地图及收集 HTML 中展示已知同场成员。原生构造能力与已找到的游戏内记录、捕捉及进入条件分开，见[验证说明](docs/verification/static-battles-20261006.md)。
+
+道具资料支持反查定点宝可梦的指定携带物，并关联宝可梦、地图和可选的未确认收集建议。原生生成字段与捕捉、进入、领取状态分开判断，见[证据](docs/verification/static-held-items-20261006.md)。

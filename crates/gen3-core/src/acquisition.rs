@@ -591,11 +591,18 @@ impl AcquisitionIndex {
                         .flat_map(|m| m.pokemon.iter().map(move |p| (Some(m), p)))
                         .chain(report.unplaced_pokemon.iter().map(|p| (None, p)))
                         .filter(|(_, p)| {
-                            p.trade.is_some() && p.held_item == Some(target.id) && target.id != 0
+                            (p.trade.is_some() || p.method == "static")
+                                && p.held_item == Some(target.id)
+                                && target.id != 0
                         })
                     {
                         let mut s = scripted_source(rom, save, state.as_ref(), map, marker, mon)?;
-                        s.kind = "npc_trade_item".into();
+                        s.kind = if mon.trade.is_some() {
+                            "npc_trade_item"
+                        } else {
+                            "static_held"
+                        }
+                        .into();
                         s.quantity = Some(1);
                         s.related
                             .retain(|t| !(t.kind == TargetKind::Item && t.id == target.id));

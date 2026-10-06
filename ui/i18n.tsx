@@ -501,6 +501,10 @@ export const en = {
     "Receipt follows a successful award in this script, independent of bag contents. Resets by other scripts remain unverified.",
   npc_trade: "NPC Pokémon trade",
   npc_trade_item: "Held item from an NPC trade",
+  static_held: "Item assigned to a fixed encounter",
+  heldExplicit: "Explicit setup item",
+  heldFixedHelp:
+    "The encounter script assigns this item at setup. Starting the event and obtaining it through capture or a taking move remain unverified; no random-slot or held-item chance is inferred.",
   tradeGive: "Give the NPC",
   tradeGiveSummary:
     "Give the NPC {species}; this individual leaves your collection.",
@@ -1750,6 +1754,10 @@ export const zh: Record<Key, string> = {
     "按成功领奖后写入的存档标记判断，不根据背包是否持有；其他脚本的重置规则仍待验证。",
   npc_trade: "NPC 宝可梦交换",
   npc_trade_item: "NPC 交换宝可梦携带的道具",
+  static_held: "定点宝可梦指定携带的道具",
+  heldExplicit: "生成时指定携带",
+  heldFixedHelp:
+    "相遇脚本在生成时指定此道具。事件能否触发、能否通过捕捉或夺取道具的招式获得仍待确认，不据此推导随机遇怪或携带概率。",
   tradeGive: "交给 NPC",
   tradeGiveSummary: "交给 NPC「{species}」；这一只个体会离开你的收集。",
   tradeLevelRule: "普通生成规则：获得的宝可梦等级与交出的宝可梦相同。",

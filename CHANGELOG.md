@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Reverse-query explicit fixed-encounter held items from item pages, with species,
+  map/return links and optional unconfirmed collection/HTML suggestions. Native
+  real-command checks distinguish setup fields from capture/access/receipt and
+  keep encounter and held-item probabilities separate.
+- 道具页补齐定点宝可梦指定携带物的反查、宝可梦／地图／返回跳转，并按“包含
+  未确认来源”纳入收集与 HTML。实际 ROM 指令原生核对生成字段；捕捉、进入、
+  领取及随机概率保持独立判断，不将指定携带误写成必然取得。
+
 - Read both members of the native Rocket fixed-encounter pair, with shared
   Mercury pair context, companion/item navigation and collection HTML facts.
   Check native dispatch bindings; unknown operands and capture/access conditions

@@ -8,6 +8,11 @@ export function heldSummary(
   catalog: Catalog,
   t: Translate,
 ): string[] {
+  if (source.kind === "static_held")
+    return [
+      `${t("heldExplicit")}: ${catalog.items.find((i) => i.id === item)?.name ?? `#${item}`}`,
+      t("heldFixedHelp"),
+    ];
   if (!["wild_held", "wild_held_unreferenced"].includes(source.kind)) return [];
   if (source.kind === "wild_held_unreferenced")
     return [t("heldUnreferencedHelp")];

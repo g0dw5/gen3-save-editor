@@ -715,3 +715,16 @@ fields and widths are verified within isolated setup, while capture permissions,
 startup and actual access stay **P/U**. The bounded current map survey has zero
 paired member rows in all five inputs; a supported native constructor is not a
 located encounter, and this does not prove absence. No source files are modified.
+
+
+## Fixed held-item reverse queries / 定点携带物反查
+
+[Real-command native evidence](verification/static-held-items-20261006.md)
+verifies 898 complete setup calls for 449 unique parsed inputs across all five
+fingerprints. Item queries now include 186 Ultimate and 18 Mercury fixed-held
+source rows, linked to species, tiles, shared entrances and optional unconfirmed
+collection/HTML suggestions. BW/DP/Rocket's ordinary scan has no nonzero held
+inputs; this is not evidence that their other mechanisms lack held items.
+Setup fields are **V within this boundary**; actual access, capture/theft,
+post-start overrides, receipt and complete acquisition remain **P/U**. No
+probability, repeatability or completion is fabricated from these fields.

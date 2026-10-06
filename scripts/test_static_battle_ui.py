@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fixed-pair source -> companion -> map -> back in the real bilingual UI.
+"""Fixed and held-item sources -> companion -> map -> back in the bilingual UI.
 
 Synthetic API responses only. No actual ROM/SAV opened or edited. Run Vite first.
 """
@@ -73,6 +73,18 @@ def main():
         unplaced_daycare=[],
         stopped_at=[],
     )
+    single_mon = dict(mons[1], battle_members=[], offset=700)
+    events["markers"].append(
+        dict(
+            marker,
+            id="gift-2",
+            x=2,
+            local_id=2,
+            offset=700,
+            script=700,
+            pokemon=[single_mon],
+        )
+    )
     world = dict(
         maps=[map],
         map_events=[events],
@@ -100,16 +112,18 @@ def main():
                 origins={},
             )
         elif command == "acquisition":
-            mon = mons[payload["id"] - 1]
+            mon = single_mon if payload["kind"] == "item" else mons[payload["id"] - 1]
             source = dict(
-                kind="static",
+                kind="static_held" if payload["kind"] == "item" else "static",
                 map_id="0-0",
                 region=1,
-                x=1,
+                x=2 if payload["kind"] == "item" else 1,
                 y=1,
                 underfoot=None,
-                related=[],
-                quantity=None,
+                related=(
+                    [dict(kind="species", id=2)] if payload["kind"] == "item" else []
+                ),
+                quantity=1 if payload["kind"] == "item" else None,
                 min_level=mon["level"],
                 max_level=mon["level"],
                 encounter_percent=None,
@@ -183,13 +197,35 @@ def main():
         page.get_by_role("button", name="返回上一条资料", exact=False).click()
         expect(page.locator(".reference-detail h2")).to_contain_text("Test species 2")
         expect(panel).to_contain_text("本次相遇的两只对手")
+        panel.get_by_role("button", name="Test item ↗", exact=True).click()
+        expect(page.locator(".reference-detail h2")).to_contain_text("Test item")
+        expect(panel).to_contain_text("定点宝可梦指定携带的道具")
+        expect(panel).to_contain_text("生成时指定携带: Test item")
+        expect(panel).to_contain_text("能否通过捕捉或夺取道具的招式获得仍待确认")
+        page.get_by_role("button", name="English", exact=True).click()
+        expect(panel).to_contain_text("Item assigned to a fixed encounter")
+        expect(panel).to_contain_text("Explicit setup item: Test item")
+        expect(panel).not_to_contain_text("Encounter slot probability")
+        expect(panel).not_to_contain_text("100%")
+        panel.get_by_role(
+            "button", name="Test fixed encounter room", exact=False
+        ).click()
+        page.locator(".map-focus").click()
+        expect(details).to_contain_text("Explicit setup item: Test item")
+        expect(details).to_contain_text("capture or a taking move remain unverified")
+        if os.environ.get("GEN3_UI_ARTIFACTS"):
+            details.screenshot(path=str(folder / "fixed-held-item-map.png"))
+        details.get_by_role("button", name="Test item ↗", exact=True).click()
+        expect(panel).to_contain_text("Explicit setup item: Test item")
+        panel.get_by_role("button", name="Test species 2 ↗", exact=True).click()
+        expect(page.locator(".reference-detail h2")).to_contain_text("Test species 2")
         assert not any(
             r["command"] in ("action", "export_save", "save_bytes") for r in requests
         )
         assert not errors, errors
         browser.close()
     print(
-        "Paired source -> companion -> map -> back, EN/ZH and read-only queries passed"
+        "Fixed/pair item -> species -> map -> item -> back, EN/ZH and read-only queries passed"
     )
 
 

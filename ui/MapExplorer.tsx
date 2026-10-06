@@ -449,6 +449,22 @@ export function MapExplorer({
                       }
                     />
                   )}
+                  {mon.method === "static" &&
+                    !mon.battle_members?.length &&
+                    !!mon.held_item && (
+                      <p className="small">
+                        {t("heldExplicit")}:{" "}
+                        <button
+                          className="link-button"
+                          onClick={() => onItem?.(mon.held_item!)}
+                        >
+                          {catalog.items.find((i) => i.id === mon.held_item)
+                            ?.name ?? `#${mon.held_item}`}{" "}
+                          ↗
+                        </button>
+                        <span className="muted"> · {t("heldFixedHelp")}</span>
+                      </p>
+                    )}
                   <TradeDetails
                     mon={mon}
                     catalog={catalog}
