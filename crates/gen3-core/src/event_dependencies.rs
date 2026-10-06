@@ -32,9 +32,12 @@ pub struct Rules {
     pub presentation_handlers: [usize; 8],
     /// Optional native message-preparation gate in the standard-call dispatcher.
     pub standard_call_hook: Option<usize>,
+    /// Verified player-gender reader, SaveBlock2 pointer and VAR_RESULT address.
+    pub player_gender: (usize, u32, u32),
 }
 const OPCODES: [u8; 8] = [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f];
 pub const EMERALD: Rules = Rules {
+    player_gender: (0x9b88c, 0x03005d90, 0x020375f0),
     standard_call_hook: None,
     presentation_handlers: [
         0x99508, 0x99538, 0x99380, 0x9ac78, 0x9abd4, 0x9acd4, 0x99db4, 0x9ac8c,
@@ -71,6 +74,7 @@ pub const EMERALD: Rules = Rules {
     ],
 };
 pub const ROCKET: Rules = Rules {
+    player_gender: (0xd185c, 0x03005250, 0x020385b0),
     standard_call_hook: None,
     presentation_handlers: [
         0xcf3f8, 0xcf428, 0xcf270, 0xd0bac, 0xd0b08, 0xd0c08, 0xcfcfc, 0xd0bc0,
@@ -89,6 +93,7 @@ pub const ROCKET: Rules = Rules {
     ],
 };
 pub const MERCURY: Rules = Rules {
+    player_gender: (0x6c4f0, 0x0300500c, 0x020370d0),
     standard_call_hook: None,
     presentation_handlers: [
         0x6a150, 0x6a180, 0x69fc8, 0x6b878, 0x1d5df26, 0x6ba80, 0x6a9b0, 0x6b88c,

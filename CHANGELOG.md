@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Preserve verified native player-gender reads and copied-result comparisons across
+  references, maps and collection HTML. SAV overlays show the saved value; ROM-only
+  checks stay unknown. Five-ROM native read/copy/branch evidence and bilingual UI
+  regression cover this bounded rule; other story/access gaps remain partial.
+- 五指纹补齐原生玩家性别读取、复制后比较与中英文条件展示，资料／地图／收集
+  HTML 共用说明。读取 SAV 后代入存档身份；仅读 ROM 保留未知。其他剧情、领取
+  与可达性缺口不因此升级为完整支持。
+
 - Correct Dark Phantom BW/DP berry/key-item ROM category IDs. Standard pocket
   edits, ordinary holdings and reference labels now select the proper category.
   Normal choices follow the loaded ROM; free/PC choices stay broad and existing

@@ -169,7 +169,8 @@ struct State {
     conditions: Vec<EventCondition>,
     comparison: Option<(&'static str, u16, u32)>,
     checks: BTreeMap<u16, EventCondition>,
-    boolean_comparison: Option<(EventCondition, u16, bool)>,
+    /// Compared native check results: resource booleans or the raw gender byte.
+    checked_comparison: Option<(EventCondition, u16, bool)>,
     bag_changed: bool,
     money_changed: bool,
     resource_vars_unknown: bool,
@@ -350,6 +351,7 @@ impl Rom {
                     break;
                 }
                 let presentation = self.script_presentation(pc);
+                let player_gender = self.script_player_gender(pc);
                 if !prove && !observe {
                     match self.script_daycare_instruction(pc) {
                         Ok(Some(mut source)) => {
@@ -415,6 +417,7 @@ impl Rom {
                     // Retain potential later writes, but invalidate known operands
                     // after commands outside this verified event/presentation set.
                     if presentation.is_none()
+                        && !player_gender
                         && !matches!(op,
                             0x00..=0x07 | 0x0f | 0x16..=0x1a | 0x21 | 0x22 | 0x29..=0x2b |
                             0x2f..=0x32 | 0x44 | 0x47 | 0x48 | 0x5a | 0x6a..=0x6d | 0x84 | 0x90..=0x92
@@ -425,7 +428,7 @@ impl Rom {
                         s.flags.clear();
                         s.checks.clear();
                         s.comparison = None;
-                        s.boolean_comparison = None;
+                        s.checked_comparison = None;
                         s.known_comparison = None;
                         s.resource_vars_unknown = true;
                     }
@@ -457,6 +460,7 @@ impl Rom {
                 // semantics may participate in receipt proofs. Width alone is not proof.
                 if prove
                     && presentation.is_none()
+                    && !player_gender
                     && !matches!(op,
                         0x00..=0x09 | 0x0f | 0x16..=0x19 | 0x1a | 0x21 | 0x22 | 0x29..=0x2b |
                         0x2f..=0x32 | 0x44 | 0x48 | 0x5a | 0x6a..=0x6d | 0x84
@@ -510,31 +514,45 @@ impl Rom {
                             stopped.insert(pc);
                             break;
                         };
-                        let mut resource_branch = None;
-                        let known = if let Some((guard, rhs, reversed)) = &s.boolean_comparison {
-                            let outcomes = [0u16, 1].map(|boolean| {
-                                let (a, b) = if *reversed {
-                                    (*rhs, boolean)
+                        let mut checked_branch = None;
+                        let known = if let Some((guard, rhs, reversed)) = &s.checked_comparison {
+                            if guard.kind == "player_gender" {
+                                // This native reader returns the raw byte, not a
+                                // boolean. Preserve all six numeric comparisons.
+                                let mut guard = guard.clone();
+                                guard.value = u32::from(*rhs);
+                                guard.comparison = if *reversed {
+                                    [2, 1, 0, 4, 3, 5][condition as usize]
                                 } else {
-                                    (boolean, *rhs)
+                                    condition
                                 };
-                                test(
-                                    if a < b {
-                                        0
-                                    } else if a == b {
-                                        1
-                                    } else {
-                                        2
-                                    },
-                                    condition,
-                                )
-                                .expect("validated comparison")
-                            });
-                            if outcomes[0] == outcomes[1] {
-                                Some(outcomes[0])
-                            } else {
-                                resource_branch = Some((guard.clone(), outcomes[1]));
+                                checked_branch = Some((guard, true));
                                 None
+                            } else {
+                                let outcomes = [0u16, 1].map(|boolean| {
+                                    let (a, b) = if *reversed {
+                                        (*rhs, boolean)
+                                    } else {
+                                        (boolean, *rhs)
+                                    };
+                                    test(
+                                        if a < b {
+                                            0
+                                        } else if a == b {
+                                            1
+                                        } else {
+                                            2
+                                        },
+                                        condition,
+                                    )
+                                    .expect("validated comparison")
+                                });
+                                if outcomes[0] == outcomes[1] {
+                                    Some(outcomes[0])
+                                } else {
+                                    checked_branch = Some((guard.clone(), outcomes[1]));
+                                    None
+                                }
                             }
                         } else {
                             s.known_comparison.and_then(|v| test(v, condition))
@@ -545,7 +563,7 @@ impl Rom {
                             branch.stack.push(s.pc);
                         }
                         if known.is_none() {
-                            let mut guard = if let Some((mut guard, when_true)) = resource_branch {
+                            let mut guard = if let Some((mut guard, when_true)) = checked_branch {
                                 guard.taken = when_true;
                                 guard
                             } else {
@@ -596,7 +614,7 @@ impl Rom {
                             s.checks.retain(|k, _| *k < 0x8000);
                             s.vars.retain(|k, _| *k < 0x8000);
                             s.comparison = None;
-                            s.boolean_comparison = None;
+                            s.checked_comparison = None;
                             s.known_comparison = None;
                             if prove && std != 0 {
                                 complete = false;
@@ -620,7 +638,7 @@ impl Rom {
                         s.checks.clear();
                         s.flags.clear();
                         s.comparison = None;
-                        s.boolean_comparison = None;
+                        s.checked_comparison = None;
                         s.known_comparison = None;
                         s.bag_changed = true;
                         s.money_changed = true;
@@ -719,7 +737,7 @@ impl Rom {
                         } else {
                             resolve(&s, rhs)
                         };
-                        s.boolean_comparison = s
+                        s.checked_comparison = s
                             .checks
                             .get(&id)
                             .cloned()
@@ -774,7 +792,7 @@ impl Rom {
                         }
                     }
                     0x2b => {
-                        s.boolean_comparison = None;
+                        s.checked_comparison = None;
                         s.comparison = Some(("flag", u16(b, pc + 1)?, 1));
                         s.known_comparison =
                             s.flags
@@ -783,7 +801,7 @@ impl Rom {
                     }
                     0x1b..=0x20 | 0x60 => {
                         s.comparison = None;
-                        s.boolean_comparison = None;
+                        s.checked_comparison = None;
                         s.known_comparison = None;
                     }
                     0x23 | 0x25 | 0x26 | 0xb6 => {
@@ -793,7 +811,7 @@ impl Rom {
                         s.money_changed = true;
                         s.flags.clear();
                         s.comparison = None;
-                        s.boolean_comparison = None;
+                        s.checked_comparison = None;
                         s.known_comparison = None;
                         // Dynamic/native rewards cannot be inferred from an item table.
                         stopped.insert(pc);
@@ -831,7 +849,7 @@ impl Rom {
                                 s.checks.clear();
                                 s.flags.clear();
                                 s.comparison = None;
-                                s.boolean_comparison = None;
+                                s.checked_comparison = None;
                                 s.known_comparison = None;
                                 s.bag_changed = true;
                                 s.money_changed = true;
@@ -899,6 +917,33 @@ impl Rom {
                         s.checks.remove(&u16(b, pc + 1)?);
                         s.checks.remove(&u16(b, pc + 3)?);
                     }
+                    0xa0 if player_gender => {
+                        s.vars.remove(&0x800d);
+                        s.checks.insert(
+                            0x800d,
+                            EventCondition {
+                                kind: "player_gender",
+                                id: 0,
+                                value: 0,
+                                comparison: 1,
+                                taken: true,
+                            },
+                        );
+                        // The cached comparison and all other script state are
+                        // preserved by the complete native routine.
+                    }
+                    0xa0 => {
+                        stopped.insert(pc);
+                        s.vars.clear();
+                        s.flags.clear();
+                        s.checks.clear();
+                        s.checked_comparison = None;
+                        s.comparison = None;
+                        s.known_comparison = None;
+                        s.bag_changed = true;
+                        s.money_changed = true;
+                        s.resource_vars_unknown = true;
+                    }
                     0x43
                     | 0x45
                     | 0x46
@@ -910,7 +955,6 @@ impl Rom {
                     | 0x7c
                     | 0x8f
                     | 0x96
-                    | 0xa0
                     | 0xb3
                     | 0xce
                     | 0xe3
@@ -919,7 +963,7 @@ impl Rom {
                         s.vars.remove(&0x800d);
                         s.checks.remove(&0x800d);
                         s.checks.clear();
-                        s.boolean_comparison = None;
+                        s.checked_comparison = None;
                         s.comparison = None;
                         s.known_comparison = None;
                         s.bag_changed = true;
@@ -959,7 +1003,7 @@ impl Rom {
                         s.money_changed = true;
                         s.flags.clear();
                         s.comparison = None;
-                        s.boolean_comparison = None;
+                        s.checked_comparison = None;
                         s.known_comparison = None;
                         if op == 0x5c && matches!(b[pc + 1], 1 | 2 | 6 | 8) {
                             if let Ok(target) = pointer(b, pc + len - 4) {
@@ -977,7 +1021,7 @@ impl Rom {
                         s.money_changed = true;
                         s.resource_vars_unknown = true;
                         s.checks.clear();
-                        s.boolean_comparison = None;
+                        s.checked_comparison = None;
                         s.comparison = None;
                         s.known_comparison = None;
                     }

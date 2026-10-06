@@ -63,6 +63,13 @@ impl EventSnapshot {
         self.money
     }
 
+    pub(crate) fn player_gender(&self, rom: &Rom) -> Option<u32> {
+        self.trainer
+            .get(rom.player_gender_offset()?)
+            .copied()
+            .map(u32::from)
+    }
+
     /// Ordinary pocket only: PC, another pocket and a facility bag cannot count.
     /// Returns the native effective quantity and whether any matching slot exists.
     pub(crate) fn normal_bag_item(&self, rom: &Rom, id: u16) -> Option<(u32, bool)> {

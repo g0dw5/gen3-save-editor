@@ -239,6 +239,9 @@ export function conditionLabel(
         : `${name} ${symbol} ${c.value}`;
   } else if (["money", "money_runtime"].includes(c.kind)) {
     label = `${t("conditionMoney")} ${symbol} ${c.value}`;
+  } else if (c.kind === "player_gender") {
+    const gender = ["conditionPlayerMale", "conditionPlayerFemale"][c.value];
+    label = `${t("conditionPlayerGender")} ${symbol} ${gender ? t(gender) : c.value}`;
   } else if (c.kind === "flag" && c.value === 1) {
     label = t(
       op === 2
@@ -262,7 +265,13 @@ export function conditionLabel(
     const actual =
       c.kind === "flag" && [0, 1].includes(check.actual)
         ? t(check.actual === 1 ? "conditionFlagSet" : "conditionFlagUnset")
-        : String(check.actual);
+        : c.kind === "player_gender" && [0, 1].includes(check.actual)
+          ? t(
+              check.actual === 0
+                ? "conditionPlayerMale"
+                : "conditionPlayerFemale",
+            )
+          : String(check.actual);
     label += ` · ${t(caption)} ${actual}`;
   }
   return label;

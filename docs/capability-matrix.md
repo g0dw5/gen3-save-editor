@@ -629,3 +629,19 @@ payment/receipt remain partial; no broader map/story/access upgrade is implied.
 
 五指纹均完成交叉核对；仅修正漆黑 BW／DP 的错误分类配置，其他三款保留已验证
 定义。已存在的错放数据不会自动移动。原文件不改动，版本不递增，不构建发布包。
+
+## Native player-condition dataflow / 原生玩家条件数据流
+
+[Player-condition evidence](verification/player-conditions-20261006.md) verifies
+SaveBlock2's raw gender read, copied origins, all comparisons and jump/call
+branches across the five exact fingerprints. Native reader/dataflow is **V within
+that boundary** (1,280 reads, 40 copies, 2,400 branches); complete referenced roots
+and story/access remain **P**. The same SAV predicate/human labels reach map,
+acquisition, collection/prerequisite/preparation and standalone HTML views.
+ROM-only conditions do not invent a player identity; unknown handlers/operands
+stay unknown. Native/UI fixtures, negative controls and 129 public tests pass.
+No ROM/SAV input is changed, no content catalog is embedded and no new package or
+version is created by this increment.
+
+此次仅升级明确限定的指令／数据流证据；未宣称已引用事件的其他剧情、奖励或
+进入条件完整验证。四款游戏均保留此前的部分解析与待验证范围。

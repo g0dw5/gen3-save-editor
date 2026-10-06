@@ -229,6 +229,7 @@ pub(crate) fn check(
         "flag" => s.flag(condition.id).map(u32::from),
         "variable" => s.variable(condition.id).map(u32::from),
         "money" => s.money(),
+        "player_gender" => s.player_gender(rom?),
         "bag_item" => {
             let rom = rom?;
             let (quantity, found) = s.normal_bag_item(rom, condition.id)?;

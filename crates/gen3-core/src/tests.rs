@@ -10145,3 +10145,222 @@ fn local_inventory_categories_match_booted_native_pockets_and_checks() {
         }
     }
 }
+
+fn player_condition_fixture(p: profile::Profile) -> Rom {
+    let mut r = adapter_rom(p);
+    let rules = r.profile.event_state.unwrap().effects.unwrap();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    for (op, handler) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
+        .into_iter()
+        .zip(rules.handlers)
+    {
+        put32(
+            b,
+            rules.commands + op as usize * 4,
+            0x08000001 + handler as u32,
+        );
+    }
+    let (handler, sb2, result) = rules.player_gender;
+    put32(b, rules.commands + 0xa0 * 4, 0x08000001 + handler as u32);
+    for (i, value) in [0x4903, 0x4804, 0x6800, 0x7a00, 0x8008, 0x2000, 0x4770]
+        .into_iter()
+        .enumerate()
+    {
+        put16(b, handler + i * 2, value);
+    }
+    put32(b, handler + 0x10, result);
+    put32(b, handler + 0x14, sb2);
+    r
+}
+
+fn player_condition_branch(
+    r: &mut Rom,
+    rhs: u16,
+    reversed: bool,
+    selector: u8,
+    branch: u8,
+    copy: u8,
+) -> crate::event_dependencies::ScriptEffects {
+    let root = 0x26000;
+    let target = 0x26100;
+    let mut script = vec![0x16, 1, 0x80];
+    script.extend(rhs.to_le_bytes());
+    script.extend([0xa0, copy, 0, 0x80, 0x0d, 0x80]);
+    if reversed {
+        script.extend([0x22, 1, 0x80, 0, 0x80]);
+    } else {
+        script.extend([0x21, 0, 0x80]);
+        script.extend(rhs.to_le_bytes());
+    }
+    script.extend([branch, selector]);
+    script.extend((0x08000000u32 + target as u32).to_le_bytes());
+    script.extend([0x29, 12, 0, 2]);
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    b[root..root + script.len()].copy_from_slice(&script);
+    b[target..target + 4].copy_from_slice(&[0x29, 13, 0, if branch == 7 { 3 } else { 2 }]);
+    r.event_effect_script(root).unwrap()
+}
+
+#[test]
+fn player_conditions_preserve_raw_gender_aliases_comparisons_and_unknown_boundaries() {
+    use crate::acquisition::check;
+    use crate::event_state::EventSnapshot;
+    for p in profile::PROFILES {
+        let mut r = player_condition_fixture(p);
+        assert_eq!(r.player_gender_offset(), Some(8));
+        for rhs in [0, 1, 2, 255, 65535] {
+            for reversed in [false, true] {
+                for selector in 0..6 {
+                    for branch in [6, 7] {
+                        for copy in [0x19, 0x1a] {
+                            let walk = player_condition_branch(
+                                &mut r, rhs, reversed, selector, branch, copy,
+                            );
+                            assert!(walk.complete && walk.stopped_at.is_empty());
+                            let guard =
+                                &walk.effects.iter().find(|e| e.id == 13).unwrap().conditions;
+                            assert_eq!(guard.len(), 1);
+                            assert_eq!(guard[0].kind, "player_gender");
+                            assert_eq!(guard[0].value, u32::from(rhs));
+                            assert!(check(None, Some(&r), &guard[0]).satisfied.is_none());
+                            for gender in [0, 1, 2, 255] {
+                                let mut trainer = vec![0; 16];
+                                trainer[8] = gender;
+                                let snapshot = EventSnapshot::fixture(
+                                    vec![],
+                                    trainer,
+                                    vec![],
+                                    p.event_state.unwrap(),
+                                );
+                                let actual = check(Some(&snapshot), Some(&r), &guard[0]);
+                                let (a, b) = if reversed {
+                                    (rhs, u16::from(gender))
+                                } else {
+                                    (u16::from(gender), rhs)
+                                };
+                                let expected = [a < b, a == b, a > b, a <= b, a >= b, a != b]
+                                    [selector as usize];
+                                assert_eq!(actual.actual, Some(u32::from(gender)));
+                                assert_eq!(
+                                    actual.satisfied,
+                                    Some(expected),
+                                    "{} {rhs} {selector} {reversed}",
+                                    p.id
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Native gender reading does not overwrite a previous cached comparison.
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[0x26000..0x2600b].copy_from_slice(&[0x2b, 11, 0, 0xa0, 6, 1, 0, 0x61, 2, 8, 2]);
+        let walk = r.event_effect_script(0x26000).unwrap();
+        assert!(walk.complete);
+        assert!(walk
+            .effects
+            .iter()
+            .find(|e| e.id == 13)
+            .unwrap()
+            .conditions
+            .iter()
+            .any(|c| c.kind == "flag" && c.id == 11));
+        // An overwritten alias must not retain the earlier player condition.
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[0x26000..0x26016].copy_from_slice(&[
+            0xa0, 0x16, 0x0d, 0x80, 1, 0, 0x21, 0x0d, 0x80, 1, 0, 6, 1, 0, 0x61, 2, 8, 0x29, 12, 0,
+            2, 2,
+        ]);
+        let walk = r.event_effect_script(0x26000).unwrap();
+        assert!(walk
+            .effects
+            .iter()
+            .all(|e| e.conditions.iter().all(|c| c.kind != "player_gender")));
+        // Changed executable/literals cannot silently inherit another ROM's rule.
+        let h = p.event_state.unwrap().effects.unwrap().player_gender.0;
+        for offset in [0, 6, 12, 16, 20] {
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            b[h + offset] ^= 1;
+            assert!(r.player_gender_offset().is_none());
+            let walk = player_condition_branch(&mut r, 1, false, 1, 6, 0x19);
+            assert!(!walk.complete && walk.stopped_at.contains(&0x26005));
+            assert!(walk
+                .effects
+                .iter()
+                .all(|e| e.conditions.iter().all(|c| c.kind != "player_gender")));
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            b[h + offset] ^= 1;
+        }
+    }
+}
+
+#[test]
+#[ignore = "requires five exact private ROMs and GEN3_PLAYER_CONDITION_PROBES native vectors"]
+fn local_player_conditions_match_complete_native_reads_copies_and_branches() {
+    use crate::{acquisition::check, event_state::EventSnapshot};
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_PLAYER_CONDITION_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let bytes = std::fs::read(&path).unwrap();
+        let rom = Rom::open(bytes.clone()).unwrap();
+        let native = &probes[key];
+        assert_eq!(native["md5"].as_str().unwrap(), rom.profile.md5);
+        assert_eq!(native["sha256"].as_str().unwrap(), sha256(&bytes));
+        assert_eq!(rom.player_gender_offset(), Some(8));
+        let (handler, sb2, result) = rom
+            .profile
+            .event_state
+            .unwrap()
+            .effects
+            .unwrap()
+            .player_gender;
+        assert_eq!(
+            native["handlers"]["160"].as_u64().unwrap() as usize,
+            handler
+        );
+        assert_eq!(native["save_pointer"].as_u64().unwrap(), u64::from(sb2));
+        assert_eq!(
+            native["result_pointer"].as_u64().unwrap(),
+            u64::from(result)
+        );
+        assert_eq!(native["reads"].as_array().unwrap().len(), 256);
+        for row in native["reads"].as_array().unwrap() {
+            let mut trainer = vec![0; 16];
+            trainer[8] = row["gender"].as_u64().unwrap() as u8;
+            let snapshot =
+                EventSnapshot::fixture(vec![], trainer, vec![], rom.profile.event_state.unwrap());
+            assert_eq!(
+                snapshot.player_gender(&rom).unwrap(),
+                row["result"].as_u64().unwrap() as u32
+            );
+        }
+        assert_eq!(native["copies"].as_array().unwrap().len(), 8);
+        assert_eq!(native["branches"].as_array().unwrap().len(), 480);
+        let mut fixture = player_condition_fixture(rom.profile);
+        for row in native["branches"].as_array().unwrap() {
+            let walk = player_condition_branch(
+                &mut fixture,
+                row["rhs"].as_u64().unwrap() as u16,
+                row["reversed"].as_bool().unwrap(),
+                row["selector"].as_u64().unwrap() as u8,
+                row["opcode"].as_u64().unwrap() as u8,
+                0x19,
+            );
+            let guard = &walk.effects.iter().find(|e| e.id == 13).unwrap().conditions[0];
+            let mut trainer = vec![0; 16];
+            trainer[8] = row["gender"].as_u64().unwrap() as u8;
+            let snapshot =
+                EventSnapshot::fixture(vec![], trainer, vec![], rom.profile.event_state.unwrap());
+            assert_eq!(
+                check(Some(&snapshot), Some(&rom), guard).satisfied,
+                row["selected"].as_bool(),
+                "{key} {row}"
+            );
+        }
+        assert_eq!(bytes, std::fs::read(path).unwrap());
+    }
+}
