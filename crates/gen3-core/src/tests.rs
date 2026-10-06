@@ -3736,6 +3736,66 @@ fn local_query_acquisition_and_collection_all_profiles() {
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{name}")).unwrap()).unwrap())
                 .unwrap();
         let index = AcquisitionIndex::build(&r).unwrap();
+        let mut resources = std::collections::BTreeSet::new();
+        let mut resource_edges = [0usize; 3];
+        for rows in index.evolutions.values() {
+            for e in rows {
+                assert!(!crate::forms::is_battle_method(
+                    r.profile.battle_forms,
+                    e.method
+                ));
+                assert_eq!(
+                    crate::binary::u16(&r.data, e.offset + 2).unwrap(),
+                    e.parameter
+                );
+                assert_eq!(crate::binary::u16(&r.data, e.offset + 4).unwrap(), e.target);
+                for target in crate::acquisition::evolution_targets(e) {
+                    let kind = match target.kind {
+                        TargetKind::Item => 0,
+                        TargetKind::Move => 1,
+                        TargetKind::Species => 2,
+                    };
+                    resources.insert((kind, target.id));
+                    resource_edges[kind] += 1;
+                }
+            }
+        }
+        for (kind, id) in &resources {
+            let kind = [TargetKind::Item, TargetKind::Move, TargetKind::Species][*kind].clone();
+            let target = Target { kind, id: *id };
+            let uses = index.evolution_uses(&target);
+            assert!(!uses.is_empty());
+            assert!(uses.iter().all(|row| !row
+                .related
+                .iter()
+                .any(|t| t.kind == target.kind && t.id == target.id)));
+        }
+        for kind in 0..3 {
+            if let Some((_, id)) = resources.iter().find(|(k, _)| *k == kind) {
+                let target = Target {
+                    kind: [TargetKind::Item, TargetKind::Move, TargetKind::Species][kind].clone(),
+                    id: *id,
+                };
+                let expected = index.evolution_uses(&target);
+                let report = index.query(&r, None, target).unwrap();
+                assert_eq!(
+                    serde_json::to_value(&report.evolution_uses).unwrap(),
+                    serde_json::to_value(&expected).unwrap()
+                );
+                assert!(!report.sources.iter().any(|s| s.kind == "evolution_use"));
+                let tree = r.species_relations(expected[0].source).unwrap();
+                for edge in tree.evolutions {
+                    assert_eq!(
+                        serde_json::to_value(&edge.related).unwrap(),
+                        serde_json::to_value(crate::acquisition::evolution_targets(
+                            &edge.evolution
+                        ))
+                        .unwrap()
+                    );
+                }
+            }
+        }
+        eprintln!("{name}: evolution resource references item/move/companion {:?}, {} distinct resources; acquisition uses remain separate",resource_edges,resources.len());
         let item = index
             .world
             .map_events
@@ -11729,4 +11789,208 @@ fn local_referenced_static_held_items_match_native_setup_and_collection() {
         );
     }
     assert_eq!(count, 898);
+}
+
+#[test]
+fn evolution_requirements_link_resources_without_becoming_acquisition_sources() {
+    use crate::acquisition::{AcquisitionIndex, Target, TargetKind};
+    for p in profile::PROFILES {
+        let (mut r, _) = npc_trade_fixture(p);
+        r.profile.species.count = 4;
+        r.profile.evolutions = profile::Table {
+            offset: 0x28000,
+            count: 4,
+            stride: 48,
+        };
+        r.profile.form_families = None;
+        let base = r.profile.evolutions.offset + r.profile.evolutions.stride;
+        let move_method = match r.profile.formats.evolutions {
+            crate::adapter::EvolutionFormat::Cfru => 26,
+            crate::adapter::EvolutionFormat::Ultimate55 => 16,
+            crate::adapter::EvolutionFormat::Expanded => 23,
+            _ => 99,
+        };
+        let battle_method = match r.profile.battle_forms {
+            Some(crate::forms::BattleFormRules::ExpansionEvolutionMethods) => 0xffff,
+            Some(crate::forms::BattleFormRules::UltimateEvolutionMethods) => 250,
+            Some(crate::forms::BattleFormRules::CfruEvolutionMethods) => 0xfd,
+            None => 0,
+        };
+        let bytes = std::sync::Arc::make_mut(&mut r.data);
+        bytes[0x28000..0x280c0].fill(0);
+        for (row, method, param, target) in [
+            (0, 7, 1, 2),
+            (1, 4, 1, 3),
+            (2, move_method, 1, 3),
+            (3, battle_method, 1, 3),
+            (4, 99, 1, 2),
+        ] {
+            put16(bytes, base + row * 8, method);
+            put16(bytes, base + row * 8 + 2, param);
+            put16(bytes, base + row * 8 + 4, target);
+        }
+        if r.profile.formats.evolutions == crate::adapter::EvolutionFormat::Cfru {
+            put16(bytes, base + 40, 36);
+            put16(bytes, base + 42, 1);
+            put16(bytes, base + 44, 2);
+            put16(bytes, base + 46, 2);
+        }
+        let original = r.data.clone();
+        let mut index = AcquisitionIndex {
+            wild_cache: Default::default(),
+            breeding_cache: Default::default(),
+            world: crate::world::World {
+                maps: vec![],
+                map_events: vec![],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: crate::world::TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: (1..4).map(|id| r.valid_species(id).unwrap()).collect(),
+            evolutions: (1..4).map(|id| (id, r.evolutions(id).unwrap())).collect(),
+            learnsets: Default::default(),
+        };
+        let save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let before = save.data.clone();
+        let item = index
+            .query(
+                &r,
+                Some(&save),
+                Target {
+                    kind: TargetKind::Item,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        assert!(
+            item.sources.is_empty(),
+            "an evolution consumes/uses the resource; it does not supply it"
+        );
+        let compound = r.profile.formats.evolutions == crate::adapter::EvolutionFormat::Cfru;
+        assert_eq!(item.evolution_uses.len(), if compound { 2 } else { 1 });
+        assert!(item
+            .evolution_uses
+            .iter()
+            .all(|e| e.source == 1 && e.evolution.target == 2));
+        assert!(!item
+            .evolution_uses
+            .iter()
+            .any(|e| matches!(e.evolution.condition, "level" | "unknown")));
+        if compound {
+            assert!(item.evolution_uses.iter().any(|e| e
+                .related
+                .iter()
+                .any(|t| t.kind == TargetKind::Item && t.id == 2)));
+        }
+        let moved = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Move,
+                    id: 1,
+                },
+            )
+            .unwrap();
+        assert!(moved.sources.is_empty());
+        assert_eq!(moved.evolution_uses.len(), usize::from(move_method != 99));
+        let incoming = index
+            .query(
+                &r,
+                None,
+                Target {
+                    kind: TargetKind::Species,
+                    id: 2,
+                },
+            )
+            .unwrap();
+        assert!(incoming.sources.iter().any(|s| s.kind == "evolution"
+            && s.related
+                .iter()
+                .any(|t| t.kind == TargetKind::Item && t.id == 1)));
+        let tree = r.species_relations(2).unwrap();
+        assert!(tree.evolutions.iter().any(|e| e.evolution.method == 7
+            && e.related
+                .iter()
+                .any(|t| t.kind == TargetKind::Item && t.id == 1)));
+        assert!(!tree
+            .evolutions
+            .iter()
+            .any(|e| crate::forms::is_battle_method(r.profile.battle_forms, e.evolution.method)));
+        // Typed location conditions also survive the full read-only plan/entrance flow.
+        let (_, mut exterior) = npc_trade_fixture(p);
+        exterior.events = None;
+        exterior.scripts.clear();
+        exterior.map_type = 1;
+        let mut inside = exterior.clone();
+        inside.id = "1-0".into();
+        inside.group = 1;
+        inside.map_type = 4;
+        index.world.maps = vec![exterior, inside];
+        for e in index
+            .evolutions
+            .get_mut(&1)
+            .unwrap()
+            .iter_mut()
+            .filter(|e| e.target == 3)
+        {
+            e.requirements.push(crate::rom::EvolutionRequirement {
+                kind: "map",
+                value: 256,
+            });
+        }
+        let rule = index.evolutions[&1].iter().find(|e| e.target == 3).unwrap();
+        let map_refs = crate::acquisition::evolution_location_maps(rule, &index.world.maps);
+        assert_eq!(
+            map_refs.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(),
+            ["1-0"]
+        );
+        let mut raw_map = rule.clone();
+        raw_map.condition = "map";
+        raw_map.parameter = 256;
+        raw_map.requirements.clear();
+        assert!(
+            crate::acquisition::evolution_location_maps(&raw_map, &index.world.maps).is_empty(),
+            "unverified raw map operands must not acquire meanings"
+        );
+        raw_map.condition = "region";
+        raw_map.parameter = 1;
+        assert_eq!(
+            crate::acquisition::evolution_location_maps(&raw_map, &index.world.maps).len(),
+            2
+        );
+        raw_map.requirements.push(crate::rom::EvolutionRequirement {
+            kind: "outside_region",
+            value: 1,
+        });
+        assert!(
+            crate::acquisition::evolution_location_maps(&raw_map, &index.world.maps).is_empty(),
+            "compound constraints are intersected"
+        );
+        let plan = index
+            .collection(
+                &r,
+                &save,
+                crate::collection::CollectionRequest {
+                    basis: crate::collection::CollectionBasis::Individuals,
+                    families: false,
+                    include_unknown_rewards: false,
+                },
+            )
+            .unwrap();
+        assert!(plan.entrances.iter().any(|entry| entry.map_id == "1-0"));
+        assert!(
+            plan.entrances
+                .iter()
+                .filter(|entry| entry.map_id == "1-0")
+                .all(|entry| entry.chains.is_empty()),
+            "a referenced map without an entrance must not gain an invented route"
+        );
+        assert_eq!(save.data, before);
+        assert_eq!(r.data, original);
+    }
 }

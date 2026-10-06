@@ -5,6 +5,10 @@ import { CollectionBreeding, breedingRouteSummary } from "./CollectionBreeding";
 import { ConditionDetails, conditionLabel } from "./ConditionDetails";
 import { TradeDetails, tradeSummary } from "./TradeDetails";
 import { evolutionLabel } from "./referenceLabels";
+import {
+  EvolutionRuleDetails,
+  evolutionLocationSummary,
+} from "./EvolutionRuleDetails";
 import { useI18n } from "./i18n";
 import type {
   Catalog,
@@ -58,6 +62,7 @@ export function preparationSummary(
   for (const step of p.steps)
     lines.push(
       `${name(step.from)} → ${name(step.evolution.target)}: ${evolutionLabel(step.evolution, catalog, catalog.type_names, t)}`,
+      ...evolutionLocationSummary(step.evolution, maps, t),
     );
   lines.push(t("planPreparationHelp"));
   if (p.truncated) lines.push(t("planPreparationTruncated"));
@@ -174,26 +179,15 @@ export function CollectionPreparation({
           <li key={i}>
             {link({ kind: "species", id: step.from })} →{" "}
             {link({ kind: "species", id: step.evolution.target })}
-            <p>
-              {evolutionLabel(step.evolution, catalog, catalog.type_names, t)}
-            </p>
-            {step.related.map((target) => (
-              <span key={`${target.kind}-${target.id}`}>{link(target)} </span>
-            ))}
-            {(step.evolution.requirements ?? [])
-              .filter((r) => r.kind === "map")
-              .map((r) => {
-                const id = `${r.value >>> 8}-${r.value & 255}`;
-                return (
-                  <button
-                    key={id}
-                    className="link-button"
-                    onClick={() => onMap(id)}
-                  >
-                    {mapName(id)} ↗
-                  </button>
-                );
-              })}
+            <EvolutionRuleDetails
+              rule={step.evolution}
+              catalog={catalog}
+              maps={maps}
+              entrances={entrances}
+              related={step.related}
+              onTarget={onTarget}
+              onMap={onMap}
+            />
           </li>
         ))}
       </ol>

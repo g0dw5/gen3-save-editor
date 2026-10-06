@@ -12,6 +12,7 @@ use std::collections::{BTreeSet, HashSet};
 #[derive(Serialize)]
 pub struct EvolutionEdge {
     pub source: u16,
+    pub related: Vec<crate::acquisition::Target>,
     #[serde(flatten)]
     pub evolution: Evolution,
 }
@@ -91,6 +92,7 @@ impl Rom {
                 {
                     evolutions.push(EvolutionEdge {
                         source: row.id,
+                        related: crate::acquisition::evolution_targets(&evolution),
                         evolution,
                     });
                 }

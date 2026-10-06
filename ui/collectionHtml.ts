@@ -16,6 +16,10 @@ import { entranceState } from "./EntranceRoutes";
 import { tradeSummary } from "./TradeDetails";
 import { clockSummary } from "./ClockDetails";
 import { evolutionLabel } from "./referenceLabels";
+import {
+  evolutionLocationMaps,
+  evolutionLocationSummary,
+} from "./EvolutionRuleDetails";
 import { preparationSummary } from "./CollectionPreparation";
 import { breedingCoverageSummary } from "./CollectionBreeding";
 import { dexReadSummary } from "./DexReadDetails";
@@ -93,6 +97,21 @@ export function collectionHtml(
     const unresolved = entry.unresolved_incoming ?? [];
     return `<div class="collection-entrances"><p>${esc(t("navApproaches"))}</p><p>${esc(t("planEntranceAlternatives"))}</p>${paths || `<p>${esc(t("navNoApproach"))}</p>`}${unresolved.length ? `<details class="entrance-unresolved"><summary>${esc(t("navUnresolved"))} (${unresolved.length})</summary>${unresolved.map((e) => `<p>${esc(tile(e.from, e.x, e.y))}</p>${passageHtml([e])}`).join("")}</details>` : ""}${entry.truncated ? `<p>${esc(t("navBounded"))}</p>` : ""}<p>${esc(t("navHelp"))}</p></div>`;
   };
+  const evolutionEntrancesHtml = (
+    rules: Parameters<typeof evolutionLocationMaps>[0][],
+  ) => {
+    const ids = new Set(
+      rules.flatMap((rule) =>
+        evolutionLocationMaps(rule, maps).maps.map((map) => map.id),
+      ),
+    );
+    return [...ids]
+      .map(
+        (id) =>
+          `<div class="evolution-location-entrances"><h4>${esc(mapName(id))} · ${esc(id)}</h4>${entranceHtml(plan.entrances.find((entry) => entry.map_id === id))}</div>`,
+      )
+      .join("");
+  };
   const routeHtml = (index: number) => {
     const route = plan.prerequisites?.routes?.find(
       (r) => r.report_index === index,
@@ -168,7 +187,9 @@ export function collectionHtml(
                   t,
                 )
                   .map((line) => `<p>${esc(line)}</p>`)
-                  .join("")}${entranceHtml(prepEntrance)}</div>`
+                  .join(
+                    "",
+                  )}${entranceHtml(prepEntrance)}${evolutionEntrancesHtml(preparation.steps.map((step) => step.evolution))}</div>`
               : "";
             const entrance = plan.entrances.find((e) => e.map_id === s?.map_id);
             const conditions = s?.conditions.map(checkHtml).join("; ");
@@ -190,7 +211,17 @@ export function collectionHtml(
                     .map((line) => `<p>${esc(line)}</p>`)
                     .join("")
                 : ""
-            }${s?.receipt ? `<p>${esc(t("acqGiftReceiptHelp"))}</p>` : ""}${s && ["gift", "pc"].includes(s.kind) && s.receipt_flag == null ? `<p>${esc(t("acqReceiptUnknown"))}</p>` : ""}${s?.underfoot ? `<p>${esc(t("mapHiddenUnderfoot"))}</p>` : ""}${s?.evolution ? `<p>${esc(evolutionLabel(s.evolution, catalog, catalog.type_names, t))}</p>` : ""}${s?.in_scenario !== null && s?.in_scenario !== undefined ? `<p>${esc(t(s.in_scenario ? "clockInsideScenario" : "clockOutsideScenario"))}</p>` : ""}${conditions ? `<p>${esc(t("acqConditions"))}: ${conditions}</p>${s?.conditions.some((c) => ["money", "money_runtime", "bag_item", "bag_item_runtime"].includes(c.condition.kind)) ? `<p><small>${esc(t("conditionHoldingsHelp"))}</small></p>` : ""}` : ""}${entranceHtml(
+            }${s?.receipt ? `<p>${esc(t("acqGiftReceiptHelp"))}</p>` : ""}${s && ["gift", "pc"].includes(s.kind) && s.receipt_flag == null ? `<p>${esc(t("acqReceiptUnknown"))}</p>` : ""}${s?.underfoot ? `<p>${esc(t("mapHiddenUnderfoot"))}</p>` : ""}${
+              s?.evolution
+                ? `<p>${esc(evolutionLabel(s.evolution, catalog, catalog.type_names, t))}</p>${evolutionLocationSummary(
+                    s.evolution,
+                    maps,
+                    t,
+                  )
+                    .map((line) => `<p>${esc(line)}</p>`)
+                    .join("")}${evolutionEntrancesHtml([s.evolution])}`
+                : ""
+            }${s?.in_scenario !== null && s?.in_scenario !== undefined ? `<p>${esc(t(s.in_scenario ? "clockInsideScenario" : "clockOutsideScenario"))}</p>` : ""}${conditions ? `<p>${esc(t("acqConditions"))}: ${conditions}</p>${s?.conditions.some((c) => ["money", "money_runtime", "bag_item", "bag_item_runtime"].includes(c.condition.kind)) ? `<p><small>${esc(t("conditionHoldingsHelp"))}</small></p>` : ""}` : ""}${entranceHtml(
               entrance,
             )}${preparationHtml}<details><summary>${esc(t("evidence"))}</summary><pre>${esc(JSON.stringify(task, null, 2))}</pre></details></div>`;
           })

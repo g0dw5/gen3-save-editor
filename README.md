@@ -375,3 +375,5 @@ accept non-eggs only. [Native selection evidence](docs/verification/training-par
 Fixed-encounter readers follow the native single/pair inputs and expose known companions in queries, maps and collection HTML. Native constructor support is separate from referenced in-game occurrence and capture/access conditions; see [verification](docs/verification/static-battles-20261006.md).
 
 Item reference queries include explicit held items from referenced fixed encounters, with Pokémon/map links and optional unconfirmed collection suggestions. Native setup fields are verified separately from capture, access and receipt; see [evidence](docs/verification/static-held-items-20261006.md).
+
+Evolution requirements now link to current-ROM resources and separate reverse uses; decoded location maps and entrance suggestions also appear in collection/HTML. Eligibility remains qualified; see [verification](docs/verification/evolution-links-20261006.md).

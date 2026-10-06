@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Link evolution requirements to current-ROM items/moves and add separate reverse
+  evolution uses. Share decoded location maps/entrances across reference queries,
+  collection preparation and HTML; preserve compound conditions when deduplicating
+  the tree. Location references do not prove current access or eligibility.
+- 进化条件可跳转当前 ROM 的道具／招式，并单独反查进化用途；资料、收集准备与
+  HTML 共用已解析的地点及入口。进化树去重保留附加携带物和复合条件，地点引用
+  不冒充当前可达或可以进化的证明。
+
 - Reverse-query explicit fixed-encounter held items from item pages, with species,
   map/return links and optional unconfirmed collection/HTML suggestions. Native
   real-command checks distinguish setup fields from capture/access/receipt and

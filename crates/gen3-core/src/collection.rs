@@ -237,7 +237,7 @@ impl AcquisitionIndex {
     ) -> Result<CollectionPlan> {
         let graph = passages.navigation_graph(rom, &self.world.maps, Some(save))?;
         let mut plan = self.collection_goals(rom, save, request)?;
-        let ids: BTreeSet<_> = plan
+        let mut ids: BTreeSet<_> = plan
             .regions
             .iter()
             .flat_map(|r| &r.tasks)
@@ -250,6 +250,25 @@ impl AcquisitionIndex {
             .flatten()
             .filter_map(|s| s.map_id.clone())
             .collect();
+        for task in plan.regions.iter().flat_map(|r| &r.tasks) {
+            for rule in task
+                .source
+                .as_ref()
+                .and_then(|s| s.evolution.as_ref())
+                .into_iter()
+                .chain(
+                    task.preparation
+                        .iter()
+                        .flat_map(|p| p.steps.iter().map(|s| &s.evolution)),
+                )
+            {
+                ids.extend(
+                    crate::acquisition::evolution_location_maps(rule, &self.world.maps)
+                        .into_iter()
+                        .map(|map| map.id.clone()),
+                );
+            }
+        }
         plan.entrances = crate::navigation::suggestions(&self.world.maps, &graph, ids);
         plan.entrance_coverage = Some(graph.coverage);
         plan.entrance_diagnostics = graph.diagnostics;

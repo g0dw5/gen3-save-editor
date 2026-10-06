@@ -841,6 +841,15 @@ export const en = {
   transformation: "Battle transformation",
   battleCommandTrigger: "Native battle transformation command",
   evoExtra_region: "In {region}",
+  evolutionRequirements: "Related requirements",
+  evolutionUses: "Needed for evolution",
+  evolutionUsesHelp:
+    "Evolution-table requirements that reference this resource. These are uses, not ways to obtain it. Battle transformations are separate; eligibility and complete native evolution behavior remain unverified.",
+  evolutionMatchingMaps: "Maps matching the location condition",
+  evolutionLocationHelp:
+    "Matching map records from this ROM. The specific tile, dynamic layout and current access are unverified. Open a map to inspect its entrances and return here afterward.",
+  evolutionNoMatchingMap:
+    "No matching map record is loaded. This does not prove that the evolution is impossible.",
   evoExtra_outside_region: "Outside {region}",
   evoExtra_map: "On map {map}",
   evoExtra_weather: "Requires the weather specified by the ROM",
@@ -2076,6 +2085,15 @@ export const zh: Record<Key, string> = {
   transformation: "战斗形态",
   battleCommandTrigger: "战斗中使用本作的形态转换指令",
   evoExtra_region: "位于{region}",
+  evolutionRequirements: "条件关联",
+  evolutionUses: "哪些进化需要它",
+  evolutionUsesHelp:
+    "进化表中引用此资源的条件。这是用途，不是获取方式；战斗变身单独展示。当前能否进化及完整原生进化行为仍待确认。",
+  evolutionMatchingMaps: "符合地点条件的地图记录",
+  evolutionLocationHelp:
+    "从当前 ROM 筛选的地图记录。具体格位、动态布局及当前可达性未确认；打开地图可查看入口，并返回此处。",
+  evolutionNoMatchingMap:
+    "尚未载入符合条件的地图记录，不代表本作无法完成这项进化。",
   evoExtra_outside_region: "不在{region}",
   evoExtra_map: "位于地图 {map}",
   evoExtra_weather: "需满足 ROM 指定的天气条件",

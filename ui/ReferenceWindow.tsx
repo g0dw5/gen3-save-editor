@@ -660,6 +660,9 @@ export function ReferenceWindow({
                   <EvolutionTree
                     detail={detail}
                     catalog={catalog}
+                    maps={world?.maps ?? []}
+                    onTarget={goTarget}
+                    onMap={goMap}
                     onNavigate={(id) => {
                       if (id === speciesId) return;
                       treeScroll.current = detailPane.current?.scrollTop ?? 0;

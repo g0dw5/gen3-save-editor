@@ -5,7 +5,7 @@ import { acquisitionTargetName } from "./acquisitionLabels";
 import { CollectionPreparation } from "./CollectionPreparation";
 import { CollectionPrerequisites } from "./CollectionPrerequisites";
 import { breedingCoverageSummary } from "./CollectionBreeding";
-import { evolutionLabel } from "./referenceLabels";
+import { EvolutionRuleDetails } from "./EvolutionRuleDetails";
 import { ConditionDetails } from "./ConditionDetails";
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
@@ -339,14 +339,14 @@ export function CollectionPanel({
                             </p>
                           )}
                           {s?.evolution && (
-                            <p className="small">
-                              {evolutionLabel(
-                                s.evolution,
-                                catalog,
-                                catalog.type_names,
-                                t,
-                              )}
-                            </p>
+                            <EvolutionRuleDetails
+                              rule={s.evolution}
+                              catalog={catalog}
+                              maps={maps}
+                              entrances={plan.entrances}
+                              onTarget={onTarget}
+                              onMap={onMap}
+                            />
                           )}
                           <CollectionPreparation
                             preparation={task.preparation}

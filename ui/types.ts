@@ -255,7 +255,10 @@ export interface OriginOptions {
 export interface SpeciesDetail {
   relations?: {
     species: number[];
-    evolutions: (SpeciesDetail["evolutions"][number] & { source: number })[];
+    evolutions: (SpeciesDetail["evolutions"][number] & {
+      source: number;
+      related?: QueryTarget[];
+    })[];
     battle_forms: NonNullable<SpeciesDetail["battle_forms"]>;
     form_families: { species: number[]; offset: number }[];
     name_relations: { source: number; target: number }[];
@@ -656,6 +659,11 @@ export interface AcquisitionReport {
   clock: ClockReport | null;
   target: QueryTarget;
   sources: AcquisitionSource[];
+  evolution_uses?: {
+    source: number;
+    evolution: SpeciesDetail["evolutions"][number];
+    related: QueryTarget[];
+  }[];
   partial: boolean;
 }
 

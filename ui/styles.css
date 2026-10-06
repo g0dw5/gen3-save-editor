@@ -2221,6 +2221,27 @@ summary {
   text-align: left;
   font-size: inherit;
 }
+.evolution-rule-details {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.evolution-locations,
+.evolution-uses {
+  overflow-wrap: anywhere;
+}
+.evolution-location-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.evolution-location-options .link-button {
+  text-align: left;
+  max-width: 100%;
+  white-space: normal;
+}
 .name-edge .evolution-node {
   border-style: dashed;
 }

@@ -728,3 +728,15 @@ inputs; this is not evidence that their other mechanisms lack held items.
 Setup fields are **V within this boundary**; actual access, capture/theft,
 post-start overrides, receipt and complete acquisition remain **P/U**. No
 probability, repeatability or completion is fabricated from these fields.
+
+## Evolution resource/location closure / 进化资源与地点闭环
+
+All five exact-ROM adapters remain **P** for evolution, sources and collection.
+The shared viewer now links decoded required items/moves/companion species and
+reverse evolution uses, separate from acquisition sources. Positive location
+conditions feed named map links and collection/HTML entrance suggestions;
+unknown raw operands and current access remain unresolved. Compound tree
+conditions retain auxiliary items and region/map/weather/time requirements.
+Five-ROM reader/query regressions and bilingual ROM-switch/navigation fixtures
+are bounded evidence, not complete native eligibility or consumption. See
+[evidence and limits](verification/evolution-links-20261006.md).

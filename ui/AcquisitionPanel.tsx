@@ -8,7 +8,8 @@ import { api } from "./api";
 import { ClockDetails } from "./ClockDetails";
 import { TradeDetails } from "./TradeDetails";
 import { useI18n } from "./i18n";
-import { evolutionLabel } from "./referenceLabels";
+import { EvolutionRuleDetails } from "./EvolutionRuleDetails";
+import { EvolutionUsesPanel } from "./EvolutionUsesPanel";
 import type {
   AcquisitionReport,
   AcquisitionSource,
@@ -95,6 +96,13 @@ export function AcquisitionPanel({
   return (
     <section className="acquisition-panel">
       <h3>{t("acqTitle")}</h3>
+      <EvolutionUsesPanel
+        rows={report?.evolution_uses ?? []}
+        catalog={catalog}
+        maps={maps}
+        onTarget={onTarget}
+        onMap={onMap}
+      />
       {catalog.profile.clock && (
         <fieldset className="clock-scenario">
           <legend>{t("clockScenario")}</legend>
@@ -279,9 +287,13 @@ export function AcquisitionPanel({
                 <p className="small">{t("clockInsideScenario")}</p>
               )}
               {s.evolution && (
-                <p>
-                  {evolutionLabel(s.evolution, catalog, catalog.type_names, t)}
-                </p>
+                <EvolutionRuleDetails
+                  rule={s.evolution}
+                  catalog={catalog}
+                  maps={maps}
+                  onTarget={onTarget}
+                  onMap={onMap}
+                />
               )}
               {s.kind === "breeding_candidate" && (
                 <p className="small muted">{t("acqBreedHelp")}</p>

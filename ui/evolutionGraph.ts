@@ -18,7 +18,17 @@ export function evolutionGraph(detail: SpeciesDetail) {
     name_relations: [],
   };
   const evolutions = unique(relations.evolutions, (e) =>
-    JSON.stringify([e.source, e.target, e.method, e.condition, e.parameter]),
+    JSON.stringify([
+      e.source,
+      e.target,
+      e.method,
+      e.condition,
+      e.parameter,
+      e.auxiliary ?? 0,
+      [...(e.requirements ?? [])].sort(
+        (a, b) => a.kind.localeCompare(b.kind) || a.value - b.value,
+      ),
+    ]),
   );
   const battles = unique(relations.battle_forms, (e) =>
     JSON.stringify([e.source, e.target, e.kind, e.trigger.kind, e.trigger.id]),

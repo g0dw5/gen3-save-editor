@@ -17,4 +17,17 @@ const mega={source:9,target:980,kind:'mega',trigger:{kind:'held_item',id:297},of
 const forms={species:{id:980},evolutions:[],relations:{species:[9,980,899],evolutions:[],battle_forms:[mega,{...mega,offset:2}],form_families:[{species:[9,980],offset:3}],name_relations:[{source:9,target:899},{source:9,target:899}]}};
 graph=evolutionGraph(forms);assert.deepEqual(all(graph),[9,980,899]);assert.equal(graph.battles.length,1);assert.equal(graph.families.length,0);
 assert.deepEqual(evolutionGraph({species:{id:1},evolutions:[]}).main,[1]);
-console.log('Passed: unique species cards, retained alternative conditions, cycles, overlapping families, Mega/name-link deduplication and immutable inputs.');
+
+const compound=structuredClone(detail);
+compound.relations.evolutions=[
+ {...edge(25,26),condition:'item_hold_item',auxiliary:7},
+ {...edge(25,26),condition:'item_hold_item',auxiliary:8,offset:2},
+ {...edge(25,26),requirements:[{kind:'map',value:257}],offset:3},
+ {...edge(25,26),requirements:[{kind:'map',value:258}],offset:4},
+ {...edge(25,26),requirements:[{kind:'region',value:1},{kind:'hour_boundary',value:0}],offset:5},
+ {...edge(25,26),requirements:[{kind:'hour_boundary',value:0},{kind:'region',value:1}],offset:6},
+];
+assert.equal(evolutionGraph(compound).evolutions.length,5,'held items and location/time requirements survive dedup; requirement order does not duplicate a rule');
+assert.equal(new Set(all(evolutionGraph(compound))).size,all(evolutionGraph(compound)).length);
+
+console.log('Passed: unique species cards, compound requirements, auxiliary items, cycles, overlapping families, Mega/name links and immutable inputs.');

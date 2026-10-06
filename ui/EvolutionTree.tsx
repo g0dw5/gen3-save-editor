@@ -1,18 +1,24 @@
 import { speciesDisplayName } from "./speciesDisplay";
 import { Sprite } from "./components";
-import { evolutionLabel } from "./referenceLabels";
 import { evolutionGraph } from "./evolutionGraph";
 import { useI18n } from "./i18n";
-import type { Catalog, SpeciesDetail } from "./types";
+import { EvolutionRuleDetails } from "./EvolutionRuleDetails";
+import type { Catalog, GameMap, QueryTarget, SpeciesDetail } from "./types";
 
 export function EvolutionTree({
   detail,
   catalog,
   onNavigate,
+  maps,
+  onTarget,
+  onMap,
 }: {
   detail: SpeciesDetail;
   catalog: Catalog;
   onNavigate: (id: number) => void;
+  maps: GameMap[];
+  onTarget: (target: QueryTarget) => void;
+  onMap: (id: string) => void;
 }) {
   const { t } = useI18n();
   const id = detail.species.id;
@@ -46,7 +52,14 @@ export function EvolutionTree({
         .map((edge) => (
           <div className="evolution-condition" key={`e:${edge.offset}`}>
             {sourceLink(edge.source)}
-            <span>{evolutionLabel(edge, catalog, catalog.type_names, t)}</span>
+            <EvolutionRuleDetails
+              rule={edge}
+              catalog={catalog}
+              maps={maps}
+              related={edge.related}
+              onTarget={onTarget}
+              onMap={onMap}
+            />
           </div>
         ))}
       {graph.battles

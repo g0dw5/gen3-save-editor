@@ -43,7 +43,10 @@ def main():
     catalog['species'][1]['name'] = 'ROM parent'
     capture = dict(source, kind='grass',underfoot=None,min_level=5,max_level=8,encounter_percent=20,periods=['night'],in_scenario=False)
     evolution = dict(method=7,condition='item',parameter=1,auxiliary=0,target=1,offset=300,requirements=[])
-    task['preparation'] = dict(origin=2,current_count=0,source=capture,steps=[{'from':2,'evolution':evolution,'related':[dict(kind='item',id=1)]}],needs_hatching=False,truncated=False,partial=True)
+    catalog['species'].append(species(3))
+    evolution['target'] = 3
+    location_evolution = dict(method=33,condition='level',parameter=20,auxiliary=0,target=1,offset=310,requirements=[dict(kind='map',value=1)])
+    task['preparation'] = dict(origin=2,current_count=0,source=capture,steps=[{'from':2,'evolution':evolution,'related':[dict(kind='item',id=1)]},{'from':3,'evolution':location_evolution,'related':[]}],needs_hatching=False,truncated=False,partial=True)
     plan = dict(rom_md5='test',basis='individuals',families=True,owned_count=1,missing_count=1,regions=[dict(region=1,tasks=[task])],entrances=[dict(map_id='0-1',chains=[[edge]],truncated=False)],partial=True)
     plan['prerequisites']=dict(reports=[report],entrances=[dict(map_id='0-1',chains=[[edge]],truncated=False)],skipped_conditions=1,truncated=True,partial=True)
     pair_mon=dict(species=2,level=21,held_item=1,method='static',offset=600,member=1,conditions=[],trade=None,battle_members=[dict(member=0,species=1,level=20,held_item=0),dict(member=1,species=2,level=21,held_item=1)])
@@ -98,6 +101,15 @@ def main():
         page.on('pageerror',lambda e: errors.append(str(e)))
         page.route('**/api',respond)
         page.goto(os.environ.get('GEN3_UI_URL','http://127.0.0.1:5173'))
+        def expose_toolbar():
+            # Floating reference windows can legitimately cover the main toolbar.
+            # Move the live window without closing its saved-state traces.
+            box=page.locator('.floating-header').bounding_box()
+            page.mouse.move(box['x']+50,box['y']+15)
+            page.mouse.down()
+            page.mouse.move(box['x']+50,box['y']+75,steps=5)
+            page.mouse.up()
+
         page.get_by_role('button',name='ROM reference',exact=True).click()
         pane=page.locator('.floating')
         expect(page.locator('.acquisition-panel')).to_be_visible()
@@ -151,6 +163,7 @@ def main():
         maptrace.locator('summary').first.click()
         expect(maptrace).to_contain_text('May set this event')
         before_refresh=sum(r['command']=='event_dependencies' for r in requests)
+        expose_toolbar()
         with page.expect_file_chooser() as choice:
             page.get_by_role('button',name='Open save',exact=True).first.click()
         choice.value.set_files(dict(name='synthetic.sav',mimeType='application/octet-stream',buffer=b'fixture-only'))
@@ -177,6 +190,10 @@ def main():
         prep = page.locator('.collection-preparation')
         expect(prep).to_contain_text('Evolution preparation suggestion')
         expect(prep).to_contain_text('Use Test stone')
+        prep.locator('.evolution-locations > summary').click()
+        expect(prep.locator('.evolution-locations')).to_contain_text('specific tile, dynamic layout and current access are unverified')
+        expect(prep.locator('.evolution-locations')).to_contain_text('Test cave floor · 0-1')
+        expect(prep.locator('.evolution-locations .collection-entrances')).to_contain_text('Test region entrance')
         expect(prep).to_contain_text('Encounter slot probability 20%')
         expect(prep).to_contain_text('Outside the query period')
         if os.environ.get('GEN3_UI_ARTIFACTS'):
@@ -198,6 +215,8 @@ def main():
         html=Path(info.value.path()).read_text()
         assert '&lt;script&gt;alert(1)&lt;/script&gt;' in html
         assert '<script>' not in html and 'default-src' in html
+        assert 'Test cave floor · 0-1' in html and 'evolution-location-entrances' in html
+        assert 'specific tile, dynamic layout and current access are unverified' in html
         assert 'Two opponents in this encounter' in html and 'ROM parent · Lv. 21' in html
         assert 'Capture permissions and battle-start conditions remain unverified' in html
         assert 'Item assigned to a fixed encounter' in html and 'Explicit setup item: Test stone' in html
@@ -233,6 +252,8 @@ def main():
         assert '定点宝可梦指定携带的道具' in html and '生成时指定携带: Test stone' in html
         assert '能否通过捕捉或夺取道具的招式获得仍待确认' in html
         assert '追查前置线索' in html and '可能设置此事件' in html
+        assert 'Test cave floor · 0-1' in html and 'evolution-location-entrances' in html
+        assert '具体格位、动态布局及当前可达性未确认' in html
         assert '孵蛋与进化准备建议' in html and '2048 / 5050' in html
         assert '&lt;script&gt;parent&lt;/script&gt;' in html and '<script>' not in html
         assert '盒子 1 / 2' in html and '不向 SAV 添加个体' in html and '携带道具' in html
@@ -263,6 +284,7 @@ def main():
         events.locator('.event-dependencies').first.locator('summary').first.click()
         expect(events.locator('.event-dependencies').first).to_contain_text('May set this event')
         before=sum(r['command']=='event_search' for r in requests)
+        expose_toolbar()
         with page.expect_file_chooser() as choice:
             page.get_by_role('button',name='Open save',exact=True).first.click()
         choice.value.set_files(dict(name='synthetic.sav',mimeType='application/octet-stream',buffer=b'fixture-only'))
@@ -303,6 +325,7 @@ def main():
         events.get_by_role('button',name='ROM trainer ↗',exact=True).click()
         expect(trainer).to_be_visible()
         before=sum(r['command']=='trainer_references' for r in requests)
+        expose_toolbar()
         with page.expect_response(lambda response: response.request.method=='POST' and response.request.post_data_json.get('command')=='trainer_references'):
             with page.expect_file_chooser() as choice:
                 page.get_by_role('button',name='Open save',exact=True).first.click()
@@ -321,6 +344,7 @@ def main():
         # A later, separate save overlay has inconsistent legacy records, not
         # Mercury's lazy bank initialization. Loading it must replace the notice.
         save['dex_status'] = dict(count=416,read_only=False,uninitialized_ranges=[],inconsistent_numbers=[1,8,9])
+        expose_toolbar()
         with page.expect_file_chooser() as choice:
             page.get_by_role('button',name='Open save',exact=True).first.click()
         choice.value.set_files(dict(name='legacy-fixture.sav',mimeType='application/octet-stream',buffer=b'fixture-only'))

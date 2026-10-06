@@ -32,9 +32,10 @@ pub struct Target {
 pub(crate) fn evolution_targets(e: &Evolution) -> Vec<Target> {
     let mut targets = vec![];
     let mut add = |kind, id| {
-        if !targets
-            .iter()
-            .any(|t: &Target| t.kind == kind && t.id == id)
+        if id != 0
+            && !targets
+                .iter()
+                .any(|t: &Target| t.kind == kind && t.id == id)
         {
             targets.push(Target { kind, id });
         }
@@ -70,6 +71,36 @@ pub(crate) fn evolution_targets(e: &Evolution) -> Vec<Target> {
         }
     }
     targets
+}
+
+/// Match decoded location requirements, not runtime eligibility or reachability.
+pub(crate) fn evolution_location_maps<'a>(
+    e: &Evolution,
+    maps: &'a [crate::world::Map],
+) -> Vec<&'a crate::world::Map> {
+    let mut requirements = e.requirements.clone();
+    if e.condition == "region" {
+        requirements.push(crate::rom::EvolutionRequirement {
+            kind: "region",
+            value: e.parameter,
+        });
+    }
+    if !requirements
+        .iter()
+        .any(|r| matches!(r.kind, "map" | "region"))
+    {
+        return vec![];
+    }
+    maps.iter()
+        .filter(|map| {
+            requirements.iter().all(|r| match r.kind {
+                "map" => map.id == format!("{}-{}", r.value >> 8, r.value & 255),
+                "region" => map.region as u16 == r.value,
+                "outside_region" => map.region as u16 != r.value,
+                _ => true,
+            })
+        })
+        .collect()
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct ConditionCheck {
@@ -141,10 +172,18 @@ pub struct AcquisitionSource {
     pub in_scenario: Option<bool>,
 }
 #[derive(Serialize)]
+pub struct EvolutionUse {
+    pub source: u16,
+    pub evolution: Evolution,
+    pub related: Vec<Target>,
+}
+#[derive(Serialize)]
 pub struct AcquisitionReport {
     pub clock: Option<crate::clock::ClockReport>,
     pub target: Target,
     pub sources: Vec<AcquisitionSource>,
+    /// Requirements that consume/use the queried resource, never acquisition sources.
+    pub evolution_uses: Vec<EvolutionUse>,
     pub partial: bool,
 }
 #[derive(Default)]
@@ -423,6 +462,29 @@ impl AcquisitionIndex {
             evolutions,
             learnsets,
         })
+    }
+    /// Reverse evolution requirements, kept separate from obtaining a resource.
+    pub fn evolution_uses(&self, target: &Target) -> Vec<EvolutionUse> {
+        self.evolutions
+            .iter()
+            .flat_map(|(parent, rows)| {
+                rows.iter().filter_map(move |e| {
+                    let mut related = evolution_targets(e);
+                    if !related
+                        .iter()
+                        .any(|r| r.kind == target.kind && r.id == target.id)
+                    {
+                        return None;
+                    }
+                    related.retain(|r| !(r.kind == target.kind && r.id == target.id));
+                    Some(EvolutionUse {
+                        source: *parent,
+                        evolution: e.clone(),
+                        related,
+                    })
+                })
+            })
+            .collect()
     }
     /// Indexed receiving scripts locate services, not proof of access or an egg.
     pub fn daycare_sources(&self, rom: &Rom, save: Option<&Save>) -> Vec<AcquisitionSource> {
@@ -877,10 +939,12 @@ impl AcquisitionIndex {
                 }
             }
         }
+        let evolution_uses = self.evolution_uses(&target);
         Ok(AcquisitionReport {
             clock: None,
             target,
             sources,
+            evolution_uses,
             partial: true,
         })
     }
