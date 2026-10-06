@@ -225,9 +225,13 @@ export const en = {
   trainingNormalAbility1: "Normal ability 1",
   trainingNormalAbility2: "Normal ability 2",
   trainingHiddenAbility: "Hidden ability",
+  trainingAbilityRandomSlotScope:
+    "When switching from a hidden ability back to normal, this item can randomly choose a normal slot. This preview executes the native choice using the stated seed, retaining PID; it does not predict the live game's next choice.",
+  trainingAbilityUnchanged:
+    "The native guard accepts the item, but no individual data changes in this scenario. Acceptance alone does not mean a different ability was obtained; this preview does not consume an item.",
   trainingAbilitySeed: "Random seed for this preview",
   trainingAbilitySeedScope:
-    "Enter an integer from 0 to 4294967295. This is an explicit simulation, not the live game's next PID.",
+    "Enter an integer from 0 to 4294967295. This is an explicit simulation, not a prediction of the live game's next random outcome.",
   trainingAbilityPidScope:
     "The native capsule can reroll PID after acceptance. This preview runs its own selection and persistent change with the stated seed. Check the actual before/after data; PID-linked appearances may differ. Menu eligibility, consumption and live RNG are outside this scenario.",
   trainingAbilitySlotScope:
@@ -1373,9 +1377,13 @@ export const zh: Record<Key, string> = {
   trainingNormalAbility1: "普通特性 1",
   trainingNormalAbility2: "普通特性 2",
   trainingHiddenAbility: "隐藏特性",
+  trainingAbilityRandomSlotScope:
+    "从隐藏特性切回普通特性时，此道具可能随机选择普通槽位。预览使用指定种子执行本作选择，保留 PID，不预测游戏下一次的选择。",
+  trainingAbilityUnchanged:
+    "本作允许使用此道具，但本次没有改变任何个体数据。允许分支不代表已经获得不同特性；此预览不消耗道具。",
   trainingAbilitySeed: "本次预览的随机种子",
   trainingAbilitySeedScope:
-    "输入 0～4294967295 的整数。这是明确的模拟情景，不是游戏下一次生成的 PID 预测。",
+    "输入 0～4294967295 的整数。这是明确的模拟情景，不预测游戏下一次的随机结果。",
   trainingAbilityPidScope:
     "原生胶囊在允许使用后可能重选 PID。本次使用指定种子执行本作的判断与持久化变更，请核对实际前后数据；与 PID 关联的外观可能不同。菜单资格、消耗与实时随机状态不在此情景内。",
   trainingAbilitySlotScope:

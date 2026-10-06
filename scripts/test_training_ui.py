@@ -39,7 +39,7 @@ def main():
                         price=100,
                     )
                 )
-            if key in ["ROCKET", "MERCURY12"]:
+            if key in ["ROCKET", "MERCURY12", "ULTIMATE"]:
                 catalog["abilities"] = [
                     dict(id=i, name=n, description="")
                     for i, n in [
@@ -59,11 +59,11 @@ def main():
                         price=100,
                     )
                 )
-                if key == "ROCKET":
+                if key in ["ROCKET", "ULTIMATE"]:
                     catalog["items"].append(
                         dict(
                             id=4,
-                            name="ROCKET runtime patch",
+                            name=key + " runtime patch",
                             description="Fixture",
                             tm_move=None,
                             price=100,
@@ -188,6 +188,7 @@ def main():
                                     handler=3,
                                     mechanism="normal_swap",
                                     random_pid=key == "MERCURY12",
+                                    requires_rng_seed=key == "MERCURY12",
                                     partial=True,
                                 )
                             ]
@@ -198,13 +199,14 @@ def main():
                                         handler=4,
                                         mechanism="hidden_toggle",
                                         random_pid=False,
+                                        requires_rng_seed=key == "ULTIMATE",
                                         partial=True,
                                     )
                                 ]
-                                if key == "ROCKET"
+                                if key in ["ROCKET", "ULTIMATE"]
                                 else []
                             )
-                            if key in ["ROCKET", "MERCURY12"]
+                            if key in ["ROCKET", "MERCURY12", "ULTIMATE"]
                             and catalog["profile"]["md5"] == "fixture-" + key
                             else []
                         ),
@@ -225,13 +227,20 @@ def main():
                             pid=42, ability_slot=initial, ability_id=[1, 2, 3][initial]
                         )
                         after = copy.deepcopy(before)
-                        accepted = payload["item"] == 4 or initial < 2
-                        if key == "MERCURY12":
+                        accepted = (
+                            key == "ULTIMATE" or payload["item"] == 4 or initial < 2
+                        )
+                        if key == "MERCURY12" or (
+                            key == "ULTIMATE" and payload["item"] == 4
+                        ):
                             assert (
                                 isinstance(payload["rng_seed"], int)
                                 and 0 <= payload["rng_seed"] <= 4294967295
                             )
-                        if accepted:
+                        unchanged_ability = (
+                            key == "ULTIMATE" and payload["item"] == 3 and initial >= 2
+                        )
+                        if accepted and not unchanged_ability:
                             target = (
                                 (0 if initial == 2 else 2)
                                 if payload["item"] == 4
@@ -281,7 +290,7 @@ def main():
                             else "nature_persistent_stage" if mint else "field_effect"
                         ),
                         changed=(
-                            accepted
+                            accepted and not unchanged_ability
                             if ability_item
                             else (
                                 (before["effective_nature"] != 1)
@@ -450,7 +459,7 @@ def main():
                 expect(
                     panel.get_by_label("Initial effective nature", exact=True)
                 ).to_have_count(0)
-            if key in ["ROCKET", "MERCURY12"]:
+            if key in ["ROCKET", "MERCURY12", "ULTIMATE"]:
                 panel.get_by_label("Individual for preview", exact=True).select_option(
                     "simulated"
                 )
@@ -528,21 +537,35 @@ def main():
                     "button", name="Preview native effect", exact=True
                 ).click()
                 expect(panel.locator(".training-result")).to_contain_text(
-                    "native ability guard rejects"
+                    "no individual data changes"
+                    if key == "ULTIMATE"
+                    else "native ability guard rejects"
                 )
-                if key == "ROCKET":
+                if key in ["ROCKET", "ULTIMATE"]:
                     selector.fill("runtime patch")
                     page.get_by_role(
                         "option",
-                        name="ROCKET runtime patch · Hidden ability toggle",
+                        name=key + " runtime patch · Hidden ability toggle",
                         exact=True,
                     ).click()
+                    if key == "ULTIMATE":
+                        seed_input = panel.get_by_label(
+                            "Random seed for this preview", exact=True
+                        )
+                        expect(seed_input).to_have_value("42")
+                        seed_input.fill("123456")
                     panel.get_by_role(
                         "button", name="Preview native effect", exact=True
                     ).click()
                     expect(panel.locator(".training-result")).to_contain_text(
                         "native ability guard accepts"
                     )
+                    if key == "ULTIMATE":
+                        assert requests[-1]["payload"]["rng_seed"] == 123456
+                        expect(panel.locator(".training-result")).to_contain_text(
+                            "randomly choose a normal slot"
+                        )
+                        expect(panel.locator("tbody tr").nth(2)).to_contain_text("42")
                     expect(panel.locator("tbody tr").nth(1)).to_contain_text(
                         "Hidden ability"
                     )
@@ -588,7 +611,7 @@ def main():
                 d = Path(os.environ["GEN3_UI_ARTIFACTS"])
                 d.mkdir(parents=True, exist_ok=True)
                 panel.screenshot(path=str(d / f"training-{key}.png"))
-            if key in ["ROCKET", "MERCURY12"]:
+            if key in ["ROCKET", "MERCURY12", "ULTIMATE"]:
                 page.get_by_role("button", name="English", exact=True).click()
                 hold[0] = True
                 panel.get_by_role(

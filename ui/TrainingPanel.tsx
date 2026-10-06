@@ -24,6 +24,7 @@ type AbilityOffer = {
   handler: number;
   mechanism: string;
   random_pid: boolean;
+  requires_rng_seed?: boolean;
   partial: boolean;
 };
 type TrainingCatalog = {
@@ -123,7 +124,7 @@ export function TrainingPanel({
       const r = await api<Preview>("training_preview", {
         expected_rom_md5: md5,
         item,
-        ...(abilityOffer?.random_pid ? { rng_seed: Number(seed) } : {}),
+        ...(abilityRequiresSeed ? { rng_seed: Number(seed) } : {}),
         individual:
           individual === "simulated"
             ? {
@@ -152,6 +153,8 @@ export function TrainingPanel({
   const offer = report?.offers.find((o) => o.item === item);
   const natureOffer = report?.nature_items?.find((o) => o.item === item);
   const abilityOffer = report?.ability_items?.find((o) => o.item === item);
+  const abilityRequiresSeed =
+    abilityOffer?.requires_rng_seed ?? abilityOffer?.random_pid;
   const abilityName = (id: number) =>
     catalog.abilities.find((a) => a.id === id)?.name ?? String(id);
   const abilitySlotName = (slot: number) =>
@@ -165,7 +168,7 @@ export function TrainingPanel({
   const initialAbilities =
     catalog.species.find((s) => s.id === species)?.abilities ?? [];
   const invalidSeed =
-    abilityOffer?.random_pid &&
+    abilityRequiresSeed &&
     (!seed.trim() ||
       !Number.isInteger(Number(seed)) ||
       Number(seed) < 0 ||
@@ -346,7 +349,7 @@ export function TrainingPanel({
               </div>
             </fieldset>
           )}
-          {abilityOffer?.random_pid && (
+          {abilityRequiresSeed && (
             <label>
               {t("trainingAbilitySeed")}
               <input
@@ -400,6 +403,16 @@ export function TrainingPanel({
                   )}
                 </p>
               )}
+              {abilityRequiresSeed && !abilityOffer?.random_pid && (
+                <p className="small muted">
+                  {t("trainingAbilityRandomSlotScope")}
+                </p>
+              )}
+              {abilityOffer &&
+                !preview.native_no_effect &&
+                !preview.changed && (
+                  <p className="small muted">{t("trainingAbilityUnchanged")}</p>
+                )}
               <p>
                 {t(
                   abilityOffer

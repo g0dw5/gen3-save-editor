@@ -18,7 +18,7 @@ No SAV record is changed, no item is consumed, and no ROM is written.
 | Mercury 1.2 `f323df1792ac68462a34b42fe8571533` | 1 | Native capsule guard, seeded PID selection and persistent change | Live RNG, menus/setup/access, other handlers/services, all PID-linked appearance cases |
 | Dark Phantom BW `0d9b129f7dd76895f79bb47ad7dec2fe` | 0 configured | Existing EV previews preserved | No verified ability-item adapter; not proof of absence |
 | Dark Phantom DP `cb2940215f4dafb1bef133c3af379f44` | 0 configured | Existing EV previews preserved | No verified ability-item adapter; not proof of absence |
-| Ultimate Emerald 5.5 `17ce9785b33319b3dbda9a5d37c57ec1` | 0 configured | Existing EV/SAV editing behavior preserved | Its relocated ability handler is not supported by this increment; not proof of absence |
+| Ultimate Emerald 5.5 `17ce9785b33319b3dbda9a5d37c57ec1` | 2 (later increment) | [Native script prefix, variants and seeded ordinary-slot choice](training-ultimate-abilities-20261006.md) | Menus/access/consumption and complete services remain incomplete |
 
 Offers are identified by runtime field-use handlers, never by a bundled name list
 or presumed item number. Necessary native boundaries are adapter metadata;
@@ -117,7 +117,7 @@ vectors compared with the first run.
 
 No new edited-SAV simulator load/save/re-read round trip is claimed. Menus,
 consumption, live battle/facility context, actual current access, complete training
-services and Ultimate's custom ability item remain unresolved.
+services remain unresolved. Ultimate's two item variants are covered by the later linked increment.
 
 ## Reproduction / 复现
 
@@ -139,3 +139,5 @@ an explicit `rng_seed`; invalid/nullable non-optional integers are not coerced.
 All runtime catalogs, native vectors, binaries and real files remain private,
 excluded from Git and release inputs. Version remains unchanged; no new package
 or release is created by this increment.
+
+The [Ultimate extension](training-ultimate-abilities-20261006.md) adds 9,592 guard and 528 persistent cases, with runtime variant/seed contracts and successful-but-unchanged results. Its callback lives in ROM; the earlier relocation hypothesis is corrected. Previous Rocket/Mercury counts above remain scoped to their original evidence.

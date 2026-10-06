@@ -14,7 +14,7 @@ pub enum PokemonCodec {
 }
 
 /// A field owns only these bits, never the rest of its containing word.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub struct Field {
     byte: usize,
     shift: u8,

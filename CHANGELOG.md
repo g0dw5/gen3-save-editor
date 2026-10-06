@@ -10,6 +10,12 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add Ultimate's runtime ability-item variants and native script-prefix previews.
+  Distinguish seeded normal-slot selection from PID generation, retain unrelated
+  header/Hyper Training bits, and show successful-but-unchanged results.
+- 究极绿宝石特性道具接入运行时变体与原生脚本前缀预览，区分随机普通槽位选择
+  和 PID 生成，保留无关头部／王冠位；允许使用却未改变个体时明确提示。
+
 - Read Rocket/Mercury ability-item handlers at runtime and preview native guards,
   actual abilities, PID and stats, linked to acquisition and maps. Rocket retains
   PID; Mercury requires an explicit seed and may reroll PID. Qualify menu/access,

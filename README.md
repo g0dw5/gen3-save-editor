@@ -286,3 +286,5 @@ Rocket retains PID; Mercury requires an explicit random-seed scenario and may
 reroll PID. Actual ability/PID/nature/stats are shown; these read-only previews do
 not consume items or certify all menus, services or PID-linked appearances.
 [Evidence and limits](docs/verification/training-abilities-20261006.md).
+
+Ultimate ability items now join the shared native training previews: runtime variants, seeded hidden-to-normal selection without PID changes, and explicit acceptance-without-change warnings. Menu/consumption/access remain qualified. [Evidence](docs/verification/training-ultimate-abilities-20261006.md).

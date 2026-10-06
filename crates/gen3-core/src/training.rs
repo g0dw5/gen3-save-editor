@@ -1,6 +1,7 @@
 //! Bounded EV-item, nature and ability queries through native ROM routines.
 //! Classification is not a claim about application, consumption or current access.
 use crate::{
+    adapter::Field,
     binary::*,
     err,
     native_trainer::Sandbox,
@@ -47,6 +48,9 @@ pub const ROCKET: Rules = Rules {
         AbilityRules {
             handler: 0x081361f1,
             mechanism: "normal_swap",
+            variants: None,
+            ability_header: None,
+            requires_rng_seed: false,
             execution: AbilityExecution::Slot {
                 initialize: 0x08203398,
                 initialized: 0x082033fa,
@@ -60,6 +64,9 @@ pub const ROCKET: Rules = Rules {
         AbilityRules {
             handler: 0x0813620d,
             mechanism: "hidden_toggle",
+            variants: None,
+            ability_header: None,
+            requires_rng_seed: false,
             execution: AbilityExecution::Slot {
                 initialize: 0x08203648,
                 initialized: 0x082036ac,
@@ -82,6 +89,9 @@ pub const MERCURY: Rules = Rules {
     abilities: &[AbilityRules {
         handler: 0x09d58019,
         mechanism: "normal_swap",
+        variants: None,
+        ability_header: None,
+        requires_rng_seed: true,
         execution: AbilityExecution::Pid {
             selected_item: 0x0203ad30,
             select: 0x09d561e0,
@@ -92,15 +102,73 @@ pub const MERCURY: Rules = Rules {
         },
     }],
 };
+pub const ULTIMATE: Rules = Rules {
+    abilities: &[AbilityRules {
+        handler: 0x08f7f111,
+        mechanism: "normal_swap",
+        variants: Some(AbilityVariants {
+            getter: 0x080d7644,
+            choices: &[
+                AbilityVariant {
+                    value: 1,
+                    mechanism: "normal_swap",
+                    requires_rng_seed: false,
+                },
+                AbilityVariant {
+                    value: 2,
+                    mechanism: "hidden_toggle",
+                    requires_rng_seed: true,
+                },
+            ],
+        }),
+        ability_header: Some(Field::new(30, 0, 1)),
+        requires_rng_seed: false,
+        execution: AbilityExecution::Script {
+            selected_individual: 0x020375e0,
+            selected_item: 0x0203ce7c,
+            entry: 0x09f00dd0,
+            accepted: 0x09f00e20,
+            rejected: 0x09f00e3e,
+            applied: 0x09f00e2c,
+            target_pointer_register: 6,
+        },
+    }],
+    ..EMERALD
+};
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct AbilityVariants {
+    pub getter: u32,
+    pub choices: &'static [AbilityVariant],
+}
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct AbilityVariant {
+    pub value: u32,
+    pub mechanism: &'static str,
+    pub requires_rng_seed: bool,
+}
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct AbilityRules {
     pub handler: u32,
     pub mechanism: &'static str,
     pub execution: AbilityExecution,
+    pub variants: Option<AbilityVariants>,
+    pub ability_header: Option<Field>,
+    pub requires_rng_seed: bool,
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum AbilityExecution {
+    /// A script-native prefix with acceptance before the setter and a separate
+    /// post-setter boundary. Hidden targets 2/3 share one header flag.
+    Script {
+        selected_individual: u32,
+        selected_item: u32,
+        entry: u32,
+        accepted: u32,
+        rejected: u32,
+        applied: u32,
+        target_pointer_register: usize,
+    },
     Slot {
         initialize: u32,
         initialized: u32,
@@ -125,6 +193,7 @@ pub struct AbilityOffer {
     pub handler: u32,
     pub mechanism: &'static str,
     pub random_pid: bool,
+    pub requires_rng_seed: bool,
     pub partial: bool,
 }
 /// Verified persistent stage of a field mint callback; menu/consumption excluded.
@@ -222,6 +291,9 @@ pub(crate) fn ability_decision(
     item: u16,
 ) -> Result<AbilityDecision> {
     let (accepted, target) = match rule.execution {
+        AbilityExecution::Script { accepted, .. } => {
+            return script_ability_stage(ram, rule, item, accepted)
+        }
         AbilityExecution::Slot {
             initialize,
             initialized,
@@ -253,6 +325,40 @@ pub(crate) fn ability_decision(
         }
     };
     Ok(AbilityDecision { accepted, target })
+}
+fn script_ability_stage(
+    ram: &mut Sandbox<'_>,
+    rule: &AbilityRules,
+    item: u16,
+    stop: u32,
+) -> Result<AbilityDecision> {
+    let AbilityExecution::Script {
+        selected_individual,
+        selected_item,
+        entry,
+        rejected,
+        target_pointer_register,
+        ..
+    } = rule.execution
+    else {
+        return Err(err("training_ability_stage", "not a script prefix"));
+    };
+    ram.w16(selected_individual, 0);
+    ram.w16(selected_item, item);
+    let (registers, boundary) =
+        ram.observe_any(entry, [0; 4], [0; 2], 250_000, &[stop, rejected])?;
+    let target = if boundary == stop {
+        let pointer = *registers
+            .get(target_pointer_register)
+            .ok_or_else(|| err("training_ability_register", target_pointer_register))?;
+        ram.r8(pointer) as u32
+    } else {
+        0
+    };
+    Ok(AbilityDecision {
+        accepted: boundary == stop,
+        target,
+    })
 }
 fn category_stat(category: u32) -> Option<usize> {
     match category {
@@ -296,10 +402,22 @@ impl Rom {
                 continue;
             }
             if let Some(ability) = rules.abilities.iter().find(|r| r.handler == handler) {
+                let (mechanism, requires_rng_seed) = if let Some(variants) = ability.variants {
+                    let value = ram.call(variants.getter, [item as u32, 0, 0, 0], [0; 2], 8192)?;
+                    let choice = variants
+                        .choices
+                        .iter()
+                        .find(|v| v.value == value)
+                        .ok_or_else(|| err("training_ability_variant", value))?;
+                    (choice.mechanism, choice.requires_rng_seed)
+                } else {
+                    (ability.mechanism, ability.requires_rng_seed)
+                };
                 ability_items.push(AbilityOffer {
                     item,
                     handler,
-                    mechanism: ability.mechanism,
+                    mechanism,
+                    requires_rng_seed,
                     random_pid: matches!(ability.execution, AbilityExecution::Pid { .. }),
                     partial: true,
                 });
@@ -350,21 +468,24 @@ impl Rom {
             .iter()
             .find(|offer| offer.item == request.item)
             .map(|offer| offer.nature);
-        let ability_rule = catalog
+        let ability_offer = catalog
             .ability_items
             .iter()
-            .find(|o| o.item == request.item)
-            .and_then(|o| rules.abilities.iter().find(|r| r.handler == o.handler));
+            .find(|o| o.item == request.item);
+        let ability_rule =
+            ability_offer.and_then(|o| rules.abilities.iter().find(|r| r.handler == o.handler));
         let random_pid =
             ability_rule.is_some_and(|r| matches!(r.execution, AbilityExecution::Pid { .. }));
-        let rng_seed =
-            if random_pid {
-                Some(request.rng_seed.ok_or_else(|| {
-                    err("training_seed_required", "explicit PID-selection scenario")
-                })?)
-            } else {
-                None
-            };
+        let rng_seed = if ability_offer.is_some_and(|offer| offer.requires_rng_seed) {
+            Some(request.rng_seed.ok_or_else(|| {
+                err(
+                    "training_seed_required",
+                    "explicit native random-selection scenario",
+                )
+            })?)
+        } else {
+            None
+        };
         if target_nature.is_none()
             && ability_rule.is_none()
             && !catalog
@@ -459,9 +580,30 @@ impl Rom {
             ram.w32(b.rng, seed);
         }
         let (native_no_effect, effect_scope) = if let Some(rule) = ability_rule {
-            let decision = ability_decision(&mut ram, rule, request.item)?;
+            // Script prefixes run through mutation exactly once, so a native
+            // random slot selection is neither replaced nor advanced twice.
+            let decision = if let AbilityExecution::Script { applied, .. } = rule.execution {
+                script_ability_stage(&mut ram, rule, request.item, applied)?
+            } else {
+                ability_decision(&mut ram, rule, request.item)?
+            };
             if decision.accepted {
                 ability_target = Some(match rule.execution {
+                    AbilityExecution::Script { .. } => {
+                        if decision.target > 3 {
+                            return Err(err("training_ability_target", decision.target));
+                        }
+                        let slot = if decision.target >= 2 {
+                            2
+                        } else {
+                            decision.target
+                        };
+                        self.species(before.species)?
+                            .abilities
+                            .get(slot as usize)
+                            .copied()
+                            .ok_or_else(|| err("training_ability_target", decision.target))?
+                    }
                     AbilityExecution::Slot { .. } => self
                         .species(before.species)?
                         .abilities
@@ -472,6 +614,7 @@ impl Rom {
                         .map_err(|_| err("training_ability_target", decision.target))?,
                 });
                 match rule.execution {
+                    AbilityExecution::Script { .. } => {}
                     AbilityExecution::Slot {
                         task_data,
                         callback,
@@ -553,9 +696,13 @@ impl Rom {
                 pokemon::checked_unpack_with(&raw, self.profile.save.pokemon_codec)?;
             let field = self.profile.save.pokemon_codec.fields().ability;
             field.write(&mut after_canonical, field.read(&before_canonical)?)?;
+            let mut after_header = after_raw[..32].to_vec();
+            if let Some(field) = ability_rule.and_then(|rule| rule.ability_header) {
+                field.write(&mut after_header, field.read(&raw)?)?;
+            }
             if after_canonical != before_canonical
-                || raw[4..28] != after_raw[4..28]
-                || raw[30..32] != after_raw[30..32]
+                || raw[4..28] != after_header[4..28]
+                || raw[30..32] != after_header[30..32]
             {
                 return Err(err(
                     "training_native_unrelated",

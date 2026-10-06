@@ -7989,7 +7989,7 @@ fn local_training_ability_items_match_native_and_keep_profiles_isolated() {
             catalog.nature_items.len(),
             if key == "ROCKET" { 21 } else { 0 }
         );
-        if !matches!(key, "ROCKET" | "MERCURY12") {
+        if !matches!(key, "ROCKET" | "MERCURY12" | "ULTIMATE") {
             assert!(
                 catalog.ability_items.is_empty(),
                 "unverified handlers must not cross profiles"
@@ -8035,6 +8035,7 @@ fn local_training_ability_items_match_native_and_keep_profiles_isolated() {
                 for (i, byte) in raw.iter().enumerate() {
                     ram.w8(b.party + i as u32, *byte);
                 }
+                ram.w32(b.rng, 42);
                 let decision = ability_decision(&mut ram, rule, offer.item).unwrap();
                 assert_eq!(decision.accepted, guard["accepted"].as_bool().unwrap());
                 assert_eq!(decision.target, guard["target"].as_u64().unwrap() as u32);
@@ -8074,7 +8075,11 @@ fn local_training_ability_items_match_native_and_keep_profiles_isolated() {
             save.data[at..at + 100].copy_from_slice(&raw);
             let old = save.data.clone();
             let item = row["item"].as_u64().unwrap() as u16;
-            let seed = (key == "MERCURY12").then(|| row["seed"].as_u64().unwrap() as u32);
+            let seed = catalog
+                .ability_items
+                .iter()
+                .find(|o| o.item == item && o.requires_rng_seed)
+                .map(|_| row["seed"].as_u64().unwrap() as u32);
             let actual = rom
                 .training_preview(
                     Some(&save),
@@ -8116,6 +8121,10 @@ fn local_training_ability_items_match_native_and_keep_profiles_isolated() {
                 let native_target = if key == "ROCKET" {
                     rom.species(actual.before.species).unwrap().abilities
                         [row["target"].as_u64().unwrap() as usize]
+                } else if key == "ULTIMATE" {
+                    let target = row["target"].as_u64().unwrap() as usize;
+                    rom.species(actual.before.species).unwrap().abilities
+                        [if target >= 2 { 2 } else { target }]
                 } else {
                     row["target"].as_u64().unwrap() as u16
                 };
@@ -8139,18 +8148,31 @@ fn local_training_ability_items_match_native_and_keep_profiles_isolated() {
                     );
                     editor_matches += 1;
                 }
+                if key == "ULTIMATE" && actual.after.ability_id != 0 {
+                    let patch = PokemonPatch {
+                        ability_slot: Some(actual.after.ability_slot),
+                        ..Default::default()
+                    };
+                    assert_eq!(
+                        pokemon::edit(&raw[..80], &patch, &rom, Policy::Standard)
+                            .unwrap()
+                            .0,
+                        expected[..80]
+                    );
+                    editor_matches += 1;
+                }
             } else {
                 assert!(actual.ability_target.is_none());
             }
         }
         let item = catalog.ability_items[0].item;
-        if key == "MERCURY12" {
+        for seeded in catalog.ability_items.iter().filter(|o| o.requires_rng_seed) {
             assert_eq!(
                 rom.training_preview(
                     Some(&save),
                     Request {
                         expected_rom_md5: rom.profile.md5.into(),
-                        item,
+                        item: seeded.item,
                         rng_seed: None,
                         individual: Individual::Stored { location: party() },
                     }
@@ -8170,7 +8192,7 @@ fn local_training_ability_items_match_native_and_keep_profiles_isolated() {
         );
         assert_eq!(crate::binary::sha256(&rom.data), hash);
         assert_eq!(crate::binary::sha256(&std::fs::read(path).unwrap()), hash);
-        println!("{key}: {} native guards; {} persistent scenarios; {editor_matches} exact existing party/box editor matches; {changed_pids} changed PIDs; {identity_differences} nature/gender/shiny differences; {sources} parsed item sources, {positioned} map refs; original ROM/SAV unchanged", evidence["guards"].as_array().unwrap().len(), evidence["rows"].as_array().unwrap().len());
+        println!("{key}: {} native guards; {} persistent scenarios; {editor_matches} exact existing editor matches (Rocket party/box; Ultimate box only); {changed_pids} changed PIDs; {identity_differences} nature/gender/shiny differences; {sources} parsed item sources, {positioned} map refs; original ROM/SAV unchanged", evidence["guards"].as_array().unwrap().len(), evidence["rows"].as_array().unwrap().len());
     }
 }
 

@@ -29,13 +29,21 @@ def raw_individual(
     if key == "MERCURY12":
         pid = (pid & ~1) | (1 if slot == 1 else 0)
         canonical[43] = (canonical[43] & 127) | (128 if slot == 2 else 0)
+    elif key == "ULTIMATE":
+        canonical[43] = (canonical[43] & 127) | ((slot & 1) << 7)
+        raw[30] = 0x56 | int(slot >= 2)
+        raw[31] = 0x86
     else:
         canonical[47] = (canonical[47] & 252) | slot
     ot = pid if shiny else 1
     struct.pack_into("<II", raw, 0, pid, ot)
     struct.pack_into("<H", canonical, 0, species)
     if rom is not None:
-        base, stride = (0x5B3484, 604) if key == "ROCKET" else (0x1E052C8, 1024)
+        base, stride = {
+            "ROCKET": (0x5B3484, 604),
+            "MERCURY12": (0x1E052C8, 1024),
+            "ULTIMATE": (0x31F72C, 404),
+        }[key]
         xp = struct.unpack_from(
             "<I", rom, base + species_record["growth"] * stride + level * 4
         )[0]
@@ -48,7 +56,18 @@ def raw_individual(
         raw[32:80] = canonical
         struct.pack_into("<H", raw, 28, sum(struct.unpack("<24H", canonical)) & 65535)
     struct.pack_into("<I", raw, 80, 8)
+    if key == "ULTIMATE" and rom is not None:
+        raw[84] = level
+        struct.pack_into("<H6H", raw, 86, 75, 125, 63, 70, 64, 62, 66)
     return bytes(raw)
+
+
+def script_stage(cpu, item, stop, regs):
+    cpu.half(0x020375E0, 0)
+    cpu.half(0x0203CE7C, item)
+    decision = cpu.c.callchoice(0x09F00DD0, 0, 0, 0, 0, stop, 0x09F00E3E, regs)
+    assert decision in (1, 2), "script prefix did not reach a verified boundary"
+    return decision == 1, cpu.read(regs[6], 1)[0] if decision == 1 else 0
 
 
 def main():
@@ -59,7 +78,7 @@ def main():
     args = p.parse_args()
     b.MGBA_PROBE = args.mgba_probe.resolve()
     result = {}
-    for key in ["ROCKET", "MERCURY12"]:
+    for key in ["ROCKET", "MERCURY12", "ULTIMATE"]:
         b.ROM_PATH = Path(os.environ["GEN3_ROM_" + key])
         rom = b.ROM_PATH.read_bytes()
         assert hashlib.md5(rom).hexdigest() == b.MD5[key]
@@ -74,11 +93,22 @@ def main():
         rows = []
         for item in cat["items"]:
             handler = struct.unpack_from("<I", rom, item["offset"] + 28)[0]
-            if handler not in (SLOT_RULES if key == "ROCKET" else [0x09D58019]):
+            if (
+                handler
+                not in {
+                    "ROCKET": SLOT_RULES,
+                    "MERCURY12": [0x09D58019],
+                    "ULTIMATE": [0x08F7F111],
+                }[key]
+            ):
                 continue
-            offers.append(dict(item=item["id"], handler=handler))
+            offer = dict(item=item["id"], handler=handler)
+            if key == "ULTIMATE":
+                offer["variant"] = cpu.call(0xD7644, item["id"])
+                assert offer["variant"] in [1, 2]
+            offers.append(offer)
             for s in cat["species"]:
-                for slot in range(3):
+                for slot in range(4 if key == "ULTIMATE" else 3):
                     before = raw_individual(key, s["id"], slot)
                     cpu.write(party, before)
                     if key == "ROCKET":
@@ -99,6 +129,11 @@ def main():
                         )
                         assert decision in (1, 2)
                         accepted = decision == 1
+                    elif key == "ULTIMATE":
+                        cpu.word(b.CONFIG[key][5], 42)
+                        accepted, target = script_stage(
+                            cpu, item["id"], 0x09F00E20, regs
+                        )
                     else:
                         cpu.half(0x0203AD30, item["id"])
                         assert cpu.c.calluntil(0x09D561E0, 0, 0, 0, 0, 0x09D56246, regs)
@@ -120,8 +155,10 @@ def main():
                 if s["abilities"][1] and s["abilities"][0] != s["abilities"][1]
             ][:6]
             selected += [s for s in cat["species"] if s["id"] in [25, 132, 201, 327]]
+            if key == "ULTIMATE":
+                selected += [s for s in cat["species"] if s["id"] == 150]
             for s in selected:
-                for slot in range(3):
+                for slot in range(4 if key == "ULTIMATE" else 3):
                     for pid, seed, shiny in [
                         (2400 + i, seed, i % 2 == 0)
                         for i, seed in enumerate(
@@ -135,7 +172,8 @@ def main():
                             key, s["id"], slot, pid, shiny, 30, rom, s
                         )
                         cpu.write(party, before)
-                        cpu.call(0x967B4 if key == "ROCKET" else 0x3E47C, party)
+                        if key != "ULTIMATE":
+                            cpu.call(0x967B4 if key == "ROCKET" else 0x3E47C, party)
                         before = cpu.read(party, 100)
                         cpu.word(b.CONFIG[key][5], seed)
                         if key == "ROCKET":
@@ -170,6 +208,11 @@ def main():
                                     0x08000000 + applied,
                                     regs,
                                 )
+                        elif key == "ULTIMATE":
+                            # One complete prefix, including native random selection.
+                            accepted, target = script_stage(
+                                cpu, item["id"], 0x09F00E2C, regs
+                            )
                         else:
                             cpu.half(0x0203AD30, item["id"])
                             assert cpu.c.calluntil(
@@ -184,9 +227,12 @@ def main():
                         after = cpu.read(party, 100)
                         if not accepted:
                             assert after == before
+                        header = bytearray(after[:32])
+                        if key == "ULTIMATE":
+                            header[30] = (header[30] & 254) | (before[30] & 1)
                         assert (
-                            after[4:28] == before[4:28]
-                            and after[30:32] == before[30:32]
+                            header[4:28] == before[4:28]
+                            and header[30:32] == before[30:32]
                         )
                         c0 = bytearray(
                             b.unpack(before) if key == "ROCKET" else before[32:80]
@@ -196,6 +242,9 @@ def main():
                         )
                         if key == "ROCKET":
                             c1[47] = (c1[47] & 252) | (c0[47] & 3)
+                            assert after[:4] == before[:4]
+                        elif key == "ULTIMATE":
+                            c1[43] = (c1[43] & 127) | (c0[43] & 128)
                             assert after[:4] == before[:4]
                         else:
                             c1[43] = (c1[43] & 127) | (c0[43] & 128)
