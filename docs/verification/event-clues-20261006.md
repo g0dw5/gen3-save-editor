@@ -17,12 +17,12 @@ Map-level roots sharing one map header also have distinct identities: map ID,
 reference kind, source offset **and script root**. Valid-looking unreferenced bytes
 are excluded. Out-of-layout coordinates have no precise-tile link.
 
-A response pages 32 references and includes at most 64 potential writes per
+A response pages 32 references and includes at most 64 potential writes and 64 qualified battle references per
 reference with truncation disclosed. A selected ID may be resolved outside the
 current page, but only inside the current text/map filter. Text search is bounded
 to 512 UTF-8 bytes; map/selected IDs are bounded. The existing root, text and script
 walk bounds are documented in [prerequisite tracing](event-dependencies-20261006.md).
-Empty traces with neither readable text nor effects are not invented tasks.
+Empty traces with neither readable text, effects nor qualified battle references are not invented tasks.
 The coverage object concerns parsed roots, not exhaustive searchable game dialogue.
 
 The command rejects stale ROM fingerprints, wrong-ROM index identity, malformed
@@ -53,13 +53,13 @@ result does not establish absence. Recurring resets remain outside this evidence
 
 | Exact ROM | Searchable references checked |
 |---|---:|
-| Dark Phantom BW | 3,885 |
-| Dark Phantom DP | 3,885 |
+| Dark Phantom BW | 3,886 |
+| Dark Phantom DP | 3,886 |
 | Spanish Rocket 2.1 | 8,976 |
 | Ultimate Emerald 5.5 | 5,971 |
 | Mercury 1.2 | 5,605 |
 
-The five-ROM opt-in test checks **all 28,322 emitted references** against current
+The five-ROM opt-in test checks **all 28,324 emitted references** against current
 map names, event-table script pointers (or map roots), static bounds and current
 ROM string pointers. It checks unique reference identities, search/detail lookup,
 ROM-only unknown observations and cache replacement through the same App.
@@ -111,5 +111,7 @@ uv run --with playwright python scripts/test_query_collection_ui.py
 本轮新增“事件线索”搜索，以当前 ROM 文字和地图引用为起点，可追查条件并跳转
 地图／外部入口，返回后恢复搜索、地图筛选、条目和分页。NPC 可见性、写入结果与
 存档一致、任务已完成、当前可执行始终分开；不从标记值拼造已完成任务。五份指纹
-共核对 28,322 条可搜索引用，整体仍是部分解析。没有完整任务树或动态可达证明。
+共核对 28,324 条可搜索引用，整体仍是部分解析。没有完整任务树或动态可达证明。
 版本号保持不变；本轮未打包、未发布。此前交付的本地 App 不含本次增量。
+
+Trainer-reference integration adds two battle-only BW/DP references. The five-ROM search regression was rerun at this increment; counts above reflect this source rather than the earlier search-only revision. See [trainer boundary evidence](trainer-locations-20261006.md).

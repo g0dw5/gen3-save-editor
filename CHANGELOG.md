@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Link qualified trainer-script references to actors, static tiles, guard checks,
+  event contexts and exterior entrances. Keep rematch bases and setup records
+  distinct from final parties and current access. Verify command boundaries with
+  native execution across five fingerprints; correct Mercury's extended type-10
+  boundary and stop unsupported formats rather than consume guessed bytes.
+- 训练家资料新增战斗脚本引用、NPC／格位、条件及事件上下文跳转，可沿地图查看外部
+  入口。再战基础记录、准备指令与最终配队分开展示，不推断当前可达。五份指纹核对
+  原生命令参数边界，修正水银类型 10 的扩展宽度；未知格式保留停止证据。
+
 - Add ROM-text/map search for referenced event clues with guarded writes,
   SAV snapshot observations, prerequisite tracing and tile/entrance navigation.
   Preserve search/filter/selection/page on return; keep floating windows inside

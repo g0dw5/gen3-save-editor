@@ -737,8 +737,33 @@ export interface EventClue {
     observed: boolean | null;
   }[];
   effects_truncated: boolean;
+  battles?: ScriptBattleSource[];
   stopped_at: number[];
   path_complete: boolean;
+}
+export interface ScriptBattleSource {
+  trainer_id: number;
+  battle_type: number;
+  offset: number;
+  role: string;
+  conditions: ItemReward["conditions"];
+}
+export interface TrainerReferenceReport {
+  rom_md5: string;
+  trainer_id: number;
+  references: {
+    clue_id: string;
+    battle: ScriptBattleSource;
+    reference: EventDependencyReport["writers"][number]["reference"];
+    conditions: AcquisitionSource["conditions"];
+    visibility: AcquisitionSource["conditions"];
+    text: EventClue["text"];
+    stopped_at: number[];
+  }[];
+  total_matches: number;
+  next_offset: number | null;
+  coverage: EventDependencyReport["coverage"];
+  partial: boolean;
 }
 export interface EventClueReport {
   rom_md5: string;

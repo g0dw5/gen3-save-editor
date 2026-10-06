@@ -248,6 +248,13 @@ fn contest_matches_native_feeding_and_npc_bounds() {
 
 /// Synthetic labels deliberately differ from every supported game's names.
 fn label_fixture(b: &mut [u8], p: profile::Profile) {
+    if let Some(rules) = p.event_state.and_then(|r| r.effects) {
+        put32(
+            b,
+            rules.commands + 0x5c * 4,
+            0x08000001 + rules.battle_handler as u32,
+        );
+    }
     if let Some(rules) = p.resource_checks {
         let address = (rules.item_sanitizer - 0x08000000) as usize;
         // Synthetic identity sanitizer; native redirects are tested separately.
@@ -7108,5 +7115,257 @@ fn local_event_clue_search_cross_rom_queries() {
         assert_eq!(rom.data.as_ref(), &original);
         assert_eq!(std::fs::read(path).unwrap(), original);
         println!("{key}: {total} searchable references, every map/root/text checked; search/detail/cache preservation passed");
+    }
+}
+
+#[test]
+fn trainer_references_keep_guarded_roots_actors_and_unresolved_access_separate() {
+    use crate::event_dependencies::{Index, TrainerRequest};
+    for profile in profile::PROFILES {
+        let (mut r, mut map) = npc_trade_fixture(profile);
+        let rules = r.profile.event_state.unwrap().effects.unwrap();
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        for (op, code) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
+            .into_iter()
+            .zip(rules.handlers)
+        {
+            put32(
+                b,
+                rules.commands + op as usize * 4,
+                0x08000001 + code as u32,
+            );
+        }
+        b[0x26000..0x26005].copy_from_slice(&[0x2b, 11, 0, 6, 1]);
+        put32(b, 0x26005, 0x08026100);
+        b[0x26009] = 0x5c;
+        b[0x2600a] = 3;
+        put16(b, 0x2600b, 2);
+        b[0x26013] = 2;
+        b[0x26100] = 0x5c;
+        b[0x26101] = 3;
+        put16(b, 0x26102, 1);
+        b[0x2610a] = 2;
+        b[0x25000] = 2;
+        put16(b, 0x25114, 20);
+        b[0x25118] = 2;
+        put16(b, 0x2511c, 2);
+        put16(b, 0x2511e, 3);
+        put32(b, 0x25128, 0x08026000);
+        b[0x25002] = 1;
+        put32(b, 0x2500c, 0x08025200);
+        put16(b, 0x25200, 1);
+        put16(b, 0x25202, 2);
+        put32(b, 0x2520c, 0x08026200);
+        b[0x26200] = 0x5c;
+        b[0x26201] = 3;
+        put16(b, 0x26202, 1);
+        b[0x2620a] = 2;
+        // Map-level trainer setup, width depends on native verified engine format.
+        b[0x26400] = 0x5c;
+        b[0x26401] = 10;
+        put16(b, 0x26402, 1);
+        b[0x26400 + rules.battle_lengths[10] as usize] = 2;
+        map.scripts = vec![0x26000, 0x26200, 0x26400];
+        let original = r.data.clone();
+        let save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let saved = save.data.clone();
+        let index = Index::build(&r, std::slice::from_ref(&map)).unwrap();
+        let request = |id| TrainerRequest {
+            expected_rom_md5: r.profile.md5.into(),
+            trainer_id: id,
+            offset: 0,
+        };
+        let report = index.trainer(&r, None, request(1)).unwrap();
+        assert_eq!(report.references.len(), 4);
+        assert_eq!(
+            report
+                .references
+                .iter()
+                .filter(|row| row.reference.kind == "npc")
+                .count(),
+            2
+        );
+        assert!(report
+            .references
+            .iter()
+            .all(|row| row.reference.entry_unresolved));
+        assert!(report
+            .references
+            .iter()
+            .any(|row| row.reference.kind == "trigger"
+                && row.reference.x == Some(1)
+                && row.reference.y == Some(2)));
+        assert!(report
+            .references
+            .iter()
+            .any(|row| row.reference.kind == "map_script" && row.reference.x.is_none()));
+        let npc = report
+            .references
+            .iter()
+            .find(|row| row.reference.kind == "npc")
+            .unwrap();
+        assert!(npc
+            .conditions
+            .iter()
+            .any(|c| c.condition.id == 11 && c.satisfied.is_none()));
+        let current = index.trainer(&r, Some(&save), request(1)).unwrap();
+        assert!(current.references.iter().any(|row| row
+            .conditions
+            .iter()
+            .any(|c| c.condition.id == 11 && c.satisfied == Some(false))));
+        assert!(current.references.iter().any(|row| row
+            .visibility
+            .iter()
+            .any(|c| c.condition.id == 20 && c.satisfied == Some(true))));
+        let alternate = index.trainer(&r, Some(&save), request(2)).unwrap();
+        assert_eq!(alternate.references.len(), 2);
+        assert!(alternate
+            .references
+            .iter()
+            .all(|row| row
+                .conditions
+                .iter()
+                .any(|c| c.condition.id == 11 && c.satisfied == Some(true))));
+        let serialized = serde_json::to_value(&current).unwrap();
+        assert!(serialized["references"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|row| row.get("status").is_none() && row.get("completed").is_none()));
+        assert_eq!(save.data, saved);
+        assert_eq!(r.data, original);
+        let mut app = crate::app::App {
+            session: Some(Session::new(r.clone())),
+            event_dependency_cache: Some((r.data.clone(), index)),
+            ..Default::default()
+        };
+        let output = app
+            .dispatch(crate::app::Request {
+                command: "trainer_references".into(),
+                payload: serde_json::json!({"expected_rom_md5":r.profile.md5,"trainer_id":1}),
+            })
+            .unwrap();
+        assert_eq!(output["total_matches"], 4);
+        for payload in [
+            serde_json::json!({"expected_rom_md5":"wrong","trainer_id":1}),
+            serde_json::json!({"expected_rom_md5":r.profile.md5,"trainer_id":null}),
+            serde_json::json!({"expected_rom_md5":r.profile.md5,"trainer_id":1,"offset":9}),
+        ] {
+            assert!(app
+                .dispatch(crate::app::Request {
+                    command: "trainer_references".into(),
+                    payload
+                })
+                .is_err());
+        }
+        // A changed native dispatch is not parsed with the former parameter layout.
+        put32(
+            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+            rules.commands + 0x5c * 4,
+            0x08012345,
+        );
+        assert_eq!(
+            r.trainer_battle_length(0x26100).err().unwrap().code,
+            "trainer_script_dispatch"
+        );
+    }
+}
+
+#[test]
+#[ignore = "requires five exact private ROMs and GEN3_TRAINER_SCRIPT_PROBES independent native vectors"]
+fn local_trainer_reference_formats_match_native_boundaries_and_current_roots() {
+    use crate::event_dependencies::{Index, TrainerRequest};
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_TRAINER_SCRIPT_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    let mut app = crate::app::App::default();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let data = std::fs::read(&path).unwrap();
+        let r = Rom::open(data.clone()).unwrap();
+        let rules = r.profile.event_state.unwrap().effects.unwrap();
+        assert_eq!(probes[key]["md5"], r.profile.md5);
+        assert_eq!(probes[key]["handler"], rules.battle_handler);
+        for row in probes[key]["rows"].as_array().unwrap() {
+            let typ = row["type"].as_u64().unwrap() as usize;
+            let mut fixture = r.clone();
+            let at = fixture.data.len();
+            let mut script = vec![0; 33];
+            script[0] = 0x5c;
+            script[1] = typ as u8;
+            put16(
+                &mut script,
+                2,
+                row["input_trainer"].as_u64().unwrap() as u16,
+            );
+            if rules.battle_lengths[typ] > 0 {
+                assert_eq!(row["operand_length"], rules.battle_lengths[typ]);
+                script[rules.battle_lengths[typ] as usize] = 2;
+            }
+            std::sync::Arc::make_mut(&mut fixture.data).extend(script);
+            if rules.battle_lengths[typ] > 0 {
+                assert_eq!(
+                    fixture.trainer_battle_length(at).unwrap(),
+                    rules.battle_lengths[typ] as usize
+                );
+            } else {
+                assert!(fixture.trainer_battle_length(at).is_err());
+            }
+            if matches!(rules.battle_roles[typ], "primary" | "setup") {
+                assert_eq!(row["opponent_a"], row["input_trainer"]);
+            } else if rules.battle_roles[typ] == "secondary_setup" {
+                assert_eq!(row["opponent_b"], row["input_trainer"]);
+            }
+        }
+        let maps = r.maps().unwrap();
+        let index = Index::build(&r, &maps).unwrap();
+        let mut references = 0;
+        let mut positioned = 0;
+        for id in 1..r.profile.trainers.count as u16 {
+            let mut offset = 0;
+            loop {
+                let report = index
+                    .trainer(
+                        &r,
+                        None,
+                        TrainerRequest {
+                            expected_rom_md5: r.profile.md5.into(),
+                            trainer_id: id,
+                            offset,
+                        },
+                    )
+                    .unwrap();
+                for row in &report.references {
+                    assert_eq!(r.data[row.battle.offset], 0x5c);
+                    assert_eq!(u16(&r.data, row.battle.offset + 2).unwrap(), id);
+                    assert!(maps.iter().any(|m| m.id == row.reference.map_id));
+                    assert!(row.conditions.iter().all(|c| c.actual.is_none()));
+                    assert!(row.visibility.iter().all(|c| c.actual.is_none()));
+                    references += 1;
+                    positioned += usize::from(row.reference.x.is_some());
+                }
+                if let Some(next) = report.next_offset {
+                    offset = next;
+                } else {
+                    break;
+                }
+            }
+        }
+        app.session = Some(Session::new(r.clone()));
+        let reply = app
+            .dispatch(crate::app::Request {
+                command: "trainer_references".into(),
+                payload: serde_json::json!({"expected_rom_md5":r.profile.md5,"trainer_id":1}),
+            })
+            .unwrap();
+        assert_eq!(reply["rom_md5"], r.profile.md5);
+        assert!(std::sync::Arc::ptr_eq(
+            &app.event_dependency_cache.as_ref().unwrap().0,
+            &r.data
+        ));
+        assert_eq!(r.data.as_ref(), &data);
+        assert_eq!(std::fs::read(path).unwrap(), data);
+        println!("{key}: {} native scenarios; {references} guarded literal-record references, {positioned} positioned; ROM preserved", probes[key]["rows"].as_array().unwrap().len());
     }
 }

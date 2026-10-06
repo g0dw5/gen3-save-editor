@@ -373,7 +373,7 @@ remain unresolved. No receipt logic is replaced with item holdings or visibility
 
 All five story/dependency rows remain **P**. The shared read-only event page now
 searches current-ROM text/map references and links guarded changes to prerequisite
-tracing, map tiles, exterior chains and return. All 28,322 searchable references
+tracing, map tiles, exterior chains and return. All 28,324 searchable references
 have current map/root/text evidence; this does not prove game activation, complete
 story coverage or quest completion. Observed values and NPC visibility are
 explicitly separate from receipt/task status. See
@@ -382,3 +382,12 @@ explicitly separate from receipt/task status. See
 五份指纹共用事件线索页，支持文字／地图搜索、条件追查、格位／入口和返回；不内置
 任务目录，不把标记值一致当作完成状态。完整剧情依赖、原生事件、动态激活和可达性
 仍有缺口，相关行继续为部分解析。
+
+## Qualified trainer references / 有条件的训练家引用
+
+All five fingerprints remain **P** for trainer location/access coverage. The shared
+trainer/event/map flow now retains native-format-qualified literal record roles,
+branch guards, NPC visibility and static actor/tile links. Native mGBA checks cover
+289 disposable command executions and cross-ROM tests check 12,981 references;
+12,649 have in-bounds static coordinates. Rematches, setup/replacements and current
+access remain unresolved. See [boundaries and evidence](verification/trainer-locations-20261006.md).

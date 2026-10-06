@@ -22,6 +22,7 @@ def main():
     reward = dict(item=1,quantity=1,offset=100,via='pickup',conditions=[])
     marker = dict(id='pickup-1',kind='pickup',x=1,y=1,elevation=0,local_id=1,graphics_id=None,movement_type=0,flag=10,receipt_flag=10,offset=100,script=100,rewards=[reward],stopped_at=[])
     world = dict(maps=maps,map_events=[dict(map_id='0-1',markers=[marker],unplaced_rewards=[],stopped_at=[])],encounters=[],trainers=[],trainer_locations=dict(locations=[]),map_groups=[])
+    world['trainers']=[dict(id=1,name='ROM trainer',class_name='Test class',portrait=1,female=False,double_battle=False,items=[],ai=0,diagnostics=[],offset=250,party=[dict(species=2,level=10,iv_quality=0,level_rule='fixed',generation=None,held_item=0,moves=[0,0,0,0],moves_explicit=True,offset=250)],**{'class':0})]
     edge = dict(from_='0-0',to='0-1',kind='warp',x=2,y=1,target_x=1,target_y=1,warp_index=0,target_warp=0,direction=None,displacement=None,offset=200,unresolved=None)
     edge['from'] = edge.pop('from_')
     source = dict(underfoot=True,kind='pickup',map_id='0-1',region=1,x=1,y=1,related=[],quantity=1,min_level=None,max_level=None,encounter_percent=None,held_percent=None,periods=[],conditions=[],requirements=[],evolution=None,status='unknown',receipt_flag=None,repeatable=None,offset=100,partial=True,in_scenario=None)
@@ -54,9 +55,13 @@ def main():
         elif command in ('collection','collection_export'):
             if command=='collection_export': assert payload['expected_rom_md5']=='test' and payload['query']['basis']=='individuals'
             data=plan
+        elif command=='trainer_references':
+            assert payload['expected_rom_md5']=='test' and payload['trainer_id']==1
+            battle=dict(trainer_id=1,battle_type=3,offset=250,conditions=[g2['condition']],role='primary')
+            data=dict(rom_md5='test',trainer_id=1,references=[dict(clue_id='0-1:trigger:0',battle=battle,reference=writer['reference'],conditions=writer['conditions'],visibility=[g1],text=writer['text'],stopped_at=[400])],total_matches=1,next_offset=None,coverage=report['coverage'],partial=True)
         elif command=='event_search':
             assert payload['expected_rom_md5']=='test'
-            refs=[dict(id=f'0-1:trigger:{i}',reference=copy.deepcopy(writer['reference']),text=[dict(offset=800,text=f'Reward <script>context</script> line {i}')],visibility=[],effects=[dict(effect=writer['effect'],conditions=writer['conditions'],observed=True if sum(r['command']=='open_save' for r in requests)>1 else None)],effects_truncated=False,stopped_at=[700],path_complete=False) for i in range(35)]
+            refs=[dict(id=f'0-1:trigger:{i}',reference=copy.deepcopy(writer['reference']),text=[dict(offset=800,text=f'Reward <script>context</script> line {i}')],visibility=[],effects=[dict(effect=writer['effect'],conditions=writer['conditions'],observed=True if sum(r['command']=='open_save' for r in requests)>1 else None)],battles=[dict(trainer_id=1,battle_type=3,offset=250,conditions=[g2['condition']],role='primary')],effects_truncated=False,stopped_at=[700],path_complete=False) for i in range(35)]
             refs=[entry for entry in refs if (not payload['map_id'] or entry['reference']['map_id']==payload['map_id']) and (not payload['search'] or payload['search'].lower() in entry['text'][0]['text'].lower())]
             start=payload['offset'];selected=next((entry for entry in refs if entry['id']==payload['selected_id']),None)
             data=dict(rom_md5='test',entries=refs[start:start+32],selected=selected,total_matches=len(refs),next_offset=start+32 if start+32<len(refs) else None,coverage=report['coverage'],partial=True)
@@ -220,7 +225,7 @@ def main():
             page.get_by_role('button',name='Open save',exact=True).first.click()
         choice.value.set_files(dict(name='synthetic.sav',mimeType='application/octet-stream',buffer=b'fixture-only'))
         expect(events).to_contain_text('Known result matches the saved snapshot')
-        expect(events.locator('.condition-details').first).to_contain_text('SAV value set')
+        expect(events.locator('.event-clue-effect .condition-details').first).to_contain_text('SAV value set')
         assert sum(r['command']=='event_search' for r in requests)>before
         page.get_by_role('button',name='简体中文',exact=True).click()
         expect(events).to_contain_text('任务完成状态无法确定')
@@ -240,6 +245,30 @@ def main():
         events.get_by_role('button',name='Test cave floor (1, 1) ↗',exact=True).click()
         page.get_by_role('button',name='查询此地图的事件线索 ↗',exact=True).click()
         expect(events.get_by_role('combobox',name='按地图筛选事件线索')).to_have_value('0-1')
+        page.get_by_role('button',name='English',exact=True).click()
+        page.get_by_role('button',name='Collection planning',exact=True).click()
+        page.get_by_role('button',name='Trainers',exact=True).click()
+        trainer=page.locator('.trainer-reference-panel')
+        expect(trainer).to_contain_text('Opponent record reference')
+        expect(trainer).to_contain_text('NPC visibility checks (not task completion)')
+        trainer.get_by_role('button',name='Test cave floor (1, 1) ↗',exact=True).click()
+        expect(page.locator('.map-focus')).to_be_visible()
+        expect(page.locator('.map-navigation')).to_contain_text('Test region entrance')
+        page.get_by_role('button',name='Back to previous reference',exact=False).click()
+        expect(trainer).to_be_visible()
+        trainer.get_by_role('button',name='Read this event context ↗',exact=True).click()
+        expect(events).to_contain_text('Task completion undetermined')
+        events.get_by_role('button',name='ROM trainer ↗',exact=True).click()
+        expect(trainer).to_be_visible()
+        before=sum(r['command']=='trainer_references' for r in requests)
+        with page.expect_file_chooser() as choice:
+            page.get_by_role('button',name='Open save',exact=True).first.click()
+        choice.value.set_files(dict(name='synthetic.sav',mimeType='application/octet-stream',buffer=b'fixture-only'))
+        expect(trainer).to_contain_text('SAV value set')
+        assert sum(r['command']=='trainer_references' for r in requests)>before
+        page.get_by_role('button',name='简体中文',exact=True).click()
+        expect(trainer).to_contain_text('战斗引用与格位')
+        expect(trainer).to_contain_text('对手记录引用')
         page.get_by_role('button',name='English',exact=True).click()
         page.get_by_role('button',name='Collection planning',exact=True).click()
         assert not any(r['command'] in ('action','export_save','save_bytes') for r in requests)

@@ -785,16 +785,7 @@ impl Rom {
                     crate::map_events::expanded_length(op)
                 } else {
                     match op {
-                        0x5c => {
-                            let typ = *b.get(pc + 1).unwrap_or(&255);
-                            match typ {
-                                0 | 5 | 9..=12 => 14,
-                                1 | 2 | 4 | 7 => 18,
-                                3 => 10,
-                                6 | 8 => 22,
-                                _ => 0,
-                            }
-                        }
+                        0x5c => self.trainer_battle_length(pc).unwrap_or(0),
                         0x00 | 0x01 | 0x02 | 0x03 | 0x27 | 0x28 | 0x30 | 0x32 | 0x5a | 0x5b
                         | 0x66 | 0x68 | 0x69 | 0x6a | 0x6b | 0x6c | 0x97 | 0xa0 | 0xb7 | 0xc5 => 1,
                         0x04 | 0x05 | 0x16 | 0x17 | 0x18 | 0x19 | 0x1a | 0x21 | 0x23 | 0x26

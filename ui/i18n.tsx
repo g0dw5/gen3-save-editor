@@ -1,5 +1,20 @@
 import { createContext, useContext } from "react";
 export const en = {
+  trainerReferenceTitle: "Battle references and tile positions",
+  trainerReferenceHelp:
+    "These scripts refer to this trainer record. Guards and NPC visibility do not prove access or an available battle. Rematches, setup commands and script replacements may select a different final party; the constructor preview below describes the selected record/scenario.",
+  trainerReferenceNone:
+    "No qualified positioned reference found. Unparsed or native battle setup may still exist.",
+  trainerReferenceError: "Battle references could not be verified",
+  trainerReferenceEvent: "Read this event context",
+  trainerReferenceRole_primary: "Opponent record reference",
+  trainerReferenceRole_rematch_base:
+    "Rematch base record; final selection unresolved",
+  trainerReferenceRole_setup:
+    "Opponent setup reference; battle activation unresolved",
+  trainerReferenceRole_secondary_setup:
+    "Second opponent setup reference; battle activation unresolved",
+
   events: "Event clues",
   eventCluesHelp:
     "Search text and map references read from this ROM. These are partial script clues, not verified quests or a complete story log. Native/custom dialogue, entry selectors and current access remain unresolved.",
@@ -16,7 +31,7 @@ export const en = {
   eventCluesNoWrites:
     "No persistent write was found in the bounded trace. This does not establish that the event has no effect.",
   eventCluesEffectsLimit:
-    "Showing the first 64 potential writes. Further effects remain outside this view.",
+    "Each trace shows at most 64 potential writes and 64 battle references. Further effects remain outside this view.",
   eventCluesNone:
     "No matching readable reference found. Unparsed dialogue and native events may still exist.",
   eventCluesError: "Event clues could not be loaded",
@@ -1063,6 +1078,18 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  trainerReferenceTitle: "战斗引用与格位",
+  trainerReferenceHelp:
+    "脚本引用此训练家记录。条件满足或 NPC 可见不代表当前可达或可挑战。再战、准备指令和脚本替换可能选择不同的最终配队；下方构造器预览针对所选记录／情景。",
+  trainerReferenceNone:
+    "未找到已资格化的格位引用；未解析或原生战斗准备仍可能存在。",
+  trainerReferenceError: "无法核实战斗引用",
+  trainerReferenceEvent: "查看此事件上下文",
+  trainerReferenceRole_primary: "对手记录引用",
+  trainerReferenceRole_rematch_base: "再战基础记录，最终选择未确定",
+  trainerReferenceRole_setup: "对手准备引用，战斗激活未确定",
+  trainerReferenceRole_secondary_setup: "第二对手准备引用，战斗激活未确定",
+
   events: "事件线索",
   eventCluesHelp:
     "按当前 ROM 的文字和地图引用搜索。这是部分脚本线索，并非已验证任务或完整剧情日志；原生／自定义对话、激活条件和当前可达性仍有缺口。",
@@ -1077,7 +1104,8 @@ export const zh: Record<Key, string> = {
   eventCluesObservedYes: "已知结果与存档快照一致",
   eventCluesObservedNo: "已知结果与存档快照不同",
   eventCluesNoWrites: "有界追查未找到持久化写入，不代表此事件没有作用。",
-  eventCluesEffectsLimit: "仅展示前 64 次可能写入，其他变化未在此页展开。",
+  eventCluesEffectsLimit:
+    "每条线索最多展示 64 次可能写入及 64 条战斗引用，其他变化未在此页展开。",
   eventCluesNone: "未找到匹配的可读引用；未解析对话或原生事件仍可能存在。",
   eventCluesError: "无法加载事件线索",
   eventCluesPrevious: "上一页线索",

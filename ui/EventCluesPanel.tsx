@@ -12,12 +12,14 @@ import type {
   EventClueReport,
   GameMap,
   MapFocus,
+  Opponent,
   QueryTarget,
 } from "./types";
 
 export function EventCluesPanel({
   catalog,
   maps,
+  trainers,
   search,
   onSearch,
   selected,
@@ -28,9 +30,11 @@ export function EventCluesPanel({
   onTarget,
   offset,
   setOffset,
+  onTrainer,
 }: {
   catalog: Catalog;
   maps: GameMap[];
+  trainers: Opponent[];
   search: string;
   onSearch: (value: string) => void;
   selected: string;
@@ -41,6 +45,7 @@ export function EventCluesPanel({
   onTarget: (target: QueryTarget) => void;
   offset: number;
   setOffset: (offset: number) => void;
+  onTrainer: (id: number) => void;
 }) {
   const { t } = useI18n();
   const revision = useContext(ConditionQueryRevision);
@@ -233,6 +238,33 @@ export function EventCluesPanel({
                   onTarget={onTarget}
                   onMap={onMap}
                 />
+              )}
+              {!!current.battles?.length && (
+                <section>
+                  <h3>{t("trainerReferenceTitle")}</h3>
+                  <p className="small muted">{t("trainerReferenceHelp")}</p>
+                  {current.battles.map((battle, i) => (
+                    <div key={`${battle.offset}:${i}`}>
+                      <button
+                        className="link-button"
+                        onClick={() => onTrainer(battle.trainer_id)}
+                      >
+                        {trainers.find(
+                          (trainer) => trainer.id === battle.trainer_id,
+                        )?.name ??
+                          `${t("trainers")} #${battle.trainer_id}`}{" "}
+                        ↗
+                      </button>
+                      <span> · {t(`trainerReferenceRole_${battle.role}`)}</span>
+                      <ConditionDetails
+                        conditions={battle.conditions}
+                        catalog={catalog}
+                        onTarget={onTarget}
+                        onMap={onMap}
+                      />
+                    </div>
+                  ))}
+                </section>
               )}
               <h3>{t("eventCluesChanges")}</h3>
               <p className="small muted">{t("eventCluesObservedHelp")}</p>

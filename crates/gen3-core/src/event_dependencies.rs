@@ -20,22 +20,77 @@ pub struct Rules {
     pub commands: usize,
     /// setvar, addvar, subvar, copyvar, setorcopyvar, setflag, clearflag, loadpointer.
     pub handlers: [usize; 8],
+    pub battle_handler: usize,
+    /// Native operand layouts, including opcode. Zero means not yet verified.
+    pub battle_lengths: [u8; 17],
+    pub battle_roles: [&'static str; 17],
 }
 const OPCODES: [u8; 8] = [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f];
 pub const EMERALD: Rules = Rules {
+    battle_roles: [
+        "primary",
+        "primary",
+        "primary",
+        "primary",
+        "primary",
+        "rematch_base",
+        "primary",
+        "rematch_base",
+        "primary",
+        "unresolved",
+        "setup",
+        "secondary_setup",
+        "unresolved",
+        "unresolved",
+        "unresolved",
+        "unresolved",
+        "unresolved",
+    ],
     commands: 0x1db67c,
+    battle_handler: 0x9b5d0,
+    battle_lengths: [
+        14, 18, 18, 10, 18, 14, 22, 18, 22, 14, 14, 14, 14, 0, 0, 0, 0,
+    ],
     handlers: [
         0x99720, 0x99914, 0x9993c, 0x99744, 0x99770, 0x99c14, 0x99c28, 0x99644,
     ],
 };
 pub const ROCKET: Rules = Rules {
+    battle_roles: EMERALD.battle_roles,
     commands: 0x22b218,
+    battle_handler: 0xd1530,
+    battle_lengths: [
+        14, 18, 18, 10, 18, 14, 22, 18, 22, 14, 14, 14, 14, 0, 0, 0, 0,
+    ],
     handlers: [
         0xcf610, 0xcf804, 0xcf82c, 0xcf634, 0xcf660, 0xcfb5c, 0xcfb70, 0xcf534,
     ],
 };
 pub const MERCURY: Rules = Rules {
+    battle_roles: [
+        "primary",
+        "primary",
+        "primary",
+        "primary",
+        "primary",
+        "rematch_base",
+        "primary",
+        "rematch_base",
+        "primary",
+        "primary",
+        "primary",
+        "unresolved",
+        "primary",
+        "primary",
+        "primary",
+        "primary",
+        "unresolved",
+    ],
     commands: 0x15f9b4,
+    battle_handler: 0x6c2c4,
+    battle_lengths: [
+        14, 18, 18, 10, 18, 14, 22, 18, 22, 14, 20, 0, 14, 14, 18, 10, 0,
+    ],
     handlers: [
         0x6a390, 0x6a584, 0x6a5ac, 0x6a3b4, 0x6a3e0, 0x6a82c, 0x6a840, 0x6a2b4,
     ],
@@ -85,8 +140,46 @@ pub struct TextReference {
 pub(crate) struct ScriptEffects {
     pub effects: Vec<Effect>,
     pub text: Vec<TextReference>,
+    pub battles: Vec<BattleSource>,
     pub stopped_at: Vec<usize>,
     pub complete: bool,
+}
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct BattleSource {
+    pub trainer_id: u16,
+    pub battle_type: u8,
+    pub offset: usize,
+    pub conditions: Vec<EventCondition>,
+    pub role: &'static str,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TrainerRequest {
+    pub expected_rom_md5: String,
+    pub trainer_id: u16,
+    #[serde(default)]
+    pub offset: usize,
+}
+#[derive(Serialize)]
+pub struct TrainerReference {
+    pub clue_id: String,
+    pub battle: BattleSource,
+    pub reference: Reference,
+    pub conditions: Vec<ConditionCheck>,
+    pub visibility: Vec<ConditionCheck>,
+    pub text: Vec<TextReference>,
+    pub stopped_at: Vec<usize>,
+}
+#[derive(Serialize)]
+pub struct TrainerReport {
+    pub rom_md5: String,
+    pub trainer_id: u16,
+    pub references: Vec<TrainerReference>,
+    pub total_matches: usize,
+    pub next_offset: Option<usize>,
+    pub coverage: Coverage,
+    pub partial: bool,
 }
 #[derive(Clone, Serialize)]
 pub struct Reference {
@@ -195,6 +288,7 @@ pub struct Clue {
     pub text: Vec<TextReference>,
     pub visibility: Vec<ConditionCheck>,
     pub effects: Vec<ClueEffect>,
+    pub battles: Vec<BattleSource>,
     pub effects_truncated: bool,
     pub stopped_at: Vec<usize>,
     pub path_complete: bool,
@@ -299,6 +393,69 @@ fn references(rom: &Rom, maps: &[Map]) -> Result<Vec<Reference>> {
     Ok(out)
 }
 impl Index {
+    pub fn trainer(
+        &self,
+        rom: &Rom,
+        save: Option<&Save>,
+        request: TrainerRequest,
+    ) -> Result<TrainerReport> {
+        self.check_rom(rom)?;
+        if request.expected_rom_md5 != rom.profile.md5 {
+            return Err(err("rom_mismatch", request.expected_rom_md5));
+        }
+        if request.trainer_id as usize >= rom.profile.trainers.count {
+            return Err(err("trainer_id", request.trainer_id));
+        }
+        let state = save
+            .zip(rom.profile.event_state)
+            .map(|(s, l)| EventSnapshot::new(s, l));
+        let matches: Vec<_> = self
+            .references
+            .iter()
+            .flat_map(|r| {
+                self.scripts
+                    .get(&r.root)
+                    .into_iter()
+                    .flat_map(move |s| s.battles.iter().map(move |b| (r, s, b)))
+            })
+            .filter(|(_, _, b)| b.trainer_id == request.trainer_id)
+            .collect();
+        if request.offset > matches.len() {
+            return Err(err("trainer_reference_offset", request.offset));
+        }
+        let references: Vec<_> = matches
+            .iter()
+            .skip(request.offset)
+            .take(32)
+            .map(|(r, s, b)| TrainerReference {
+                clue_id: reference_id(r),
+                battle: (*b).clone(),
+                reference: (*r).clone(),
+                text: s.text.clone(),
+                stopped_at: s.stopped_at.clone(),
+                conditions: b
+                    .conditions
+                    .iter()
+                    .map(|c| check(state.as_ref(), Some(rom), c))
+                    .collect(),
+                visibility: r
+                    .conditions
+                    .iter()
+                    .map(|c| check(state.as_ref(), Some(rom), c))
+                    .collect(),
+            })
+            .collect();
+        let next = request.offset + references.len();
+        Ok(TrainerReport {
+            rom_md5: rom.profile.md5.into(),
+            trainer_id: request.trainer_id,
+            references,
+            total_matches: matches.len(),
+            next_offset: (next < matches.len()).then_some(next),
+            coverage: self.coverage.clone(),
+            partial: true,
+        })
+    }
     fn check_rom(&self, rom: &Rom) -> Result<()> {
         if self.rom_md5 != rom.profile.md5 || !std::sync::Arc::ptr_eq(&self.rom_data, &rom.data) {
             return Err(err(
@@ -495,7 +652,8 @@ impl Index {
                     return false;
                 };
                 // Empty scripts have no readable clue; do not invent a task for them.
-                if script.text.is_empty() && script.effects.is_empty() {
+                if script.text.is_empty() && script.effects.is_empty() && script.battles.is_empty()
+                {
                     return false;
                 }
                 search.is_empty()
@@ -554,7 +712,8 @@ impl Index {
                         }
                     })
                     .collect(),
-                effects_truncated: script.effects.len() > 64,
+                battles: script.battles.iter().take(64).cloned().collect(),
+                effects_truncated: script.effects.len() > 64 || script.battles.len() > 64,
                 stopped_at: script.stopped_at.clone(),
                 path_complete: script.complete,
             }

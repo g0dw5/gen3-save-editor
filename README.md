@@ -268,3 +268,8 @@ references directly from the loaded ROM, then links guards to prerequisite trace
 static tiles and exterior entrances. Saved observations are separate from quest
 completion and access. This remains partial story coverage; see
 [event-clue evidence](docs/verification/event-clues-20261006.md).
+
+Trainer references now link qualified battle-record operands to guarded script
+contexts, static actors/tiles and map entrances. Rematch bases and setup records
+are identified separately; a referenced record does not establish an available
+battle or its final party. See [native boundary evidence and limits](docs/verification/trainer-locations-20261006.md).

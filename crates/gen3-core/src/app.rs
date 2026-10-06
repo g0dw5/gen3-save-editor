@@ -164,7 +164,7 @@ impl App {
                 let id = serde_json::from_value(p["id"].clone())?;
                 Ok(serde_json::to_value(self.session()?.rom.detail(id)?)?)
             }
-            "event_dependencies" | "event_search" => {
+            "event_dependencies" | "event_search" | "trainer_references" => {
                 let expected = required(&p, "expected_rom_md5")?;
                 let search_request = if input.command == "event_search" {
                     Some(serde_json::from_value::<
@@ -173,7 +173,14 @@ impl App {
                 } else {
                     None
                 };
-                let dependency_request = if search_request.is_none() {
+                let trainer_request = if input.command == "trainer_references" {
+                    Some(serde_json::from_value::<
+                        crate::event_dependencies::TrainerRequest,
+                    >(p.clone())?)
+                } else {
+                    None
+                };
+                let dependency_request = if input.command == "event_dependencies" {
                     Some(serde_json::from_value::<crate::event_dependencies::Request>(p)?)
                 } else {
                     None
@@ -193,6 +200,13 @@ impl App {
                 }
                 let session = self.session()?;
                 let index = &self.event_dependency_cache.as_ref().unwrap().1;
+                if let Some(request) = trainer_request {
+                    return Ok(serde_json::to_value(index.trainer(
+                        &session.rom,
+                        session.save.as_ref(),
+                        request,
+                    )?)?);
+                }
                 if let Some(request) = search_request {
                     return Ok(serde_json::to_value(index.search(
                         &session.rom,

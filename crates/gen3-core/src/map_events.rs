@@ -88,6 +88,7 @@ struct AwardTrace {
     sets: BTreeMap<u16, BTreeSet<usize>>,
 }
 struct Walk {
+    battles: Vec<crate::event_dependencies::BattleSource>,
     effects: Vec<crate::event_dependencies::Effect>,
     text: Vec<crate::event_dependencies::TextReference>,
     rewards: Vec<ItemReward>,
@@ -215,6 +216,23 @@ fn resolve(s: &State, v: u16) -> Option<u16> {
     }
 }
 impl Rom {
+    pub(crate) fn trainer_battle_length(&self, pc: usize) -> Result<usize> {
+        let rules = self
+            .profile
+            .event_state
+            .and_then(|r| r.effects)
+            .ok_or_else(|| crate::err("trainer_script_unverified", self.profile.id))?;
+        if (pointer(&self.data, rules.commands + 0x5c * 4)? & !1) != rules.battle_handler {
+            return Err(crate::err("trainer_script_dispatch", pc));
+        }
+        let typ = *bytes(&self.data, pc + 1, 1)?.first().unwrap() as usize;
+        let len = rules.battle_lengths.get(typ).copied().unwrap_or(0) as usize;
+        if len == 0 {
+            return Err(crate::err("trainer_script_type_unverified", typ));
+        }
+        bytes(&self.data, pc, len)?;
+        Ok(len)
+    }
     /// A complete ordinary item-ball script, with no prelude, extra effects or
     /// changed LAST_TALKED identity. Command semantics are verified per adapter;
     /// item IDs and quantities still come from the current ROM's script bytes.
@@ -267,6 +285,7 @@ impl Rom {
         crate::event_dependencies::validate(self)?;
         let walk = self.walk_item_script(root, false, true)?;
         Ok(crate::event_dependencies::ScriptEffects {
+            battles: walk.battles,
             effects: walk.effects,
             text: walk.text,
             complete: walk.complete && walk.stopped.is_empty(),
@@ -287,6 +306,7 @@ impl Rom {
         let mut daycare = BTreeSet::new();
         let mut effects = BTreeSet::new();
         let mut text = BTreeSet::new();
+        let mut battles = BTreeSet::new();
         let mut stopped = BTreeSet::new();
         let mut steps = 0;
         let mut complete = true;
@@ -311,13 +331,7 @@ impl Rom {
                 let len = if op == 0xb6 {
                     self.wild_command_length(pc).unwrap_or(0)
                 } else if op == 0x5c {
-                    match b.get(pc + 1) {
-                        Some(0 | 5 | 9..=12) => 14,
-                        Some(1 | 2 | 4 | 7) => 18,
-                        Some(3) => 10,
-                        Some(6 | 8) => 22,
-                        _ => 0,
-                    }
+                    self.trainer_battle_length(pc).unwrap_or(0)
                 } else {
                     if matches!(
                         self.profile.formats.scripts,
@@ -871,6 +885,23 @@ impl Rom {
                         s.resource_vars_unknown = true;
                     }
                     0x5c | 0x5d | 0xb7 => {
+                        if observe && op == 0x5c {
+                            let role = self
+                                .profile
+                                .event_state
+                                .and_then(|r| r.effects)
+                                .map(|r| r.battle_roles[b[pc + 1] as usize])
+                                .unwrap_or("unresolved");
+                            if role != "unresolved" {
+                                battles.insert(crate::event_dependencies::BattleSource {
+                                    trainer_id: u16(b, pc + 2)?,
+                                    battle_type: b[pc + 1],
+                                    offset: pc,
+                                    conditions: s.conditions.clone(),
+                                    role,
+                                });
+                            }
+                        }
                         // Battle outcomes and post-battle jumps are conditional.
                         stopped.insert(pc);
                         s.conditions.push(EventCondition {
@@ -961,6 +992,7 @@ impl Rom {
             }
         }
         Ok(Walk {
+            battles: battles.into_iter().collect(),
             effects: effects.into_iter().collect(),
             text: text.into_iter().collect(),
             rewards: rewards.into_iter().collect(),

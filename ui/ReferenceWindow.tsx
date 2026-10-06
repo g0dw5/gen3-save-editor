@@ -12,6 +12,7 @@ import { TrainerParty } from "./TrainerParty";
 import { SpeciesStats } from "./SpeciesStats";
 import { EvolutionTree } from "./EvolutionTree";
 import { EventCluesPanel } from "./EventCluesPanel";
+import { TrainerLocationsPanel } from "./TrainerLocationsPanel";
 import {
   emptyTrainerFilters,
   indexTrainers,
@@ -413,6 +414,7 @@ export function ReferenceWindow({
       </button>
       {tab === "events" ? (
         <EventCluesPanel
+          trainers={world?.trainers ?? []}
           catalog={catalog}
           maps={world?.maps ?? []}
           search={search}
@@ -425,6 +427,12 @@ export function ReferenceWindow({
           onTarget={goTarget}
           offset={eventOffset}
           setOffset={setEventOffset}
+          onTrainer={(id) => {
+            setTab("trainers");
+            setSelected(id);
+            setSearch("");
+            setTrainerFilters(emptyTrainerFilters);
+          }}
         />
       ) : tab === "collection" ? (
         <CollectionPanel
@@ -994,6 +1002,19 @@ export function ReferenceWindow({
                 <p className="small muted">{t("trainerTagsHelp")}</p>
                 <h3>{t("trainerMaps")}</h3>
                 <p className="small muted">{t("trainerMapsHelp")}</p>
+                <TrainerLocationsPanel
+                  catalog={catalog}
+                  trainerId={+selected}
+                  onMap={goMap}
+                  onTarget={goTarget}
+                  onEvent={(id, map) => {
+                    setEventMap(map);
+                    setEventOffset(0);
+                    setSelected(id);
+                    setSearch("");
+                    setTab("events");
+                  }}
+                />
                 {world?.trainer_locations.locations
                   .filter((l) => l.trainer_id === +selected)
                   .map((l) => (
