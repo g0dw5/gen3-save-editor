@@ -36,9 +36,15 @@ def main():
                     row=dict(kind=kind,offset=offset,map_id=None,x=None,y=None,related=[],quantity=None,min_level=None,max_level=None,encounter_percent=None,held_percent=None,conditions=[],periods=[],status='unknown',repeatable=None,partial=True);row.update(extra);return row
                 acquisition = [source('machine',1,related=[dict(kind='item',id=2)]),source('pickup',2,map_id='0-0',x=1,y=1,related=[dict(kind='item',id=2)]),source('shop',3,map_id='0-0',related=[dict(kind='item',id=2)]),source('move_tutor',4,map_id='0-0',x=1,y=1),source('learn_egg',5,related=[dict(kind='species',id=2)])]
                 def task(id, **extra):
-                    row=dict(id=id,kind='side',map_id='0-0',x=1,y=1,actor=1,goals=[],text=[f'{key} Dialogue clue'],checks=[],status='unknown',stage=None,next_candidate=False,prerequisites=[],partial=True)
+                    row=dict(id=id,kind='side',map_id='0-0',x=1,y=1,actor=1,goals=[],text=[f'{key} Dialogue clue'],checks=[],status='unknown',stage=None,next_candidate=False,prerequisites=[],partial=True,journal=None)
                     row.update(extra);return row
                 tasks=[task('next',kind='main',stage=7,next_candidate=True,status='ready',prerequisites=[['prior']]),task('reward',goals=[dict(kind='item',id=2)],status='completed'),task('prior',kind='prerequisite',text=['Fulfil this earlier scene'],prerequisites=[['next']])]
+                if key == 'MERCURY12':
+                    tasks.append(task('journal:2', kind='journal', status='in_progress', journal=dict(
+                        title='Test journey', objective='Visit the forest', accepted=True,
+                        locations=[dict(map_id='0-0',x=1,y=1,actor=1)],
+                        phases=[dict(title='Current entry',text='The current journal text',visible=True),
+                                dict(title='Future entry',text='A later journal text',visible=False)])))
                 def respond(route):
                     req=route.request.post_data_json;command,payload=req['command'],req['payload'];requests.append((key,req))
                     if command=='state': result=dict(catalog=cat,save=snap)
@@ -101,14 +107,25 @@ def main():
                 expect(guide.locator('.adventure-layout')).to_be_visible()
                 expect(guide.locator('.guide-map')).to_be_visible()
                 if key=='ROCKET': expect(guide.locator('.guide-next')).to_contain_text('6')
+                elif key == 'MERCURY12':
+                    expect(guide.locator('.guide-filters select').first).to_have_value('journal')
+                    expect(guide.locator('.reference-detail h2')).to_have_text('Test journey')
+                    expect(guide.locator('.quest-journal')).to_contain_text('Visit the forest')
+                    expect(guide.get_by_text('The current journal text',exact=True)).to_be_visible()
+                    expect(guide.get_by_text('A later journal text',exact=True)).not_to_be_visible()
+                    guide.get_by_text('Later entries' if locale=='en' else '后续日志',exact=True).click()
+                    guide.get_by_text('Future entry',exact=True).click()
+                    expect(guide.get_by_text('A later journal text',exact=True)).to_be_visible()
+                    guide.locator('.guide-filters select').first.select_option('all')
                 else: expect(guide).to_contain_text('not yet verified' if locale=='en' else '全局主线进度尚未核实')
                 guide.locator('.guide-filters input:not([type=checkbox])').fill(f'{key} Item 2')
                 expect(guide.locator('.reference-rows > button')).to_have_count(1)
                 guide.locator('.reference-rows > button').click()
-                expect(guide.locator('.reference-detail')).to_contain_text('Collected' if locale=='en' else '已领取')
+                expect(guide.locator('.reference-detail')).to_contain_text('Completed' if locale=='en' else '已完成')
                 expect(guide.locator('.reference-detail')).to_contain_text('receipt marker' if locale=='en' else '领取标记')
                 guide.locator('.guide-filters input:not([type=checkbox])').fill('')
                 guide.locator('.reference-rows > button').first.click()
+                guide.locator('.reference-detail > details').nth(1).locator('summary').first.click()
                 expect(guide.locator('.quest-dependency-tree')).to_contain_text('Prerequisite clue' if locale=='en' else '前置任务线索')
                 guide.locator('.quest-dependency-tree summary button').first.click()
                 expect(guide.locator('.reference-detail')).to_contain_text('Fulfil this earlier scene')

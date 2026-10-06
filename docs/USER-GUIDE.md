@@ -42,8 +42,10 @@ undetermined. An item missing from the bag never proves it was not collected.
 
 The supported Spanish Rocket ROM additionally exposes its identified main-story
 state and possible next actions. These numbers can move backward or count
-parallel objectives; they are not completion percentages. Other games, including
-Mercury, do not yet have a verified overall story-state tracker. Their identified
+parallel objectives; they are not completion percentages. Mercury 1.2 additionally reads native quest titles, objectives and journal pages.
+A save identifies accepted/completed quests and currently visible pages; later
+pages stay collapsed and map links locate identified quest scenes. Other games
+do not yet have a verified overall story-state tracker. Their identified
 NPC rewards and prerequisite clues remain searchable; this is not a complete
 walkthrough of every side quest. Dialogue may include other branches of a scene,
 and prerequisite links can be alternatives rather than a required sequence.

@@ -10,6 +10,12 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add Mercury 1.2's ROM-native quest journal to the separate Adventure guide:
+  searchable titles/objectives, accepted/completed state, current pages and map
+  links. Keep later pages collapsed and unresolved dependencies explicit.
+- 水银 1.2 冒险攻略新增本作见闻录：搜索任务与目标，按 SAV 显示接取／完成状态、
+  当前日志并定位已识别的任务地图。后续日志默认折叠，未知依赖保持未知。
+
 - Replace developer JSON/evidence widgets with concise player-facing notes; ship
   bilingual user guides instead of research/verification documents.
 - 移除玩家界面的研发 JSON／证据控件；说明包改为中英文使用说明，不附逆向与验证文档。

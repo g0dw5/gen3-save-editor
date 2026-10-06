@@ -55,6 +55,7 @@ pub struct HiddenItemRules {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct Profile {
+    pub quest_journal: Option<crate::adventure::journal::Rules>,
     pub breeding: Option<crate::breeding::BreedingRules>,
     pub wild_items: Option<crate::wild_items::WildItemRules>,
     pub resource_checks: Option<crate::script_resources::ResourceCheckRules>,
@@ -309,6 +310,7 @@ pub const EMERALD: SaveLayout = SaveLayout {
     skip_unoccupied_box_records: false,
 };
 pub const BW: Profile = Profile {
+    quest_journal: None,
     breeding: Some(crate::breeding::EMERALD),
     wild_items: Some(crate::wild_items::EMERALD),
     resource_checks: Some(crate::script_resources::EMERALD),
@@ -582,6 +584,7 @@ pub const DP: Profile = Profile {
     ..BW
 };
 pub const ROCKET: Profile = Profile {
+    quest_journal: None,
     breeding: Some(crate::breeding::ROCKET),
     wild_items: Some(crate::wild_items::ROCKET),
     resource_checks: Some(crate::script_resources::ROCKET),

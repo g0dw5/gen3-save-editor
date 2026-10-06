@@ -764,7 +764,19 @@ export interface TrainerReferenceReport {
 
 export interface AdventureTask {
   id: string;
-  kind: "main" | "side" | "prerequisite";
+  kind: "main" | "side" | "prerequisite" | "journal";
+  journal: {
+    title: string;
+    objective: string;
+    accepted: boolean | null;
+    locations: {
+      map_id: string;
+      x: number | null;
+      y: number | null;
+      actor: number | null;
+    }[];
+    phases: { title: string; text: string; visible: boolean | null }[];
+  } | null;
   map_id: string;
   x: number | null;
   y: number | null;
@@ -772,7 +784,7 @@ export interface AdventureTask {
   goals: QueryTarget[];
   text: string[];
   checks: AcquisitionSource["conditions"];
-  status: "completed" | "blocked" | "ready" | "unknown";
+  status: "completed" | "blocked" | "ready" | "unknown" | "in_progress";
   stage: number | null;
   next_candidate: boolean;
   prerequisites: string[][];

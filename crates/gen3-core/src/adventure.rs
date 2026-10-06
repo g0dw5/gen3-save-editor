@@ -10,11 +10,13 @@ use crate::{
     world::World,
     Result,
 };
+pub mod journal;
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Serialize)]
 pub struct Task {
+    pub journal: Option<journal::Journal>,
     pub id: String,
     pub kind: &'static str,
     pub map_id: String,
@@ -155,6 +157,7 @@ pub fn build(rom: &Rom, save: Option<&Save>, index: &Index, world: &World) -> Re
                     })
                     .map(|o| o.graphics_id);
                 tasks.push(Task {
+                    journal: None,
                     id,
                     kind: "main",
                     map_id: reference.map_id.clone(),
@@ -197,6 +200,7 @@ pub fn build(rom: &Rom, save: Option<&Save>, index: &Index, world: &World) -> Re
                     .as_ref()
                     .and_then(|r| state.as_ref()?.flag(r.flag));
                 tasks.push(Task {
+                    journal: None,
                     id,
                     kind: "side",
                     map_id: report.map_id.clone(),
@@ -234,6 +238,7 @@ pub fn build(rom: &Rom, save: Option<&Save>, index: &Index, world: &World) -> Re
                 }
                 let checks = checked(state.as_ref(), rom, &mon.conditions);
                 tasks.push(Task {
+                    journal: None,
                     id,
                     kind: "side",
                     map_id: report.map_id.clone(),
@@ -317,6 +322,7 @@ pub fn build(rom: &Rom, save: Option<&Save>, index: &Index, world: &World) -> Re
                     .collect();
                 let checks = checked(state.as_ref(), rom, &guards);
                 additions.push(Task {
+                    journal: None,
                     id,
                     kind: "prerequisite",
                     map_id: reference.map_id.clone(),
@@ -398,13 +404,59 @@ pub fn build(rom: &Rom, save: Option<&Save>, index: &Index, world: &World) -> Re
         task.prerequisites = dependencies;
     }
     tasks.sort_by_key(|t| (t.kind != "main", t.stage, t.map_id.clone(), t.id.clone()));
-    Ok(Guide {
+    let mut guide = Guide {
         rom_md5: rom.profile.md5.into(),
         current_stage,
         story_supported: variable.is_some(),
         tasks,
         partial: true,
-    })
+    };
+    journal::append(rom, state.as_ref(), &mut guide)?;
+    if let Some(rules) = rom.profile.quest_journal {
+        for task in guide.tasks.iter_mut().filter(|t| t.journal.is_some()) {
+            let id = task
+                .id
+                .strip_prefix("journal:")
+                .and_then(|s| s.parse::<usize>().ok())
+                .unwrap();
+            let accepted = crate::binary::u16(&rom.data, rules.quests + id * 20 + 10)?;
+            let mut seen = BTreeSet::new();
+            let journal = task.journal.as_mut().unwrap();
+            for r in &index.references {
+                let Some(script) = index.scripts.get(&r.root) else {
+                    continue;
+                };
+                if !script
+                    .effects
+                    .iter()
+                    .any(|e| e.kind == "flag" && e.id == accepted && e.value == Some(1))
+                    || !seen.insert((r.map_id.clone(), r.x, r.y))
+                {
+                    continue;
+                }
+                let actor = world
+                    .maps
+                    .iter()
+                    .find(|m| m.id == r.map_id)
+                    .and_then(|m| m.objects.iter().find(|o| Some(o.local_id) == r.local_id))
+                    .map(|o| o.graphics_id);
+                journal.locations.push(journal::Location {
+                    map_id: r.map_id.clone(),
+                    x: r.x,
+                    y: r.y,
+                    actor,
+                });
+            }
+            // These are referenced actions, not a claim that every one is reachable now.
+            if let Some(location) = journal.locations.first() {
+                task.map_id = location.map_id.clone();
+                task.x = location.x;
+                task.y = location.y;
+                task.actor = location.actor;
+            }
+        }
+    }
+    Ok(guide)
 }
 
 #[cfg(test)]

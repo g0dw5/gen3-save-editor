@@ -115,6 +115,7 @@ const MERCURY_SAVE: SaveLayout = SaveLayout {
 };
 
 pub const PROFILE: Profile = Profile {
+    quest_journal: Some(crate::adventure::journal::MERCURY),
     breeding: Some(crate::breeding::MERCURY),
     wild_items: Some(crate::wild_items::MERCURY),
     resource_checks: Some(crate::script_resources::MERCURY),

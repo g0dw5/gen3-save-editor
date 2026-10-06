@@ -55,10 +55,14 @@ export function AdventureWindow({
       .then((r) => {
         if (active && r.rom_md5 === catalog.profile.md5) {
           setReport(r);
+          if (r.tasks.some((n) => n.journal)) setKind("journal");
           setSelected((old) =>
             r.tasks.some((n) => n.id === old)
               ? old
-              : (r.tasks.find((n) => n.next_candidate)?.id ??
+              : (r.tasks.find((n) => n.journal && n.status === "in_progress")
+                  ?.id ??
+                r.tasks.find((n) => n.journal)?.id ??
+                r.tasks.find((n) => n.next_candidate)?.id ??
                 r.tasks[0]?.id ??
                 ""),
           );
@@ -81,11 +85,13 @@ export function AdventureWindow({
   const mapName = (id: string) =>
     world?.maps.find((m) => m.id === id)?.name ?? id;
   const title = (n: AdventureTask) =>
-    n.kind === "main"
-      ? t("guideStage").replace("{n}", String(n.stage))
-      : n.goals.length
-        ? `${t("guideReward")} · ${n.goals.map(name).join(" / ")}`
-        : `${t("guideClue")} · ${mapName(n.map_id)}`;
+    n.journal
+      ? n.journal.title
+      : n.kind === "main"
+        ? t("guideStage").replace("{n}", String(n.stage))
+        : n.goals.length
+          ? `${t("guideReward")} · ${n.goals.map(name).join(" / ")}`
+          : `${t("guideClue")} · ${mapName(n.map_id)}`;
   const nodes = useMemo(
     () => new Map(report?.tasks.map((n) => [n.id, n])),
     [report],
@@ -108,7 +114,7 @@ export function AdventureWindow({
         !world?.reference_visibility?.maps.some((m) => m.id === n.map_id)) &&
       (kind === "all" || n.kind === kind) &&
       (status === "all" || n.status === status) &&
-      `${title(n)} ${mapName(n.map_id)} ${n.text.join(" ")}`
+      `${title(n)} ${mapName(n.map_id)} ${n.text.join(" ")} ${n.journal?.objective ?? ""} ${n.journal?.phases.map((p) => p.title + " " + p.text).join(" ") ?? ""}`
         .toLocaleLowerCase()
         .includes(query.toLocaleLowerCase()),
   );
@@ -210,9 +216,11 @@ export function AdventureWindow({
           )}
         </section>
       )}
-      {report && !report.story_supported && (
-        <p className="small muted">{t("guideStoryUnknown")}</p>
-      )}
+      {report &&
+        !report.story_supported &&
+        !report.tasks.some((n) => n.journal) && (
+          <p className="small muted">{t("guideStoryUnknown")}</p>
+        )}
       <div className="reference-filters guide-filters">
         <label>
           <input
@@ -241,11 +249,15 @@ export function AdventureWindow({
             }}
           >
             <option value="all">{t("filterAll")}</option>
-            {["main", "side", "prerequisite"].map((k) => (
-              <option key={k} value={k}>
-                {t(`guideKind_${k}`)}
-              </option>
-            ))}
+            {["journal", "main", "side", "prerequisite"]
+              .filter(
+                (k) => k !== "journal" || report?.tasks.some((n) => n.journal),
+              )
+              .map((k) => (
+                <option key={k} value={k}>
+                  {t(`guideKind_${k}`)}
+                </option>
+              ))}
           </select>
         </label>
         <label>
@@ -258,11 +270,13 @@ export function AdventureWindow({
             }}
           >
             <option value="all">{t("filterAll")}</option>
-            {["completed", "ready", "blocked", "unknown"].map((k) => (
-              <option key={k} value={k}>
-                {t(`guideStatus_${k}`)}
-              </option>
-            ))}
+            {["in_progress", "completed", "ready", "blocked", "unknown"].map(
+              (k) => (
+                <option key={k} value={k}>
+                  {t(`guideStatus_${k}`)}
+                </option>
+              ),
+            )}
           </select>
         </label>
       </div>
@@ -288,11 +302,12 @@ export function AdventureWindow({
                   <span>
                     <strong>{title(n)}</strong>
                     <small className="guide-task-meta">
-                      {mapName(n.map_id)} · {t(`guideStatus_${n.status}`)}
+                      {n.map_id ? `${mapName(n.map_id)} · ` : ""}
+                      {t(`guideStatus_${n.status}`)}
                     </small>
-                    {n.text[0] && (
+                    {(n.journal?.objective || n.text[0]) && (
                       <small className="guide-task-excerpt">
-                        {n.text[0].slice(0, 60)}
+                        {(n.journal?.objective || n.text[0]).slice(0, 60)}
                       </small>
                     )}
                   </span>
@@ -325,21 +340,86 @@ export function AdventureWindow({
                 </p>
                 <p className="small muted">
                   {t(
-                    task.status === "completed"
-                      ? "guideReceipt"
-                      : "guideStatusHelp",
+                    task.journal
+                      ? "guideJournalStateHelp"
+                      : task.status === "completed"
+                        ? "guideReceipt"
+                        : "guideStatusHelp",
                   )}
                 </p>
-                <button className="link-button" onClick={() => jump(task)}>
-                  {mapName(task.map_id)}
-                  {task.x != null ? ` · (${task.x}, ${task.y})` : ""} ↗
-                </button>
-                <TaskMap
-                  task={task}
-                  catalog={catalog}
-                  world={world}
-                  onClick={() => jump(task)}
-                />
+                {task.map_id && (
+                  <>
+                    <button className="link-button" onClick={() => jump(task)}>
+                      {mapName(task.map_id)}
+                      {task.x != null ? ` · (${task.x}, ${task.y})` : ""} ↗
+                    </button>
+                    <TaskMap
+                      task={task}
+                      catalog={catalog}
+                      world={world}
+                      onClick={() => jump(task)}
+                    />
+                  </>
+                )}
+                {task.journal && (
+                  <section className="quest-journal">
+                    <p>{task.journal.objective}</p>
+                    {task.journal.locations.length > 1 && (
+                      <details className="reference-help">
+                        <summary>{t("guideJournalLocations")}</summary>
+                        {task.journal.locations.map((loc, i) => (
+                          <button
+                            key={i}
+                            className="link-button"
+                            onClick={() =>
+                              onMap(
+                                loc.map_id,
+                                loc.x != null && loc.y != null
+                                  ? { x: loc.x, y: loc.y }
+                                  : undefined,
+                              )
+                            }
+                          >
+                            {mapName(loc.map_id)} ↗
+                          </button>
+                        ))}
+                      </details>
+                    )}
+                    <h3>{t("guideJournalCurrent")}</h3>
+                    {task.journal.phases
+                      .filter((p) => p.visible !== false)
+                      .map((p, i) => (
+                        <details key={i} open={p.visible === true}>
+                          <summary>
+                            {p.title ||
+                              t("guideJournalPhase").replace(
+                                "{n}",
+                                String(i + 1),
+                              )}
+                          </summary>
+                          <blockquote>{p.text}</blockquote>
+                        </details>
+                      ))}
+                    {!task.journal.phases.some((p) => p.visible !== false) && (
+                      <p className="small muted">
+                        {t("guideJournalNotStarted")}
+                      </p>
+                    )}
+                    {task.journal.phases.some((p) => p.visible === false) && (
+                      <details>
+                        <summary>{t("guideJournalLater")}</summary>
+                        {task.journal.phases
+                          .filter((p) => p.visible === false)
+                          .map((p, i) => (
+                            <details key={i}>
+                              <summary>{p.title}</summary>
+                              <blockquote>{p.text}</blockquote>
+                            </details>
+                          ))}
+                      </details>
+                    )}
+                  </section>
+                )}
                 <div className="source-related">
                   {task.goals.map((g) => (
                     <button
@@ -354,20 +434,24 @@ export function AdventureWindow({
                     </button>
                   ))}
                 </div>
-                <h3>{t("guideDialogue")}</h3>
-                <p className="small muted">{t("guideDialogueHelp")}</p>
-                {task.text.map((text, i) => (
-                  <blockquote key={i}>{text}</blockquote>
-                ))}
-                {!task.text.length && (
-                  <p className="muted">{t("guideNoDialogue")}</p>
+                {!task.journal && (
+                  <details className="reference-help">
+                    <summary>{t("guideDialogue")}</summary>
+                    {task.text.map((text, i) => (
+                      <blockquote key={i}>{text}</blockquote>
+                    ))}
+                    {!task.text.length && (
+                      <p className="muted">{t("guideNoDialogue")}</p>
+                    )}
+                  </details>
                 )}
-                <h3>{t("guideDependencies")}</h3>
-                <p className="small muted">{t("guideDependencyHelp")}</p>
-                {tree(task)}
-                {!task.prerequisites.length && (
-                  <p className="muted">{t("guideNoDependency")}</p>
-                )}
+                <details className="reference-help">
+                  <summary>{t("guideDependencies")}</summary>
+                  {tree(task)}
+                  {!task.prerequisites.length && (
+                    <p className="muted">{t("guideNoDependency")}</p>
+                  )}
+                </details>
                 <ConditionDetails
                   checks={task.checks}
                   catalog={catalog}

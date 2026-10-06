@@ -27,7 +27,7 @@ The four advanced tabs and their dedicated APIs have been removed. Their finding
 are preserved as [reverse-engineering addresses](docs/research/reference-key-addresses.md),
 not advertised as current product features.
 
-The separate Adventure guide links runtime NPC rewards, dialogue and prerequisite clues, with map thumbnails and SAV receipt checks. Spanish Rocket also exposes its bounded main-story state; other games’ full story tracking remains unverified. No developer JSON or evidence panels are included in the player UI or documentation bundle. See the [player guide](docs/USER-GUIDE.md).
+The separate Adventure guide links runtime NPC rewards, dialogue and prerequisite clues, with map thumbnails and SAV receipt checks. Spanish Rocket also exposes its bounded main-story state; Mercury 1.2 reads native quests, objectives and current journal pages, with later stages collapsed. Full story and side-quest dependencies remain partial. No developer JSON or evidence panels are included in the player UI or documentation bundle. See the [player guide](docs/USER-GUIDE.md).
 
 ## Cheat codes
 
