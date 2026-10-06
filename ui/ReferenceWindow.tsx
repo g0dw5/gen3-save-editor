@@ -1,3 +1,4 @@
+import { encounterPeriodName } from "./acquisitionLabels";
 import { speciesDisplayName } from "./speciesDisplay";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Search, ArrowUpRight } from "lucide-react";
@@ -83,22 +84,9 @@ export function ReferenceWindow({
     t(method);
   const encounterPeriods = (encounter: Encounter) =>
     (encounter.periods ?? [])
-      .map((period) => {
-        switch (period) {
-          case "base":
-            return t("encounterBase");
-          case "morning":
-            return t("encounterMorning");
-          case "day":
-            return t("encounterDay");
-          case "dusk":
-            return t("encounterDusk");
-          case "night":
-            return t("encounterNight");
-          default:
-            return period;
-        }
-      })
+      .map((period) =>
+        encounterPeriodName(period, t, catalog.profile.clock?.starts),
+      )
       .join(" / ");
   const [tab, setTab] = useState<RefTab>(info.tab);
   const [selected, setSelected] = useState<number | string>(info.selected ?? 1);

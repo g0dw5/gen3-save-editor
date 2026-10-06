@@ -1,4 +1,4 @@
-import { acquisitionKindName } from "./acquisitionLabels";
+import { acquisitionKindName, encounterPeriodName } from "./acquisitionLabels";
 import { BreedingPanel } from "./BreedingPanel";
 import { WildHeldDetails } from "./WildHeldDetails";
 import { ConditionDetails } from "./ConditionDetails";
@@ -254,17 +254,11 @@ export function AcquisitionPanel({
               {!!s.periods.length && (
                 <p>
                   {s.periods
-                    .map((p) =>
-                      t(
-                        (
-                          {
-                            base: "encounterBase",
-                            morning: "encounterMorning",
-                            day: "encounterDay",
-                            dusk: "encounterDusk",
-                            night: "encounterNight",
-                          } as Record<string, string>
-                        )[p] ?? p,
+                    .map((period) =>
+                      encounterPeriodName(
+                        period,
+                        t,
+                        catalog.profile.clock?.starts,
                       ),
                     )
                     .join(" / ")}

@@ -615,6 +615,7 @@ export interface ClockReport {
   issue: string | null;
   current_clock_verified: boolean;
   forced_night_state_verified: boolean;
+  rules?: { starts: number[] } | null;
 }
 export interface AcquisitionReport {
   clock: ClockReport | null;

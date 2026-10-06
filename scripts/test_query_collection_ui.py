@@ -168,7 +168,7 @@ def main():
         assert 'Find prerequisite clues' in html and 'prerequisite-flag' in html and '&lt;script&gt;context&lt;/script&gt;' in html
         assert 'May set this event' in html and 'Test region entrance (2, 1)' in html
         assert 'Evolution preparation suggestion' in html and 'ROM parent → Test species' in html and 'Use Test stone' in html
-        assert 'Encounter slot probability: 20%' in html and 'Outside the query period' in html
+        assert 'Encounter slot probability 20%' in html and 'Outside the query period' in html
         task['preparation'] = dict(task['preparation'],current_count=2,source=None)
         page.get_by_role('checkbox',name='Permanent evolution family',exact=True).uncheck()
         expect(page.locator('.collection-preparation')).to_contain_text('Existing non-egg individuals: ROM parent ↗ × 2')

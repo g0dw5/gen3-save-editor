@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Show acquisition type, known quantity, encounter-slot probability, periods and
+  repeatability in collection rows and standalone HTML, with related item/move/
+  Pokémon links. Period hours use the loaded adapter's verified rules; unknown
+  rules show names only. These remain suggestions, not new reachability proofs.
+- 收集清单与独立 HTML 补齐获取方式、已知数量、相遇槽位概率、时段及重复获取说明，
+  支持关联道具／招式／宝可梦跳转。时段小时采用当前适配器已验证规则；未知规则只
+  显示名称，不套用其他版本。仍为建议路线，不新增可达性或完整任务依赖的保证。
+
 - Qualify crown-service selection as party-only, with B cancellation and separate
   later level checks. Native selection does not exclude fainted individuals or
   eggs; the read-only editor preview deliberately accepts non-eggs only. Box

@@ -22,6 +22,10 @@ connected maps and exterior entrance chains. Read-only **Collection planning**
 uses an opened SAV: choose Pokédex ownership or existing individuals, optionally
 group permanent evolution families, and export a standalone HTML suggestion.
 Receipt status is independent of inventory; unknown rewards are opt-in.
+Collection rows and HTML include known source types, quantities, slot probabilities,
+periods and repeatability. Related references open current-ROM targets; report
+links point to existing tasks only. Period hours require verified clock rules.
+
 Missing species also show a bounded, directed permanent-evolution preparation
 chain when a current non-egg ancestor or referenced ancestor source is found.
 Open each required item/move and the origin map/entrance; the same explanation is

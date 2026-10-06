@@ -1,5 +1,6 @@
 import { useI18n } from "./i18n";
 import type { ClockReport } from "./types";
+import { encounterPeriodName } from "./acquisitionLabels";
 
 export function clockSummary(
   report: ClockReport,
@@ -12,15 +13,10 @@ export function clockSummary(
       ? `${report.effective_hour}:00`
       : "";
   const period = report.period
-    ? t(
-        (
-          {
-            morning: "encounterMorning",
-            day: "encounterDay",
-            dusk: "encounterDusk",
-            night: "encounterNight",
-          } as Record<string, string>
-        )[report.period] ?? "unresolved",
+    ? encounterPeriodName(
+        report.period,
+        t,
+        report.forced_night ? undefined : report.rules?.starts,
       )
     : "";
   return [

@@ -1,4 +1,5 @@
-import { acquisitionKindName } from "./acquisitionLabels";
+import { acquisitionSourceSummary } from "./acquisitionLabels";
+import { AcquisitionSourceFacts } from "./AcquisitionSourceFacts";
 import { CollectionBreeding, breedingRouteSummary } from "./CollectionBreeding";
 import { ConditionDetails, conditionLabel } from "./ConditionDetails";
 import { TradeDetails, tradeSummary } from "./TradeDetails";
@@ -34,19 +35,12 @@ export function preparationSummary(
   if (p.breeding) lines.push(...breedingRouteSummary(p.breeding, catalog, t));
   if (s) {
     lines.push(
-      `${acquisitionKindName(s.kind, catalog, t)}${s.encounter_method ? ` / ${acquisitionKindName(s.encounter_method, catalog, t)}` : ""} · ${t(`acqStatus_${s.status}`)}`,
+      ...acquisitionSourceSummary(s, catalog, t),
+      t(`acqStatus_${s.status}`),
     );
     if (s.map_id)
       lines.push(
         `${mapName(s.map_id)}${s.x !== null ? ` (${s.x}, ${s.y})` : ""}`,
-      );
-    if (s.min_level != null)
-      lines.push(`Lv. ${s.min_level}–${s.max_level ?? s.min_level}`);
-    if (s.encounter_percent != null)
-      lines.push(`${t("acqEncounterChance")}: ${s.encounter_percent}%`);
-    if (s.periods.length)
-      lines.push(
-        `${t("planPeriods")}: ${s.periods.map((period) => t(({ base: "encounterBase", morning: "encounterMorning", day: "encounterDay", dusk: "encounterDusk", night: "encounterNight" } as Record<string, string>)[period] ?? period)).join(" / ")}`,
       );
     if (s.in_scenario != null)
       lines.push(
@@ -128,39 +122,8 @@ export function CollectionPreparation({
       )}
       {s && (
         <>
-          <p>
-            {acquisitionKindName(s.kind, catalog, t)}
-            {s.encounter_method
-              ? ` / ${acquisitionKindName(s.encounter_method, catalog, t)}`
-              : ""}{" "}
-            · {t(`acqStatus_${s.status}`)}
-            {s.min_level != null
-              ? ` · Lv. ${s.min_level}–${s.max_level ?? s.min_level}`
-              : ""}
-            {s.encounter_percent != null
-              ? ` · ${t("acqEncounterChance")} ${s.encounter_percent}%`
-              : ""}
-          </p>
-          {s.periods.length > 0 && (
-            <p>
-              {t("planPeriods")}:{" "}
-              {s.periods
-                .map((period) =>
-                  t(
-                    (
-                      {
-                        base: "encounterBase",
-                        morning: "encounterMorning",
-                        day: "encounterDay",
-                        dusk: "encounterDusk",
-                        night: "encounterNight",
-                      } as Record<string, string>
-                    )[period] ?? period,
-                  ),
-                )
-                .join(" / ")}
-            </p>
-          )}
+          <AcquisitionSourceFacts source={s} catalog={catalog} />
+          <p>{t(`acqStatus_${s.status}`)}</p>
           {s.in_scenario != null && (
             <p>
               {t(

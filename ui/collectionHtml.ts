@@ -1,3 +1,7 @@
+import {
+  acquisitionSourceSummary,
+  acquisitionTargetName,
+} from "./acquisitionLabels";
 import { heldSummary } from "./WildHeldDetails";
 import { conditionLabel, conditionKey, effectLabel } from "./ConditionDetails";
 import type { Catalog, CollectionPlan, GameMap, QueryTarget } from "./types";
@@ -26,10 +30,21 @@ export function collectionHtml(
           "'": "&#39;",
         })[c]!,
     );
-  const name = (v: QueryTarget) =>
-    (v.kind === "species" ? catalog.species : catalog.items).find(
-      (x) => x.id === v.id,
-    )?.name ?? `#${v.id}`;
+  const name = (v: QueryTarget) => acquisitionTargetName(v, catalog);
+  const anchor = (region: number, task: number) => `task-${region}-${task}`;
+  const targets = new Map<string, string>();
+  plan.regions.forEach((region, i) =>
+    region.tasks.forEach((task, j) => {
+      const key = `${task.target.kind}:${task.target.id}`;
+      if (!targets.has(key)) targets.set(key, anchor(i, j));
+    }),
+  );
+  const relatedHtml = (target: QueryTarget) => {
+    const destination = targets.get(`${target.kind}:${target.id}`);
+    return destination
+      ? `<a href="#${esc(destination)}">${esc(name(target))}</a>`
+      : esc(name(target));
+  };
   const mapName = (id: string) => maps.find((m) => m.id === id)?.name ?? id;
   const prerequisiteId = (c: Parameters<typeof conditionKey>[0]) =>
     `prerequisite-${encodeURIComponent(conditionKey(c))}`;
@@ -86,9 +101,9 @@ export function collectionHtml(
     .map((line) => `<p>${esc(line)}</p>`)
     .join("")}${plan.regions
     .map(
-      (region) =>
+      (region, regionIndex) =>
         `<section><h2>${esc(region.region === null ? t("planNoRegion") : (catalog.met_locations.find((r) => r.id === region.region)?.name ?? `#${region.region}`))}</h2>${region.tasks
-          .map((task) => {
+          .map((task, taskIndex) => {
             const s = task.source;
             const preparation = task.preparation;
             const prepEntrance = plan.entrances.find(
@@ -118,7 +133,13 @@ export function collectionHtml(
               : "";
             const entrance = plan.entrances.find((e) => e.map_id === s?.map_id);
             const conditions = s?.conditions.map(checkHtml).join("; ");
-            return `<div class="task"><h3><input type="checkbox" aria-label="${esc(t("planCheck"))}"> ${esc(name(task.target))}</h3>${task.family.length ? `<small>${esc(t("planFamily"))}: ${esc(task.family.map((id) => name({ kind: "species", id })).join(" / "))}</small>` : ""}<p>${esc(s ? t(`acqStatus_${s.status}`) : t("acqNoSource"))} · ${esc(s?.map_id ? mapName(s.map_id) : t("planNoRegion"))}${s?.x !== null && s?.x !== undefined ? ` (${s.x}, ${s.y})` : ""}</p>${s?.min_level !== null && s?.min_level !== undefined ? `<p>Lv. ${s.min_level}–${s.max_level ?? s.min_level}${s.encounter_percent !== null ? ` · ${esc(t("acqEncounterChance"))} ${s.encounter_percent}%` : ""}</p>` : ""}${s?.script_source ? `<p>${esc(t("acqScriptSourceHelp"))}</p>` : ""}${
+            return `<div class="task" id="${anchor(regionIndex, taskIndex)}"><h3><input type="checkbox" aria-label="${esc(t("planCheck"))}"> ${esc(name(task.target))}</h3>${task.family.length ? `<small>${esc(t("planFamily"))}: ${esc(task.family.map((id) => name({ kind: "species", id })).join(" / "))}</small>` : ""}<p>${esc(s ? t(`acqStatus_${s.status}`) : t("acqNoSource"))} · ${esc(s?.map_id ? mapName(s.map_id) : t("planNoRegion"))}${s?.x !== null && s?.x !== undefined ? ` (${s.x}, ${s.y})` : ""}</p>${
+              s
+                ? acquisitionSourceSummary(s, catalog, t)
+                    .map((line) => `<p>${esc(line)}</p>`)
+                    .join("")
+                : ""
+            }${s?.related.length ? `<p>${esc(t("acqRelatedTargets"))}: ${s.related.map(relatedHtml).join(" / ")}</p>` : ""}${s?.script_source ? `<p>${esc(t("acqScriptSourceHelp"))}</p>` : ""}${
               s?.script_source?.trade
                 ? tradeSummary(s.script_source, s.trade_context, catalog, t)
                     .map((line) => `<p>${esc(line)}</p>`)
@@ -130,7 +151,7 @@ export function collectionHtml(
                     .map((line) => `<p>${esc(line)}</p>`)
                     .join("")
                 : ""
-            }${s?.receipt ? `<p>${esc(t("acqGiftReceiptHelp"))}</p>` : ""}${s && ["gift", "pc"].includes(s.kind) && s.receipt_flag == null ? `<p>${esc(t("acqReceiptUnknown"))}</p>` : ""}${s?.underfoot ? `<p>${esc(t("mapHiddenUnderfoot"))}</p>` : ""}${s?.evolution ? `<p>${esc(evolutionLabel(s.evolution, catalog, catalog.type_names, t))}</p>` : ""}${s?.periods.length ? `<p>${esc(t("planPeriods"))}: ${esc(s.periods.map((p) => t(({ base: "encounterBase", morning: "encounterMorning", day: "encounterDay", dusk: "encounterDusk", night: "encounterNight" } as Record<string, string>)[p] ?? p)).join(" / "))}</p>` : ""}${s?.in_scenario !== null && s?.in_scenario !== undefined ? `<p>${esc(t(s.in_scenario ? "clockInsideScenario" : "clockOutsideScenario"))}</p>` : ""}${conditions ? `<p>${esc(t("acqConditions"))}: ${conditions}</p>${s?.conditions.some((c) => ["money", "money_runtime", "bag_item", "bag_item_runtime"].includes(c.condition.kind)) ? `<p><small>${esc(t("conditionHoldingsHelp"))}</small></p>` : ""}` : ""}${
+            }${s?.receipt ? `<p>${esc(t("acqGiftReceiptHelp"))}</p>` : ""}${s && ["gift", "pc"].includes(s.kind) && s.receipt_flag == null ? `<p>${esc(t("acqReceiptUnknown"))}</p>` : ""}${s?.underfoot ? `<p>${esc(t("mapHiddenUnderfoot"))}</p>` : ""}${s?.evolution ? `<p>${esc(evolutionLabel(s.evolution, catalog, catalog.type_names, t))}</p>` : ""}${s?.in_scenario !== null && s?.in_scenario !== undefined ? `<p>${esc(t(s.in_scenario ? "clockInsideScenario" : "clockOutsideScenario"))}</p>` : ""}${conditions ? `<p>${esc(t("acqConditions"))}: ${conditions}</p>${s?.conditions.some((c) => ["money", "money_runtime", "bag_item", "bag_item_runtime"].includes(c.condition.kind)) ? `<p><small>${esc(t("conditionHoldingsHelp"))}</small></p>` : ""}` : ""}${
               entrance?.chains.length
                 ? `<p>${esc(t("navApproaches"))}:</p><ul>${entrance.chains
                     .slice(0, 3)

@@ -1,4 +1,6 @@
 import { WildHeldDetails } from "./WildHeldDetails";
+import { AcquisitionSourceFacts } from "./AcquisitionSourceFacts";
+import { acquisitionTargetName } from "./acquisitionLabels";
 import { CollectionPreparation } from "./CollectionPreparation";
 import { breedingCoverageSummary } from "./CollectionBreeding";
 import { evolutionLabel } from "./referenceLabels";
@@ -63,10 +65,7 @@ export function CollectionPanel({
       active = false;
     };
   }, [save, basis, families, unknown, catalog.profile.md5, onError]);
-  const name = (v: QueryTarget) =>
-    (v.kind === "species" ? catalog.species : catalog.items).find(
-      (r) => r.id === v.id,
-    )?.name ?? `#${v.id}`;
+  const name = (v: QueryTarget) => acquisitionTargetName(v, catalog);
   const mapName = (id: string) => maps.find((m) => m.id === id)?.name ?? id;
   return (
     <section className="collection-panel">
@@ -199,7 +198,7 @@ export function CollectionPanel({
                   (task) =>
                     (status === "all" ||
                       (task.source?.status ?? "unknown") === status) &&
-                    `${name(task.target)} ${task.source?.map_id ? mapName(task.source.map_id) : ""} ${task.preparation?.source?.map_id ? mapName(task.preparation.source.map_id) : ""} ${task.family.map((id) => name({ kind: "species", id })).join(" ")}`
+                    `${name(task.target)} ${task.source?.map_id ? mapName(task.source.map_id) : ""} ${task.preparation?.source?.map_id ? mapName(task.preparation.source.map_id) : ""} ${task.family.map((id) => name({ kind: "species", id })).join(" ")} ${task.source?.related.map(name).join(" ") ?? ""}`
                       .toLowerCase()
                       .includes(query.toLowerCase()),
                 );
@@ -229,6 +228,26 @@ export function CollectionPanel({
                           <small>
                             {t(`acqStatus_${s?.status ?? "unknown"}`)}
                           </small>
+                          {s && (
+                            <AcquisitionSourceFacts
+                              source={s}
+                              catalog={catalog}
+                            />
+                          )}
+                          {!!s?.related.length && (
+                            <div className="collection-related small">
+                              {t("acqRelatedTargets")}:{" "}
+                              {s.related.map((target, k) => (
+                                <button
+                                  className="link-button"
+                                  key={k}
+                                  onClick={() => onTarget(target)}
+                                >
+                                  {name(target)} ↗
+                                </button>
+                              ))}
+                            </div>
+                          )}
                           {!!task.family.length && (
                             <p className="small muted">
                               {t("planFamily")}:{" "}

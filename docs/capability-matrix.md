@@ -522,3 +522,16 @@ observed only in mGBA, not certified by the stricter core runner. Rendered menus
 cursor traversal/empty-slot reachability, complete transactions and current
 access remain unresolved. Overall training stays **P** for all five profiles.
 See [selection evidence](verification/training-party-selection-20261006.md).
+
+## Collection source presentation increment / 收集来源展示增量
+
+Collection remains **P** for all five fingerprints. Shared rows and standalone
+HTML now display known acquisition type, quantity, level, encounter-slot
+probability, periods and repeatability, with related-target navigation. Period
+hours require current verified clock rules. No new acquisition/access/receipt
+semantics or task-DAG completeness is implied. See
+[source presentation evidence](verification/collection-source-facts-20261006.md).
+
+五份 ROM 的收集规划仍为部分支持。本次补齐清单和 HTML 的来源事实及关联跳转，
+未知规则不补猜；真实查询回归与合成界面场景的证据分别说明。没有新增完整任务
+依赖、动态可达性或模拟器内路线验证。
