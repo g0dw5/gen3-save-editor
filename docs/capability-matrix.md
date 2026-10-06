@@ -645,3 +645,17 @@ version is created by this increment.
 
 此次仅升级明确限定的指令／数据流证据；未宣称已引用事件的其他剧情、奖励或
 进入条件完整验证。四款游戏均保留此前的部分解析与待验证范围。
+
+## Bounded native text buffers / 有界原生文字填充
+
+[Buffer evidence](verification/script-buffers-20261006.md) covers five name/number
+commands across all five fingerprints. Native state preservation is **V within
+that boundary**: 4,473 complete calls and guarded public query/map fixtures.
+Shared event analysis preserves known operands and checks through qualified short
+buffers; unknown names, invalid destinations, long strings and Mercury's runtime
+custom-berry branch retain conservative stops. Complete scripts, dialogue
+expansion, receipt conditions and current access remain **P**. No extracted name
+catalog or assets are bundled; source hashes remain unchanged.
+
+限定证据不等于整段事件、全部奖励、文字占位展开或地图可达性完整支持。四款游戏
+的其他缺口继续保留原有状态。

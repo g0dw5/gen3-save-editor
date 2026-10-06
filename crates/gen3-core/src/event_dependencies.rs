@@ -34,9 +34,19 @@ pub struct Rules {
     pub standard_call_hook: Option<usize>,
     /// Verified player-gender reader, SaveBlock2 pointer and VAR_RESULT address.
     pub player_gender: (usize, u32, u32),
+    /// Species/item/move/number/literal string-buffer handlers, independently verified.
+    pub buffer_handlers: [usize; 5],
+    /// Native standalone string variables; never names or extracted dialogue.
+    pub buffer_destinations: [u32; 3],
+    /// Optional native item-format branch reading an unsaved/custom berry name.
+    /// Read the compared ID from this ROM instruction; do not bundle item content.
+    pub buffer_item_dynamic_compare: Option<usize>,
 }
 const OPCODES: [u8; 8] = [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f];
 pub const EMERALD: Rules = Rules {
+    buffer_item_dynamic_compare: None,
+    buffer_destinations: [0x02021cc4, 0x02021dc4, 0x02021ec4],
+    buffer_handlers: [0x9afbc, 0x9b090, 0x9b150, 0x9b190, 0x9b248],
     player_gender: (0x9b88c, 0x03005d90, 0x020375f0),
     standard_call_hook: None,
     presentation_handlers: [
@@ -74,6 +84,9 @@ pub const EMERALD: Rules = Rules {
     ],
 };
 pub const ROCKET: Rules = Rules {
+    buffer_item_dynamic_compare: None,
+    buffer_destinations: EMERALD.buffer_destinations,
+    buffer_handlers: [0xd0ef0, 0xd0fc4, 0xd1084, 0xd10c4, 0xd117c],
     player_gender: (0xd185c, 0x03005250, 0x020385b0),
     standard_call_hook: None,
     presentation_handlers: [
@@ -93,6 +106,9 @@ pub const ROCKET: Rules = Rules {
     ],
 };
 pub const MERCURY: Rules = Rules {
+    buffer_item_dynamic_compare: Some(0x99e98),
+    buffer_destinations: [0x02021cd0, 0x02021cf0, 0x02021d04],
+    buffer_handlers: [0x6bc88, 0x6bd5c, 0x6be50, 0x6be90, 0x6bf14],
     player_gender: (0x6c4f0, 0x0300500c, 0x020370d0),
     standard_call_hook: None,
     presentation_handlers: [

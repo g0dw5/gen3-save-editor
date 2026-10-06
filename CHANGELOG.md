@@ -10,6 +10,12 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Preserve reward operands, entrance coordinates and conditions through verified,
+  bounded native name/number buffers across five fingerprints. Unknown formatting,
+  long strings and Mercury's runtime custom-berry name keep conservative stops.
+- 五指纹的名称／数字填充指令经原生核对后，保留奖励数量、入口坐标与条件。
+  长字符串、未知格式及水银的运行时自定义树果名称继续保留未知边界。
+
 - Preserve verified native player-gender reads and copied-result comparisons across
   references, maps and collection HTML. SAV overlays show the saved value; ROM-only
   checks stay unknown. Five-ROM native read/copy/branch evidence and bilingual UI

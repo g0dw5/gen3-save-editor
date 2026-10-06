@@ -10364,3 +10364,266 @@ fn local_player_conditions_match_complete_native_reads_copies_and_branches() {
         assert_eq!(bytes, std::fs::read(path).unwrap());
     }
 }
+
+fn install_buffer_fixture(r: &mut Rom) {
+    let rules = r.profile.event_state.unwrap().effects.unwrap();
+    let item_name = r.codec.encode("ITEM", 14).unwrap();
+    let b = std::sync::Arc::make_mut(&mut r.data);
+    for (op, handler) in [0x7d, 0x80, 0x82, 0x83, 0x85]
+        .into_iter()
+        .zip(rules.buffer_handlers)
+    {
+        put32(
+            b,
+            rules.commands + op as usize * 4,
+            0x08000001 + handler as u32,
+        );
+        put16(b, handler, if op == 0x83 { 0xb530 } else { 0xb510 });
+        put16(b, handler + 2, 0x6881);
+        let literal = match op {
+            0x7d | 0x82 => 0x38,
+            0x80 => 0x30,
+            0x83 => 0x40,
+            _ => 0x24,
+        };
+        put32(b, handler + literal, 0x08027100);
+        if matches!(op, 0x7d | 0x82) {
+            put16(b, handler + 0x22, if op == 0x7d { 0x210b } else { 0x210d });
+            put32(b, handler + 0x3c, 0x08027200);
+        }
+    }
+    for (i, pointer) in rules.buffer_destinations.into_iter().enumerate() {
+        put32(b, 0x27100 + i * 4, pointer);
+    }
+    b[0x27200..0x27400].fill(0xff);
+    let item = r.profile.items.offset + r.profile.items.stride;
+    b[item..item + 14].copy_from_slice(&item_name);
+    if let Some(compare) = rules.buffer_item_dynamic_compare {
+        put16(b, compare, 0x28af);
+    }
+}
+
+#[test]
+fn text_buffers_keep_reward_parameters_player_checks_and_guarded_map_routes() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        event_dependencies::Index,
+    };
+    for p in profile::PROFILES {
+        let (mut r, map) = npc_trade_fixture(p);
+        // Install only verified engine identity/instruction facts in synthetic ROM.
+        let engine = player_condition_fixture(p);
+        let rules = r.profile.event_state.unwrap().effects.unwrap();
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        for (op, h) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
+            .into_iter()
+            .zip(rules.handlers)
+        {
+            put32(b, rules.commands + op as usize * 4, 0x08000001 + h as u32);
+        }
+        let (h, _, _) = rules.player_gender;
+        b[h..h + 24].copy_from_slice(&engine.data[h..h + 24]);
+        put32(b, rules.commands + 0xa0 * 4, 0x08000001 + h as u32);
+        let warp = rules.warp_handlers[2];
+        put32(b, rules.commands + 0x3b * 4, 0x08000001 + warp as u32);
+        install_buffer_fixture(&mut r);
+        let mut target_map = map.clone();
+        target_map.id = "0-1".into();
+        target_map.number = 1;
+        target_map.width = 10;
+        target_map.events = None;
+        target_map.scripts.clear();
+        let maps = vec![map.clone(), target_map];
+        for op in [0x7d, 0x80, 0x82, 0x83, 0x85] {
+            let mut script = vec![
+                0x16, 0, 0x80, 1, 0, 0x16, 1, 0x80, 7, 0, 0xa0, 0x21, 0x0d, 0x80, 1, 0, op, 2,
+            ];
+            if op == 0x85 {
+                script.extend(0x08027200u32.to_le_bytes());
+            } else {
+                script.extend([0, 0x80]);
+            }
+            script.extend([6, 1]);
+            script.extend(0x08026100u32.to_le_bytes());
+            script.push(2);
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            b[0x26000..0x26000 + script.len()].copy_from_slice(&script);
+            b[0x26100..0x2610e]
+                .copy_from_slice(&[0x44, 0, 0x80, 1, 0x80, 0x3b, 0, 1, 255, 1, 0x80, 0, 0x80, 2]);
+            let events = r.map_events(&map).unwrap();
+            let reward = events
+                .markers
+                .iter()
+                .flat_map(|m| &m.rewards)
+                .find(|r| r.offset == 0x26100)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "{} {op:x} buffer={} {}",
+                        p.id,
+                        r.script_buffer_preserves(0x26010, |_| Some(1)),
+                        serde_json::to_string(&events).unwrap()
+                    )
+                });
+            assert_eq!(
+                (reward.item, reward.quantity),
+                (1, Some(7)),
+                "{} {op:x}",
+                p.id
+            );
+            assert!(reward
+                .conditions
+                .iter()
+                .any(|c| c.kind == "player_gender" && c.value == 1));
+            let index = Index::build(&r, &maps).unwrap();
+            let report = index.map_navigation(&r, &maps, "0-1", None).unwrap();
+            assert_eq!(report.incoming.len(), 1);
+            let edge = &report.incoming[0];
+            assert_eq!((edge.target_x, edge.target_y), (Some(7), Some(1)));
+            assert!(edge
+                .script
+                .as_ref()
+                .unwrap()
+                .checks
+                .iter()
+                .any(|c| c.condition.kind == "player_gender" && c.satisfied.is_none()));
+            let acquisition = AcquisitionIndex {
+                wild_cache: Default::default(),
+                breeding_cache: Default::default(),
+                world: crate::world::World {
+                    maps: maps.clone(),
+                    map_events: vec![events],
+                    encounters: vec![],
+                    trainers: vec![],
+                    trainer_locations: crate::world::TrainerLocationIndex {
+                        locations: vec![],
+                        unresolved_maps: vec![],
+                    },
+                    map_groups: &[],
+                },
+                species: vec![r.valid_species(1).unwrap()],
+                evolutions: Default::default(),
+                learnsets: Default::default(),
+            };
+            let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+            for gender in [0, 1] {
+                save.edit_trainer(
+                    &crate::save::TrainerPatch {
+                        gender: Some(gender),
+                        ..Default::default()
+                    },
+                    &r,
+                )
+                .unwrap();
+                let before = save.data.clone();
+                let query = acquisition
+                    .query(
+                        &r,
+                        Some(&save),
+                        Target {
+                            kind: TargetKind::Item,
+                            id: 1,
+                        },
+                    )
+                    .unwrap();
+                let source = query.sources.iter().find(|s| s.offset == 0x26100).unwrap();
+                assert_eq!(source.quantity, Some(7));
+                assert!(source.conditions.iter().any(
+                    |c| c.condition.kind == "player_gender" && c.satisfied == Some(gender == 1)
+                ));
+                let navigation = index.map_navigation(&r, &maps, "0-1", Some(&save)).unwrap();
+                assert!(navigation.incoming[0]
+                    .script
+                    .as_ref()
+                    .unwrap()
+                    .checks
+                    .iter()
+                    .any(
+                        |c| c.condition.kind == "player_gender" && c.satisfied == Some(gender == 1)
+                    ));
+                assert_eq!(before, save.data);
+            }
+            // Slot overflow cannot inherit this engine summary or leak old parameters.
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            b[0x26011] = 3;
+            assert!(!r.script_buffer_preserves(0x26010, |_| Some(1)));
+            assert!(r.item_script(0x26000).unwrap().1.contains(&0x26010));
+        }
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[0x26000..0x26004].copy_from_slice(&[0x7d, 0, 0, 0x80]);
+        assert!(!r.script_buffer_preserves(0x26000, |_| None));
+        assert!(!r.script_buffer_preserves(0x26000, |_| Some(u16::MAX)));
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        put32(b, 0x27100, 0x02030000);
+        assert!(!r.script_buffer_preserves(0x26000, |_| Some(1)));
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        put32(b, 0x27100, rules.buffer_destinations[0]);
+        b[0x26000..0x26006].copy_from_slice(&[0x85, 0, 0, 0x73, 2, 8]);
+        b[0x27300..0x2730e].fill(0);
+        assert!(!r.script_buffer_preserves(0x26000, |_| Some(1)));
+    }
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_SCRIPT_BUFFER_PROBES native RAM/output evidence"]
+fn local_script_buffers_match_complete_native_state_preservation() {
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_SCRIPT_BUFFER_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let bytes = std::fs::read(&path).unwrap();
+        let rom = Rom::open(bytes.clone()).unwrap();
+        let proof = &probes[key];
+        assert_eq!(proof["md5"].as_str().unwrap(), rom.profile.md5);
+        assert_eq!(proof["sha256"].as_str().unwrap(), sha256(&bytes));
+        let rules = rom.profile.event_state.unwrap().effects.unwrap();
+        for (op, h) in [0x7d, 0x80, 0x82, 0x83, 0x85]
+            .into_iter()
+            .zip(rules.buffer_handlers)
+        {
+            assert_eq!(
+                proof["handlers"][op.to_string()].as_u64().unwrap() as usize,
+                h
+            );
+        }
+        for (i, d) in rules.buffer_destinations.into_iter().enumerate() {
+            assert_eq!(proof["destinations"][i].as_u64().unwrap() as u32, d);
+        }
+        let mut fixture = rom.clone();
+        for row in proof["rows"].as_array().unwrap() {
+            let op = row["opcode"].as_u64().unwrap() as u8;
+            let value = row["value"].as_u64().unwrap() as u16;
+            let slot = row["slot"].as_u64().unwrap() as u8;
+            let operand = row["operand"].as_u64().unwrap() as u16;
+            // Disposable decoding context, not a referenced-script/access assertion.
+            let b = std::sync::Arc::make_mut(&mut fixture.data);
+            b[0x26000..0x26002].copy_from_slice(&[op, slot]);
+            if op == 0x85 {
+                put32(
+                    b,
+                    0x26002,
+                    0x08000000 + row["source"].as_u64().unwrap() as u32,
+                );
+            } else {
+                put16(b, 0x26002, operand);
+            }
+            let classified = fixture.script_buffer_preserves(0x26000, |v| {
+                if v == 0x8000 {
+                    Some(value)
+                } else if v < 0x4000 {
+                    Some(v)
+                } else {
+                    None
+                }
+            });
+            assert_eq!(
+                classified,
+                row["context_dependent"].as_bool() != Some(true),
+                "{key} {row}"
+            );
+        }
+        assert!(proof["rows"].as_array().unwrap().len() > 500);
+        assert_eq!(bytes, std::fs::read(path).unwrap());
+    }
+}

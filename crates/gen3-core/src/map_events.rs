@@ -352,6 +352,7 @@ impl Rom {
                 }
                 let presentation = self.script_presentation(pc);
                 let player_gender = self.script_player_gender(pc);
+                let buffer_preserves = self.script_buffer_preserves(pc, |v| resolve(&s, v));
                 if !prove && !observe {
                     match self.script_daycare_instruction(pc) {
                         Ok(Some(mut source)) => {
@@ -418,6 +419,7 @@ impl Rom {
                     // after commands outside this verified event/presentation set.
                     if presentation.is_none()
                         && !player_gender
+                        && !buffer_preserves
                         && !matches!(op,
                             0x00..=0x07 | 0x0f | 0x16..=0x1a | 0x21 | 0x22 | 0x29..=0x2b |
                             0x2f..=0x32 | 0x44 | 0x47 | 0x48 | 0x5a | 0x6a..=0x6d | 0x84 | 0x90..=0x92
@@ -461,6 +463,7 @@ impl Rom {
                 if prove
                     && presentation.is_none()
                     && !player_gender
+                    && !buffer_preserves
                     && !matches!(op,
                         0x00..=0x09 | 0x0f | 0x16..=0x19 | 0x1a | 0x21 | 0x22 | 0x29..=0x2b |
                         0x2f..=0x32 | 0x44 | 0x48 | 0x5a | 0x6a..=0x6d | 0x84
@@ -916,6 +919,19 @@ impl Rom {
                         s.vars.remove(&u16(b, pc + 3)?);
                         s.checks.remove(&u16(b, pc + 1)?);
                         s.checks.remove(&u16(b, pc + 3)?);
+                    }
+                    0x7d | 0x80 | 0x82 | 0x83 | 0x85 if buffer_preserves => {}
+                    0x7d | 0x80 | 0x82 | 0x83 | 0x85 => {
+                        stopped.insert(pc);
+                        s.vars.clear();
+                        s.flags.clear();
+                        s.checks.clear();
+                        s.checked_comparison = None;
+                        s.comparison = None;
+                        s.known_comparison = None;
+                        s.bag_changed = true;
+                        s.money_changed = true;
+                        s.resource_vars_unknown = true;
                     }
                     0xa0 if player_gender => {
                         s.vars.remove(&0x800d);

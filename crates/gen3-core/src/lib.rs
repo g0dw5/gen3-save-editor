@@ -23,6 +23,7 @@ pub mod pokemon;
 pub mod profile;
 pub mod rom;
 pub mod save;
+mod script_buffers;
 mod script_player;
 pub mod script_pokemon;
 mod script_presentation;

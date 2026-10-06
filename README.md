@@ -51,6 +51,9 @@ conditions across references, maps and collection HTML; SAV overlays use the sav
 trainer byte, while ROM-only results remain unknown. Other script/access gaps are
 retained. See [player-condition evidence](docs/verification/player-conditions-20261006.md).
 
+Verified, bounded native name/number buffers also preserve reward parameters and
+entrance conditions. Unknown formatting and Mercury's runtime custom-berry name
+remain unresolved. See [buffer evidence](docs/verification/script-buffers-20261006.md).
 
 Missing species also show a bounded, directed permanent-evolution preparation
 chain when a current non-egg ancestor or referenced ancestor source is found.
