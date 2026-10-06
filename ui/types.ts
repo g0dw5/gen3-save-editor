@@ -90,6 +90,7 @@ export interface Catalog {
     size: number;
     max_level?: number;
     sprite_rules?: { unown_species: number };
+    hardware_clock?: unknown;
     clock?: {
       starts: number[];
       native_predicates: number[];
@@ -461,7 +462,8 @@ export type RefTab =
   | "maps"
   | "trainers"
   | "events"
-  | "collection";
+  | "collection"
+  | "clock";
 export interface RefWindow {
   id: number;
   tab: RefTab;
@@ -558,7 +560,39 @@ export interface AcquisitionSource {
   offset: number;
   partial: boolean;
 }
+export interface NativeTime {
+  days: number;
+  hour: number;
+  minute: number;
+  second: number;
+}
+export interface RtcProjection {
+  rom_md5: string;
+  source: "rtc_scenario";
+  input: {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+  };
+  offset: NativeTime;
+  offset_source: "save" | "scenario";
+  local_time: NativeTime;
+  weekday: null;
+  period: null;
+  current_clock_verified: false;
+  partial: true;
+}
 export interface ClockReport {
+  rom_md5?: string;
+  hardware?: {
+    offset: NativeTime;
+    last_update: NativeTime;
+    offset_valid: boolean;
+    last_update_valid: boolean;
+  } | null;
   source: "scenario" | "unresolved" | "save_virtual";
   effective_hour: number | null;
   weekday: number | null;

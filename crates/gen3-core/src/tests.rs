@@ -4152,9 +4152,10 @@ fn saved_clock_preserves_bytes_and_distinguishes_rtc_invalid_and_simulated_time(
         assert_eq!(
             other
                 .clock_query_with_save(Some(&save), current())
+                .err()
                 .unwrap()
-                .saved,
-            None
+                .code,
+            "clock_save_layout"
         );
     }
 }
@@ -4178,6 +4179,13 @@ fn local_mercury_clock_matches_native_restore_and_period_selection() {
         hour: None,
         weekday: None,
     };
+    if let Some(expected) = data.get("save_sha256") {
+        assert_eq!(
+            expected,
+            &serde_json::json!(crate::binary::sha256(&save.data)),
+            "native vector belongs to a different SAV snapshot"
+        );
+    }
     let original = save.data.clone();
     let report = r.clock_query_with_save(Some(&save), query()).unwrap();
     let mut expected = data["current_save"]["clock"].clone();
@@ -7367,5 +7375,320 @@ fn local_trainer_reference_formats_match_native_boundaries_and_current_roots() {
         assert_eq!(r.data.as_ref(), &data);
         assert_eq!(std::fs::read(path).unwrap(), data);
         println!("{key}: {} native scenarios; {references} guarded literal-record references, {positioned} positioned; ROM preserved", probes[key]["rows"].as_array().unwrap().len());
+    }
+}
+
+#[test]
+fn hardware_clock_snapshots_are_not_live_time_and_remain_rom_scoped() {
+    use crate::{
+        clock::ClockScenario,
+        hardware_clock::{Input, Request, Time},
+    };
+    for p in [
+        profile::BW,
+        profile::DP,
+        profile::ROCKET,
+        crate::ultimate::PROFILE,
+    ] {
+        let r = adapter_rom(p);
+        let original = r.data.clone();
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let at = save.sections[0];
+        put16(&mut save.data, at + 0x98, (-1_i16) as u16);
+        save.data[at + 0x9a..at + 0x9d].copy_from_slice(&[23, 59, 58]);
+        put16(&mut save.data, at + 0xa0, 2000);
+        save.data[at + 0xa2..at + 0xa5].copy_from_slice(&[12, 30, 40]);
+        let before = save.data.clone();
+        let report = r
+            .clock_query_with_save(
+                Some(&save),
+                ClockScenario {
+                    hour: None,
+                    weekday: None,
+                },
+            )
+            .unwrap();
+        assert_eq!(report.rom_md5, p.md5);
+        assert_eq!(report.issue, Some("hardware_rtc_unresolved"));
+        assert_eq!(report.source, "unresolved");
+        assert_eq!(report.effective_hour, None);
+        assert_eq!(report.weekday, None);
+        assert_eq!(report.period, None);
+        assert!(!report.current_clock_verified);
+        let hw = report.hardware.unwrap();
+        assert_eq!(
+            hw.offset,
+            Time {
+                days: -1,
+                hour: 23,
+                minute: 59,
+                second: 58
+            }
+        );
+        assert_eq!(
+            hw.last_update,
+            Time {
+                days: 2000,
+                hour: 12,
+                minute: 30,
+                second: 40
+            }
+        );
+        assert!(hw.offset_valid && hw.last_update_valid);
+        let input = Input {
+            year: 2026,
+            month: 10,
+            day: 6,
+            hour: 12,
+            minute: 30,
+            second: 40,
+        };
+        assert_eq!(
+            r.hardware_clock_preview(
+                Some(&save),
+                Request {
+                    expected_rom_md5: "stale".into(),
+                    rtc: input,
+                    offset: None
+                }
+            )
+            .err()
+            .unwrap()
+            .code,
+            "rom_mismatch"
+        );
+        assert_eq!(
+            r.hardware_clock_preview(
+                None,
+                Request {
+                    expected_rom_md5: p.md5.into(),
+                    rtc: input,
+                    offset: None
+                }
+            )
+            .err()
+            .unwrap()
+            .code,
+            "clock_save_required"
+        );
+        assert!(r
+            .hardware_clock_preview(
+                Some(&save),
+                Request {
+                    expected_rom_md5: p.md5.into(),
+                    rtc: Input { month: 0, ..input },
+                    offset: None
+                }
+            )
+            .is_err());
+        save.data[at + 0x9a] = 255;
+        assert!(
+            !r.hardware_clock_snapshot(Some(&save))
+                .unwrap()
+                .unwrap()
+                .offset_valid
+        );
+        assert_eq!(
+            r.hardware_clock_preview(
+                Some(&save),
+                Request {
+                    expected_rom_md5: p.md5.into(),
+                    rtc: input,
+                    offset: None
+                }
+            )
+            .err()
+            .unwrap()
+            .code,
+            "clock_saved_offset"
+        );
+        save.data[at + 0x9a] = 23;
+        assert_eq!(save.data, before);
+        assert_eq!(r.data, original);
+        let mut app = crate::app::App {
+            session: Some(Session::new(r)),
+            ..Default::default()
+        };
+        app.session.as_mut().unwrap().save = Some(save);
+        for payload in [
+            serde_json::Value::Null,
+            serde_json::json!({"expected_rom_md5":p.md5,"rtc":null}),
+            serde_json::json!({"expected_rom_md5":p.md5,"rtc":input,"offset":{"days":null,"hour":0,"minute":0,"second":0}}),
+            serde_json::json!({"expected_rom_md5":p.md5,"rtc":input,"write":true}),
+        ] {
+            assert!(app
+                .dispatch(crate::app::Request {
+                    command: "clock_rtc_preview".into(),
+                    payload
+                })
+                .is_err());
+        }
+        assert_eq!(
+            app.session.as_ref().unwrap().save.as_ref().unwrap().data,
+            before
+        );
+    }
+    let r = adapter_rom(crate::mercury::PROFILE);
+    assert!(r
+        .hardware_clock_preview(
+            None,
+            Request {
+                expected_rom_md5: r.profile.md5.into(),
+                rtc: Input {
+                    year: 2026,
+                    month: 10,
+                    day: 6,
+                    hour: 12,
+                    minute: 0,
+                    second: 0
+                },
+                offset: Some(Time {
+                    days: 0,
+                    hour: 0,
+                    minute: 0,
+                    second: 0
+                })
+            }
+        )
+        .is_err());
+}
+
+#[test]
+#[ignore = "requires four exact private ROMs and GEN3_HARDWARE_CLOCK_PROBES independent native vectors"]
+fn local_hardware_clock_matches_native_validation_offsets_and_borrowing() {
+    use crate::hardware_clock::{Input, Request, Time};
+    let native: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_HARDWARE_CLOCK_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    let mut app = crate::app::App::default();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let bytes = std::fs::read(&path).unwrap();
+        let r = Rom::open(bytes.clone()).unwrap();
+        let rules = r.profile.hardware_clock.unwrap();
+        assert_eq!(native[key]["md5"], r.profile.md5);
+        assert_eq!(native[key]["validation"], rules.validate);
+        assert_eq!(native[key]["difference"], rules.difference);
+        assert_eq!(native[key]["getter"], rules.getter);
+        let mut saved = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        for row in native[key]["rows"].as_array().unwrap() {
+            let v = row["date"].as_array().unwrap();
+            let n = |i: usize| v[i].as_u64().unwrap() as u8;
+            let rtc = Input {
+                year: v[0].as_u64().unwrap() as u16,
+                month: n(1),
+                day: n(2),
+                hour: n(3),
+                minute: n(4),
+                second: n(5),
+            };
+            let off = row["offset"].as_array().unwrap();
+            let i = |idx: usize| off[idx].as_i64().unwrap() as i8;
+            let offset = Time {
+                days: off[0].as_i64().unwrap() as i16,
+                hour: i(1),
+                minute: i(2),
+                second: i(3),
+            };
+            let projected = r
+                .hardware_clock_preview(
+                    None,
+                    Request {
+                        expected_rom_md5: r.profile.md5.into(),
+                        rtc,
+                        offset: Some(offset),
+                    },
+                )
+                .unwrap();
+            assert_eq!(
+                serde_json::to_value(projected.local_time).unwrap(),
+                row["result"],
+                "{key} {row}"
+            );
+            assert_eq!(projected.weekday, None);
+            assert_eq!(projected.period, None);
+            assert!(!projected.current_clock_verified);
+            let at = saved.sections[0] + rules.save_offset;
+            put16(&mut saved.data, at, offset.days as u16);
+            saved.data[at + 2..at + 5].copy_from_slice(&[
+                offset.hour as u8,
+                offset.minute as u8,
+                offset.second as u8,
+            ]);
+            let before = saved.data.clone();
+            let actual = r
+                .hardware_clock_preview(
+                    Some(&saved),
+                    Request {
+                        expected_rom_md5: r.profile.md5.into(),
+                        rtc,
+                        offset: None,
+                    },
+                )
+                .unwrap();
+            assert_eq!(actual.offset_source, "save");
+            assert_eq!(actual.local_time, projected.local_time);
+            assert_eq!(saved.data, before);
+        }
+        let rtc = Input {
+            year: 2026,
+            month: 10,
+            day: 6,
+            hour: 12,
+            minute: 0,
+            second: 0,
+        };
+        let offset = Some(Time {
+            days: 0,
+            hour: 0,
+            minute: 0,
+            second: 0,
+        });
+        for (year, month, day) in [(2001, 2, 29), (2026, 2, 30), (2026, 4, 31)] {
+            assert_eq!(
+                r.hardware_clock_preview(
+                    None,
+                    Request {
+                        expected_rom_md5: r.profile.md5.into(),
+                        rtc: Input {
+                            year,
+                            month,
+                            day,
+                            ..rtc
+                        },
+                        offset
+                    }
+                )
+                .err()
+                .unwrap()
+                .code,
+                "clock_rtc_invalid"
+            );
+        }
+        app.session = Some(Session::new(r.clone()));
+        app.session.as_mut().unwrap().save = Some(saved.clone());
+        let payload = serde_json::json!({"expected_rom_md5":r.profile.md5,"rtc":rtc});
+        let query = |payload| crate::app::Request {
+            command: "clock_rtc_preview".into(),
+            payload,
+        };
+        let first = app.dispatch(query(payload.clone())).unwrap();
+        let at = app
+            .session
+            .as_ref()
+            .unwrap()
+            .save
+            .as_ref()
+            .unwrap()
+            .sections[0]
+            + rules.save_offset;
+        app.session.as_mut().unwrap().save.as_mut().unwrap().data[at + 2] = 1;
+        let second = app.dispatch(query(payload)).unwrap();
+        assert_ne!(first["local_time"], second["local_time"]);
+        assert_eq!(second["rom_md5"], r.profile.md5);
+        assert_eq!(std::fs::read(path).unwrap(), bytes);
+        assert_eq!(r.data.as_ref(), &bytes);
+        println!("{key}: {} native RTC projections, SAV-offset parity, invalid calendar and fresh snapshot passed",native[key]["rows"].as_array().unwrap().len());
     }
 }

@@ -15,6 +15,7 @@ pub mod event_dependencies;
 pub mod event_state;
 pub mod fishing;
 pub mod graphics;
+pub mod hardware_clock;
 pub mod map_events;
 pub mod native_trainer;
 pub mod navigation;

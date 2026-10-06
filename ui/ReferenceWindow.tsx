@@ -12,6 +12,7 @@ import { TrainerParty } from "./TrainerParty";
 import { SpeciesStats } from "./SpeciesStats";
 import { EvolutionTree } from "./EvolutionTree";
 import { EventCluesPanel } from "./EventCluesPanel";
+import { ClockPanel } from "./ClockPanel";
 import { TrainerLocationsPanel } from "./TrainerLocationsPanel";
 import {
   emptyTrainerFilters,
@@ -202,7 +203,7 @@ export function ReferenceWindow({
     () =>
       (tab === "maps"
         ? (world?.maps ?? [])
-        : tab === "collection" || tab === "events"
+        : tab === "collection" || tab === "events" || tab === "clock"
           ? []
           : tab === "trainers"
             ? (world?.trainers ?? [])
@@ -370,6 +371,7 @@ export function ReferenceWindow({
             "trainers",
             "events",
             "collection",
+            "clock",
           ] as RefTab[]
         )
           .filter(
@@ -412,7 +414,9 @@ export function ReferenceWindow({
       >
         ← {t("navBack")}
       </button>
-      {tab === "events" ? (
+      {tab === "clock" ? (
+        <ClockPanel key={catalog.profile.md5} catalog={catalog} save={save} />
+      ) : tab === "events" ? (
         <EventCluesPanel
           trainers={world?.trainers ?? []}
           catalog={catalog}

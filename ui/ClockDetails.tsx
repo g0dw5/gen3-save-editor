@@ -32,6 +32,7 @@ export function clockSummary(
           : (report.issue ?? "clockUnknown"),
     ),
     time,
+    !saved && report.weekday !== null ? t(`clockWeekday${report.weekday}`) : "",
     period,
   ]
     .filter(Boolean)
@@ -63,6 +64,28 @@ export function ClockDetails({ report }: { report: ClockReport }) {
           {String(Math.floor((seconds % 3600) / 60)).padStart(2, "0")}:
           {String(seconds % 60).padStart(2, "0")}
         </p>
+      )}
+      {report.hardware && (
+        <div className="clock-hardware-snapshot">
+          <p>
+            {t("clockOffsetSave")} · {t("clockDayCounter")}{" "}
+            {report.hardware.offset.days} · {report.hardware.offset.hour}:
+            {String(report.hardware.offset.minute).padStart(2, "0")}:
+            {String(report.hardware.offset.second).padStart(2, "0")}
+          </p>
+          {!report.hardware.offset_valid && <p>{t("clockInvalidOffset")}</p>}
+          <p>
+            {t("clockLastUpdate")} · {t("clockDayCounter")}{" "}
+            {report.hardware.last_update.days} ·{" "}
+            {report.hardware.last_update.hour}:
+            {String(report.hardware.last_update.minute).padStart(2, "0")}:
+            {String(report.hardware.last_update.second).padStart(2, "0")}
+          </p>
+          {!report.hardware.last_update_valid && (
+            <p>{t("clockInvalidCheckpoint")}</p>
+          )}
+          <p className="small muted">{t("clockHardwareSnapshotHelp")}</p>
+        </div>
       )}
       <details>
         <summary>{t("evidence")}</summary>

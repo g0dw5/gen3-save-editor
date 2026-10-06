@@ -50,6 +50,8 @@ pub struct SavedClock {
 }
 #[derive(Serialize)]
 pub struct ClockReport {
+    pub rom_md5: &'static str,
+    pub hardware: Option<crate::hardware_clock::Snapshot>,
     pub source: &'static str,
     pub effective_hour: Option<u8>,
     pub weekday: Option<u8>,
@@ -81,6 +83,8 @@ impl Rom {
             return Err(err("clock_scenario_range", "hour 0–23; weekday 0–6"));
         }
         let mut report = ClockReport {
+            rom_md5: self.profile.md5,
+            hardware: self.hardware_clock_snapshot(save)?,
             source: "unresolved",
             effective_hour: None,
             weekday: None,
@@ -94,6 +98,9 @@ impl Rom {
             current_clock_verified: false,
             forced_night_state_verified: false,
         };
+        if self.profile.hardware_clock.is_some() {
+            report.issue = Some("hardware_rtc_unresolved");
+        }
         if scenario.hour.is_some() || scenario.weekday.is_some() {
             // A simulated hour explicitly replaces SAVE time; it does not inherit its overrides.
             report.source = "scenario";

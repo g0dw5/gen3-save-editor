@@ -86,6 +86,7 @@ pub const PROFILE: Profile = Profile {
     },
     native_trainers: None,
     clock: None,
+    hardware_clock: Some(crate::hardware_clock::EMERALD),
     hidden_items: Some(crate::profile::HiddenItemRules {
         packed: false,
         flag_base: 0x1f4,

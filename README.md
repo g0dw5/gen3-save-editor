@@ -273,3 +273,5 @@ Trainer references now link qualified battle-record operands to guarded script
 contexts, static actors/tiles and map entrances. Rematch bases and setup records
 are identified separately; a referenced record does not establish an available
 battle or its final party. See [native boundary evidence and limits](docs/verification/trainer-locations-20261006.md).
+
+The ROM reference **Game time** tab distinguishes Mercury’s saved virtual clock from explicit hardware RTC scenarios. Other registered profiles show SAV offsets/checkpoints and use native ROM routines for simulated input; current RTC and unverified weekday/refresh rules remain unknown. See [verification](docs/verification/hardware-clock-20261006.md).

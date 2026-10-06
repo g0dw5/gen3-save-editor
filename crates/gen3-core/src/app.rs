@@ -361,6 +361,13 @@ impl App {
                     p.condition,
                 )?)?)
             }
+            "clock_rtc_preview" => {
+                let session = self.session()?;
+                Ok(serde_json::to_value(session.rom.hardware_clock_preview(
+                    session.save.as_ref(),
+                    serde_json::from_value(p)?,
+                )?)?)
+            }
             "clock_query" => {
                 let session = self.session()?;
                 Ok(serde_json::to_value(session.rom.clock_query_with_save(

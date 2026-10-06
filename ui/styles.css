@@ -2603,3 +2603,49 @@ summary {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* Clock queries stay inside the read-only reference window at compact sizes. */
+.clock-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+}
+.clock-panel .clock-scenario {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.clock-panel .clock-scenario > label {
+  display: grid;
+  gap: 6px;
+  min-width: 160px;
+  flex: 1;
+}
+.clock-panel .clock-scenario > p,
+.clock-panel .clock-projection,
+.clock-panel .clock-offsets {
+  flex-basis: 100%;
+}
+.clock-offsets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px;
+}
+.clock-offsets label {
+  display: grid;
+  gap: 6px;
+}
+.clock-panel input,
+.clock-panel select {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.clock-panel pre {
+  max-width: 100%;
+  overflow: auto;
+}

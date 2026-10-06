@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Add a shared read-only Game time reference page. Mercury retains its saved
+  virtual clock; four hardware-clock profiles expose SAV offsets/checkpoints
+  and explicit RTC scenarios calculated by the loaded ROM's native routines.
+  Keep current RTC, weekday and unverified refresh rules unresolved.
+- ROM 资料新增统一只读游戏时间页。水银保留虚拟时钟；其余四份指纹展示存档
+  时间偏移与检查点，可输入 RTC 情景按当前 ROM 原生例程计算。不推断当前
+  硬件时间、星期或未验证的事件刷新规则。
+
 - Link qualified trainer-script references to actors, static tiles, guard checks,
   event contexts and exterior entrances. Keep rematch bases and setup records
   distinct from final parties and current access. Verify command boundaries with

@@ -178,6 +178,8 @@ if __name__ == '__main__':
     rom=args.rom.read_bytes();save=args.save.read_bytes() if args.save else None
     original=(hashlib.sha256(rom).hexdigest(),hashlib.sha256(save).hexdigest() if save else None)
     result=verify(rom,save)
+    result["save_sha256"] = original[1]
+    result["rom_sha256"] = original[0]
     if args.output:args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(result,indent=2)+'\n')
     assert hashlib.sha256(args.rom.read_bytes()).hexdigest()==original[0]
     if args.save:assert hashlib.sha256(args.save.read_bytes()).hexdigest()==original[1]

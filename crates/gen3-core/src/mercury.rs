@@ -134,6 +134,7 @@ pub const PROFILE: Profile = Profile {
         rng: 0x03005000,
         instruction_limit: 1_000_000,
     }),
+    hardware_clock: None,
     clock: Some(crate::clock::ClockRules {
         starts: [4, 8, 17, 20],
         native_predicates: [0x1d20de0, 0x1d20df8, 0x1d20814],

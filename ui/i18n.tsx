@@ -1,5 +1,41 @@
 import { createContext, useContext } from "react";
 export const en = {
+  clockInvalidRtc:
+    "The ROM rejected this RTC date/time. Check the date and time components.",
+  clockNeedsOffset:
+    "Load a compatible SAV or choose an explicit simulated offset.",
+  clockInvalidCheckpoint:
+    "This saved checkpoint has invalid time components; its refresh state is undetermined.",
+  clock: "Game time",
+  clockPage: "Game time and query scenarios",
+  clockPageHelp:
+    "ROM-only queries describe verified clock rules. SAV values are saved checkpoints, not live emulator time. No device-clock substitution or save edit occurs.",
+  clockWeekday: "Weekday",
+  clockIndependentScenario:
+    "Selecting an hour or weekday starts a simulated query. Unspecified components remain unknown; saved overrides are not inherited.",
+  clockRtcScenario: "Explicit RTC input scenario",
+  clockRtcScenarioHelp:
+    "Enter the RTC date/time you want to simulate. The loaded ROM validates it and subtracts the selected offset using its native routine. Initial fields are examples, not your current clock.",
+  clockRtcDate: "Simulated RTC date",
+  clockRtcTime: "Simulated RTC time",
+  clockOffsetSource: "Offset source",
+  clockOffsetSave: "Offset saved in SAV",
+  clockOffsetManual: "Simulated offset",
+  clockOffset_days: "Days",
+  clockOffset_hour: "Hours",
+  clockOffset_minute: "Minutes",
+  clockOffset_second: "Seconds",
+  clockRtcProject: "Calculate with this ROM",
+  clockDayCounter: "Native day counter:",
+  clockRtcResultHelp:
+    "This is a simulated RTC projection, not verified current game time. The day counter does not establish a calendar date or effective weekday; day/night and daily refresh rules remain unresolved here.",
+  clockQueryError: "Game-time query failed",
+  clockInvalidOffset:
+    "Saved offset has invalid time components; projection is unavailable.",
+  clockLastUpdate: "Saved periodic-update checkpoint",
+  clockHardwareSnapshotHelp:
+    "The offset and checkpoint alone cannot recover current hardware RTC input. A battery-save trailer is not automatically treated as current RTC state.",
+
   trainerReferenceTitle: "Battle references and tile positions",
   trainerReferenceHelp:
     "These scripts refer to this trainer record. Guards and NPC visibility do not prove access or an available battle. Rematches, setup commands and script replacements may select a different final party; the constructor preview below describes the selected record/scenario.",
@@ -182,6 +218,7 @@ export const en = {
     "This static ROM layout also renders with mismatched tiles when loaded directly in the native emulator. Whether a normal entrance replaces the layout is unverified; this image does not establish the appearance or accessibility of a playable area.",
   clockScenario: "Game time and query scenario",
   clockUseSave: "Use saved game time",
+  clockUnspecified: "Unspecified in this scenario",
   clockSavedVirtual: "Saved virtual clock",
   clockForcedNight:
     "A saved condition forces night encounters; the next boundary depends on clearing this condition.",
@@ -190,7 +227,7 @@ export const en = {
   clockSpeed: "Virtual clock speed",
   clockUntilNext: "Game time until the next period",
   hardware_rtc_unresolved:
-    "This SAVE uses hardware RTC rather than virtual time. Its effective time cannot be recovered from these saved fields; enter a simulated hour instead.",
+    "This clock path needs hardware RTC input. SAV fields alone cannot determine its current time; choose an explicit query scenario.",
   invalid_saved_clock:
     "The saved virtual date/time is invalid or incomplete. Native code resets it from RTC, so the effective time cannot be determined here.",
   clock_save_layout: "The SAVE and ROM clock layouts differ.",
@@ -1078,6 +1115,38 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const zh: Record<Key, string> = {
+  clockInvalidRtc: "ROM 拒绝了此 RTC 日期／时间，请检查日期与时间分量。",
+  clockNeedsOffset: "请加载相容的 SAV，或明确选择模拟偏移量。",
+  clockInvalidCheckpoint: "此保存检查点的时间分量无效，刷新状态无法确定。",
+  clock: "游戏时间",
+  clockPage: "游戏时间与查询情景",
+  clockPageHelp:
+    "只打开 ROM 可查已验证时钟规则；SAV 数值是保存快照，不是模拟器实时状态。本页不会代入设备时间或修改存档。",
+  clockWeekday: "星期",
+  clockIndependentScenario:
+    "选择小时或星期即开始模拟查询；未指定的分量保留未知，不继承存档中的覆盖状态。",
+  clockRtcScenario: "明确输入 RTC 的模拟情景",
+  clockRtcScenarioHelp:
+    "输入希望模拟的 RTC 日期和时间。当前 ROM 校验日期，再用原生例程减去所选偏移量。初始字段只是示例，并非你的当前时钟。",
+  clockRtcDate: "模拟 RTC 日期",
+  clockRtcTime: "模拟 RTC 时间",
+  clockOffsetSource: "偏移来源",
+  clockOffsetSave: "SAV 中的时间偏移",
+  clockOffsetManual: "模拟时间偏移",
+  clockOffset_days: "天",
+  clockOffset_hour: "小时",
+  clockOffset_minute: "分钟",
+  clockOffset_second: "秒",
+  clockRtcProject: "用当前 ROM 计算",
+  clockDayCounter: "原生日计数：",
+  clockRtcResultHelp:
+    "这是模拟 RTC 投影，不是已核实的当前游戏时间。日计数不能证明日历日期或有效星期；本路径的昼夜和每日刷新规则仍未确定。",
+  clockQueryError: "游戏时间查询失败",
+  clockInvalidOffset: "保存偏移的时间分量无效，不能进行投影。",
+  clockLastUpdate: "保存的周期更新检查点",
+  clockHardwareSnapshotHelp:
+    "只有偏移和检查点不能恢复当前硬件 RTC 输入；不会自动把电池存档的尾部数据当作当前 RTC。",
+
   trainerReferenceTitle: "战斗引用与格位",
   trainerReferenceHelp:
     "脚本引用此训练家记录。条件满足或 NPC 可见不代表当前可达或可挑战。再战、准备指令和脚本替换可能选择不同的最终配队；下方构造器预览针对所选记录／情景。",
@@ -1244,6 +1313,7 @@ export const zh: Record<Key, string> = {
     "此 ROM 静态布局在模拟器直接加载时也出现贴图错乱。正常入口是否会替换布局尚未确认；这张图不能证明实际可游玩区域的样貌或可达性。",
   clockScenario: "游戏时间与查询情景",
   clockUseSave: "使用存档游戏时间",
+  clockUnspecified: "此情景未指定",
   clockSavedVirtual: "存档虚拟时钟",
   clockForcedNight: "存档条件强制使用夜晚相遇；下次时段切换取决于解除该条件。",
   clockSnapshotHelp:
@@ -1251,7 +1321,7 @@ export const zh: Record<Key, string> = {
   clockSpeed: "虚拟时钟速度",
   clockUntilNext: "距下一时段的游戏时间",
   hardware_rtc_unresolved:
-    "这份存档使用硬件 RTC，未启用虚拟时间。无法从这些字段恢复当前有效时间，请输入模拟小时查询。",
+    "此时钟路径需要硬件 RTC 输入；仅凭 SAV 字段不能确定当前时间，请使用明确的模拟查询情景。",
   invalid_saved_clock:
     "存档虚拟日期／时间无效或不完整，原生逻辑会从 RTC 重置，因此这里无法确定有效时间。",
   clock_save_layout: "存档与 ROM 的时钟布局不一致。",
