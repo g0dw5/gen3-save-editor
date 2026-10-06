@@ -36,6 +36,8 @@ pub struct Preview {
     pub stat_refresh: &'static str,
     pub scenario: &'static str,
     pub party_state: &'static str,
+    /// A box record is hypothetical here: the native service selects party only.
+    pub withdrawal_required: bool,
     pub effect_scope: &'static str,
     pub partial: bool,
     #[cfg(test)]
@@ -182,6 +184,7 @@ impl Rom {
             stat_refresh,
             scenario,
             party_state,
+            withdrawal_required: party_state == "boxed_full_hp_scenario",
             effect_scope: "level_gated_individual_helpers",
             partial: true,
             #[cfg(test)]

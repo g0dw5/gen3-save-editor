@@ -49,6 +49,12 @@ export type TrainingService = {
     payment_precedes_menu: boolean;
     command: number;
   }[];
+  selection: {
+    scope: string;
+    cancel_with_b: boolean;
+    rejects_fainted_during_selection: boolean;
+    rejects_egg_during_selection: boolean;
+  };
 };
 type Report = {
   rom_md5: string;
@@ -138,6 +144,17 @@ function ServiceCard({
       <p>
         {t("trainingCrownLevel")} {service.minimum_level}
       </p>
+      {service.selection.scope === "party" && (
+        <p className="small">
+          {t("trainingServicePartyOnly")}
+          {service.selection.cancel_with_b && (
+            <span> {t("trainingServicePartyCancel")}</span>
+          )}
+        </p>
+      )}
+      {!service.selection.rejects_fainted_during_selection && (
+        <p className="small muted">{t("trainingServiceFaintedSelection")}</p>
+      )}
       <p className="small muted">
         {t(
           service.kind === "base_iv_training"

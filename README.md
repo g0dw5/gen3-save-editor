@@ -313,3 +313,9 @@ Service menus now show runtime B-cancellation rules. Mercury's single-stat menu
 ignores B after its payment attempt; its initial menu and Ultimate's training
 choice permit cancellation. This corrects the earlier menu description; full
 NPC transactions remain partial. [Native menu evidence](docs/verification/training-service-menus-20261006.md).
+
+Both referenced crown services select from the party in-game. Withdraw a boxed
+individual first; its preview is a full-HP projection, not a replay of PC
+withdrawal. Party selection permits B cancellation and does not exclude fainted
+individuals; later level and service checks remain separate. Editor previews
+accept non-eggs only. [Native selection evidence](docs/verification/training-party-selection-20261006.md).

@@ -30,6 +30,7 @@ pub struct CrownRules {
     pub menu_command: usize,
     pub menu_table: usize,
     pub menu_ignore_b_mask: u8,
+    pub party_selection: PartySelectionRules,
     pub gold: CrownBranch,
     pub silver: CrownBranch,
     pub messages: &'static [usize],
@@ -45,6 +46,13 @@ pub const ULTIMATE_CROWNS: CrownRules = CrownRules {
     menu_command: 0x181279a,
     menu_table: 0x1700000,
     menu_ignore_b_mask: 0xff,
+    party_selection: PartySelectionRules {
+        commands: &[0x1812776],
+        cancel_checks: &[0x181277a],
+        special_table: 0x1dba64,
+        special_id: 0xa2,
+        native: 0x081b94b0,
+    },
     gold: CrownBranch {
         credit_check: 0x18127bb,
         item_check: 0x18127c6,
@@ -91,6 +99,7 @@ pub struct IvCrownRules {
     pub selected_individual: u32,
     pub menu_commands: [usize; 2],
     pub menu_ignore_b_mask: u8,
+    pub party_selection: PartySelectionRules,
 }
 pub const MERCURY_CROWNS: IvCrownRules = IvCrownRules {
     root: 0x7b05ba,
@@ -108,7 +117,33 @@ pub const MERCURY_CROWNS: IvCrownRules = IvCrownRules {
     selected_individual: 0x020370c0,
     menu_commands: [0x7b003d, 0x7b01fb],
     menu_ignore_b_mask: 1,
+    party_selection: PartySelectionRules {
+        commands: &[0x7b00b7, 0x7b00e0],
+        cancel_checks: &[0x7b07a0, 0x7b098b],
+        special_table: 0x15fd60,
+        special_id: 0x9f,
+        native: 0x080bf8fc,
+    },
 };
+/// Verified party-menu action 11: no egg or HP guard in selection, followed by
+/// the service's separate level checks. This does not certify cursor traversal.
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct PartySelectionRules {
+    pub commands: &'static [usize],
+    pub cancel_checks: &'static [usize],
+    pub special_table: usize,
+    pub special_id: u16,
+    pub native: u32,
+}
+#[derive(Serialize)]
+pub struct PartySelection {
+    pub scope: &'static str,
+    pub cancel_with_b: bool,
+    pub rejects_fainted_during_selection: bool,
+    pub rejects_egg_during_selection: bool,
+    pub cancel_value: u16,
+    pub evidence: PartySelectionRules,
+}
 #[derive(Serialize)]
 pub struct ServiceLocation {
     pub map_id: String,
@@ -156,6 +191,7 @@ pub struct CrownService {
     pub text: Vec<String>,
     pub conditions: Vec<ConditionCheck>,
     pub menus: Vec<ServiceMenu>,
+    pub selection: PartySelection,
     pub evidence: ServiceRules,
     pub partial: bool,
 }
@@ -202,6 +238,41 @@ fn branch(rom: &Rom, rule: CrownBranch) -> Result<(u16, u16, u16, u8)> {
     Ok((credit, item, quantity, mask))
 }
 impl Rom {
+    fn service_party_selection(&self, rule: PartySelectionRules) -> Result<PartySelection> {
+        if rule.commands.len() != rule.cancel_checks.len() || rule.commands.is_empty() {
+            return Err(err("training_service_selection", "missing script branches"));
+        }
+        let mut cancel_value = None;
+        for (&command, &at) in rule.commands.iter().zip(rule.cancel_checks) {
+            instruction(self, command, 0x25)?;
+            instruction(self, at, 0x21)?;
+            instruction(self, at + 5, 0x06)?;
+            if u16(&self.data, command + 1)? != rule.special_id
+                || u32(
+                    &self.data,
+                    rule.special_table + rule.special_id as usize * 4,
+                )? & !1
+                    != rule.native
+                || u16(&self.data, at + 1)? != 0x8004
+                || bytes(&self.data, at + 6, 1)?[0] != 1
+            {
+                return Err(err("training_service_selection", command));
+            }
+            let value = u16(&self.data, at + 3)?;
+            if cancel_value.is_some_and(|previous| previous != value) {
+                return Err(err("training_service_selection", "cancel results differ"));
+            }
+            cancel_value = Some(value);
+        }
+        Ok(PartySelection {
+            scope: "party",
+            cancel_with_b: true,
+            rejects_fainted_during_selection: false,
+            rejects_egg_during_selection: false,
+            cancel_value: cancel_value.unwrap(),
+            evidence: rule,
+        })
+    }
     // Opcode 0x6f's fourth argument reaches the exact engine's ignore-B flag.
     // Mercury masks bit 0 (bit 1 is presentation); Ultimate retains the byte.
     fn service_menu(
@@ -354,6 +425,7 @@ impl Rom {
                     false,
                     rule.menu_ignore_b_mask,
                 )?],
+                selection: self.service_party_selection(rule.party_selection)?,
                 evidence: ServiceRules::Flags(rule),
                 partial: true,
             });
@@ -568,6 +640,7 @@ impl Rom {
                     rule.menu_ignore_b_mask,
                 )?,
             ],
+            selection: self.service_party_selection(rule.party_selection)?,
             evidence: ServiceRules::BaseIvs(rule),
             partial: true,
         }))

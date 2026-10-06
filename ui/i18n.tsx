@@ -276,6 +276,13 @@ export const en = {
   trainingServiceHp: "Current HP:",
   trainingServiceStoredParty:
     "Uses the saved party record, including its stored HP/stats.",
+  trainingServicePartyOnly:
+    "In-game training selects a Pokémon from your party. Withdraw a boxed Pokémon first.",
+  trainingServicePartyCancel: "Press B to cancel party selection.",
+  trainingServiceFaintedSelection:
+    "Fainted Pokémon are not excluded by the selection step; level and other service requirements still apply.",
+  trainingServiceWithdrawFirst:
+    "First withdraw this Pokémon into your party in-game. This box preview projects a full-HP party record; it does not replay withdrawal or certify that the service is available.",
   trainingServiceProjectedParty:
     "Uses a simulated full-HP party projection; a box transfer is not replayed.",
   trainingServiceUnchanged:
@@ -1483,6 +1490,13 @@ export const zh: Record<Key, string> = {
   trainingServicePartyStats: "同行能力 · 前 → 后",
   trainingServiceHp: "当前 HP：",
   trainingServiceStoredParty: "使用存档同行原始记录，包括其中保存的 HP／六围。",
+  trainingServicePartyOnly:
+    "游戏内服务只能选择同行宝可梦；盒子个体须先取回同行。",
+  trainingServicePartyCancel: "选择同行时可按 B 取消。",
+  trainingServiceFaintedSelection:
+    "选择步骤不会排除已倒下的宝可梦；仍须满足等级和其他服务条件。",
+  trainingServiceWithdrawFirst:
+    "先在游戏内把这只宝可梦取回同行。当前盒子预览使用模拟满血同行记录，没有重放取回流程，也不能证明当前可接受服务。",
   trainingServiceProjectedParty:
     "使用模拟满血同行投影，没有重放从盒子取出的流程。",
   trainingServiceUnchanged:

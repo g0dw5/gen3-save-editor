@@ -502,3 +502,23 @@ bit-mask and Ultimate full-byte rules. This corrects the earlier unsupported “
 it does not certify rendered windows, party selection, transaction/refund or
 current story access. Training remains **P** across all five fingerprints.
 See [menu evidence](verification/training-service-menus-20261006.md).
+
+### Party-only service selection / 服务同行选择
+
+The positioned Ultimate and Mercury services use native party-menu action 11,
+then separately check the selected level. B cancellation returns through each
+game's own result convention (Mercury 7; Ultimate normalizes to 255). Runtime
+special pointers and cancel comparisons are read and validated, not borrowed
+across engines. Fainted and synthetic egg states are not filtered in this
+selection step; that does not establish complete training eligibility. Editor
+previews intentionally reject eggs. Box previews now instruct withdrawal first
+and expose `withdrawal_required`; no PC transfer is replayed.
+
+Independent evidence covers three script/launcher observations, 288 input/state
+cases, 256 Ultimate return prefixes and 21 native script routes. Core comparisons
+cover script dispatch, bounded Init argument prefixes, input decisions/selection
+result fields, return normalization and routes. Full fade/overworld cleanup is
+observed only in mGBA, not certified by the stricter core runner. Rendered menus,
+cursor traversal/empty-slot reachability, complete transactions and current
+access remain unresolved. Overall training stays **P** for all five profiles.
+See [selection evidence](verification/training-party-selection-20261006.md).

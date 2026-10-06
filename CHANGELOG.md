@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Qualify crown-service selection as party-only, with B cancellation and separate
+  later level checks. Native selection does not exclude fainted individuals or
+  eggs; the read-only editor preview deliberately accepts non-eggs only. Box
+  previews now explain the required in-game withdrawal and expose its scenario
+  separately from service eligibility. No PC transfer or full transaction claim.
+- 王冠服务明确为同行选择，可按 B 取消，之后另有等级检查。原生选择步骤不排除
+  已倒下个体或蛋；修改器只读预览仍只接受非蛋个体。盒子预览提示先在游戏内取回
+  同行，并区分模拟状态与实际服务资格，不冒充完整取回或交易验证。
+
 - Read NPC service-menu cancellation rules from the loaded ROM. Correct Mercury's
   single-stat menu description: it ignores B after an attempted payment; its
   initial menu and Ultimate's training-choice menu allow B cancellation. Native

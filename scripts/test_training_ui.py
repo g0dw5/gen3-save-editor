@@ -286,6 +286,12 @@ def main():
                                     if key == "MERCURY12"
                                     else []
                                 ),
+                                selection=dict(
+                                    scope="party",
+                                    cancel_with_b=True,
+                                    rejects_fainted_during_selection=False,
+                                    rejects_egg_during_selection=False,
+                                ),
                                 evidence=dict(root=123),
                                 partial=True,
                             )
@@ -341,7 +347,15 @@ def main():
                         party_state=(
                             "simulated_full_hp"
                             if source["kind"] == "simulated"
-                            else "stored_party"
+                            else (
+                                "stored_party"
+                                if source["location"]["kind"] == "party"
+                                else "boxed_full_hp_scenario"
+                            )
+                        ),
+                        withdrawal_required=(
+                            source["kind"] == "stored"
+                            and source["location"]["kind"] == "box"
                         ),
                         partial=True,
                     )
@@ -969,6 +983,45 @@ def main():
                 effect.get_by_label(
                     "Service preview individual", exact=True
                 ).select_option("p:0")
+                effect.get_by_role(
+                    "button", name="Preview service field effects", exact=True
+                ).click()
+                expect(effect.locator(".training-service-result")).to_contain_text(
+                    "Uses the saved party record"
+                )
+                expect(card).to_contain_text(
+                    "training selects a Pokémon from your party"
+                )
+                expect(card).to_contain_text("Press B to cancel party selection")
+                expect(card).to_contain_text("Fainted Pokémon are not excluded")
+                effect.get_by_label(
+                    "Service preview individual", exact=True
+                ).select_option("0:0")
+                expect(effect).to_contain_text(
+                    "First withdraw this Pokémon into your party"
+                )
+                effect.get_by_role(
+                    "button", name="Preview service field effects", exact=True
+                ).click()
+                expect(effect.locator(".training-service-result")).to_contain_text(
+                    "simulated full-HP party projection"
+                )
+                assert requests[-1]["payload"]["individual"] == dict(
+                    kind="stored", location=dict(kind="box", box_index=0, slot=0)
+                )
+                page.get_by_role("button", name="简体中文", exact=True).click()
+                expect(card).to_contain_text("服务只能选择同行宝可梦")
+                expect(card).to_contain_text("选择同行时可按 B 取消")
+                expect(effect).to_contain_text("先在游戏内把这只宝可梦取回同行")
+                page.get_by_role("button", name="English", exact=True).click()
+                effect.get_by_label(
+                    "Service preview individual", exact=True
+                ).select_option("p:0")
+                expect(
+                    effect.get_by_text(
+                        "First withdraw this Pokémon into your party", exact=False
+                    )
+                ).to_have_count(0)
                 effect.get_by_role(
                     "button", name="Preview service field effects", exact=True
                 ).click()

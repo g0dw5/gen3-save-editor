@@ -24,6 +24,7 @@ type Preview = {
   stat_refresh: string;
   scenario: string;
   party_state: string;
+  withdrawal_required: boolean;
   partial: boolean;
 };
 const stats = ["hp", "attack", "defense", "speed", "spAttack", "spDefense"];
@@ -119,6 +120,11 @@ export function TrainingServicePreview({
           reset();
         }}
       />
+      {individual !== "simulated" && fromKey(individual).kind === "box" && (
+        <p className="small warning-text">
+          {t("trainingServiceWithdrawFirst")}
+        </p>
+      )}
       {individual === "simulated" && (
         <fieldset>
           <legend>{t("trainingSimulated")}</legend>

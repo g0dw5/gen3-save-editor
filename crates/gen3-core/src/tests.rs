@@ -8801,6 +8801,7 @@ fn local_service_previews_match_native_and_keep_reference_save_read_only() {
                 )
                 .unwrap();
             assert_eq!(preview.before.ivs, [13; 6]);
+            assert!(!preview.withdrawal_required);
             assert_eq!(
                 preview.level_satisfied,
                 level >= service.minimum_level as u8
@@ -8833,6 +8834,7 @@ fn local_service_previews_match_native_and_keep_reference_save_read_only() {
             )
             .unwrap();
         assert_eq!(preview.party_state, "boxed_full_hp_scenario");
+        assert!(preview.withdrawal_required);
         assert_eq!(save.data, old);
         assert_eq!(
             rom.training_service_preview(
@@ -9001,4 +9003,181 @@ fn local_training_service_menus_match_native_input_decisions() {
         }
         assert_eq!(sha256(&rom.data), digest);
     }
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_TRAINING_PARTY_SELECTION_PROBES independent native evidence"]
+fn local_training_party_selection_matches_native_and_keeps_individuals_unchanged() {
+    use armv4t_emu::Memory;
+    let vectors: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_TRAINING_PARTY_SELECTION_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    let mut total = 0;
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let rom =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        let digest = sha256(&rom.data);
+        let report = rom.training_services(None).unwrap();
+        if !matches!(key, "ULTIMATE" | "MERCURY12") {
+            assert!(report.services.is_empty());
+            continue;
+        }
+        let v = &vectors[key];
+        assert_eq!(v["md5"], rom.profile.md5);
+        let rules = &v["rules"];
+        let number = |name: &str| rules[name].as_u64().unwrap() as u32;
+        let selection = &report.services[0].selection;
+        assert_eq!(selection.scope, "party");
+        assert!(selection.cancel_with_b);
+        assert!(!selection.rejects_fainted_during_selection);
+        assert!(!selection.rejects_egg_during_selection);
+        assert_eq!(
+            selection.cancel_value,
+            if key == "MERCURY12" { 7 } else { 255 }
+        );
+        for entry in v["entries"].as_array().unwrap() {
+            let at = entry["command"].as_u64().unwrap() as usize;
+            assert!(selection.evidence.commands.contains(&at));
+            assert_eq!(
+                selection.evidence.special_id as u64,
+                entry["special"].as_u64().unwrap()
+            );
+            assert_eq!(
+                selection.evidence.native as u64,
+                entry["native"].as_u64().unwrap()
+            );
+            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
+            ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
+            let handler = u32(&rom.data, number("commands") as usize + 0x25 * 4).unwrap() & !1;
+            ram.observe(
+                handler,
+                [0x02010000, 0, 0, 0],
+                [0; 2],
+                100_000,
+                number("entry"),
+            )
+            .unwrap();
+            // Full fade/task creation and overworld cleanup are independently
+            // observed by mGBA. The stricter core runner checks the native Init
+            // argument prefix only, with explicit zeroed engine context.
+            let regs = ram
+                .observe(
+                    number("init_prefix"),
+                    [number("init_argument"), 0, 0, 0],
+                    [0; 2],
+                    100_000,
+                    number("init"),
+                )
+                .unwrap();
+            assert_eq!(regs[..4], [3, 0, 11, 0]);
+            for (i, value) in entry["callbacks"].as_array().unwrap().iter().enumerate() {
+                assert_eq!(
+                    ram.r32(regs[13] + i as u32 * 4),
+                    value.as_u64().unwrap() as u32
+                );
+            }
+        }
+        assert_eq!(v["rows"].as_array().unwrap().len(), 144);
+        for row in v["rows"].as_array().unwrap() {
+            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
+            let raw: Vec<u8> = row["raw"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_u64().unwrap() as u8)
+                .collect();
+            assert_eq!(raw.len(), 100);
+            let b = rom.profile.breeding.unwrap();
+            ram.w32(b.save_pointers[0], 0x02030000);
+            ram.w32(b.save_pointers[1], 0x02034000);
+            for (i, value) in raw.iter().cycle().take(600).enumerate() {
+                ram.w8(b.party + i as u32, *value);
+            }
+            ram.w8(b.party_count, 6);
+            for (i, value) in [3, row["slot"].as_u64().unwrap() as u8, 0, 11]
+                .iter()
+                .enumerate()
+            {
+                ram.w8(number("menu") + 8 + i as u32, *value);
+            }
+            ram.w16(number("selected"), 88);
+            ram.w16(number("keys"), row["keys"].as_u64().unwrap() as u16);
+            ram.observe(
+                number("input"),
+                [0; 4],
+                [0; 2],
+                100_000,
+                row["stop"].as_u64().unwrap() as u32,
+            )
+            .unwrap();
+            assert_eq!(
+                ram.r16(number("selected")) as u64,
+                row["selection"].as_u64().unwrap()
+            );
+            assert_eq!(
+                ram.r8(number("menu") + 9) as u64,
+                row["menu_slot"].as_u64().unwrap()
+            );
+            if let Some(buffer) = rules["buffer"].as_u64() {
+                if row["decision"] != "waiting" {
+                    ram.observe(
+                        buffer as u32,
+                        [0; 4],
+                        [0; 2],
+                        100_000,
+                        number("buffer_stop"),
+                    )
+                    .unwrap();
+                }
+            }
+            assert_eq!(
+                ram.r16(number("selected")) as u64,
+                row["result"].as_u64().unwrap()
+            );
+            for (i, value) in raw.iter().cycle().take(600).enumerate() {
+                assert_eq!(ram.r8(b.party + i as u32), *value);
+            }
+            total += 1;
+        }
+        for row in v["normalized"].as_array().unwrap() {
+            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
+            ram.w8(number("menu") + 9, row["slot"].as_u64().unwrap() as u8);
+            ram.observe(
+                number("buffer"),
+                [0; 4],
+                [0; 2],
+                100_000,
+                number("buffer_stop"),
+            )
+            .unwrap();
+            assert_eq!(
+                ram.r16(number("selected")) as u64,
+                row["result"].as_u64().unwrap()
+            );
+        }
+        for path in v["paths"].as_array().unwrap() {
+            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
+            ram.w16(number("selected"), path["value"].as_u64().unwrap() as u16);
+            for step in path["trace"].as_array().unwrap() {
+                let at = step["command"].as_u64().unwrap() as usize;
+                let native = u32(
+                    &rom.data,
+                    number("commands") as usize + rom.data[at] as usize * 4,
+                )
+                .unwrap()
+                    & !1;
+                ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
+                ram.call(native, [0x02010000, 0, 0, 0], [0; 2], 100_000)
+                    .unwrap();
+                assert_eq!(
+                    ram.r32(0x02010008),
+                    0x08000000 + step["next"].as_u64().unwrap() as u32
+                );
+            }
+        }
+        assert_eq!(sha256(&rom.data), digest);
+    }
+    assert_eq!(total, 288);
 }
