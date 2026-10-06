@@ -13,6 +13,7 @@ pub(super) fn supported(md5: &str) -> bool {
         crate::profile::DP.md5,
         crate::profile::ROCKET.md5,
         ULTIMATE_MD5,
+        crate::mercury::PROFILE.md5,
     ]
     .contains(&md5)
 }
@@ -148,6 +149,15 @@ pub(super) fn teleport(rocket: bool, group: u8, number: u8, warp: u8) -> Vec<Rom
         })
         .collect()
 }
+pub(super) fn teleport_for(md5: &str, group: u8, number: u8, warp: u8) -> Vec<RomHalfword> {
+    let mut patches = teleport(md5 == crate::profile::ROCKET.md5, group, number, warp);
+    if md5 == crate::mercury::PROFILE.md5 {
+        for (i, patch) in patches.iter_mut().enumerate() {
+            patch.offset = 0x553b2 + i as u32 * 2;
+        }
+    }
+    patches
+}
 
 // Source: docs/research/shiny-wild-hook.s. Preserve native nature/gender loops;
 // substitute only PID's high half, and only when the caller is CreateWildMon.
@@ -210,9 +220,58 @@ pub(super) fn shiny(rocket: bool) -> Vec<RomHalfword> {
     }
     result
 }
+// Mercury's ordinary wild routine calls the native nature constructor through
+// an extra wrapper frame. Match its saved caller, never a generic constructor.
+fn mercury_shiny() -> Vec<RomHalfword> {
+    let mut result = Vec::new();
+    for (i, (site, caller, stack, random_bl)) in [
+        (0x3ddbc, 0x1d68cdb, 96, 0xf883),
+        (0x3de44, 0x1d68c19, 52, 0xf83f),
+        (0x3deaa, 0x1d68c19, 52, 0xf80c),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let start = 0x13fd000 + i as u32 * 128;
+        let mut stub = SHINY_STUB.to_vec();
+        stub[5] = 0x9900 | ((stack + 16) / 4) as u16;
+        for value in [
+            0x08044ec9,
+            0x08000000 + caller,
+            0x0300500c,
+            0x08000000 + site + 15,
+        ] {
+            stub.extend([value as u16, (value >> 16) as u16]);
+        }
+        result.extend(stub.into_iter().enumerate().map(|(j, after)| RomHalfword {
+            offset: start + j as u32 * 2,
+            before: 0xffff,
+            after,
+        }));
+        let address = 0x08000000 + start + 1;
+        let mut jump = if site % 4 == 0 {
+            vec![0x4b00, 0x4718]
+        } else {
+            vec![0x4b01, 0x4718, 0x46c0]
+        };
+        jump.extend([address as u16, (address >> 16) as u16]);
+        jump.resize(7, 0x46c0);
+        for (j, (before, after)) in [0x1c04, 0xf007, random_bl, 0x0424, 0x0c24, 0x0400, 0x4304]
+            .into_iter()
+            .zip(jump)
+            .enumerate()
+        {
+            result.push(RomHalfword {
+                offset: site + j as u32 * 2,
+                before,
+                after,
+            });
+        }
+    }
+    result
+}
 
 pub(super) fn generate(rom: &CheatRom, request: &GenerateRequest) -> Result<Vec<RomHalfword>> {
-    let rocket = rom.md5 == crate::profile::ROCKET.md5;
     if !supported(&rom.md5) {
         return Err(err(
             "unsupported_feature",
@@ -232,7 +291,7 @@ pub(super) fn generate(rom: &CheatRom, request: &GenerateRequest) -> Result<Vec<
                 .iter()
                 .find(|m| m.id == *map_id && m.landings.iter().any(|w| w.id == *warp_id))
                 .ok_or_else(|| err("cheat_parameters", "select a referenced ROM landing"))?;
-            Ok(teleport(rocket, m.group, m.number, *warp_id))
+            Ok(teleport_for(&rom.md5, m.group, m.number, *warp_id))
         }
         (SHINY, None) => Ok(shiny_for(&rom.md5)),
         _ => Err(err(
@@ -267,6 +326,45 @@ fn ultimate_hook(site: u32, before: [u16; 2], target: u32, code: &[u16]) -> Vec<
     result
 }
 pub(super) fn encounter_for(md5: &str, species: u16, level: u8) -> Vec<RomHalfword> {
+    if md5 == crate::mercury::PROFILE.md5 {
+        let target = 0x093fd281u32;
+        let return_to = 0x09d68b7du32;
+        let stub = [
+            0x2500 | species >> 8,
+            0x022d,
+            0x3500 | species & 255,
+            0x2100 | u16::from(level),
+            0x9106,
+            0x9205,
+            0x2b00,
+            0x4c01,
+            0x4720,
+            0x46c0,
+            return_to as u16,
+            (return_to >> 16) as u16,
+        ];
+        let mut result: Vec<_> = stub
+            .into_iter()
+            .enumerate()
+            .map(|(i, after)| RomHalfword {
+                offset: 0x13fd280 + i as u32 * 2,
+                before: 0xffff,
+                after,
+            })
+            .collect();
+        result.extend(
+            [0x0005, 0x9106, 0x9205, 0x2b00]
+                .into_iter()
+                .zip([0x4800, 0x4700, target as u16, (target >> 16) as u16])
+                .enumerate()
+                .map(|(i, (before, after))| RomHalfword {
+                    offset: 0x1d68b74 + i as u32 * 2,
+                    before,
+                    after,
+                }),
+        );
+        return result;
+    }
     if md5 != ULTIMATE_MD5 {
         return encounter(md5 == crate::profile::ROCKET.md5, species, level);
     }
@@ -285,6 +383,9 @@ pub(super) fn encounter_for(md5: &str, species: u16, level: u8) -> Vec<RomHalfwo
     )
 }
 pub(super) fn shiny_for(md5: &str) -> Vec<RomHalfword> {
+    if md5 == crate::mercury::PROFILE.md5 {
+        return mercury_shiny();
+    }
     if md5 != ULTIMATE_MD5 {
         return shiny(md5 == crate::profile::ROCKET.md5);
     }

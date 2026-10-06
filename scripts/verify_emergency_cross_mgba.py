@@ -17,6 +17,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 STATES = ROOT / ".local/analysis/emergency-cross-20260926"
 PROFILES = {
+    "MERCURY12": ("f323df1792ac68462a34b42fe8571533", str(ROOT / ".local/analysis/mercury-cheats-20261006/battle-menu.state"), 0x12424, 0x03004f84, 0xff, "mercury", 0x03004f84, 0x08014041, 0x02022b4c, 0x02024284, 0x02023be4, 0x58, 0x28, 0x2c, 0x4c, 0x24),
     "BW": ("0d9b129f7dd76895f79bb47ad7dec2fe", "BW-menu-4.state", 0x39f30, 0x03005d04, 0, "ultimate", 0x03005d04, 0x0803be75, 0x02022fec, 0x020244ec, 0x02024084, 0x58, 0x28, 0x2c, 0x4c, 0x24),
     "DP": ("cb2940215f4dafb1bef133c3af379f44", "DP-battle-menu.state", 0x39f30, 0x03005d04, 0, "ultimate", 0x03005d04, 0x0803be75, 0x02022fec, 0x020244ec, 0x02024084, 0x58, 0x28, 0x2c, 0x4c, 0x24),
     "ROCKET": ("59c658a1081f542086de1060bb65f0b3", "ROCKET-menu-2.state", 0x4ee70, 0x030051b4, 0xff, "rocket", 0x030051b4, 0x08050d51, 0x02024bb8, 0x02025170, 0x02024c50, 0x5c, 0x2a, 0x2e, 0x50, 0x25),
@@ -43,7 +44,9 @@ def main():
             assert hashlib.md5(data).hexdigest() == md5, name
             payload = (ROOT/f"crates/gen3-core/src/cheats/emergency_{payload_name}.bin").read_bytes()
             assert data[hook:hook+4] == struct.pack("<I", original)
-            assert data[0x1fff200:0x1fff204+len(payload)] == bytes([cave])*(4+len(payload))
+            cave_offset = 0x13fd400 if name == "MERCURY12" else 0x1fff200
+            target = 0x08000000 + cave_offset
+            assert data[cave_offset:cave_offset+4+len(payload)] == bytes([cave])*(4+len(payload))
             codes = json.loads(subprocess.check_output([os.environ["GEN3_BIN"], "cheat-code", str(rom), "emergency-battle-heal", "gameshark_v1_v2"]))["lines"]
             assert len(codes) == 4+len(payload)//2, (name, len(codes))
             assert c.start(str(rom).encode()), name
@@ -58,9 +61,9 @@ def main():
                 group = c.addgroup("\n".join(codes).encode())
                 assert group >= 0
                 expected = bytearray(before)
-                struct.pack_into("<I", expected, hook, 0x09fff200)
-                struct.pack_into("<I", expected, 0x1fff200, 0x09fff205)
-                expected[0x1fff204:0x1fff204+len(payload)] = payload
+                struct.pack_into("<I", expected, hook, target)
+                struct.pack_into("<I", expected, cave_offset, target + 5)
+                expected[cave_offset+4:cave_offset+4+len(payload)] = payload
                 assert block(0x08000000, len(data)) == expected, f"{name}: extraneous patch bytes"
                 assert c.load_state(str(state).encode()), name
                 assert read(mainfn) == phase, f"{name}: state is not command phase"
@@ -87,7 +90,7 @@ def main():
                                for index, (a,b) in enumerate(zip(old,new)) if a != b), (name,slot,"unrelated party byte changed")
                 c.togglecode(group, 0)
                 assert read(0x08000000+hook) == original
-                assert read(0x09fff200) == cave*0x01010101
+                assert read(target) == cave*0x01010101
                 report[name] = {"lines": len(codes), "party_hp": maximum, "active_hp": maximum, "opponent_unchanged": True, "patch_restored": True}
                 # The same code must reject battles where it cannot safely map active forms.
                 for guard in ("no_combo", "link", "safari", "multi", "partner", "max_mismatch", "disabled"):

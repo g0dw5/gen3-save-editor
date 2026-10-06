@@ -54,8 +54,6 @@ pub struct Recipe {
     pub scope: Text,
     pub steps: Vec<Text>,
     pub limitations: Vec<Text>,
-    #[serde(skip_serializing)]
-    pub verification: Vec<Text>,
     pub formats: Vec<Format>,
 }
 #[derive(Clone, Copy, Deserialize, Serialize, PartialEq, Eq, Debug)]
@@ -126,6 +124,23 @@ struct Binding {
 }
 const DARK_PHANTOM: &[Binding] = &[
     Binding {
+        id: DAYCARE_EGG,
+        // The native charm adds 20 even to incompatible pairs. Retain zero
+        // compatibility while this recipe is active, then force positive pairs.
+        patches: &[
+            RomHalfword {
+                offset: 0x70b2c,
+                before: 0x4284,
+                after: 0x2c00,
+            },
+            RomHalfword {
+                offset: 0x310ebc,
+                before: 0x3414,
+                after: 0x46c0,
+            },
+        ],
+    },
+    Binding {
         id: PORTABLE_PC,
         patches: &storage::DARK_PHANTOM,
     },
@@ -151,6 +166,44 @@ const DARK_PHANTOM: &[Binding] = &[
             offset: 0x70b46,
             before: 0xd13b,
             after: 0x46c0,
+        }],
+    },
+];
+const MERCURY: &[Binding] = &[
+    Binding {
+        id: PORTABLE_PC,
+        patches: &storage::MERCURY,
+    },
+    Binding {
+        id: NO_ENCOUNTERS,
+        patches: &[RomHalfword {
+            offset: 0x1d69e72,
+            before: 0xd1f3,
+            after: 0xe7f3,
+        }],
+    },
+    Binding {
+        id: GUARANTEED_CATCH,
+        patches: &[RomHalfword {
+            offset: 0x1d0e9e6,
+            before: 0xd92e,
+            after: 0x46c0,
+        }],
+    },
+    Binding {
+        id: FAST_HATCH,
+        patches: &[RomHalfword {
+            offset: 0x46346,
+            before: 0xd12f,
+            after: 0x46c0,
+        }],
+    },
+    Binding {
+        id: DAYCARE_EGG,
+        patches: &[RomHalfword {
+            offset: 0x4632c,
+            before: 0x4284,
+            after: 0x2c00,
         }],
     },
 ];
@@ -196,6 +249,14 @@ fn bindings(md5: &str) -> &'static [Binding] {
     match md5 {
         ULTIMATE_MD5 => &[
             Binding {
+                id: DAYCARE_EGG,
+                patches: &[RomHalfword {
+                    offset: 0x70b2c,
+                    before: 0x4284,
+                    after: 0x2c00,
+                }],
+            },
+            Binding {
                 id: NO_PEEK,
                 patches: &NO_PEEK_PATCHES,
             },
@@ -234,6 +295,7 @@ fn bindings(md5: &str) -> &'static [Binding] {
         ],
         m if m == crate::profile::BW.md5 || m == crate::profile::DP.md5 => DARK_PHANTOM,
         m if m == crate::profile::ROCKET.md5 => ROCKET,
+        m if m == crate::mercury::PROFILE.md5 => MERCURY,
         _ => &[],
     }
 }
@@ -243,11 +305,10 @@ impl CheatRom {
         let md5 = binary::hash(data);
         let mut rom = Self::identify(&md5, data.len())?;
         if parameters::supported(&rom.md5) {
-            let rocket = md5 == crate::profile::ROCKET.md5;
             for p in parameters::encounter_for(&md5, 1, 1)
                 .into_iter()
                 .chain(parameters::shiny_for(&md5))
-                .chain(parameters::teleport(rocket, 0, 0, 0))
+                .chain(parameters::teleport_for(&md5, 0, 0, 0))
             {
                 if binary::u16(data, p.offset as usize)? != p.before {
                     return Err(err("cheat_original_bytes", p.offset));
@@ -410,36 +471,12 @@ fn recipe(id: &'static str) -> Recipe {
     if id == FIX_ACCURACY {
         return fix_accuracy();
     }
-    let (category, title, summary, limitation, evidence) = match id {
-        NO_ENCOUNTERS => (
-            "encounters",
-            text("暂停走路遇敌", "Pause walking encounters"),
-            text("走路、骑车或冲浪移动时，跳过原生随机遇敌入口。适合赶路、捡道具。", "Skip the native random-encounter entry while walking, cycling or moving on water. Useful for travel and item collection."),
-            text("也会挡住该入口触发的游走、群聚或设施随机战。不关闭 NPC、脚本定点、钓鱼、甜甜香气和碎岩的独立触发；已经开始的战斗不会结束。", "Also blocks roamers, outbreaks and facility random encounters using this entry. Separate NPC, scripted, fishing, Sweet Scent and Rock Smash triggers remain; an existing battle is not ended."),
-            text("按本 ROM 的原生移动遇敌入口执行有／无补丁对照；开启后返回不遇敌，停用恢复原有入口。独立野生生成与训练家流程未被补丁覆盖。", "Patched/unpatched tests execute this ROM's native movement encounter entry. Enabling returns no encounter; disabling restores the entry. Separate wild constructors and trainer paths are not patched."),
-        ),
-        GUARANTEED_CATCH => (
-            "catching",
-            text("野生战斗投球必定捕获", "Guaranteed wild-battle capture"),
-            text("在能正常投球的野生战斗中，让捕捉判定走游戏原有的成功分支。仍记录实际使用的球，不把球改成大师球。", "Use the game's native success path when a ball can normally be thrown in a wild battle. The actual ball used is recorded; it is not replaced with a Master Ball."),
-            text("保留训练家挡球和教程分支，不解锁禁用背包、禁用捕捉或剧情限制。仍消耗正常投出的球。已捕获个体和图鉴登记会随正常保存留下，关闭代码不会撤销。", "Trainer ball-blocking and tutorial branches remain. Does not unlock banned bags, blocked captures or story restrictions. Balls are still consumed normally. Caught Pokémon and dex registrations persist when saved; disabling does not undo them."),
-            text("mGBA 完整执行原生投球指令，对照不同随机种子、野生／训练家／教程分支及用球记录，按各 ROM 的原生规则核对个体。不是对所有剧情捕捉限制的穷举。", "mGBA executes the complete native ball-throw command with different seeds and wild/trainer/tutorial cases, checking success scripts, ball records and Pokémon using each ROM's native rules. Not exhaustive coverage of all story capture restrictions."),
-        ),
-        FAST_HATCH => (
-            "breeding",
-            text("加快同行蛋孵化", "Faster party-egg hatching"),
-            text("每次有效行走步数检查都扣减蛋的孵化周期，不再等到原来的周期检查点；继续使用本作原有的特性加速和孵化流程。", "Reduce egg cycles at each eligible walking-step check instead of waiting for the usual cycle boundary. The ROM's ability bonuses and normal hatching flow remain."),
-            text("只处理同行中有效的蛋，跳过坏蛋，盒子里的蛋不变。剩余周期仍需走完，降为 0 后下一次检查触发正常孵化，不是直接把蛋标记成已孵化。已经减少的周期不会因停用而回退。", "Only valid party eggs are processed; Bad Eggs and boxed eggs are untouched. Remaining cycles still count down, then the next check triggers normal hatching. This does not simply clear the egg flag. Progress already made is not rolled back when disabled."),
-            text("mGBA 执行原生孵蛋入口，检查个体记录、周期边界、普通同行／坏蛋跳过、特性加速及关闭恢复；无关字段逐字节比较。", "mGBA native hatching-entry tests cover Pokémon records, cycle boundaries, non-egg/Bad Egg skips, ability bonuses and disable/restore. Unrelated fields are compared byte for byte."),
-        ),
-        DAYCARE_EGG => (
-            "breeding",
-            text("兼容寄养组合必定产蛋", "Guaranteed egg for compatible daycare parents"),
-            text("在原有产蛋检查点，将相性大于 0 的组合改为必定产蛋。仍需要走到检查点、寄养两只宝可梦，且没有尚未领取的蛋。", "At the normal breeding checkpoint, make a positive-compatibility pair produce an egg. Still requires reaching the checkpoint, two daycare parents and no pending egg."),
-            text("仅支持已核对的西班牙火箭队。不改变遗传、父母身份、蛋的生成方式或步数门槛；不兼容组合仍不产蛋。新产生的待领取蛋可随存档保留，停用不会删除。", "Only available for the verified Team Rocket ROM. Inheritance, parent identity, egg generation and the step threshold remain. Incompatible parents still produce no egg. A pending egg can persist in a save and is not removed by disabling."),
-            text("mGBA 对照正常相性和圆形护身符、兼容／不兼容组合、空寄养位、已有待领取蛋与非检查点；父母加密记录保持不变。漆黑的魅影护符分支存在不同语义，因此未套用。", "mGBA compares compatibility with/without Oval Charm, compatible/incompatible pairs, empty slots, pending eggs and non-checkpoint steps. Parent records stay unchanged. Dark Phantom's charm branch has different semantics and is not given this recipe."),
-        ),
-        _ => unreachable!("only private verified bindings construct recipes"),
+    let (category, title, summary, limitation) = match id {
+NO_ENCOUNTERS => ("encounters", text("暂停走路遇敌", "Pause walking encounters"), text("走路、骑车和冲浪时不遇敌。", "No encounters while walking, cycling or surfing."), text("钓鱼、碎岩、甜甜香气及剧情战斗不受影响。", "Fishing, Rock Smash, Sweet Scent and scripted battles remain.")),
+GUARANTEED_CATCH => ("catching", text("野生投球必定捕获", "Guaranteed wild capture"), text("野生战斗中投球必定成功，保留实际球种。", "Catch eligible wild Pokémon with the ball you actually use."), text("仍消耗球；保留本作的捕捉限制。", "Balls are consumed; the game’s capture restrictions remain.")),
+FAST_HATCH => ("breeding", text("加快同行蛋孵化", "Faster party-egg hatching"), text("行走时更快减少孵化周期，再正常孵化。", "Walking reduces egg cycles faster; hatching proceeds normally."), text("只影响同行的有效蛋，盒子中的蛋不变。", "Only valid party eggs are affected; boxed eggs stay unchanged.")),
+DAYCARE_EGG => ("breeding", text("兼容寄养组合必定产蛋", "Guaranteed compatible daycare egg"), text("相容的两只宝可梦在正常检查点必定产蛋。", "Compatible parents produce an egg at the normal checkpoint."), text("仍需行走并领取已有的蛋；不改变遗传，也不让不相容组合产蛋。", "Walk and collect any pending egg first. Inheritance and incompatible pairs stay unchanged.")),
+        _ => unreachable!("only verified bindings construct recipes"),
     };
     Recipe {
         id,
@@ -447,35 +484,30 @@ fn recipe(id: &'static str) -> Recipe {
         parameters: None,
         title,
         summary,
-        scope: text("GameShark Advance V1/V2 · 无需主码 · 复制完整代码组", "GameShark Advance V1/V2 · no master code · copy the complete set"),
+        scope: text(
+            "GameShark Advance V1/V2 · 无需主码",
+            "GameShark Advance V1/V2 · no master code",
+        ),
         steps: vec![
-            text("战斗、孵化动画和保存过程之外，正常保存并备份电池存档。", "Outside battles, hatching animations and saving, save in-game and back up the battery save."),
-            text("在模拟器中按 GameShark Advance V1/V2 添加本条目的全部代码，作为同一组启用；不要选 CodeBreaker 或 Action Replay V3。", "Add all lines as one GameShark Advance V1/V2 set in the emulator. Do not select CodeBreaker or Action Replay V3."),
-            text("重启游戏，从游戏内存档继续。投球功能请新开野生战斗；孵蛋和产蛋功能请继续行走。不要拿旧即时存档的结果判断启用状态。", "Restart and continue from the in-game save. Enter a new wild battle for capture; walk for egg features. Do not infer activation from an old save state."),
-            text("停用整组后重启。指令补丁恢复不等于撤销已经捕获的宝可梦或已经发生的孵化／产蛋。", "Disable the full set and restart. Restoring instructions does not undo captures, hatching progress or eggs already produced."),
+            text(
+                "整组启用，重启并从游戏内存档继续。",
+                "Enable the full set; restart and continue from the in-game save.",
+            ),
+            text(
+                "完成后整组停用并重启。",
+                "Disable the full set and restart when finished.",
+            ),
         ],
-        limitations: vec![limitation,
-            text("只支持本页完整 MD5 对应的原始 ROM。手机模拟器尚未实测，不保证仅凭相同代码格式名称就兼容。不要与其他修改同一功能的代码混用。", "Only the original ROM with this exact MD5 is supported. Mobile emulators are untested; matching format names do not prove compatibility. Do not combine with other cheats changing the same feature."),
-        ],
-        verification: vec![evidence,
-            text("验证引擎：mGBA 0.10.5。逐条解析最终代码、比较 ROM 补丁差异，执行启用／停用／重置检查；源 ROM 和用户存档不写入。测试包含受控内存夹具，不代表全剧情或长期手机游玩的保证。", "Test engine: mGBA 0.10.5. Final codes are independently decoded, ROM patch differences compared and enable/disable/reset checked. Source ROMs and user saves are not written. Tests include controlled RAM fixtures, not a guarantee of full-story or long mobile play."),
-            text("VBA-M 16 位无空格选项只是输入排版；这些新增条目未逐项在 VBA-M 实测。当前已验证范围以 mGBA 记录为准。", "The compact VBA-M option is only an input layout; these new recipes have not each been tested in VBA-M. Current verified coverage is the mGBA record."),
-        ],
+        limitations: vec![limitation],
         formats: vec![Format::GamesharkV1V2],
     }
 }
 
 fn parameter_recipe(id: &'static str) -> Recipe {
     let (title, summary, kind, limitation) = match id {
-        ENCOUNTER => (text("指定野生宝可梦与等级", "Choose wild Pokémon and level"),
-            text("选择当前 ROM 的宝可梦和等级，在下一场普通野生遭遇中生成。可与闪光代码一起使用。", "Choose a Pokémon and level from this ROM for the next ordinary wild encounter. Can be combined with the shiny recipe."), Some("encounter"),
-            text("改变普通野生生成入口，不覆盖单独生成的游走、定点、礼物、蛋和训练家。不会主动触发战斗；走路遇敌暂停时，请先关闭暂停。列表不提供临时战斗形态。", "Changes the ordinary wild constructor, not separate roamer, static, gift, egg or trainer constructors. Does not trigger a battle; disable paused walking encounters first. Temporary battle forms are excluded.")),
-        SHINY => (text("普通野生遭遇必定闪光", "Shiny ordinary wild encounters"),
-            text("仅在普通野生生成链中构造闪光 PID，继续执行本作原生性格、性别筛选和个体保存。", "Construct a shiny PID only in the ordinary wild generation chain, retaining native nature/gender selection and Pokémon record handling."), None,
-            text("只影响新生成的普通野生个体，保留同步和迷人之躯；不把已有宝可梦、礼物、蛋或训练家的宝可梦变闪。完整代码组较长，必须一次性全部启用，不能只复制前几行。", "Only newly generated ordinary wild Pokémon; Synchronize and Cute Charm remain. Existing Pokémon, gifts, eggs and trainer Pokémon are not made shiny. Enable the entire long code set together, never just its first few lines.")),
-        TELEPORT => (text("传送到指定地图", "Teleport to a chosen map"),
-            text("按区域和地图选择目的地，查看十进制地图编号和十六进制组／图编码。下一次经原生传送入口切图时替换目的地。", "Choose a region and map, with decimal map IDs and hexadecimal group/map codes. Redirect the next transition using the native warp setter."), Some("teleport"),
-            text("仅开放 ROM 中有入口引用、坐标有效的落点；这不证明当前剧情可达或已实机走遍。进图脚本仍会运行，可能触发剧情。不要在战斗、动画或保存时使用；到达后立即停用整组，确认可行走与出入后再保存。连续道路连接、部分动态返回入口不经此函数，不会触发。", "Only referenced, in-bounds ROM landings are offered; this is not proof of story reachability or gameplay testing of every map. Arrival scripts still run and may advance events. Use outside battles, animations and saving. Disable the whole set immediately after arrival; verify movement and exits before saving. Continuous map connections and some dynamic return warps bypass this setter.")),
+        ENCOUNTER => (text("指定遇怪与等级", "Choose wild Pokémon and level"), text("选择目标，下一场普通野生遭遇生效。可与闪光叠加。", "Choose a target for the next ordinary wild encounter. Can be combined with shiny encounters."), Some("encounter"), text("不主动触发战斗；先关闭暂停遇敌。独立定点、游走、赠送、蛋及训练家不受影响。", "Does not start a battle; disable paused encounters first. Separate static, roamer, gift, egg and trainer paths remain.")),
+        SHINY => (text("普通野生必定闪光", "Shiny ordinary wild encounters"), text("新遇到的普通野生宝可梦变为闪光。", "New ordinary wild Pokémon are shiny."), None, text("整组复制，不能截取前几行；不影响已有个体、赠送、蛋及训练家。", "Copy every line. Existing Pokémon, gifts, eggs and trainers are unaffected.")),
+        TELEPORT => (text("传送到指定地图", "Teleport to a map"), text("选择区域、地图和入口，进入房门时传送。", "Choose a region, map and entrance, then enter a door to teleport."), Some("teleport"), text("到达后立即停用，确认能行走和离开后再保存。不会解锁剧情；入场脚本仍会执行。道路直接连接不触发。", "Disable immediately on arrival. Check movement and exits before saving. Does not unlock story access; arrival scripts still run. Continuous route connections do not trigger it.")),
         _ => unreachable!(),
     };
     let mut result = recipe(NO_ENCOUNTERS);
@@ -488,13 +520,19 @@ fn parameter_recipe(id: &'static str) -> Recipe {
     result.title = title;
     result.summary = summary;
     result.parameters = kind;
-    result.limitations[0] = limitation;
-    result.steps[2] = if id == TELEPORT {
-        text("备份后在门外启用，进入普通房门触发传送。到达后立即关闭整组；下次切图前确认代码已停用。若模拟器不能即时恢复 ROM 指令，请先保留原存档再重启验证。", "After backing up, enable outside a door and enter it. Disable the complete set immediately on arrival, before another transition. If the emulator cannot restore ROM instructions live, retain the original save and restart to verify.")
-    } else {
-        text("重启后进入新的普通野生战斗。指定遇怪与闪光可叠加；更换目标前先停用旧的整组代码。", "Restart and enter a new ordinary wild battle. Species/level and shiny recipes can be combined. Disable the previous complete set before changing the target.")
-    };
-    result.verification[0] = text("mGBA 原生函数夹具验证生成、个体记录与代码启停；地图落点来自当前 ROM 的门／洞口记录，未承诺所有地图剧情可达。", "mGBA native-function fixtures verify generation, Pokémon records and code toggling. Landings come from this ROM's warp records; not all maps are claimed story-reachable.");
+    result.limitations = vec![limitation];
+    if id == TELEPORT {
+        result.steps = vec![
+            text(
+                "门外整组启用，进入房门。",
+                "Enable outside a door, then enter.",
+            ),
+            text(
+                "到达后立即整组停用。",
+                "Disable the full set immediately on arrival.",
+            ),
+        ];
+    }
     result
 }
 
@@ -504,26 +542,16 @@ fn no_peek() -> Recipe {
         category: "battle",
         parameters: None,
         title: text("关闭 AI 窥屏 · 全模式", "Disable AI input peeking · all modes"),
-        summary: text("让 AI 走游戏已有的不窥屏分支，关闭读取本轮玩家指令的组合模式。包括挑战、疯子及特殊设施。", "Select the game's existing non-peeking path, disabling the combined mode that reads the player's current input. Covers Challenge, Lunatic and special facilities."),
+        summary: text("全部难度与设施关闭本轮输入读取，保留原生预测与评分。", "Disable current-turn input peeking in every mode; retain native prediction and scoring."),
         scope: text("对战 AI · 两条代码须一起启用 · 无需主码", "Battle AI · enable both lines together · no master code required"),
         steps: vec![
-            text("先在战斗外正常保存游戏，并备份电池存档。", "Save in-game outside battle and back up the battery save."),
-            text("选择 GameShark Advance V1/V2，将下面两条代码作为同一组一起启用。不是 CodeBreaker，也不是 Action Replay V3。", "Select GameShark Advance V1/V2 and enable both lines as one set. These are not CodeBreaker or Action Replay V3 codes."),
-            text("重新启动游戏，从游戏内存档继续，再进入一场新战斗。不要用旧的战斗中即时存档判断是否生效。", "Restart the game, continue from the in-game save, then enter a new battle. Do not test using an old mid-battle save state."),
-            text("停用时关闭整组两条代码并重新启动游戏。此窗口只提供代码，不会替模拟器启用，也不会改写 ROM 或存档文件。", "To stop, disable both lines and restart. This window only provides codes; it does not activate them in an emulator or write ROM/save files."),
-        ],
+text("整组启用，重启后进入新战斗。", "Enable the full set; restart and enter a new battle."),
+text("停用整组并重启即可恢复。", "Disable the full set and restart to restore the original behavior.")
+],
         limitations: vec![
-            text("这会连同该组合开关关联的部分主动换人逻辑一起关闭；保留不窥屏分支原有的预测、评分和换人。不是对整个 ROM 做了信息隔离。", "Also disables proactive-switch behavior associated with this combined flag. Existing prediction, scoring and switching on the non-peeking path remain. This is not a whole-ROM information-isolation guarantee."),
-            text("不改难度本身：超额努力值、命中加成、保留 1 HP、不消耗 PP 等规则保持原样。保留原位置的随机数调用，不保证后续整场随机结果相同。", "Does not change difficulty bonuses such as excess EVs, accuracy, surviving at 1 HP or no PP consumption. Original RNG calls remain; later battle outcomes need not match."),
-            text("Manic EMU、Delta 及其他手机模拟器尚未实测；它们对 GameShark 格式的支持不能仅凭名称推定。只适用于本页完整 MD5 对应的未改 ROM。", "Manic EMU, Delta and other mobile emulators are not tested. A format name alone does not establish compatibility. Only the unmodified ROM with this exact MD5 is supported."),
-        ],
-        verification: vec![
-            text("mGBA 0.10.5：导入后完整 32 MiB 内存 ROM 比较，仅两字节变化；24 次启停／重置检查通过，源 ROM 文件未改变。", "mGBA 0.10.5: full 32 MiB in-memory ROM comparison found exactly two changed bytes; 24 toggle/reset checks passed and the source file was unchanged."),
-            text("原生例程测试：38,912 组难度／设施／随机输入检查。完整核心对战夹具：挑战单打、疯子单打及双打共 311 次回合更新，窥屏标记均关闭；未开启代码的疯子对照为 63/129 次开启。", "Native routine tests: 38,912 difficulty/facility/random-input cases. Full-core battle fixtures: 311 turn updates across Challenge singles and Lunatic singles/doubles, all with peeking off; untreated Lunatic control enabled it in 63/129 updates."),
-            text("出招对照夹具：同样输入，卡比兽第二回合用保护。原版隆隆石用诅咒强化；开启代码后用雷电拳，被保护挡住。各重复两次结果一致；不是每次保护都会诱使 AI 攻击。", "Controlled move example: Snorlax uses Protect on turn two with identical inputs. Original Graveler uses Curse; with the code it uses Thunder Punch, blocked by Protect. Each repeated twice consistently; this does not mean every Protect will draw an attack."),
-            text("VBA-M 2.2.3：界面导入、启停内存读回通过。手工输入时每条用不带空格的 16 位格式；8+8 可能被自动识别成另一协议。", "VBA-M 2.2.3: GUI import and enable/disable memory readback passed. Enter each line as 16 characters without a space; 8+8 can be auto-detected as another protocol."),
-            text("验证日期：2026-09-22。设施覆盖为原生分支测试；未覆盖全剧情、所有设施完整流程或长时间手机游玩。对战夹具为受控测试环境。", "Verified 2026-09-22. Facilities were covered by native branch tests, not full tours. Entire-story play and long mobile sessions are untested. Battle fixtures are controlled test environments."),
-        ],
+text("会一并关闭窥屏分支关联的主动换人；原有预测、评分和换人仍保留。", "Also disables proactive switching tied to the peeking branch. Ordinary prediction, scoring and switching remain."),
+text("不改变难度、努力值、命中加成或 PP 规则。", "Difficulty, EVs, accuracy bonuses and PP rules stay unchanged.")
+],
         formats: vec![Format::GamesharkV1V2],
     }
 }
@@ -534,21 +562,15 @@ fn fix_accuracy() -> Recipe {
         category: "battle",
         parameters: None,
         title: text("修正养生／疯子命中加成方向", "Correct Casual/Lunatic accuracy bonus direction"),
-        summary: text("交换两档难度的命中加成目标：养生让玩家出招更准，疯子让对手出招更准。加成仍是原 ROM 的相对 +20%。", "Correct the bonus side in both modes: Casual boosts the player's accuracy, and Lunatic boosts the opponent's. The original ROM's relative +20% remains."),
+        summary: text("养生改为玩家加命中，疯子改为对手加命中；加成仍是相对 +20%。", "Casual boosts player accuracy; Lunatic boosts the opponent's. The relative +20% bonus remains."),
         scope: text("究极绿宝石 5.5 · GameShark Advance V1/V2 · 两行整组启用", "Ultimate Emerald 5.5 · GameShark Advance V1/V2 · enable both lines together"),
         steps: vec![
-            text("在战斗外保存并备份电池存档。", "Save outside battle and back up the battery save."),
-            text("将两行代码作为同一组 GameShark Advance V1/V2 金手指启用，不要选 CodeBreaker 或 Action Replay V3。", "Enable both lines as one GameShark Advance V1/V2 set, not CodeBreaker or Action Replay V3."),
-            text("重启游戏，从游戏内存档进入新战斗。关闭时停用整组并重启。", "Restart, load the in-game save and enter a new battle. Disable the complete set and restart to restore the original behavior."),
-        ],
+text("整组启用，重启后进入新战斗。", "Enable the full set; restart and enter a new battle."),
+text("停用整组并重启即可恢复。", "Disable the full set and restart to restore the original behavior.")
+],
         limitations: vec![
-            text("只改普通命中计算的两处阵营判断；不改招式基础命中、命中／闪避等级、必中招式或其他难度规则。疯子的加成仍限定在原有的训练师战条件内。", "Changes only two side checks in the ordinary accuracy path. Move accuracy, accuracy/evasion stages, always-hit moves and other difficulty rules remain unchanged. The Lunatic bonus retains the original trainer-battle gate."),
-            text("仅适用于本页完整 MD5 对应的未修改 ROM。手机模拟器尚未实测；不要与其他改命中例程的金手指混用。", "Only for the unmodified ROM with this exact MD5. Mobile emulators remain untested. Do not combine with other cheats modifying the same accuracy routine."),
-        ],
-        verification: vec![
-            text("原生命中分支矩阵覆盖四档难度、玩家／对手目标及训练师／野生战；80 命中阈值在养生玩家出招和疯子对手出招时变为 96，其余方向保持 80。", "Native accuracy-branch matrix covers four difficulties, both target sides and trainer/wild battles. A base-80 threshold becomes 96 for Casual player attacks and Lunatic opponent attacks; other directions stay at 80."),
-            text("mGBA 0.10.5 验证加密码导入后只替换原 ROM 内存中的两条分支指令，停用／重启恢复；不写源 ROM 或存档。", "mGBA 0.10.5 confirms encrypted codes replace only two in-memory branch instructions and disabling/reset restores them; source ROM and saves are not written."),
-        ],
+text("只调整加成阵营；疯子仍仅在训练家战生效，其他难度规则不变。", "Only changes the bonus side; Lunatic retains its trainer-battle gate. Other difficulty rules remain.")
+],
         formats: vec![Format::GamesharkV1V2],
     }
 }
@@ -590,61 +612,44 @@ mod tests {
             let code = rom.generate(&request).unwrap();
             let patches = emergency::patches(profile.md5).unwrap();
             assert_eq!(code.lines.len(), patches.len());
-            assert_eq!(
-                code.lines[0],
-                encode_rom_halfword(
-                    if profile.md5 == crate::profile::ROCKET.md5 {
-                        0x4ee70
+            let (callback, original, cave, blank) = if profile.md5 == crate::mercury::PROFILE.md5 {
+                (0x12424, 0x03004f84u32, 0x13fd400, 0xffff)
+            } else if profile.md5 == crate::profile::ROCKET.md5 {
+                (0x4ee70, 0x030051b4, 0x1fff200, 0xffff)
+            } else {
+                (
+                    0x39f30,
+                    0x03005d04,
+                    0x1fff200,
+                    if profile.md5 == ULTIMATE_MD5 {
+                        0xffff
                     } else {
-                        0x39f30
+                        0
                     },
-                    0xf200
                 )
-                .unwrap()
-            );
-            assert_eq!(
-                code.lines[1],
-                encode_rom_halfword(
-                    if profile.md5 == crate::profile::ROCKET.md5 {
-                        0x4ee72
-                    } else {
-                        0x39f32
-                    },
-                    0x09ff
-                )
-                .unwrap()
-            );
-            assert_eq!(
-                code.lines[2],
-                encode_rom_halfword(0x1fff200, 0xf205).unwrap()
-            );
-            assert_eq!(
-                code.lines[3],
-                encode_rom_halfword(0x1fff202, 0x09ff).unwrap()
-            );
+            };
+            let target = 0x08000000 + cave;
+            for (i, (off, value)) in [
+                (callback, target as u16),
+                (callback + 2, (target >> 16) as u16),
+                (cave, (target + 5) as u16),
+                (cave + 2, ((target + 5) >> 16) as u16),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                assert_eq!(code.lines[i], encode_rom_halfword(off, value).unwrap());
+            }
             let mut offsets = std::collections::HashSet::new();
             for patch in &patches {
                 assert!(offsets.insert(patch.offset));
                 assert_ne!(patch.before, patch.after);
-                let callback = if profile.md5 == crate::profile::ROCKET.md5 {
-                    0x4ee70
-                } else {
-                    0x39f30
-                };
                 let expected = if patch.offset == callback {
-                    if profile.md5 == crate::profile::ROCKET.md5 {
-                        0x51b4
-                    } else {
-                        0x5d04
-                    }
+                    original as u16
                 } else if patch.offset == callback + 2 {
-                    0x0300
-                } else if profile.md5 == crate::profile::BW.md5
-                    || profile.md5 == crate::profile::DP.md5
-                {
-                    0
+                    (original >> 16) as u16
                 } else {
-                    0xffff
+                    blank
                 };
                 assert_eq!(patch.before, expected);
             }
@@ -656,12 +661,7 @@ mod tests {
             for patch in parameters::encounter_for(profile.md5, 1, 1)
                 .into_iter()
                 .chain(parameters::shiny_for(profile.md5))
-                .chain(parameters::teleport(
-                    profile.md5 == crate::profile::ROCKET.md5,
-                    0,
-                    0,
-                    0,
-                ))
+                .chain(parameters::teleport_for(profile.md5, 0, 0, 0))
             {
                 assert!(!offsets.contains(&patch.offset));
             }
@@ -701,14 +701,7 @@ mod tests {
                         && entry.get("steps").is_some()
                         && entry.get("limitations").is_some()
                 }));
-            assert_eq!(
-                rom.catalog().entries.len(),
-                if p.md5 == crate::profile::ROCKET.md5 {
-                    10
-                } else {
-                    9
-                }
-            );
+            assert_eq!(rom.catalog().entries.len(), 10);
             let mut request = request();
             assert_eq!(
                 rom.generate(&request).unwrap_err().code,
@@ -766,7 +759,9 @@ mod tests {
                 parameters: None,
             };
             let code = rom.generate(&request).unwrap();
-            let (callback, protect, stride) = if profile.md5 == crate::profile::ROCKET.md5 {
+            let (callback, protect, stride) = if profile.md5 == crate::mercury::PROFILE.md5 {
+                (0x03004f84u32, 0x02023e8cu32, 16)
+            } else if profile.md5 == crate::profile::ROCKET.md5 {
                 (0x030051b4u32, 0x02024f6cu32, 20)
             } else {
                 (0x03005d04u32, 0x0202433cu32, 16)
@@ -835,7 +830,16 @@ mod tests {
                 format: Format::GamesharkV1V2,
                 parameters: None,
             });
-            assert_eq!(daycare.is_ok(), p.md5 == crate::profile::ROCKET.md5);
+            assert!(daycare.is_ok());
+            if matches!(p.md5, m if m == crate::profile::BW.md5 || m == crate::profile::DP.md5) {
+                assert!(bindings(p.md5)
+                    .iter()
+                    .find(|b| b.id == DAYCARE_EGG)
+                    .unwrap()
+                    .patches
+                    .iter()
+                    .any(|p| p.offset == 0x310ebc && p.before == 0x3414 && p.after == 0x46c0));
+            }
         }
     }
     #[test]
@@ -878,7 +882,13 @@ mod tests {
             });
             assert_eq!(
                 rom.generate(&r).unwrap().lines.len(),
-                if p.md5 == ULTIMATE_MD5 { 8 } else { 4 }
+                if p.md5 == ULTIMATE_MD5 {
+                    8
+                } else if p.md5 == crate::mercury::PROFILE.md5 {
+                    16
+                } else {
+                    4
+                }
             );
             r.cheat_id = TELEPORT.into();
             assert!(rom.generate(&r).is_err());
@@ -895,16 +905,21 @@ mod tests {
             r.parameters = None;
             assert_eq!(
                 rom.generate(&r).unwrap().lines.len(),
-                if p.md5 == ULTIMATE_MD5 { 28 } else { 86 }
+                if p.md5 == ULTIMATE_MD5 {
+                    28
+                } else if p.md5 == crate::mercury::PROFILE.md5 {
+                    129
+                } else {
+                    86
+                }
             );
-            let rocket = p.md5 == crate::profile::ROCKET.md5;
             let mut offsets = std::collections::HashSet::new();
             for patch in bindings(p.md5)
                 .iter()
                 .flat_map(|b| b.patches.iter().copied())
                 .chain(parameters::encounter_for(p.md5, 400, 100))
                 .chain(parameters::shiny_for(p.md5))
-                .chain(parameters::teleport(rocket, 1, 2, 0))
+                .chain(parameters::teleport_for(p.md5, 1, 2, 0))
             {
                 assert!(offsets.insert(patch.offset));
                 assert!(patch.offset < p.size as u32);
@@ -932,7 +947,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires private ROMs via GEN3_ROM_ULTIMATE/BW/DP/ROCKET"]
+    #[ignore = "requires five private ROMs via GEN3_ROM_ULTIMATE/BW/DP/ROCKET/MERCURY12"]
     fn local_cheat_catalog_cross_rom_regression() {
         use crate::app::{App, Request};
         use serde_json::{json, Value};
@@ -952,7 +967,7 @@ mod tests {
             json!({"expected_rom_md5": ULTIMATE_MD5}),
         )
         .unwrap();
-        assert_eq!(catalog["entries"].as_array().unwrap().len(), 11);
+        assert_eq!(catalog["entries"].as_array().unwrap().len(), 12);
         assert!(catalog["entries"]
             .as_array()
             .unwrap()
@@ -985,6 +1000,7 @@ mod tests {
             ("GEN3_ROM_BW", crate::profile::BW),
             ("GEN3_ROM_DP", crate::profile::DP),
             ("GEN3_ROM_ROCKET", crate::profile::ROCKET),
+            ("GEN3_ROM_MERCURY12", crate::mercury::PROFILE),
         ] {
             let path = std::env::var(env).expect(env);
             let source = std::fs::read(&path).unwrap();
@@ -992,14 +1008,7 @@ mod tests {
             let baseline = app.session.as_ref().unwrap().rom.data.clone();
             let catalog =
                 dispatch(&mut app, "cheats", json!({"expected_rom_md5": profile.md5})).unwrap();
-            assert_eq!(
-                catalog["entries"].as_array().unwrap().len(),
-                if profile.md5 == crate::profile::ROCKET.md5 {
-                    10
-                } else {
-                    9
-                }
-            );
+            assert_eq!(catalog["entries"].as_array().unwrap().len(), 10);
             assert_eq!(catalog["rom"]["md5"], profile.md5);
             for entry in catalog["entries"].as_array().unwrap() {
                 let code = dispatch(

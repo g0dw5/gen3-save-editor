@@ -72,6 +72,7 @@ const MERCURY_POCKETS: [Pocket; 6] = [
 // Bag RAM starts at 0x0203BB20 within the parasite block at 0x0203B174;
 // native quantity getters/setters (0x99DD8/0x99DDC) are plaintext.
 const MERCURY_SAVE: SaveLayout = SaveLayout {
+    compressed_boxes: Some(crate::box_storage::MERCURY),
     extension_sectors: Some(&[30, 31]),
     sector_checksum: SectorChecksum::Sum,
     pokemon_codec: PokemonCodec::Cfru,
@@ -103,7 +104,7 @@ const MERCURY_SAVE: SaveLayout = SaveLayout {
     ],
     party_count: 0x34,
     party: 0x38,
-    boxes: 14,
+    boxes: 25,
     slots: 30,
     key: 0xf20,
     money: 0x290,
@@ -111,7 +112,8 @@ const MERCURY_SAVE: SaveLayout = SaveLayout {
     registered_item: 0x296,
     created_origin_game: 4,
     rtc_trailer_bytes: 16,
-    skip_unoccupied_box_records: true,
+    // Compact records use their native species word for vacancy.
+    skip_unoccupied_box_records: false,
 };
 
 pub const PROFILE: Profile = Profile {
@@ -433,8 +435,8 @@ mod tests {
         save.validate(&rom).unwrap();
         assert_eq!(save.bag().unwrap().len(), 808);
         let boxes = save.boxes(&rom).unwrap();
-        assert_eq!(boxes.len(), 14);
-        assert!(boxes.iter().map(|b| b.count).sum::<usize>() <= 420);
+        assert_eq!(boxes.len(), 25);
+        assert!(boxes.iter().map(|b| b.count).sum::<usize>() <= 750);
         assert!(save.all(&rom).unwrap().len() >= save.party_count());
         assert_eq!(save.data, original);
         let mut session = Session::new(rom.clone());
@@ -577,7 +579,11 @@ mod tests {
         assert_eq!(catalog.moves.len(), 1015);
         assert_eq!(catalog.items.len(), 750);
         assert_eq!(catalog.abilities.len(), 300);
-        assert_eq!(catalog.battle_forms.len(), 233);
+        assert_eq!(catalog.battle_forms.len(), 127);
+        assert!(!rom.is_battle_species(25).unwrap());
+        assert!(!rom.is_battle_species(400).unwrap());
+        assert!(rom.is_battle_species(1264).unwrap());
+        assert!(rom.is_battle_species(906).unwrap());
         assert!(!catalog.editor_rules.pokemon_checksum);
         assert!(catalog.editor_rules.ball_options.len() >= 12);
         for ball in &catalog.editor_rules.ball_options {
@@ -747,7 +753,7 @@ mod tests {
                 .code,
             "save_no_valid_slot"
         );
-        assert!(CheatRom::open(&bytes).unwrap().catalog().entries.is_empty());
+        assert_eq!(CheatRom::open(&bytes).unwrap().catalog().entries.len(), 10);
         let mut changed = bytes;
         changed[0x141b351] ^= 1;
         assert_eq!(Rom::open(changed).err().unwrap().code, "unsupported_rom");

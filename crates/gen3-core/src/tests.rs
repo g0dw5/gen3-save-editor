@@ -754,7 +754,12 @@ fn expected_box_write(save: &Save, output: &mut [u8], index: usize, raw: &[u8]) 
 
 #[test]
 fn transfers_preserve_every_record_byte_across_all_box_slots() {
-    for profile in profile::PROFILES {
+    // Compact native storage has separate physical-record tests below.
+    for profile in profile::PROFILES
+        .iter()
+        .copied()
+        .filter(|p| p.save.compressed_boxes.is_none())
+    {
         let rom = adapter_rom(profile);
         let fixture = save_bytes(&rom);
         let mut source = pokemon::create(&rom, 1, 0xdeadbeef, "ASH", 46, 0xbadc5647).unwrap();
@@ -8669,7 +8674,10 @@ fn local_player_references_and_adventure_are_read_only_across_profiles() {
             guide.tasks.iter().map(|t| (&t.id, t)).collect();
         assert_eq!(by_id.len(), guide.tasks.len());
         for task in &guide.tasks {
-            assert!(index.world.maps.iter().any(|m| m.id == task.map_id));
+            assert!(
+                index.world.maps.iter().any(|m| m.id == task.map_id)
+                    || (task.journal.is_some() && task.map_id.is_empty())
+            );
             for link in task.prerequisites.iter().flatten() {
                 assert!(by_id.contains_key(link));
                 assert_ne!(link, &task.id);
@@ -8775,5 +8783,126 @@ fn local_player_references_and_adventure_are_read_only_across_profiles() {
                 .unwrap()
         ));
         assert_eq!(&*r.data, &*before_rom);
+    }
+}
+
+#[test]
+fn compact_storage_moves_preserve_physical_records_across_all_25_boxes() {
+    let rom = adapter_rom(crate::mercury::PROFILE);
+    let layout = rom.profile.save.compressed_boxes.unwrap();
+    let mut save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
+    let source = pokemon::create(&rom, 1, 0x12345678, "ASH", 30, 0xabcdefff).unwrap();
+    let mut record = layout.compact(&source, &rom).unwrap();
+    // Reserved tera metadata survives box moves, copies and unrelated edits.
+    record[19] = (record[19] & 7) | (31 << 3);
+    save.write_compact_box(0, 0, &record).unwrap();
+    // A malformed occupied/bad record is not silently treated as a vacant slot.
+    for bad in [false, true] {
+        let mut broken = save.clone();
+        let mut raw = record.clone();
+        if bad {
+            raw[19] |= 1;
+        } else {
+            put16(&mut raw, 28, 0);
+        }
+        broken.write_compact_box(0, 0, &raw).unwrap();
+        assert!(broken.pokemon(loc(0), &rom).is_err());
+    }
+    assert_eq!(save.boxes(&rom).unwrap().len(), 25);
+    for target in 1..750 {
+        let mut moved = save.clone();
+        moved.transfer(loc(0), loc(target), false, &rom).unwrap();
+        assert_eq!(moved.compact_box(target / 30, target % 30).unwrap(), record);
+        assert_eq!(moved.compact_box(0, 0).unwrap(), vec![0; 58]);
+        moved.transfer(loc(target), loc(0), false, &rom).unwrap();
+        assert_eq!(moved.data, save.data, "compact round trip {target}");
+    }
+    for target in [1, 29, 569, 570, 659, 660, 719, 720, 749] {
+        let mut copied = save.clone();
+        copied.transfer(loc(0), loc(target), true, &rom).unwrap();
+        assert_eq!(copied.compact_box(0, 0).unwrap(), record);
+        assert_eq!(
+            copied.compact_box(target / 30, target % 30).unwrap(),
+            record
+        );
+        let before = copied.data.clone();
+        assert!(copied.transfer(loc(0), loc(target), true, &rom).is_err());
+        assert_eq!(copied.data, before);
+        let mut other = record.clone();
+        other[37] = 99;
+        copied
+            .write_compact_box(target / 30, target % 30, &other)
+            .unwrap();
+        copied.transfer(loc(0), loc(target), false, &rom).unwrap();
+        assert_eq!(copied.compact_box(0, 0).unwrap(), other);
+        assert_eq!(
+            copied.compact_box(target / 30, target % 30).unwrap(),
+            record
+        );
+    }
+    save.edit(
+        loc(0),
+        &PokemonPatch {
+            friendship: Some(128),
+            ..Default::default()
+        },
+        &rom,
+        Policy::Standard,
+    )
+    .unwrap();
+    let edited = save.compact_box(0, 0).unwrap();
+    let mut expected = record.clone();
+    expected[37] = 128;
+    assert_eq!(edited, expected);
+    for patch in [
+        PokemonPatch {
+            condition: Some([255; 6]),
+            ..Default::default()
+        },
+        PokemonPatch {
+            ribbons: Some(1),
+            ..Default::default()
+        },
+        PokemonPatch {
+            pps: Some([1; 4]),
+            ..Default::default()
+        },
+    ] {
+        let before = save.data.clone();
+        assert!(save.edit(loc(0), &patch, &rom, Policy::Free).is_err());
+        assert_eq!(save.data, before);
+    }
+    for index in 0..25 {
+        save.edit_box(index, "BOX", 3, &rom).unwrap();
+        let b = &save.boxes(&rom).unwrap()[index];
+        assert_eq!((&*b.name, b.wallpaper), ("BOX", 3));
+    }
+    save.validate(&rom).unwrap();
+}
+
+#[test]
+#[ignore = "requires Mercury ROM and independent mGBA compact-storage vectors"]
+fn compact_storage_matches_native_mercury_converters() {
+    let rom =
+        Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap()).unwrap();
+    let layout = rom.profile.save.compressed_boxes.unwrap();
+    let vectors: Vec<serde_json::Value> = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_COMPACT_VECTORS").unwrap()).unwrap(),
+    )
+    .unwrap();
+    assert!(vectors.len() >= 192);
+    for (index, v) in vectors.iter().enumerate() {
+        let get = |key: &str| -> Vec<u8> { serde_json::from_value(v[key].clone()).unwrap() };
+        let compact = get("compact");
+        assert_eq!(
+            layout.compact(&get("raw"), &rom).unwrap(),
+            compact,
+            "compress {index}"
+        );
+        assert_eq!(
+            layout.expand(&compact, Some(&rom)).unwrap(),
+            get("expanded"),
+            "expand {index}"
+        );
     }
 }

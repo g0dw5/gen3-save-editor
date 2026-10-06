@@ -103,7 +103,10 @@ export interface Catalog {
     } | null;
     native_trainers?: { constructor: number } | null;
     fishing_rods?: number[];
-    save?: { pockets: { id: string; category: number }[] };
+    save?: {
+      pockets: { id: string; category: number }[];
+      compressed_boxes?: unknown | null;
+    };
     feebas?: { map_id: string } | null;
     teaching?: { shared_lists?: number | null };
     hidden_power?: {

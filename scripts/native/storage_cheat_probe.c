@@ -42,6 +42,17 @@ int export_battery(const char *path) {
     free(data);
     return ok;
 }
+/* Local test artifact only; does not attach writable ROM or SAV inputs. */
+int export_state(const char *path) {
+    size_t size = core->stateSize(core);
+    void *data = malloc(size);
+    int ok = data && core->saveState(core, data);
+    FILE *file = ok ? fopen(path, "wb") : NULL;
+    ok = file && fwrite(data, 1, size, file) == size;
+    if (file) fclose(file);
+    free(data);
+    return ok;
+}
 void frames(unsigned count, unsigned keys) {
     core->setKeys(core, keys);
     for (unsigned i = 0; i < count; ++i) core->runFrame(core);

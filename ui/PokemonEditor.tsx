@@ -73,6 +73,9 @@ export function PokemonEditor({
   const [detail, setDetail] = useState<SpeciesDetail | null>(null);
   const [allMoves, setAllMoves] = useState(false);
   const merged = { ...p, ...patch } as Pokemon;
+  const compressedBox =
+    row.location.kind === "box" &&
+    Boolean(catalog.profile.save?.compressed_boxes);
   const hpRules = catalog.profile.hidden_power;
   const hp = hiddenPower(hpRules, merged.ivs);
   const hasNatureOverride = catalog.editor_rules?.nature_override ?? false;
@@ -87,6 +90,7 @@ export function PokemonEditor({
   const natureChanges = catalog.natures[effectiveNature]?.stat_changes ?? [];
   const metadataProps = {
     pokemon: merged,
+    compactBox: compressedBox,
     catalog,
     change: (key: string, value: unknown) => change(key, value),
     free,
@@ -483,17 +487,21 @@ export function PokemonEditor({
               <p className="muted small">
                 {t("calculated")} → {t("apply")}
               </p>
-              <ContestCondition
-                catalog={catalog}
-                condition={merged.condition}
-                nature={
-                  patch.pid !== undefined ? merged.pid % 25 : merged.nature
-                }
-                npc={contestNpc}
-                free={free}
-                onNpcChange={setContestNpc}
-                onChange={(i, value) => arrayChange("condition", i, value)}
-              />
+              {compressedBox ? (
+                <p className="small muted">{t("compressedBoxHelp")}</p>
+              ) : (
+                <ContestCondition
+                  catalog={catalog}
+                  condition={merged.condition}
+                  nature={
+                    patch.pid !== undefined ? merged.pid % 25 : merged.nature
+                  }
+                  npc={contestNpc}
+                  free={free}
+                  onNpcChange={setContestNpc}
+                  onChange={(i, value) => arrayChange("condition", i, value)}
+                />
+              )}
             </>
           )}
           {tab === "moves" && (
@@ -505,7 +513,7 @@ export function PokemonEditor({
               />
               <details className="pp-help small muted">
                 <summary>{t("ppHelpTitle")}</summary>
-                <p>{t("ppStorageHelp")}</p>
+                <p>{t(compressedBox ? "compressedPpHelp" : "ppStorageHelp")}</p>
               </details>
               {hpRules && merged.moves.includes(hpRules.move_id) && (
                 <HiddenPowerSummary catalog={catalog} ivs={merged.ivs} />
@@ -533,7 +541,7 @@ export function PokemonEditor({
                                 5,
                             )
                       }
-                      disabled={!id}
+                      disabled={!id || compressedBox}
                     />
                     <NumberField
                       label={t("maximumPp")}

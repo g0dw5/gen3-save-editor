@@ -23,6 +23,8 @@ CHEAT = "portable-pokemon-storage"
 
 
 class StorageProbe(Probe):
+    total_slots = 420
+
     def __init__(self, library, name, path):
         super().__init__(library, name, path)
         self.name = name
@@ -128,10 +130,25 @@ class StorageProbe(Probe):
     def snapshot(self):
         count = self.get(self.p["count"], 1)
         party = [self.read(self.p["party"] + 100 * i, 80) for i in range(count)]
-        boxes = [self.read(self.boxes() + 4 + 80 * i, 80) for i in range(420)]
+        boxes = self.box_records()
         for raw in party + [r for r in boxes if any(r)]:
             self.unpack(raw)  # Native codec: plaintext or checked encrypted record.
         return party, boxes
+
+    def box_records(self):
+        return [self.read(self.boxes() + 4 + 80 * i, 80) for i in range(self.total_slots)]
+
+    def clear_boxes(self):
+        self.write(self.boxes() + 4, bytes(self.total_slots * 80))
+
+    def seed_party(self):
+        for i, species in enumerate((25, 185)):
+            self.call(0xEC2D0 if self.rocket else 0xB4E68, species, 17)
+            self.write(self.p["party"] + 100 * i, self.read(self.p["enemy"], 100))
+
+    def save_inputs(self):
+        row = int(os.environ.get("GEN3_STORAGE_SAVE_ROW_" + self.name, 3 if self.rocket else 5))
+        return (8, *([128] * row), 1, 1, 1)
 
     def gameplay(self, state, save, output):
         self.c.clearcodes()
@@ -140,10 +157,8 @@ class StorageProbe(Probe):
         assert self.c.load_state(str(state).encode())
         self.c.frames(10, 0)
         self.put(self.boxes(), 0, 1)
-        self.write(self.boxes() + 4, bytes(420 * 80))
-        for i, species in enumerate((25, 185)):
-            self.call(0xEC2D0 if self.rocket else 0xB4E68, species, 17)
-            self.write(self.p["party"] + 100 * i, self.read(self.p["enemy"], 100))
+        self.clear_boxes()
+        self.seed_party()
         self.put(self.p["count"], 2, 1)
         self.write(self.p["party"] + 200, bytes(400))
         first, second = self.snapshot()[0]
@@ -155,12 +170,12 @@ class StorageProbe(Probe):
         self.press(128, 128, 1)  # Open Organize, then exit without changing data.
         self.screenshot(output, "organize")
         self.press(2, 128, 1, 2)
-        assert self.snapshot() == ([first, second], [bytes(80)] * 420)
+        assert self.snapshot() == ([first, second], [bytes(80)] * self.total_slots)
         # Deposit first Pokémon, choose box 1, leave storage and its outer menu.
         self.press(4, 128, 1, 1, 1, 1, 2, 128, 1, 2)
         deposited_party, deposited_boxes = self.snapshot()
         assert deposited_party == [second]
-        assert deposited_boxes == [first] + [bytes(80)] * 419
+        assert deposited_boxes == [first] + [bytes(80)] * (self.total_slots - 1)
         assert self.read(self.sb1(), 12) == location
         assert self.read(self.sb1() + 0x496, 2) == registration
         # Move the boxed record to the adjacent slot through Organize's native
@@ -168,12 +183,12 @@ class StorageProbe(Probe):
         self.press(4, 128, 128, 1, 1, 1, 16, 1, 1)
         self.screenshot(output, "moved")
         self.press(2, 128, 1, 2)
-        deposited_boxes = [bytes(80), first] + [bytes(80)] * 418
+        deposited_boxes = [bytes(80), first] + [bytes(80)] * (self.total_slots - 2)
         assert self.snapshot() == ([second], deposited_boxes)
         # Normal in-game save through START. The private BW/DP fixture has eight
         # menu rows; Rocket's earlier-progress fixture has six (Save at index 3).
         # The test never invokes a raw save routine.
-        self.press(8, *([128] * int(os.environ.get("GEN3_STORAGE_SAVE_ROW_" + self.name, 3 if self.rocket else 5))), 1, 1, 1)
+        self.press(*self.save_inputs())
         self.c.frames(360, 0)
         exported = output / f"{self.name}-saved-test.sav"
         assert self.c.export_battery(str(exported).encode())
@@ -209,12 +224,12 @@ class StorageProbe(Probe):
         assert current_party == [second, first], (self.name, "withdraw", len(current_party),
             [[(i, a, b) for i, (a, b) in enumerate(zip(actual, expected)) if a != b]
              for actual, expected in zip(current_party, [second, first])])
-        assert current_boxes == [bytes(80)] * 420, (self.name, "boxes", [i for i, b in enumerate(current_boxes) if any(b)])
+        assert current_boxes == [bytes(80)] * self.total_slots, (self.name, "boxes", [i for i, b in enumerate(current_boxes) if any(b)])
         assert self.read(self.sb1(), 12) == location
         # Repeated opening/cancelling neither duplicates Pokémon nor changes data.
         for _ in range(3):
             self.press(4, 2)
-            assert self.snapshot() == ([second, first], [bytes(80)] * 420)
+            assert self.snapshot() == ([second, first], [bytes(80)] * self.total_slots)
         self.c.togglecode(code, False)
         self.c.frames(24, 128)
         self.c.frames(160, 0)

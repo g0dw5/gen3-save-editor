@@ -1,5 +1,13 @@
 # Pokémon Mercury FC 1.2 / 宝可梦水银 FC
 
+> Storage correction (2026-10-06): Mercury 1.2 uses 25 compact 58-byte boxes,
+> including SB1/SB2/sector extensions. Earlier fourteen-box/80-byte and
+> created-box round-trip assertions below are withdrawn; empty-box/whole-block
+> byte checks did not establish record semantics. See the [native converter and
+> deposit/edit/save/withdraw evidence](../verification/mercury-cheats-storage-20261006.md).
+> The older build's historical notes do not establish this engine's current layout.
+
+
 Only 1.2 is supported by the app and CLI. Version 1.1 has been removed from
 the adapter registry and is rejected. The 1.1 addresses and earlier comparisons
 below remain as historical reverse-engineering evidence, not supported configuration.
@@ -67,8 +75,10 @@ The species and picture tables contain 116 aligned empty slots in the expanded
 range; IDs 252 and 412 also have zero HP despite picture data. They stay visible
 as ROM slots in the catalog, but `valid_species` rejects them for detail/edit
 operations. Nature and type labels likewise come from ROM pointer/name tables.
-The battle-form pass finds 144 Mega and 89 Gigantamax edges; their display is
-a table interpretation, not a claim that every transformation is reachable.
+The earlier pass counted 233 rows, including reverse-to-base rows; that count
+was not a correct forward-transformation catalog. Mercury 1.2 now has 127 forward
+battle-form references after native reversal rules are applied; this is not a
+claim that every transformation is reachable.
 
 The structure interpretations were cross-checked against the upstream
 [CFRU `include/pokemon.h`](https://github.com/Skeli789/Complete-Fire-Red-Upgrade/blob/master/include/pokemon.h),

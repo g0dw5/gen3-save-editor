@@ -114,3 +114,13 @@ supplies `rom`, `save`, production `actions`, `boot`, `save_steps`, `reload` and
 native `ram` addresses (`party`, `count`, `storage_pointer`). Step rows contain
 `frames`, optional GBA `keys` and optional unique `capture` names. The output
 directory must be new. Fixtures and scenario paths are not public release inputs.
+
+
+## Compact Mercury storage follow-up
+
+The earlier empty-box Mercury fixture checks the contiguous storage block but
+does not certify individual PC records. That limitation is superseded by the
+[25-box native-converter and populated-SAV increment](mercury-cheats-storage-20261006.md).
+The verifier now also checks every native compact-box pointer against all four
+SAV backing regions. Earlier 80-byte created-box round-trip claims are withdrawn.
+The first-four record codecs remain unchanged.

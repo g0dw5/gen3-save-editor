@@ -37,7 +37,7 @@ def section(data: bytes, name: bytes) -> bytes:
 
 
 def main() -> None:
-    for variant, defines in (("ultimate", []), ("rocket", ["-DGEN3_EMERGENCY_ROCKET"])):
+    for variant, defines in (("ultimate", []), ("rocket", ["-DGEN3_EMERGENCY_ROCKET"]), ("mercury", ["-DGEN3_EMERGENCY_MERCURY"])):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "emergency.elf"
             subprocess.run([

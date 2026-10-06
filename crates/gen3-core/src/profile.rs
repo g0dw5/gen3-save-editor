@@ -226,6 +226,7 @@ pub struct MapGroup {
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct SaveLayout {
+    pub compressed_boxes: Option<crate::box_storage::Layout>,
     /// Native extension RAM is stored in logical sector tails, then these flash sectors.
     /// None disables extensions; Some(&[]) uses only the tails.
     pub extension_sectors: Option<&'static [usize]>,
@@ -280,6 +281,7 @@ pub struct DexReadBank {
     pub initialization: Option<(usize, u16)>,
 }
 pub const EMERALD: SaveLayout = SaveLayout {
+    compressed_boxes: None,
     extension_sectors: None,
     sector_checksum: SectorChecksum::Sum,
     pokemon_codec: crate::adapter::PokemonCodec::Gen3,

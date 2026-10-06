@@ -27,6 +27,7 @@ interface Props {
   change: (key: string, value: unknown) => void;
   free: boolean;
   pidLocked: boolean;
+  compactBox?: boolean;
 }
 
 export function PokemonOrigin({
@@ -34,6 +35,7 @@ export function PokemonOrigin({
   catalog,
   change,
   free,
+  compactBox,
   origins,
 }: Props & { origins: OriginOptions | null }) {
   const { t } = useI18n();
@@ -204,16 +206,18 @@ export function PokemonOrigin({
         options={options(languages, p.language)}
       />
       <p className="small muted">{t("pokemonLanguageHelp")}</p>
-      <Toggle
-        label={t("fatefulEncounter")}
-        checked={Boolean(p.ribbons & 0x80000000)}
-        onChange={(v) =>
-          change(
-            "ribbons",
-            replaceBits(p.ribbons, 0x80000000, v ? 0x80000000 : 0),
-          )
-        }
-      />
+      {!compactBox && (
+        <Toggle
+          label={t("fatefulEncounter")}
+          checked={Boolean(p.ribbons & 0x80000000)}
+          onChange={(v) =>
+            change(
+              "ribbons",
+              replaceBits(p.ribbons, 0x80000000, v ? 0x80000000 : 0),
+            )
+          }
+        />
+      )}
       <details className="metadata-details">
         <summary>{t("storedIdentifiers")}</summary>
         <NumberField
@@ -235,6 +239,7 @@ export function PokemonAdvanced({
   change,
   free,
   pidLocked,
+  compactBox,
 }: Props) {
   const { t } = useI18n();
   const strain = p.pokerus >>> 4;
@@ -342,57 +347,65 @@ export function PokemonAdvanced({
         />
       </div>
       <p className="small muted">{t("pokerusHelp")}</p>
-      <h3>{t("ribbons")}</h3>
-      <p className="small muted">{t("contestRibbonHelp")}</p>
-      <div className="field-grid">
-        {contestCategories.map((key, i) => {
-          const rank = (p.ribbons >>> (i * 3)) & 7;
-          const maxRank = catalog.editor_rules?.contest_ranks[i] ?? 4;
-          return (
-            <SelectField
-              key={key}
-              label={`${t(key)} ${t("ribbonRank")}`}
-              value={rank}
-              onChange={(v) =>
-                change(
-                  "ribbons",
-                  replaceBits(p.ribbons, 7 << (i * 3), +v << (i * 3)),
-                )
-              }
-              options={[
-                ...Array.from({ length: maxRank + 1 }, (_, value) => ({
-                  value,
-                  label: t(`contestRank_${value}`),
-                })),
-                ...(rank > maxRank
-                  ? [
-                      {
-                        value: rank,
-                        label: `${t("unknownValue")} #${rank}`,
-                        disabled: true,
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          );
-        })}
-      </div>
-      <div className="ribbon-checklist">
-        {ribbonNames.map((key, i) => (
-          <Toggle
-            key={key}
-            label={t(`ribbon_${key}`)}
-            checked={Boolean(p.ribbons & (1 << (i + 15)))}
-            onChange={(v) =>
-              change(
-                "ribbons",
-                replaceBits(p.ribbons, 1 << (i + 15), v ? 1 << (i + 15) : 0),
-              )
-            }
-          />
-        ))}
-      </div>
+      {!compactBox && (
+        <>
+          <h3>{t("ribbons")}</h3>
+          <p className="small muted">{t("contestRibbonHelp")}</p>
+          <div className="field-grid">
+            {contestCategories.map((key, i) => {
+              const rank = (p.ribbons >>> (i * 3)) & 7;
+              const maxRank = catalog.editor_rules?.contest_ranks[i] ?? 4;
+              return (
+                <SelectField
+                  key={key}
+                  label={`${t(key)} ${t("ribbonRank")}`}
+                  value={rank}
+                  onChange={(v) =>
+                    change(
+                      "ribbons",
+                      replaceBits(p.ribbons, 7 << (i * 3), +v << (i * 3)),
+                    )
+                  }
+                  options={[
+                    ...Array.from({ length: maxRank + 1 }, (_, value) => ({
+                      value,
+                      label: t(`contestRank_${value}`),
+                    })),
+                    ...(rank > maxRank
+                      ? [
+                          {
+                            value: rank,
+                            label: `${t("unknownValue")} #${rank}`,
+                            disabled: true,
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+              );
+            })}
+          </div>
+          <div className="ribbon-checklist">
+            {ribbonNames.map((key, i) => (
+              <Toggle
+                key={key}
+                label={t(`ribbon_${key}`)}
+                checked={Boolean(p.ribbons & (1 << (i + 15)))}
+                onChange={(v) =>
+                  change(
+                    "ribbons",
+                    replaceBits(
+                      p.ribbons,
+                      1 << (i + 15),
+                      v ? 1 << (i + 15) : 0,
+                    ),
+                  )
+                }
+              />
+            ))}
+          </div>
+        </>
+      )}
       <details className="metadata-details">
         <summary>{t("storedIdentifiers")}</summary>
         <NumberField

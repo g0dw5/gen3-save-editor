@@ -52,7 +52,7 @@ and prerequisite links can be alternatives rather than a required sequence.
 
 ## Edit safely
 
-Party and all boxes remain expanded. Dragging between occupied slots swaps the
+Party and all boxes remain expanded (Mercury: 25; others: 14). Dragging between occupied slots swaps the
 individuals. The Pokémon editor retains its active tab when selection changes.
 Search items and moves using names from the current ROM.
 
@@ -61,10 +61,12 @@ SAV. Keep the original backup and use normal in-game saving after loading the
 export in your emulator. External file changes are checked before export.
 **Free editing** permits exceptions; it does not bypass structural save checks.
 ROM reference, adventure guide and cheat-code generation are read-only queries.
+Mercury's native boxes omit current PP, contest condition and ribbons. These
+box fields are restricted; withdrawing restores maximum PP from moves/PP Ups.
 
 Cheat codes depend on the exact ROM and code format. Follow each entry’s usage
 and stop conditions; a save editor does not enable codes in the emulator for you.
-Mercury 1.2’s cheat coverage remains limited. Supported input fingerprints appear
+All five ROMs share ten common features; Ultimate Emerald adds two exclusive recipes. See [usage](cheats.md). Supported input fingerprints appear
 on the welcome screen; Mercury 1.1 is not supported.
 
 Switch the interface between English and Chinese with the language button.

@@ -311,7 +311,7 @@ impl Session {
         Ok(PokemonFile {
             format: "gen3-pokemon-1".into(),
             rom_md5: self.rom.profile.md5.into(),
-            bytes: s.raw(location)?[..80].to_vec(),
+            bytes: s.raw_with_rom(location, &self.rom)?[..80].to_vec(),
         })
     }
     pub fn export(&mut self, path: &Path) -> Result<Option<PathBuf>> {

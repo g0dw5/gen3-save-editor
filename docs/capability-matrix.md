@@ -800,3 +800,27 @@ synthetic RAM boundary**. Full evolution eligibility, contextual methods,
 consumption, animations and post-evolution SAV behavior remain **P/U**. Existing
 preparation counts describe possession, not proof that every individual meets
 all steps. Overall evolution and collection retain **P** for all five inputs.
+
+
+## Wiki, common cheats and compact storage follow-up
+
+Mercury's [runtime native journal](verification/mercury-wiki-journal-20261006.md)
+adds 100 independently flagged records and 306 pages, with 1,530 native visibility
+comparisons. This remains **P** for full quest/story dependencies, weekdays and
+broadcast-specific encounters; Wiki content is not bundled or used to override ROM.
+
+All five fingerprints now offer ten common cheat recipes; Ultimate retains two
+exclusive fixes. [Bounded native/frame evidence](verification/mercury-cheats-storage-20261006.md)
+records protocol, native generation, compatibility, Protect, recovery and PC
+workflows. Interface availability does not certify every facility/mobile emulator.
+
+Mercury PC storage is corrected to 25 compact boxes (750 slots) across storage,
+main, trainer and extension blocks. Earlier fourteen-box/80-byte and created-box
+claims are withdrawn. Independent converters plus populated-box edits/swaps,
+normal-key game saving and fresh Continue now verify the tested workflows.
+The earlier empty-box fixture did not establish them. Unstored box PP/contest/
+ribbon edits are constrained; this is a per-format rule, not a ROM-name UI branch.
+
+水银见闻录按原生记录和可见性规则补齐，完整任务依赖、广播池与所有星期事件仍为
+部分验证。五个 ROM 拉齐 10 项通用金手指，验证范围逐项记录。水银盒子改为原生
+25 个压缩盒子，已有模拟器存取与编辑后再次保存证据；撤回此前 14×80 的错误结论。

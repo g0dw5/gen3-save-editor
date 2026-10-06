@@ -402,8 +402,71 @@ impl Save {
             }
         }
     }
+    fn box_block(&self, block: crate::box_storage::Block) -> Vec<u8> {
+        use crate::box_storage::Block;
+        match block {
+            Block::Trainer => self.logical(0..=0),
+            Block::Main => self.logical(1..=4),
+            Block::Storage => self.logical(5..=13),
+            Block::Extensions => self.extensions(),
+        }
+    }
+    fn write_box_block(&mut self, block: crate::box_storage::Block, data: &[u8]) -> Result<()> {
+        use crate::box_storage::Block;
+        match block {
+            Block::Trainer => self.write_logical(0..=0, data),
+            Block::Main => self.write_logical(1..=4, data),
+            Block::Storage => self.write_logical(5..=13, data),
+            Block::Extensions => self.write_extensions(data),
+        }
+    }
+    pub(crate) fn compact_box(&self, box_index: usize, slot: usize) -> Result<Vec<u8>> {
+        let layout = self
+            .layout
+            .compressed_boxes
+            .ok_or_else(|| err("unsupported_feature", "compressed boxes"))?;
+        let (block, offset) = layout.address(box_index, slot, self.layout.slots)?;
+        Ok(bytes(&self.box_block(block), offset, layout.record_size)?.to_vec())
+    }
+    pub(crate) fn write_compact_box(
+        &mut self,
+        box_index: usize,
+        slot: usize,
+        compact: &[u8],
+    ) -> Result<()> {
+        self.location_offset(Location::Box { box_index, slot })?;
+        let layout = self
+            .layout
+            .compressed_boxes
+            .ok_or_else(|| err("unsupported_feature", "compressed boxes"))?;
+        if compact.len() != layout.record_size {
+            return Err(err("pokemon_size", compact.len()));
+        }
+        let (block, offset) = layout.address(box_index, slot, self.layout.slots)?;
+        let mut data = self.box_block(block);
+        bytes(&data, offset, compact.len())?;
+        data[offset..offset + compact.len()].copy_from_slice(compact);
+        self.write_box_block(block, &data)
+    }
+    /// Normalize storage through its native codec, including ROM-derived PP.
+    pub fn raw_with_rom(&self, loc: Location, rom: &Rom) -> Result<Vec<u8>> {
+        self.location_offset(loc)?;
+        if let (Some(layout), Location::Box { box_index, slot }) =
+            (self.layout.compressed_boxes, loc)
+        {
+            return layout.expand(&self.compact_box(box_index, slot)?, Some(rom));
+        }
+        self.raw(loc)
+    }
+    /// Without a ROM, compact boxes cannot reconstruct current PP or validate
+    /// tera codes. Consumers needing a playable individual use `raw_with_rom`.
     pub fn raw(&self, loc: Location) -> Result<Vec<u8>> {
         let (o, n) = self.location_offset(loc)?;
+        if let (Some(layout), Location::Box { box_index, slot }) =
+            (self.layout.compressed_boxes, loc)
+        {
+            return layout.expand(&self.compact_box(box_index, slot)?, None);
+        }
         match loc {
             Location::Party { slot } => {
                 if slot >= self.party_count() {
@@ -415,7 +478,7 @@ impl Save {
         }
     }
     pub fn pokemon(&self, loc: Location, rom: &Rom) -> Result<Option<Pokemon>> {
-        let raw = self.raw(loc)?;
+        let raw = self.raw_with_rom(loc, rom)?;
         if raw.iter().all(|b| *b == 0) {
             return Ok(None);
         }
@@ -446,10 +509,16 @@ impl Save {
         }
         Ok(Some(p))
     }
-    fn write_raw(&mut self, loc: Location, raw: &[u8]) -> Result<()> {
+    fn write_raw(&mut self, loc: Location, raw: &[u8], rom: &Rom) -> Result<()> {
         let (o, n) = self.location_offset(loc)?;
         if raw.len() != n {
             return Err(err("pokemon_size", raw.len()));
+        }
+        if let (Some(layout), Location::Box { box_index, slot }) =
+            (self.layout.compressed_boxes, loc)
+        {
+            let compact = layout.compact(raw, rom)?;
+            return self.write_compact_box(box_index, slot, &compact);
         }
         match loc {
             Location::Party { .. } => {
@@ -494,6 +563,17 @@ impl Save {
             } else {
                 return Err(err("party_gap", i));
             }
+        }
+        if self.layout.compressed_boxes.is_some() {
+            for box_index in 0..self.layout.boxes {
+                for slot in 0..self.layout.slots {
+                    let location = Location::Box { box_index, slot };
+                    if let Some(pokemon) = self.pokemon(location, rom)? {
+                        out.push(StoredPokemon { location, pokemon });
+                    }
+                }
+            }
+            return Ok(out);
         }
         // Assemble storage once instead of once per slot.
         let storage = self.logical(5..=13);
@@ -561,8 +641,33 @@ impl Save {
         if self.pokemon(loc, rom)?.is_none() {
             return Err(err("empty_slot", format!("{loc:?}")));
         }
-        let (raw, findings) = pokemon::edit(&self.raw(loc)?, patch, rom, policy)?;
-        self.write_raw(loc, &raw)?;
+        let before = self.raw_with_rom(loc, rom)?;
+        let (raw, findings) = pokemon::edit(&before, patch, rom, policy)?;
+        if let (Some(layout), Location::Box { box_index, slot }) =
+            (self.layout.compressed_boxes, loc)
+        {
+            // Native PC records omit current PP, contest condition and ribbons.
+            // Never accept a change that would silently disappear when packed.
+            if raw[62..68] != before[62..68]
+                || raw[76..80] != before[76..80]
+                || layout.expand(&layout.compact(&raw, rom)?, Some(rom))?[52..56] != raw[52..56]
+            {
+                return Err(err(
+                    "compressed_box_field",
+                    "current PP, contest condition or ribbons",
+                ));
+            }
+            let old = self.compact_box(box_index, slot)?;
+            let mut compact = layout.compact(&raw, rom)?;
+            // Tera metadata is outside the edit controls. Preserve its original
+            // code, including reserved values, when changing unrelated fields.
+            if raw[30..32] == before[30..32] {
+                compact[19] = (compact[19] & 7) | (old[19] & 0xf8);
+            }
+            self.write_compact_box(box_index, slot, &compact)?;
+        } else {
+            self.write_raw(loc, &raw, rom)?;
+        }
         Ok(findings)
     }
     pub fn insert(&mut self, loc: Location, raw: &[u8], rom: &Rom) -> Result<()> {
@@ -594,7 +699,7 @@ impl Save {
                 rows.push(pokemon::to_party(raw, rom)?);
                 self.write_party(&rows)
             }
-            Location::Box { .. } => self.write_raw(loc, &raw[..80]),
+            Location::Box { .. } => self.write_raw(loc, &raw[..80], rom),
         }
     }
     pub fn remove(&mut self, loc: Location, rom: &Rom) -> Result<()> {
@@ -622,7 +727,7 @@ impl Save {
                     .collect::<Result<Vec<_>>>()?;
                 self.write_party(&rows)
             }
-            Location::Box { .. } => self.write_raw(loc, &[0; 80]),
+            Location::Box { .. } => self.write_raw(loc, &[0; 80], rom),
         }
     }
     pub fn transfer(&mut self, from: Location, to: Location, copy: bool, rom: &Rom) -> Result<()> {
@@ -644,7 +749,33 @@ impl Save {
         {
             return Err(err("mail_attachment", "transfer"));
         }
-        let raw = self.raw(from)?;
+        if self.layout.compressed_boxes.is_some() {
+            if let (
+                Location::Box {
+                    box_index: a,
+                    slot: x,
+                },
+                Location::Box {
+                    box_index: b,
+                    slot: y,
+                },
+            ) = (from, to)
+            {
+                if copy && target.is_some() {
+                    return Err(err("occupied_slot", format!("{to:?}")));
+                }
+                // Box-to-box actions preserve the physical compact record,
+                // including fields not represented by the editing model.
+                let source = self.compact_box(a, x)?;
+                let target = self.compact_box(b, y)?;
+                self.write_compact_box(b, y, &source)?;
+                if !copy {
+                    self.write_compact_box(a, x, &target)?;
+                }
+                return Ok(());
+            }
+        }
+        let raw = self.raw_with_rom(from, rom)?;
         if copy {
             return self.insert(to, &raw, rom);
         }
@@ -652,7 +783,7 @@ impl Save {
             if !p.checksum_ok {
                 return Err(err("pokemon_checksum", p.species));
             }
-            let other = self.raw(to)?;
+            let other = self.raw_with_rom(to, rom)?;
             let converted = |r: &[u8], loc| {
                 if matches!(loc, Location::Party { .. }) {
                     if r.len() == 100 {
@@ -666,8 +797,8 @@ impl Save {
             };
             let a = converted(&raw, to)?;
             let b = converted(&other, from)?;
-            self.write_raw(from, &b)?;
-            self.write_raw(to, &a)
+            self.write_raw(from, &b, rom)?;
+            self.write_raw(to, &a, rom)
         } else {
             // Check the source before insertion so a failed removal is atomic.
             if matches!(from, Location::Party { .. })
@@ -849,6 +980,23 @@ impl Save {
     pub fn boxes(&self, rom: &Rom) -> Result<Vec<BoxInfo>> {
         let b = self.logical(5..=13);
         let names = 4 + self.layout.boxes * self.layout.slots * 80;
+        if let Some(layout) = self.layout.compressed_boxes {
+            let mut rows = Vec::new();
+            for index in 0..self.layout.boxes {
+                let (name, paper) = layout.metadata(index);
+                let mut count = 0;
+                for slot in 0..self.layout.slots {
+                    count += usize::from(u16(&self.compact_box(index, slot)?, 28)? != 0);
+                }
+                rows.push(BoxInfo {
+                    index,
+                    name: rom.codec.decode(bytes(&b, name, 9)?),
+                    wallpaper: bytes(&b, paper, 1)?[0],
+                    count,
+                });
+            }
+            return Ok(rows);
+        }
         let mut out = Vec::new();
         for i in 0..self.layout.boxes {
             let count = (0..self.layout.slots)
@@ -892,6 +1040,15 @@ impl Save {
             return Err(err("range", "box"));
         }
         let mut b = self.logical(5..=13);
+        if let Some(layout) = self.layout.compressed_boxes {
+            let (offset, paper) = layout.metadata(index);
+            bytes(&b, offset, 9)?;
+            bytes(&b, paper, 1)?;
+            b[offset..offset + 8].copy_from_slice(&rom.codec.encode(name, 8)?);
+            b[offset + 8] = 0xff;
+            b[paper] = wallpaper;
+            return self.write_logical(5..=13, &b);
+        }
         let names = 4 + self.layout.boxes * self.layout.slots * 80;
         b[names + index * 9..names + index * 9 + 8].copy_from_slice(&rom.codec.encode(name, 8)?);
         b[names + index * 9 + 8] = 0xff;
@@ -912,21 +1069,30 @@ impl Save {
                 slot: i,
             };
             if let Some(p) = self.pokemon(loc, rom)? {
-                rows.push((p.species, p.level, self.raw(loc)?));
+                let raw = if self.layout.compressed_boxes.is_some() {
+                    self.compact_box(index, i)?
+                } else {
+                    self.raw_with_rom(loc, rom)?
+                };
+                rows.push((p.species, p.level, raw));
             }
         }
         rows.sort_by_key(|r| (r.0, r.1));
         for i in 0..self.layout.slots {
-            let raw = rows
-                .get(i)
-                .map(|r| r.2.clone())
-                .unwrap_or_else(|| vec![0; 80]);
+            let raw = rows.get(i).map(|r| r.2.clone()).unwrap_or_else(|| {
+                vec![0; self.layout.compressed_boxes.map_or(80, |l| l.record_size)]
+            });
+            if self.layout.compressed_boxes.is_some() {
+                self.write_compact_box(index, i, &raw)?;
+                continue;
+            }
             self.write_raw(
                 Location::Box {
                     box_index: index,
                     slot: i,
                 },
                 &raw,
+                rom,
             )?;
         }
         Ok(())

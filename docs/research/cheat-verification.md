@@ -1,5 +1,12 @@
 # Cheat verification / 金手指验证
 
+Current increment (2026-10-06): all five exact ROMs have ten common recipes.
+The historical rejection of a **single-site** BW/DP daycare patch below remains
+correct; the new two-site implementation also suppresses the flat charm bonus,
+so incompatible pairs stay at zero. Mercury native bindings/PC storage and
+cross-ROM verification are recorded [here](../verification/mercury-cheats-storage-20261006.md).
+
+
 ## Native Protect flag / 己方持续守住
 
 Verified 2026-09-26 with the four exact ROM MD5s in [the user guide](../cheats.md).

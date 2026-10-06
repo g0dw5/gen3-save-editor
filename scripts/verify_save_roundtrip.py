@@ -83,6 +83,27 @@ def loaded_storage(probe, save, snapshot, layout, ram):
     assert (
         probe.read(pointer, len(expected)) == expected
     ), "native box storage bytes differ"
+    if layout.get("compressed_boxes"):
+        data = save.read_bytes()
+        # Compare every native box pointer, including RAM outside storage.
+        # The table is the game's actual GetCompressedMonPtr input, not an
+        # independently invented contiguous 80-byte layout.
+        pointers = struct.unpack("<25I", probe.read(0x09DDEB68, 100))
+        blocks = {"Trainer": logical(data, snapshot, layout, [0]),
+                  "Main": logical(data, snapshot, layout, range(1, 5)),
+                  "Storage": expected}
+        start = snapshot["active_slot"] * 14 * 4096
+        sections = {struct.unpack_from("<H", data, start+i*4096+0xff4)[0]: start+i*4096 for i in range(14)}
+        extensions = b"".join(data[sections[i]+size:sections[i]+0xff0] for i,size in enumerate(layout["sizes"]))
+        extensions += b"".join(data[i*4096:i*4096+0xff0] for i in layout["extension_sectors"])
+        blocks["Extensions"] = extensions
+        compact = layout["compressed_boxes"]
+        assert compact["record_size"] == 58
+        for region in compact["regions"]:
+            for i in range(region["count"]):
+                box = region["first"] + i
+                offset = region["offset"] + i * 30 * 58
+                assert probe.read(pointers[box], 30*58) == blocks[region["block"]][offset:offset+30*58], f"native compact box {box+1} differs"
 
 
 def loaded_inventory(probe, snapshot, layout, key):

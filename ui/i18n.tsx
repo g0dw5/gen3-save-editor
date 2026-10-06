@@ -436,12 +436,12 @@ export const en = {
   cheatsSpecies: "Pokémon (ROM name / ID search)",
   cheatsRegion: "Region",
   cheatsMap: "Map / location code",
-  cheatsLanding: "Landing (warp ID / tile)",
+  cheatsLanding: "Entrance",
   cheatsNoLanding: "No eligible landing",
   cheatsMapCode: "Hex: map group / map number",
   cheatsLandingHelp:
     "Read from the current ROM. Only referenced, in-bounds warp tiles are offered; story access is not guaranteed. Disable teleport immediately after arrival.",
-  cheatsCount: "{n} verified features",
+  cheatsCount: "{n} features",
   cheatsLineCount: "{n} code lines · enable the complete set",
   cheatsCategory_battle: "Battle",
   cheatsCategory_encounters: "Encounters and exploration",
@@ -451,8 +451,10 @@ export const en = {
   cheat_context_mismatch: "The opened ROM changed. Reopen its cheat panel.",
   cheatsTitle: "Cheats",
   cheatsOpenPrompt: "Could not load cheats for the opened ROM",
-  cheatsReadOnly:
-    "Read-only · no save required · does not activate codes or write files",
+  cheatsReadOnly: "Copy codes into your emulator to use them.",
+  cheatsHelp: "Before using cheats",
+  cheatsHelpBody:
+    "Back up your SAV. Use the matching ROM and listed code format, and enable every line together. Tested on mGBA; other emulators may differ. Disable and restart to restore ROM-memory cheats.",
   cheatsNone: "No verified cheats for this ROM yet",
   cheatsNoneHelp:
     "No recipes are available for the opened ROM. Open another supported ROM from the main toolbar to view its own codes.",
@@ -657,6 +659,12 @@ export const en = {
     "Type and power depend on the Pokémon’s IVs. Check an individual’s Stats or Moves tab for its actual values.",
   currentPp: "Current PP",
   maximumPp: "Maximum PP",
+  compressedBoxHelp:
+    "This game does not store contest condition or ribbons in boxes. Edit these in the party.",
+  compressedPpHelp:
+    "Boxes store moves and PP Ups; withdrawing restores maximum PP.",
+  compressed_box_field:
+    "This game does not store current PP, contest condition or ribbons in boxes. Edit these in the party.",
   ppStorageHelp:
     "Party and boxes both store current PP and 0–3 PP Ups per move. Maximum PP is calculated. Changing the move or PP Ups restores its PP.",
   publicTrainerId: "Trainer ID (TID)",
@@ -1534,12 +1542,12 @@ export const zh: Record<Key, string> = {
   cheatsSpecies: "宝可梦（本 ROM 名称／编号搜索）",
   cheatsRegion: "区域",
   cheatsMap: "具体地图／地点编码",
-  cheatsLanding: "落点（入口编号／格位）",
+  cheatsLanding: "入口",
   cheatsNoLanding: "无可用入口落点",
   cheatsMapCode: "十六进制：地图组／地图号",
   cheatsLandingHelp:
     "列表取自当前 ROM。仅提供有门／洞口引用的有效格位，不代表当前剧情已解锁。抵达后立即停用传送代码。",
-  cheatsCount: "{n} 个已验证功能",
+  cheatsCount: "{n} 个功能",
   cheatsLineCount: "{n} 行代码 · 请整组启用",
   cheatsCategory_battle: "对战",
   cheatsCategory_encounters: "遇敌与探索",
@@ -1549,7 +1557,10 @@ export const zh: Record<Key, string> = {
   cheat_context_mismatch: "当前打开的 ROM 已改变，请重新打开它的金手指页面。",
   cheatsTitle: "金手指",
   cheatsOpenPrompt: "无法载入当前 ROM 的金手指",
-  cheatsReadOnly: "只读工具 · 无需存档 · 不会启用代码或写入文件",
+  cheatsReadOnly: "复制代码，在模拟器中启用。",
+  cheatsHelp: "使用前须知",
+  cheatsHelpBody:
+    "先备份存档。确认 ROM 版本与代码格式，整组启用。已用 mGBA 测试，其他模拟器可能有差异。停用并重启可恢复 ROM 内存类金手指。",
   cheatsNone: "此 ROM 暂无已验证的金手指",
   cheatsNoneHelp:
     "当前 ROM 暂无可用代码。需要查看其他版本时，请从主界面打开对应 ROM。",
@@ -1743,6 +1754,9 @@ export const zh: Record<Key, string> = {
     "属性和威力取决于使用者的个体值，可在具体宝可梦的能力或招式页查看实际结果。",
   currentPp: "当前 PP",
   maximumPp: "最大 PP",
+  compressedBoxHelp: "本作入箱后不保存华丽值与缎带；可在同行中编辑。",
+  compressedPpHelp: "本作盒子只保存招式和 PP 提升次数，取出时恢复为最大 PP。",
+  compressed_box_field: "本作盒子不保存当前 PP、华丽值或缎带，请在同行中修改。",
   ppStorageHelp:
     "同行和盒子都保存当前 PP 与 0–3 次提升次数；最大 PP 由此计算。更换招式或调整提升次数会回满该招式的 PP。",
   publicTrainerId: "公开 ID（TID）",

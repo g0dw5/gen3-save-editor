@@ -94,8 +94,10 @@ class Probe:
         self.data = path.read_bytes()
         assert hashlib.md5(self.data).hexdigest() == self.p["md5"]
         cli = os.environ["GEN3_BIN"]
+        keys = list(self.p["patches"])
+        if BREED not in keys: keys.append(BREED)
         self.codes = {key: json.loads(subprocess.check_output(
-            [cli, "cheat-code", str(path), key, "gameshark_v1_v2"]))["lines"] for key in self.p["patches"]}
+            [cli, "cheat-code", str(path), key, "gameshark_v1_v2"]))["lines"] for key in keys}
         catalog = json.loads(subprocess.check_output([cli, "cheats", str(path)]))
         assert set(self.codes).issubset({e["id"] for e in catalog["entries"]})
         assert self.c.start(str(path).encode())
@@ -306,8 +308,6 @@ class Probe:
         return dict(seeds=32, map=list(rec[:2]), unpatched=counts[0], patched=counts[1])
 
     def breed(self):
-        if not self.rocket:
-            return {"published": False, "reason": "Different Oval Charm semantics; no compatible-pair guarantee."}
         p, d = self.p, 0x202A000 + self.p["day"]
         results = []
         for charm in (False, True):
@@ -317,27 +317,39 @@ class Probe:
                     produced = 0
                     for seed in range(32):
                         self.init()
-                        first = mon(True, species=150 if case == "incompatible" else 25, pid=0)[:80]
-                        second = mon(True, species=150 if case == "incompatible" else 25, pid=255)[:80]
+                        first = self.mon(self.rocket, species=150 if case == "incompatible" else 25, pid=0)[:80]
+                        second = self.mon(self.rocket, species=150 if case == "incompatible" else 25, pid=255)[:80]
                         self.write(d, first)
                         if case != "empty":
                             self.write(d + 140, second)
                         if charm:
                             self.charm()
                         self.put(d + 0x114, 0 if case == "early" else 254)
-                        self.put(d + 0x118, 12345 if case == "pending" else 0)
+                        self.put(d + 0x118, 12345 if case == "pending" else 0, p.get("egg_width", 4))
+                        if "egg_flag" in p and case == "pending":
+                            self.call(p["flag_set"], p["egg_flag"])
                         self.put(p["rng"], (seed * 0x9E3779B9) & 0xFFFFFFFF)
                         if on:
                             self.enable(BREED)
                         self.call(p["hatch"])
-                        pending = self.get(d + 0x118)
+                        pending = self.get(d + 0x118, p.get("egg_width", 4))
+                        if "egg_flag" in p:
+                            # Mercury defers offspring generation until collection.
+                            # The native egg-ready routine sets this flag, not a PID.
+                            ready = self.call(p["flag_get"], p["egg_flag"])
+                            assert pending == (12345 if case == "pending" else 0)
+                            pending = (pending or 1) if ready else 0
                         assert self.read(d, 80) == first
                         if case != "empty":
                             assert self.read(d + 140, 80) == second
                         if case == "pending":
                             assert pending == 12345
                         elif case != "compatible":
-                            assert pending == 0, (charm, case, seed)
+                            # BW/DP's original charm can add 20 to zero compatibility.
+                            # The published guarantee also guards this native fallback.
+                            native_fallback = not on and charm and case == "incompatible" and self.p['md5'] in (PROFILES['BW']['md5'], PROFILES['DP']['md5'])
+                            if not native_fallback:
+                                assert pending == 0, (charm, case, seed, on)
                         produced += bool(pending)
                     counts.append(produced)
                 if case == "compatible":

@@ -4,6 +4,7 @@ pub mod adapter;
 pub mod adventure;
 pub mod app;
 pub mod binary;
+pub mod box_storage;
 pub mod breeding;
 pub mod breeding_production;
 pub mod cheats;

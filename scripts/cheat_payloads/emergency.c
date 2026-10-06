@@ -5,7 +5,26 @@
 #define REG8(a) (*(volatile uint8_t *)(uintptr_t)(a))
 #define REG16(a) (*(volatile uint16_t *)(uintptr_t)(a))
 #define REG32(a) (*(volatile uint32_t *)(uintptr_t)(a))
-#ifdef GEN3_EMERGENCY_ROCKET
+#ifdef GEN3_EMERGENCY_MERCURY
+#define PARTY_FLAGS 0x02022B4Cu
+#define MAIN_HELD 0x0300311Cu
+#define MAIN_NEW 0x0300311Eu
+#define BATTLE_MON 0x02023BE4u
+#define BATTLE_COUNT 0x02023BCCu
+#define HEALTHBOX_IDS 0x03004FF0u
+#define PARTY_INDEXES 0x02023BCEu
+#define PLAYER_PARTY 0x02024284u
+#define UPDATE_HEALTHBOX 0x08049D99u
+#define BATTLE_FN 0x03004F84u
+#define HEAL_PARTY 0x080A0059u
+#define GET_MON_DATA 0x0803FBE9u
+#define COMMAND_PHASE 0x08014041u
+#define MON_STRIDE 0x58u
+#define MON_HP 0x28u
+#define MON_MAX_HP 0x2Cu
+#define MON_STATUS 0x4Cu
+#define MON_PP 0x24u
+#elif defined(GEN3_EMERGENCY_ROCKET)
 #define PARTY_FLAGS 0x02024BB8u
 #define MAIN_HELD 0x0300330Cu
 #define MAIN_NEW 0x0300330Eu
@@ -70,7 +89,7 @@ __attribute__((section(".payload"),used,noinline)) void emergency(void) {
                 *(volatile uint16_t *)(mon + MON_HP) = *(volatile uint16_t *)(mon + MON_MAX_HP);
                 *(volatile uint32_t *)(mon + MON_STATUS) = 0;
                 unsigned slot = REG16(PARTY_INDEXES + b * 2u);
-#ifdef GEN3_EMERGENCY_ROCKET
+#if defined(GEN3_EMERGENCY_ROCKET) || defined(GEN3_EMERGENCY_MERCURY)
                 for (unsigned m = 0; m < 4; ++m)
                     mon[MON_PP + m] = ((uint32_t (*)(void *, uint32_t, void *))GET_MON_DATA)(
                         (void *)(uintptr_t)(PLAYER_PARTY + slot * 100u), 17u + m, 0);

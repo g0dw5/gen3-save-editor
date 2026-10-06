@@ -164,7 +164,7 @@ fn parent_raw(rom: &Rom, save: Option<&Save>, parent: &Parent) -> Result<Vec<u8>
         )?,
         Parent::Stored { location } => save
             .ok_or_else(|| err("save_required", "breeding parent"))?
-            .raw(*location)?,
+            .raw_with_rom(*location, rom)?,
         Parent::Simulated {
             species,
             gender,

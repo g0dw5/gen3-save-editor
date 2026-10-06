@@ -10,6 +10,16 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Align ten common cheat features across all five exact ROMs, adding Mercury 1.2
+  bindings and compatible daycare eggs for BW/DP/Ultimate. Shorten player help.
+- 五个精确 ROM 拉齐 10 项通用金手指；补齐水银 1.2 与漆黑 BW／DP、究绿的兼容
+  产蛋代码，精简玩家使用说明。
+- Correct Mercury's 25 compact PC boxes and preserve physical records in box
+  moves/swaps. Limit edits of fields the game does not store in its boxes.
+  Exclude CFRU battle-form reversion records from transformation/evolution links.
+- 修正水银 25 个压缩盒子的存档读写，盒内移动／交换保留原始个体记录；限制修改
+  本作盒子不保存的字段。CFRU 战斗形态还原记录不再误列为新的变身或进化关系。
+
 - Add Mercury 1.2's ROM-native quest journal to the separate Adventure guide:
   searchable titles/objectives, accepted/completed state, current pages and map
   links. Keep later pages collapsed and unresolved dependencies explicit.

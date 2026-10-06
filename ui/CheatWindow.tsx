@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Copy, Download, Search, ShieldCheck } from "lucide-react";
+import { Copy, Download, Search } from "lucide-react";
 import { api, download } from "./api";
 import { SearchSelect } from "./SearchSelect";
 import { Floating } from "./components";
@@ -162,10 +162,16 @@ export function CheatWindow({
       `MD5: ${catalog.rom.md5}`,
       txt(entry.title),
       ...(code.parameters
-        ? [parameterDescription(code.parameters, catalog.options)]
+        ? [
+            parameterDescription(
+              code.parameters,
+              catalog.options,
+              t("cheatsLanding"),
+            ),
+          ]
         : []),
       formatLabel(code.format),
-      txt(entry.scope),
+      t("cheatsHelpBody"),
       lines,
       ...entry.steps.map((s, i) => `${i + 1}. ${txt(s)}`),
       ...entry.limitations.map(txt),
@@ -183,7 +189,11 @@ export function CheatWindow({
           <div>
             <strong>{catalog?.rom.label || t("cheatsOpenPrompt")}</strong>
             <p>{t("cheatsReadOnly")}</p>
-            {catalog && <code>MD5 · {catalog.rom.md5}</code>}
+            <details className="reference-help">
+              <summary>{t("cheatsHelp")}</summary>
+              <p>{t("cheatsHelpBody")}</p>
+              {catalog && <code>MD5 · {catalog.rom.md5}</code>}
+            </details>
           </div>
         </div>
         {error && (
@@ -248,10 +258,6 @@ export function CheatWindow({
                     <span>
                       {t(`cheatsCategory_${item.category || "battle"}`)}
                     </span>
-                    <span>
-                      <ShieldCheck size={13} />
-                      {t("cheatsVerified")}
-                    </span>
                   </button>
                 ))}
               {!catalog.entries.some((item) =>
@@ -267,7 +273,6 @@ export function CheatWindow({
               >
                 <h2>{txt(entry.title)}</h2>
                 <p>{txt(entry.summary)}</p>
-                <p className="cheats-scope">{txt(entry.scope)}</p>
                 {entry.parameters && catalog.options && (
                   <ParameterPicker
                     key={`${catalog.rom.md5}:${entry.id}`}
@@ -344,12 +349,16 @@ export function CheatWindow({
   );
 }
 
-function parameterDescription(value: Parameters, options?: Options) {
+function parameterDescription(
+  value: Parameters,
+  options: Options | undefined,
+  landing: string,
+) {
   if (value.kind === "encounter")
     return `#${value.species} ${options?.species.find((s) => s.id === value.species)?.name || ""} · Lv. ${value.level}`;
   const m = options?.maps.find((m) => m.id === value.map_id);
   const w = m?.landings.find((w) => w.id === value.warp_id);
-  return `${m?.name || ""} · ${value.map_id} · ${m?.code || ""} · warp ${value.warp_id} (${w?.x}, ${w?.y})`;
+  return `${m?.name || ""} · ${value.map_id} · ${m?.code || ""} · ${landing} ${value.warp_id} (${w?.x}, ${w?.y})`;
 }
 function ParameterPicker({
   kind,

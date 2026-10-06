@@ -13,7 +13,7 @@ workspace. Core regression tests
 run against generated fixtures and optionally your exact ROMs. See
 [verification and remaining work](docs/IMPLEMENTATION.md) before using a build.
 Mercury FC 1.2 ROM reference and save editing are available on the development
-branch. Historical Pokédex reads use its verified split banks; Pokédex writing stays disabled. Its cheat catalog remains under study.
+branch. Historical Pokédex reads use its verified split banks; Pokédex writing stays disabled. Its ten common cheat features are available.
 
 ## ROM reference
 
@@ -31,24 +31,13 @@ The separate Adventure guide links runtime NPC rewards, dialogue and prerequisit
 
 ## Cheat codes
 
-Open an exact-match ROM first, then use **Cheats** in the toolbar; no save is
-required. The cheat window uses the currently open ROM. One verified recipe
-disables AI input peeking in all modes of
-Ultimate Emerald 5.5, exact MD5 `17ce9785b33319b3dbda9a5d37c57ec1`.
-Ultimate Emerald also supports ROM reference and save editing; see its
-[adapter notes and verification boundaries](docs/research/ultimate-emerald-55.md).
-All four ROMs include a portable Pokémon PC, walking-encounter suppression, guaranteed
-wild capture, faster egg hatching, species/level selection, shiny wild encounters
-and map teleport with a Region → Map selector and ROM-derived landing tiles.
-Team Rocket also has guaranteed daycare eggs
-for compatible parents at the normal checkpoint. Availability is fingerprint-scoped;
-all added recipes have native mGBA regression tests.
-All four ROMs have exact-fingerprint command-menu emergency party recovery codes:
-press L+R+SELECT to heal and revive without spending an item turn. Each complete
-code group requires an emulator that applies and removes patches live.
-They also support a four-line CodeBreaker recipe for persistent player-side
-Protect, preserving other battle flags and the ROM's native Protect exceptions.
-See [usage, formats, limitations and developer tests](docs/cheats.md).
+Open the matching ROM, then **Cheats** in the toolbar; no save is required.
+All five ROMs share ten features: pause walking encounters, guaranteed eligible
+capture, faster hatching, compatible daycare eggs, portable PC, specified wild
+species/level, shiny ordinary wild Pokémon, teleport, emergency party recovery
+and persistent Protect. Ultimate Emerald adds all-mode no-peeking and difficulty
+accuracy correction. Codes are generated for the exact currently opened ROM.
+See the concise [usage and format guide](docs/cheats.md).
 
 ## Supported inputs
 
@@ -67,8 +56,10 @@ and exports apply only to save files.
 
 Five exact-ROM 128 KiB fixtures now pass normal-key mGBA edit → game Save →
 reboot checks for tested IV/EV/marking and inventory changes. First-four fixtures
-also cover batch edits and existing party/box moves/swaps; Mercury's current
-fixture has no occupied box. This is bounded persistence evidence, not a claim
+also cover batch edits and existing party/box moves/swaps. Mercury additionally
+passes populated compact-box IV/EV/batch/move/swap tests across all storage
+regions; see the [25-box verification](docs/verification/mercury-cheats-storage-20261006.md).
+This is bounded persistence evidence, not a claim
 about all edits, RTC trailers, emulators or gameplay equivalence. See the
 [native round-trip record](docs/verification/save-roundtrip-20261006.md).
 
@@ -81,7 +72,7 @@ See [coverage, verification and extension rules](docs/multi-rom-adapters.md).
 
 - Individual sprites use PID-derived Unown letters and Spinda spots, with normal
   and shiny palettes read from the ROM. See [appearance verification](docs/research/pokemon-appearance.md).
-- Keep the party and all 14 boxes visible; switch compact/comfortable density or
+- Keep the party and all boxes visible (25 in Mercury, 14 in the other games); switch compact/comfortable density or
   hide the inspector. Search dims nonmatches without moving storage coordinates.
 - Edit identity, nature/shiny/gender, level/experience, IVs/EVs, moves/PP, abilities,
   held items, origin, eggs, Pokérus, ribbons and contest values/fullness.

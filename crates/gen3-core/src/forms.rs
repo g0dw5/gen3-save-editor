@@ -122,9 +122,19 @@ impl Rom {
                 let target = u16(&self.data, offset + 4)?;
                 self.valid_species(target)?;
                 let parameter = u16(&self.data, offset + 2)?;
+                // CFRU stores reversal records in the same evolution table.
+                // Their zero parameter returns a battle form to its base species;
+                // exposing that as another transformation misclassifies the base.
+                if matches!(rules, BattleFormRules::CfruEvolutionMethods) && parameter == 0 {
+                    continue;
+                }
+                let variant = u16(&self.data, offset + 6)?;
                 let trigger = if matches!(rules, BattleFormRules::CfruEvolutionMethods) {
-                    if method == 0xfd || parameter == 0 {
+                    if method == 0xfd {
                         BattleTrigger::BattleCommand(method)
+                    } else if variant == 2 {
+                        self.move_info(parameter)?;
+                        BattleTrigger::KnownMove(parameter)
                     } else {
                         self.item(parameter)?;
                         BattleTrigger::HeldItem(parameter)
@@ -149,6 +159,12 @@ impl Rom {
                         BattleFormKind::Gigantamax
                     } else if method == 250 {
                         BattleFormKind::Transformation
+                    } else if matches!(rules, BattleFormRules::CfruEvolutionMethods) && variant == 3
+                    {
+                        BattleFormKind::Transformation
+                    } else if matches!(rules, BattleFormRules::CfruEvolutionMethods) && variant == 1
+                    {
+                        BattleFormKind::Primal
                     } else if matches!(method, 0xfffd | 253) {
                         BattleFormKind::Primal
                     } else {
