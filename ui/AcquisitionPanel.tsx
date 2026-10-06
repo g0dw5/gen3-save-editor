@@ -1,3 +1,4 @@
+import { StaticBattleDetails } from "./StaticBattleDetails";
 import { acquisitionKindName, encounterPeriodName } from "./acquisitionLabels";
 import { BreedingPanel } from "./BreedingPanel";
 import { WildHeldDetails } from "./WildHeldDetails";
@@ -185,6 +186,11 @@ export function AcquisitionPanel({
               {s.script_source && (
                 <p className="small muted">{t("acqScriptSourceHelp")}</p>
               )}
+              <StaticBattleDetails
+                mon={s.script_source}
+                catalog={catalog}
+                onTarget={onTarget}
+              />
               <TradeDetails
                 mon={s.script_source}
                 context={s.trade_context}

@@ -1,3 +1,4 @@
+import { StaticBattleDetails } from "./StaticBattleDetails";
 import { ConditionDetails } from "./ConditionDetails";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -436,6 +437,18 @@ export function MapExplorer({
                     : mon.trade
                       ? ""
                       : ` · ${t("unresolved")}`}
+                  {marker.pokemon.findIndex((p) => p.offset === mon.offset) ===
+                    i && (
+                    <StaticBattleDetails
+                      mon={mon}
+                      catalog={catalog}
+                      onTarget={(target) =>
+                        target.kind === "species"
+                          ? onSpecies?.(target.id)
+                          : onItem?.(target.id)
+                      }
+                    />
+                  )}
                   <TradeDetails
                     mon={mon}
                     catalog={catalog}

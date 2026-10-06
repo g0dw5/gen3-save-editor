@@ -249,6 +249,11 @@ fn contest_matches_native_feeding_and_npc_bounds() {
 /// Synthetic labels deliberately differ from every supported game's names.
 fn label_fixture(b: &mut [u8], p: profile::Profile) {
     if let Some(rules) = p.event_state.and_then(|r| r.effects) {
+        put32(
+            b,
+            rules.commands + 0xb6 * 4,
+            0x08000001 + p.script_pokemon.wild_handler as u32,
+        );
         for (opcode, handler) in [8, 9, 3, 0x66, 0x67, 0x6e, 0x28, 0x68]
             .into_iter()
             .zip(rules.presentation_handlers)
@@ -11297,4 +11302,240 @@ fn local_script_movement_operands_match_native_dispatch_and_lifecycle() {
         );
     }
     assert_eq!(cases, 640);
+}
+
+#[test]
+fn paired_fixed_encounters_keep_both_members_unknown_inputs_and_query_links() {
+    use crate::{
+        acquisition::{AcquisitionIndex, Target, TargetKind},
+        script_pokemon::WildCommand,
+    };
+    for p in profile::PROFILES {
+        let (mut r, map) = npc_trade_fixture(p);
+        let pc = 0x26000;
+        let b = std::sync::Arc::make_mut(&mut r.data);
+        b[pc..pc + 24].fill(0);
+        b[pc] = 0xb6;
+        let double = !matches!(p.script_pokemon.wild, WildCommand::Literal);
+        let offsets = if matches!(p.script_pokemon.wild, WildCommand::MercuryDouble) {
+            put16(b, pc + 1, 0xffff);
+            [7, 13]
+        } else {
+            [1, 6]
+        };
+        for (i, off) in offsets.into_iter().enumerate() {
+            put16(b, pc + off, (i + 1) as u16);
+            b[pc + off + 2] = (20 + i) as u8;
+            put16(b, pc + off + 3, (i + 1) as u16);
+        }
+        let len = r.wild_command_length(pc).unwrap();
+        std::sync::Arc::make_mut(&mut r.data)[pc + len] = 2;
+        let original = r.data.clone();
+        let report = r.map_events(&map).unwrap();
+        assert_eq!(report.markers[0].pokemon.len(), if double { 2 } else { 1 });
+        let index = AcquisitionIndex {
+            wild_cache: Default::default(),
+            breeding_cache: Default::default(),
+            world: crate::world::World {
+                maps: vec![map],
+                map_events: vec![report],
+                encounters: vec![],
+                trainers: vec![],
+                trainer_locations: crate::world::TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: (1..=3).map(|id| r.valid_species(id).unwrap()).collect(),
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        for id in 1..=if double { 2 } else { 1 } {
+            let query = index
+                .query(
+                    &r,
+                    None,
+                    Target {
+                        kind: TargetKind::Species,
+                        id,
+                    },
+                )
+                .unwrap();
+            let s = query.sources.iter().find(|s| s.kind == "static").unwrap();
+            assert_eq!(
+                (s.map_id.as_deref(), s.x, s.y, s.min_level),
+                (Some("0-0"), Some(3), Some(2), Some(19 + id as u8))
+            );
+            assert!(
+                s.partial
+                    && s.status == "unknown"
+                    && s.encounter_percent.is_none()
+                    && s.receipt_flag.is_none()
+            );
+            if double {
+                let group = &s.script_source.as_ref().unwrap().battle_members;
+                assert_eq!(group.len(), 2);
+                assert_eq!(group[1].species, Some(2));
+                assert!(s
+                    .related
+                    .iter()
+                    .any(|t| t.kind == TargetKind::Species && t.id == 3 - id));
+            } else {
+                assert!(s.script_source.as_ref().unwrap().battle_members.is_empty());
+            }
+        }
+        assert_eq!(r.data, original);
+        if double {
+            // An unresolved Mercury variable must retain its unknown partner,
+            // not fabricate a species. Rocket reads the same operand literally.
+            put16(
+                std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+                pc + offsets[1],
+                0x8005,
+            );
+            let sources = r
+                .script_pokemon_instruction(pc, |v| (v < 0x4000).then_some(v))
+                .unwrap();
+            assert_eq!(sources.len(), 1);
+            assert_eq!(sources[0].battle_members[1].species, None);
+            // Two identical species are distinct opponents, not duplicate rows.
+            put16(
+                std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+                pc + offsets[1],
+                1,
+            );
+            let sources = r.script_pokemon_instruction(pc, Some).unwrap();
+            assert_eq!(sources.len(), 2);
+            assert_eq!((sources[0].member, sources[1].member), (0, 1));
+        }
+        let rules = p.event_state.unwrap().effects.unwrap();
+        put32(
+            std::sync::Arc::make_mut(&mut r.data).as_mut_slice(),
+            rules.commands + 0xb6 * 4,
+            0x08000001,
+        );
+        assert_eq!(
+            r.wild_command_length(pc).unwrap_err().code,
+            "script_wild_dispatch"
+        );
+    }
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_STATIC_BATTLE_PROBES native vectors"]
+fn local_static_battle_sources_match_complete_native_setup() {
+    use crate::binary::u16;
+    let probes: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_STATIC_BATTLE_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    let mut total = 0;
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let original =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        assert_eq!(probes[key]["md5"], original.profile.md5);
+        assert_eq!(
+            probes[key]["handler"].as_u64().unwrap() as usize,
+            original.profile.script_pokemon.wild_handler
+        );
+        for row in probes[key]["rows"].as_array().unwrap() {
+            let mut r = original.clone();
+            let pc = 0x26000;
+            let operands: Vec<u8> = row["operands"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_u64().unwrap() as u8)
+                .collect();
+            let b = std::sync::Arc::make_mut(&mut r.data);
+            b[pc] = 0xb6;
+            b[pc + 1..pc + 1 + operands.len()].copy_from_slice(&operands);
+            let resolve = |v| match v {
+                0x8004 => Some(row["resolved"][0].as_u64().unwrap() as u16),
+                0x8005 => Some(row["resolved"][1].as_u64().unwrap() as u16),
+                v if v < 0x4000 => Some(v),
+                _ => None,
+            };
+            assert_eq!(
+                r.wild_command_length(pc).unwrap(),
+                row["consumed"].as_u64().unwrap() as usize + 1
+            );
+            let sources = r.script_pokemon_instruction(pc, resolve).unwrap();
+            let native = row["mons"].as_array().unwrap();
+            assert_eq!(sources.len(), native.len());
+            for (i, (source, mon)) in sources.iter().zip(native).enumerate() {
+                assert_eq!(
+                    (
+                        source.species,
+                        source.level,
+                        source.held_item,
+                        source.member
+                    ),
+                    (
+                        mon["species"].as_u64().unwrap() as u16,
+                        Some(mon["level"].as_u64().unwrap() as u8),
+                        Some(mon["held_item"].as_u64().unwrap() as u16),
+                        i as u8
+                    )
+                );
+                assert_eq!(
+                    source.battle_members.len(),
+                    if native.len() == 2 { 2 } else { 0 }
+                );
+                if native.len() == 2 {
+                    for (member, native) in source.battle_members.iter().zip(native) {
+                        assert_eq!(
+                            (member.species, member.level, member.held_item),
+                            (
+                                Some(native["species"].as_u64().unwrap() as u16),
+                                Some(native["level"].as_u64().unwrap() as u8),
+                                Some(native["held_item"].as_u64().unwrap() as u16)
+                            )
+                        );
+                    }
+                }
+            }
+            assert_eq!(u16(&r.data, pc + 1).unwrap(), u16(&operands, 0).unwrap());
+            total += 1;
+        }
+        let index = crate::acquisition::AcquisitionIndex::build(&original).unwrap();
+        let mons: Vec<_> = index
+            .world
+            .map_events
+            .iter()
+            .flat_map(|r| {
+                r.markers
+                    .iter()
+                    .flat_map(|m| &m.pokemon)
+                    .chain(&r.unplaced_pokemon)
+            })
+            .collect();
+        let paired: Vec<_> = mons
+            .iter()
+            .filter(|s| !s.battle_members.is_empty())
+            .collect();
+        for source in &paired {
+            let query = index
+                .query(
+                    &original,
+                    None,
+                    crate::acquisition::Target {
+                        kind: crate::acquisition::TargetKind::Species,
+                        id: source.species,
+                    },
+                )
+                .unwrap();
+            assert!(query
+                .sources
+                .iter()
+                .any(|s| s.script_source.as_ref() == Some(*source)));
+        }
+        eprintln!(
+            "{key}: {} referenced paired member rows; source queries retain group",
+            paired.len()
+        );
+    }
+    assert_eq!(total, 486);
 }

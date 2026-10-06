@@ -703,3 +703,15 @@ passages. Command references and operand reads are **V within this boundary**;
 actual motion, arbitrary action-body effects, collisions, entry and current
 reachability remain **P/U**. Conservative dataflow and receipt-proof boundaries
 remain in force. No source SAV/ROM edits, version bump, packaging or release.
+
+
+## Fixed-encounter member parity / 定点相遇成员对照
+
+[Native setup evidence](verification/static-battles-20261006.md) covers **486**
+complete calls across all five exact fingerprints. Rocket's second member and
+Mercury's paired context share source/map/collection/HTML presentation; literal,
+variable and sentinel differences remain adapter-scoped. Species/level/held
+fields and widths are verified within isolated setup, while capture permissions,
+startup and actual access stay **P/U**. The bounded current map survey has zero
+paired member rows in all five inputs; a supported native constructor is not a
+located encounter, and this does not prove absence. No source files are modified.

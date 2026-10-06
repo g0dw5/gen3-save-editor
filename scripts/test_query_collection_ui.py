@@ -46,6 +46,9 @@ def main():
     task['preparation'] = dict(origin=2,current_count=0,source=capture,steps=[{'from':2,'evolution':evolution,'related':[dict(kind='item',id=1)]}],needs_hatching=False,truncated=False,partial=True)
     plan = dict(rom_md5='test',basis='individuals',families=True,owned_count=1,missing_count=1,regions=[dict(region=1,tasks=[task])],entrances=[dict(map_id='0-1',chains=[[edge]],truncated=False)],partial=True)
     plan['prerequisites']=dict(reports=[report],entrances=[dict(map_id='0-1',chains=[[edge]],truncated=False)],skipped_conditions=1,truncated=True,partial=True)
+    pair_mon=dict(species=2,level=21,held_item=1,method='static',offset=600,member=1,conditions=[],trade=None,battle_members=[dict(member=0,species=1,level=20,held_item=0),dict(member=1,species=2,level=21,held_item=1)])
+    pair_source=dict(source,kind='static',quantity=None,min_level=21,max_level=21,underfoot=None,conditions=[],script_source=pair_mon,related=[dict(kind='species',id=1)],offset=600)
+    plan['regions'][0]['tasks'].append(dict(task,target=dict(kind='species',id=2),family=[],preparation=None,source=pair_source))
     errors, requests = [], []
     def respond(route):
         req = route.request.post_data_json
@@ -193,6 +196,8 @@ def main():
         html=Path(info.value.path()).read_text()
         assert '&lt;script&gt;alert(1)&lt;/script&gt;' in html
         assert '<script>' not in html and 'default-src' in html
+        assert 'Two opponents in this encounter' in html and 'ROM parent · Lv. 21' in html
+        assert 'Capture permissions and battle-start conditions remain unverified' in html
         assert 'Stand on this tile and use the Itemfinder' in html
         assert 'Test region entrance (2, 1)' in html and 'Test cave floor' in html
         assert 'Find prerequisite clues' in html and 'prerequisite-flag' in html and '&lt;script&gt;context&lt;/script&gt;' in html
@@ -220,6 +225,7 @@ def main():
         with page.expect_download() as info:
             page.get_by_role('button',name='导出独立 HTML',exact=True).click()
         html=Path(info.value.path()).read_text()
+        assert '本次相遇的两只对手' in html and '能否捕捉及开始战斗的条件仍需确认' in html
         assert '追查前置线索' in html and '可能设置此事件' in html
         assert '孵蛋与进化准备建议' in html and '2048 / 5050' in html
         assert '&lt;script&gt;parent&lt;/script&gt;' in html and '<script>' not in html

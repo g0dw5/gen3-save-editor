@@ -130,6 +130,7 @@ pub const PROFILE: Profile = Profile {
     }),
     script_pokemon: crate::script_pokemon::PokemonScriptRules {
         wild: crate::script_pokemon::WildCommand::MercuryDouble,
+        wild_handler: 0x6c368,
         egg_level_instruction: 0x1d1b31e,
         native_battle: None,
         trade: Some(crate::script_pokemon::TradeRules {

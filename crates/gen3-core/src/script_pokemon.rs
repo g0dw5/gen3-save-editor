@@ -18,6 +18,8 @@ pub struct NativeBattleCommand {
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct PokemonScriptRules {
     pub wild: WildCommand,
+    /// Verified native command-table binding; content still comes from this ROM.
+    pub wild_handler: usize,
     /// Thumb MOVS r2, #level executed by this ROM's gift-egg constructor.
     pub egg_level_instruction: usize,
     pub native_battle: Option<NativeBattleCommand>,
@@ -52,6 +54,15 @@ pub struct PokemonSource {
     pub member: u8,
     pub conditions: Vec<EventCondition>,
     pub trade: Option<TradeOffer>,
+    /// Members of the same two-opponent setup, not proof both can be captured.
+    pub battle_members: Vec<StaticBattleMember>,
+}
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct StaticBattleMember {
+    pub member: u8,
+    pub species: Option<u16>,
+    pub level: Option<u8>,
+    pub held_item: Option<u16>,
 }
 impl Rom {
     pub(crate) fn trade_offer(&self, index: u16) -> Result<(u16, u16, TradeOffer)> {
@@ -94,6 +105,16 @@ impl Rom {
         ))
     }
     pub(crate) fn wild_command_length(&self, pc: usize) -> Result<usize> {
+        let rules = self
+            .profile
+            .event_state
+            .and_then(|r| r.effects)
+            .ok_or_else(|| crate::err("script_wild_unverified", pc))?;
+        if pointer(&self.data, rules.commands + 0xb6 * 4)? & !1
+            != self.profile.script_pokemon.wild_handler
+        {
+            return Err(crate::err("script_wild_dispatch", pc));
+        }
         Ok(match self.profile.script_pokemon.wild {
             WildCommand::Literal => 6,
             WildCommand::RocketExtended => 11,
@@ -126,6 +147,7 @@ impl Rom {
         let b = &self.data;
         let op = bytes(b, pc, 1)?[0];
         let mut sources = Vec::new();
+        let mut members = Vec::new();
         let mut add =
             |species: Option<u16>, level: Option<u8>, held_item: Option<u16>, method, member| {
                 if let Some(species) = species.filter(|s| self.valid_species(*s).is_ok()) {
@@ -138,6 +160,7 @@ impl Rom {
                         member,
                         conditions: vec![],
                         trade: None,
+                        battle_members: vec![],
                     });
                 }
             };
@@ -157,6 +180,7 @@ impl Rom {
                 0,
             ),
             0xb6 => {
+                bytes(b, pc, self.wild_command_length(pc)?)?;
                 match self.profile.script_pokemon.wild {
                     WildCommand::MercuryDouble if u16(b, pc + 1)? == 0xffff => {
                         for (member, offset) in [(0, 7), (1, 13)] {
@@ -184,6 +208,34 @@ impl Rom {
                         "static",
                         0,
                     ),
+                }
+                let offsets: Vec<usize> = match self.profile.script_pokemon.wild {
+                    WildCommand::RocketExtended if u16(b, pc + 6)? != 0 => vec![1, 6],
+                    WildCommand::MercuryDouble if u16(b, pc + 1)? == 0xffff => vec![7, 13],
+                    _ => vec![],
+                };
+                for (member, offset) in offsets.into_iter().enumerate() {
+                    let raw_species = u16(b, pc + offset)?;
+                    let species = match self.profile.script_pokemon.wild {
+                        WildCommand::MercuryDouble => resolve(raw_species),
+                        _ => Some(raw_species),
+                    };
+                    let level = bytes(b, pc + offset + 2, 1)?[0];
+                    let held = u16(b, pc + offset + 3)?;
+                    members.push(StaticBattleMember {
+                        member: member as u8,
+                        species: species.filter(|s| self.valid_species(*s).is_ok()),
+                        level: (level > 0 && level <= self.profile.max_level).then_some(level),
+                        held_item: self.item(held).is_ok().then_some(held),
+                    });
+                    if member == 1
+                        && matches!(
+                            self.profile.script_pokemon.wild,
+                            WildCommand::RocketExtended
+                        )
+                    {
+                        add(species, Some(level), Some(held), "static", 1);
+                    }
                 }
             }
             0x25 | 0x26 => {
@@ -227,11 +279,15 @@ impl Rom {
                             member: 0,
                             conditions,
                             trade: Some(trade),
+                            battle_members: vec![],
                         });
                     }
                 }
             }
             _ => {}
+        }
+        for source in &mut sources {
+            source.battle_members = members.clone();
         }
         Ok(sources)
     }

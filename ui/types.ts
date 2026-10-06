@@ -306,7 +306,14 @@ export interface ItemReward {
     taken: boolean;
   }[];
 }
+export interface StaticBattleMember {
+  member: number;
+  species: number | null;
+  level: number | null;
+  held_item: number | null;
+}
 export interface PokemonSource {
+  battle_members?: StaticBattleMember[];
   species: number;
   level: number | null;
   held_item: number | null;

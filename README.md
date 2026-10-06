@@ -371,3 +371,5 @@ individual first; its preview is a full-HP projection, not a replay of PC
 withdrawal. Party selection permits B cancellation and does not exclude fainted
 individuals; later level and service checks remain separate. Editor previews
 accept non-eggs only. [Native selection evidence](docs/verification/training-party-selection-20261006.md).
+
+Fixed-encounter readers follow the native single/pair inputs and expose known companions in queries, maps and collection HTML. Native constructor support is separate from referenced in-game occurrence and capture/access conditions; see [verification](docs/verification/static-battles-20261006.md).

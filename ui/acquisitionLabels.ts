@@ -1,3 +1,4 @@
+import { staticBattleSummary } from "./StaticBattleDetails";
 import type { AcquisitionSource, Catalog, QueryTarget } from "./types";
 
 export function acquisitionTargetName(
@@ -73,6 +74,8 @@ export function acquisitionSourceSummary(
   }
   if (source.repeatable != null)
     lines.push(t(source.repeatable ? "acqRepeatable" : "acqOneTime"));
+  if (source.script_source)
+    lines.push(...staticBattleSummary(source.script_source, catalog, t));
   return lines;
 }
 

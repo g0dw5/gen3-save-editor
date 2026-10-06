@@ -322,6 +322,7 @@ pub const BW: Profile = Profile {
     }),
     script_pokemon: crate::script_pokemon::PokemonScriptRules {
         wild: crate::script_pokemon::WildCommand::Literal,
+        wild_handler: 0x9b674,
         egg_level_instruction: 0x70978,
         native_battle: Some(crate::script_pokemon::NativeBattleCommand {
             special: 0x1e2,
@@ -581,6 +582,7 @@ pub const ROCKET: Profile = Profile {
     }),
     script_pokemon: crate::script_pokemon::PokemonScriptRules {
         wild: crate::script_pokemon::WildCommand::RocketExtended,
+        wild_handler: 0xd15d4,
         egg_level_instruction: 0x9e960,
         native_battle: None,
         trade: Some(crate::script_pokemon::TradeRules {

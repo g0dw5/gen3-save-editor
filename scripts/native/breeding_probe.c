@@ -5,6 +5,9 @@
 #include <mgba/internal/arm/arm.h>
 #include <mgba/internal/arm/isa-inlines.h>
 #include <stdio.h>
+#ifndef GEN3_NATIVE_MAX_STEPS
+#define GEN3_NATIVE_MAX_STEPS 1000000
+#endif
 static struct mCore *core;
 static color_t pixels[240*160];
 static void quiet(struct mLogger *log,int category,enum mLogLevel level,const char *format,va_list args) {
@@ -44,7 +47,7 @@ int callchoice(unsigned address,unsigned r0,unsigned r1,unsigned r2,unsigned r3,
     unsigned steps=0;
     unsigned target=stop ? stop+2 : 0x03007f02;
     unsigned other=second ? second+2 : 0xffffffff;
-    while(cpu->gprs[15]!=target && cpu->gprs[15]!=other && cpu->gprs[15]!=0x03007f02 && steps++<1000000)core->step(core);
+    while(cpu->gprs[15]!=target && cpu->gprs[15]!=other && cpu->gprs[15]!=0x03007f02 && steps++<GEN3_NATIVE_MAX_STEPS)core->step(core);
     int ok=cpu->gprs[15]==target ? 1 : cpu->gprs[15]==other ? 2 : 0;
     for(unsigned i=0;i<16;i++)output[i]=cpu->gprs[i];
     /* The board retains active-region and timing state. Keep those coherent

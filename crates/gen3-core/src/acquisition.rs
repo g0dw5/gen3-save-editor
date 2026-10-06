@@ -281,6 +281,20 @@ fn scripted_source(
         .map(|c| check(state, Some(rom), c))
         .collect();
     s.script_source = Some(mon.clone());
+    for member in &mon.battle_members {
+        if let Some(id) = member.species.filter(|id| *id != mon.species) {
+            if !s
+                .related
+                .iter()
+                .any(|t| t.kind == TargetKind::Species && t.id == id)
+            {
+                s.related.push(Target {
+                    kind: TargetKind::Species,
+                    id,
+                });
+            }
+        }
+    }
     if let Some(item) = mon.held_item.filter(|i| *i != 0) {
         s.related.push(Target {
             kind: TargetKind::Item,

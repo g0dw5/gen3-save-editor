@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Read both members of the native Rocket fixed-encounter pair, with shared
+  Mercury pair context, companion/item navigation and collection HTML facts.
+  Check native dispatch bindings; unknown operands and capture/access conditions
+  remain explicit. Verified native setup capability is not a located encounter.
+- 补齐西班牙火箭队原生双对手指令的第二只，共用水银的组信息展示、同场宝可梦／
+  道具跳转和收集 HTML。校验当前 ROM 原生分派；未知参数和捕捉／进入条件保留
+  提示。原生生成能力不冒充已发现的游戏内相遇。
+
 - Identify native actor-action/wait references across all five ROM fingerprints.
   Maps explain initial actor tiles and expose map-level action evidence; movement
   operands do not become navigation edges. Background execution and receipt

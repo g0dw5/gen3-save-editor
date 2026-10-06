@@ -73,6 +73,7 @@ pub const PROFILE: Profile = Profile {
     }),
     script_pokemon: crate::script_pokemon::PokemonScriptRules {
         wild: crate::script_pokemon::WildCommand::Literal,
+        wild_handler: 0x9b674,
         egg_level_instruction: 0x70978,
         native_battle: None,
         trade: Some(crate::script_pokemon::TradeRules {
