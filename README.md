@@ -279,3 +279,10 @@ The ROM reference **Game time** tab distinguishes Mercury’s saved virtual cloc
 The read-only **Training reference** tab links verified EV-item handlers to acquisition and map queries, with native before/after previews for stored or simulated individuals. Custom mechanisms/menu eligibility/consumption remain partial. [Evidence](docs/verification/training-items-20261006.md). CLI: `gen3 training-items ROM` and `gen3 training-preview ROM REQUEST.json [SAVE]`.
 
 Rocket mint targets are also read at runtime in Training reference, with stored/simulated effective-nature and stat previews. In verified changing scenarios, the existing nature-override SAV patch matches native persistent effects while preserving PID/identity/history. Menus, consumption and other-ROM mint services remain unverified. [Evidence](docs/verification/training-natures-20261006.md).
+
+Training reference also reads Rocket and Mercury ability-item handlers at runtime,
+executes native acceptance and persistent effects, and links item acquisition/maps.
+Rocket retains PID; Mercury requires an explicit random-seed scenario and may
+reroll PID. Actual ability/PID/nature/stats are shown; these read-only previews do
+not consume items or certify all menus, services or PID-linked appearances.
+[Evidence and limits](docs/verification/training-abilities-20261006.md).

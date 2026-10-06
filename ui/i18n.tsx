@@ -219,13 +219,32 @@ export const en = {
   clockScenario: "Game time and query scenario",
   training: "Training reference",
   trainingPage: "Training items and native previews",
+  trainingNormalChange: "Normal ability change",
+  trainingHiddenChange: "Hidden ability toggle",
+  trainingInitialAbility: "Initial ability",
+  trainingNormalAbility1: "Normal ability 1",
+  trainingNormalAbility2: "Normal ability 2",
+  trainingHiddenAbility: "Hidden ability",
+  trainingAbilitySeed: "Random seed for this preview",
+  trainingAbilitySeedScope:
+    "Enter an integer from 0 to 4294967295. This is an explicit simulation, not the live game's next PID.",
+  trainingAbilityPidScope:
+    "The native capsule can reroll PID after acceptance. This preview runs its own selection and persistent change with the stated seed. Check the actual before/after data; PID-linked appearances may differ. Menu eligibility, consumption and live RNG are outside this scenario.",
+  trainingAbilitySlotScope:
+    "The native item changes its independent ability slot and retains PID. Native eligibility can reject duplicate or unavailable abilities and certain starting slots. The persistent stage is verified separately from menu eligibility, consumption and current access.",
+  trainingAbilityRejected:
+    "The native ability guard rejects this scenario; the individual stays unchanged.",
+  trainingAbilityAccepted:
+    "The native ability guard accepts this scenario; actual persistent results are shown below.",
+  trainingAbilityTargetDifference:
+    "The native selector chose a different ability from the final decoded result. Selected target:",
   trainingNature: "Effective nature",
   trainingInitialNature: "Initial effective nature",
   trainingPIDNature: "Use PID nature (scenario default)",
   trainingNatureScope:
     "This previews the mint callback's persistent nature-and-stat stage and its unchanged-nature rejection. PID, trainer identity and unrelated individual data are retained. Menu eligibility, consumption, inheritance and current access remain outside this scenario.",
   trainingScope:
-    "This list covers verified ordinary field EV-item handlers and supported mint persistent stages. Names and descriptions come from the loaded ROM. It is not a complete catalog of all nature changes, ability changes, Hyper Training or NPC services; omitted mechanisms remain unverified, not absent.",
+    "This list covers verified ordinary field EV-item handlers and supported nature/ability persistent stages. Names and descriptions come from the loaded ROM. It is not a complete catalog of all nature changes, ability changes, Hyper Training or NPC services; omitted mechanisms remain unverified, not absent.",
   trainingNone:
     "No supported training-item handlers were identified in this ROM.",
   trainingItem: "Training item",
@@ -1348,13 +1367,30 @@ export const zh: Record<Key, string> = {
   clockScenario: "游戏时间与查询情景",
   training: "培育资料",
   trainingPage: "培育道具与原生效果预览",
+  trainingNormalChange: "普通特性变更",
+  trainingHiddenChange: "隐藏特性切换",
+  trainingInitialAbility: "初始特性",
+  trainingNormalAbility1: "普通特性 1",
+  trainingNormalAbility2: "普通特性 2",
+  trainingHiddenAbility: "隐藏特性",
+  trainingAbilitySeed: "本次预览的随机种子",
+  trainingAbilitySeedScope:
+    "输入 0～4294967295 的整数。这是明确的模拟情景，不是游戏下一次生成的 PID 预测。",
+  trainingAbilityPidScope:
+    "原生胶囊在允许使用后可能重选 PID。本次使用指定种子执行本作的判断与持久化变更，请核对实际前后数据；与 PID 关联的外观可能不同。菜单资格、消耗与实时随机状态不在此情景内。",
+  trainingAbilitySlotScope:
+    "原生道具修改独立特性槽位并保留 PID。重复、缺失的特性或部分初始槽位会被本作拒绝使用。持久化阶段与菜单资格、消耗、当前可达性分别验证。",
+  trainingAbilityRejected: "本作的特性判断拒绝此情景，个体保持不变。",
+  trainingAbilityAccepted: "本作的特性判断允许此情景，实际持久化结果见下方。",
+  trainingAbilityTargetDifference:
+    "原生选择的特性与最终解析结果不同。选定目标：",
   trainingNature: "实际性格",
   trainingInitialNature: "初始实际性格",
   trainingPIDNature: "使用 PID 性格（情景默认）",
   trainingNatureScope:
     "本次预览薄荷入口的持久化性格与能力处理阶段，以及性格不变时的拒绝使用分支。保留 PID、训练家身份和无关个体数据；菜单资格、消耗、遗传和当前可达性不在此情景验证范围内。",
   trainingScope:
-    "本列表覆盖已验证的普通战斗外努力值道具入口与已支持的薄荷持久化阶段，名称和说明来自当前 ROM。尚非所有性格调整、特性变更、王冠训练或 NPC 服务的完整目录；未列出表示尚未验证，不代表本作不存在。",
+    "本列表覆盖已验证的普通战斗外努力值道具入口与已支持的性格／特性持久化阶段，名称和说明来自当前 ROM。尚非所有性格调整、特性变更、王冠训练或 NPC 服务的完整目录；未列出表示尚未验证，不代表本作不存在。",
   trainingNone: "当前 ROM 未识别到已支持的培育道具入口。",
   trainingItem: "培育道具",
   trainingGetItem: "查询获取途径",

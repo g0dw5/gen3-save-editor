@@ -37,6 +37,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Shared typed map-script sources and [bounded NPC trade quotes](verification/npc-trades-20261006.md); [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers, actual delivery and custom exchanges are not comprehensively indexed. |
 | Breeding, evolution, form rules / 孵蛋进化形态 | P | P | P | P | P | `rom.rs`, `forms.rs`, `relations.rs`; [evolution tree](research/runtime-data-and-evolution-tree.md). [Native ordinary daycare scenarios](verification/breeding-20261006.md) execute compatibility/full receipt across five fingerprints with stored/simulated parents and offspring/NPC/map navigation. [Ordinary production checks](verification/breeding-production-20261006.md) execute native step/item branches with explicit bag scenarios. Rocket/Mercury service references and complete setup/inheritance/hatching/access remain unknown. Egg-group candidates are not proof of all incense/baby/parent requirements. Permanent evolution and battle forms have separate readers. |
 | Item shops, wild held items, teaching sources / 道具与培育来源 | P | P | P | P | P | `acquisition.rs` reads held-item fields, reverse learnsets and bounded shop scripts at runtime, with map/target links. Custom shops and full receipt/condition semantics remain partial. Native ordinary single-wild item selection has five-fingerprint evidence, including tested lead abilities and exceptional layout branches; full encounter modifiers and facilities remain unresolved. See [wild-item evidence](verification/wild-held-20261006.md). |
+| Nature, ability, EV and crown services / 性格特性努力值与王冠 | P | P | P | P | P | Shared read-only native training previews with current-ROM item/source/map links. Ordinary EV effects cover all five; bounded mint effects cover Rocket; bounded ability guards/effects cover Rocket and Mercury. Complete menus, consumption, services and Ultimate relocated ability handler remain unresolved. See [ability evidence](verification/training-abilities-20261006.md). |
 | SAV receipt flags, story dependencies / 领取状态与剧情依赖 | P | P | P | P | P | [Persistent ranges and hidden protocols](verification/event-state-20261005.md) and [qualified ordinary pickup protocols](verification/pickup-receipts-20261005.md) verified across five fingerprints. [Bounded NPC success/receipt protocols](verification/npc-receipts-20261006.md) cover 80 reward rows. The [prerequisite trace](verification/event-dependencies-20261006.md) links potential referenced writers, guards, ROM text and maps to queries/HTML; it is not a full task DAG. Compound/custom pickups, unqualified NPC protocols and complete story dependencies remain unknown. NPC visibility and bag absence are not receipt evidence. |
 | Item/money prerequisites / 道具与金钱前置条件 | P | P | P | P | P | [Native holdings and Boolean branch verification](verification/resource-conditions-20261006.md), required-item cross-links, readable query/map/planning/HTML conditions. Mercury ordinary checks use the first matching slot; other four retain unknown facility-bag context. Spending, complete eligibility and access remain unverified. |
 | Effective game clock, weekday, next event / 有效时钟与刷新 | P | P | P | P | P | Mercury virtual SAVE clock, native weekday, speed, forced-night state and jump menu verified within [bounded scope](verification/mercury-clock-20261005.md); [Native RTC scenarios](verification/hardware-clock-20261006.md) verify offset subtraction for four hardware-clock profiles; actual RTC and complete weekday refresh remain unresolved. No device-time assumption. |
@@ -417,3 +418,16 @@ cases also match existing party and boxed editor patches byte for byte. Other
 profiles have no configured verified mint handler, not a proof of absence.
 Menu eligibility, consumption/access, inheritance and ability/Hyper Training
 services remain incomplete. See [evidence](verification/training-natures-20261006.md).
+
+## Native ability increment / 原生特性道具增量
+
+All five overall training workflows remain **P**. Rocket reads two item handlers;
+Mercury reads one. Shared native previews cover **13,023** guard cases and **540**
+persistent outcomes, with source/condition/map/back links. Rocket's 120 accepted
+cases match existing party/box edits byte for byte. Mercury's 84 changing cases
+reroll PID; sampled nature/gender/shiny state is preserved, without certifying all
+PID-linked appearances or equating the existing editor solver to a native RNG
+outcome. Explicit seed scenarios and actual before/after data are shown.
+No verified adapter for the other three fingerprints is not a claim of absence.
+Menus, access/consumption, live RNG, Ultimate's relocated handler, crown and
+complete NPC services remain unresolved. See [evidence](verification/training-abilities-20261006.md).

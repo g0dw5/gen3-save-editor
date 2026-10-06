@@ -103,3 +103,5 @@ Both Rocket and Mercury switch-ROM checks discard delayed responses, clear SAV
 context and remove old nature controls. These synthetic UI checks are separate
 from exact-ROM CPU evidence. Formatting and manifest-version checks also pass;
 this increment keeps the current unreleased version and does not package/release.
+
+A subsequent [ability increment](training-abilities-20261006.md) adds qualified Rocket/Mercury ability previews. It does not extend this mint evidence to other services or ROMs.

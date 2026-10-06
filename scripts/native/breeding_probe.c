@@ -1,4 +1,4 @@
-/* Read-only exact-ROM daycare fixture runner. No battery, cheat or ROM-write API.
+/* Read-only exact-ROM native fixture runner. No battery, cheat or ROM-write API.
  * Synthetic RAM and bounded complete native functions only. */
 #include <mgba/core/core.h>
 #include <mgba/core/log.h>
@@ -33,7 +33,7 @@ int writebytes(unsigned address,const unsigned char *bytes,unsigned length) {
     for(unsigned i=0;i<length;i++)core->busWrite8(core,address+i,bytes[i]);
     return 1;
 }
-int calluntil(unsigned address,unsigned r0,unsigned r1,unsigned r2,unsigned r3,unsigned stop,unsigned *output) {
+int callchoice(unsigned address,unsigned r0,unsigned r1,unsigned r2,unsigned r3,unsigned stop,unsigned second,unsigned *output) {
     struct ARMCore *cpu=core->cpu,saved=*cpu;
     _ARMSetMode(cpu,MODE_THUMB);
     cpu->cpsr.i=1;
@@ -43,8 +43,9 @@ int calluntil(unsigned address,unsigned r0,unsigned r1,unsigned r2,unsigned r3,u
     ThumbWritePC(cpu);
     unsigned steps=0;
     unsigned target=stop ? stop+2 : 0x03007f02;
-    while(cpu->gprs[15]!=target && cpu->gprs[15]!=0x03007f02 && steps++<1000000)core->step(core);
-    int ok=cpu->gprs[15]==target;
+    unsigned other=second ? second+2 : 0xffffffff;
+    while(cpu->gprs[15]!=target && cpu->gprs[15]!=other && cpu->gprs[15]!=0x03007f02 && steps++<1000000)core->step(core);
+    int ok=cpu->gprs[15]==target ? 1 : cpu->gprs[15]==other ? 2 : 0;
     for(unsigned i=0;i<16;i++)output[i]=cpu->gprs[i];
     /* The board retains active-region and timing state. Keep those coherent
      * when restoring registers after an observation inside ROM (no return BX).
@@ -54,6 +55,9 @@ int calluntil(unsigned address,unsigned r0,unsigned r1,unsigned r2,unsigned r3,u
     *cpu=saved;
     cpu->memory=memory;cpu->cycles=cycles;cpu->nextEvent=nextEvent;
     return ok;
+}
+int calluntil(unsigned address,unsigned r0,unsigned r1,unsigned r2,unsigned r3,unsigned stop,unsigned *output) {
+    return callchoice(address,r0,r1,r2,r3,stop,0,output)==1;
 }
 int callfunc(unsigned address,unsigned r0,unsigned r1,unsigned r2,unsigned r3,unsigned *output) {
     unsigned regs[16];

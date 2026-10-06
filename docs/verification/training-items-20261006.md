@@ -93,3 +93,5 @@ Private vectors, catalogs and source files are not committed or release inputs.
 No new edited-SAV emulator round trip is claimed for this read-only increment.
 
 A subsequent [mint increment](training-natures-20261006.md) adds Rocket runtime targets and verified persistent-stage previews. It supersedes the unverified mint statement only within its documented scope.
+
+A subsequent [ability increment](training-abilities-20261006.md) verifies bounded Rocket/Mercury guards and persistent effects. Other handlers and complete training services remain unresolved.

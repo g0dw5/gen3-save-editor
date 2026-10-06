@@ -10,6 +10,15 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Read Rocket/Mercury ability-item handlers at runtime and preview native guards,
+  actual abilities, PID and stats, linked to acquisition and maps. Rocket retains
+  PID; Mercury requires an explicit seed and may reroll PID. Qualify menu/access,
+  consumption, live RNG and unverified services separately; previews are read-only.
+- 实时读取西班牙火箭队／水银的特性道具入口，预览原生允许／拒绝判断、实际特性、
+  PID 与能力值并关联获取地图。西班牙火箭队保留 PID；水银需明确随机种子情景，
+  可能重选 PID。菜单资格、可达性、消耗、实时随机状态及未验证服务分别说明；
+  预览只读，不新增 SAV 写入，不向其他 ROM 套用规则。
+
 - Read Rocket mint targets from current-ROM handlers and native getters; preview
   effective nature and stats while retaining PID/identity/history. Link item
   acquisition and map navigation. Reject unchanged effective-nature scenarios;

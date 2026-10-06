@@ -217,3 +217,8 @@ ROM 资料的“游戏时间”页区分水银虚拟时钟与硬件 RTC 情景�
 ROM 资料的“培育资料”页提供已验证努力值道具的获取跳转，以及同行／盒子／模拟个体的原生效果前后比较；自定义机制、菜单资格、消耗仍为部分验证。见[验证边界](docs/verification/training-items-20261006.md)。只读 CLI：`gen3 training-items ROM`、`gen3 training-preview ROM REQUEST.json [SAVE]`。
 
 培育资料也会实时读取西班牙火箭队的薄荷目标，预览存档／模拟个体的实际性格与能力。在已验证的改变情景中，现有性格覆盖值修改与原生持久化效果一致，保留 PID、身份和历史；菜单、消耗及其他 ROM 的薄荷服务仍未确认。见[证据与边界](docs/verification/training-natures-20261006.md)。
+
+培育资料新增西班牙火箭队与水银特性道具的原生允许／拒绝判断、实际特性／PID／
+性格／六围前后预览及获取地图跳转。西班牙火箭队保留 PID；水银需指定随机种子
+情景并可能重选 PID。这些只读预览不扣道具，不代表完整菜单、服务和所有 PID
+关联外观已验证。见[证据与边界](docs/verification/training-abilities-20261006.md)。

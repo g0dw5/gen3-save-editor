@@ -39,6 +39,36 @@ def main():
                         price=100,
                     )
                 )
+            if key in ["ROCKET", "MERCURY12"]:
+                catalog["abilities"] = [
+                    dict(id=i, name=n, description="")
+                    for i, n in [
+                        (1, "First ability"),
+                        (2, "Second ability"),
+                        (3, "Hidden ability"),
+                    ]
+                ]
+                catalog["species"][0]["abilities"] = [1, 2, 3]
+                catalog["species"][1]["abilities"] = [1, 1, 0]
+                catalog["items"].append(
+                    dict(
+                        id=3,
+                        name=key + " runtime capsule",
+                        description="Fixture",
+                        tm_move=None,
+                        price=100,
+                    )
+                )
+                if key == "ROCKET":
+                    catalog["items"].append(
+                        dict(
+                            id=4,
+                            name="ROCKET runtime patch",
+                            description="Fixture",
+                            tm_move=None,
+                            price=100,
+                        )
+                    )
             requests = []
             errors = []
             count = [0]
@@ -151,6 +181,33 @@ def main():
                             and catalog["profile"]["md5"] == "fixture-ROCKET"
                             else []
                         ),
+                        ability_items=(
+                            [
+                                dict(
+                                    item=3,
+                                    handler=3,
+                                    mechanism="normal_swap",
+                                    random_pid=key == "MERCURY12",
+                                    partial=True,
+                                )
+                            ]
+                            + (
+                                [
+                                    dict(
+                                        item=4,
+                                        handler=4,
+                                        mechanism="hidden_toggle",
+                                        random_pid=False,
+                                        partial=True,
+                                    )
+                                ]
+                                if key == "ROCKET"
+                                else []
+                            )
+                            if key in ["ROCKET", "MERCURY12"]
+                            and catalog["profile"]["md5"] == "fixture-" + key
+                            else []
+                        ),
                         partial=True,
                     )
                 elif cmd == "training_preview":
@@ -160,6 +217,31 @@ def main():
                     if payload["individual"]["kind"] == "simulated":
                         before["evs"] = payload["individual"]["evs"]
                         after["evs"] = copy.deepcopy(before["evs"])
+                    ability_item = payload["item"] in [3, 4]
+                    accepted = True
+                    if ability_item:
+                        initial = payload["individual"].get("ability_slot", 0)
+                        before.update(
+                            pid=42, ability_slot=initial, ability_id=[1, 2, 3][initial]
+                        )
+                        after = copy.deepcopy(before)
+                        accepted = payload["item"] == 4 or initial < 2
+                        if key == "MERCURY12":
+                            assert (
+                                isinstance(payload["rng_seed"], int)
+                                and 0 <= payload["rng_seed"] <= 4294967295
+                            )
+                        if accepted:
+                            target = (
+                                (0 if initial == 2 else 2)
+                                if payload["item"] == 4
+                                else initial ^ 1
+                            )
+                            after.update(
+                                ability_slot=target,
+                                ability_id=[1, 2, 3][target],
+                                pid=4242 if key == "MERCURY12" else 42,
+                            )
                     mint = payload["item"] == 2
                     if mint:
                         initial = payload["individual"].get("nature_override", 26)
@@ -170,7 +252,7 @@ def main():
                         after["stats"][1] = (
                             30 if before["effective_nature"] == 1 else 33
                         )
-                    elif key != "MERCURY12":
+                    elif not ability_item and key != "MERCURY12":
                         after["evs"][0] += 10
                     data = dict(
                         rom_md5=catalog["profile"]["md5"],
@@ -183,14 +265,29 @@ def main():
                             if mint and before["effective_nature"] != 1
                             else [30] * 6
                         ),
-                        native_no_effect=mint and before["effective_nature"] == 1,
+                        native_no_effect=(
+                            not accepted
+                            if ability_item
+                            else mint and before["effective_nature"] == 1
+                        ),
+                        ability_target=(
+                            after["ability_id"] if ability_item and accepted else None
+                        ),
+                        rng_seed=payload.get("rng_seed"),
+                        rng_after=123 if payload.get("rng_seed") is not None else None,
                         effect_scope=(
-                            "nature_persistent_stage" if mint else "field_effect"
+                            "ability_persistent_stage"
+                            if ability_item
+                            else "nature_persistent_stage" if mint else "field_effect"
                         ),
                         changed=(
-                            (before["effective_nature"] != 1)
-                            if mint
-                            else key != "MERCURY12"
+                            accepted
+                            if ability_item
+                            else (
+                                (before["effective_nature"] != 1)
+                                if mint
+                                else key != "MERCURY12"
+                            )
                         ),
                         scenario="simulated_individual",
                         context="save_blocks" if count[0] else "zero_save_blocks",
@@ -353,10 +450,137 @@ def main():
                 expect(
                     panel.get_by_label("Initial effective nature", exact=True)
                 ).to_have_count(0)
+            if key in ["ROCKET", "MERCURY12"]:
+                panel.get_by_label("Individual for preview", exact=True).select_option(
+                    "simulated"
+                )
+                selector = panel.get_by_role(
+                    "combobox", name="Training item", exact=True
+                )
+                selector.fill("runtime capsule")
+                page.get_by_role(
+                    "option",
+                    name=key + " runtime capsule · Normal ability change",
+                    exact=True,
+                ).click()
+                initial = panel.get_by_label("Initial ability", exact=True)
+                initial.select_option("0")
+                if key == "MERCURY12":
+                    seed_input = panel.get_by_label(
+                        "Random seed for this preview", exact=True
+                    )
+                    for invalid in ["", "-1", "4294967296", "1.5"]:
+                        seed_input.fill(invalid)
+                        expect(
+                            panel.get_by_role(
+                                "button", name="Preview native effect", exact=True
+                            )
+                        ).to_be_disabled()
+                    seed_input.fill("123456")
+                else:
+                    expect(
+                        panel.get_by_label("Random seed for this preview", exact=True)
+                    ).to_have_count(0)
+                panel.get_by_role(
+                    "button", name="Preview native effect", exact=True
+                ).click()
+                expect(panel.locator(".training-result")).to_contain_text(
+                    "native ability guard accepts"
+                )
+                expect(panel.locator("tbody tr").nth(1)).to_contain_text(
+                    "First ability"
+                )
+                expect(panel.locator("tbody tr").nth(1)).to_contain_text(
+                    "Second ability"
+                )
+                expect(panel.locator("tbody tr").nth(2)).to_contain_text(
+                    "4242" if key == "MERCURY12" else "42"
+                )
+                expect(panel.locator(".training-result")).not_to_contain_text(
+                    "No EV value changed"
+                )
+                if key == "MERCURY12":
+                    assert requests[-1]["payload"]["rng_seed"] == 123456
+                    expect(panel.locator(".training-result")).to_contain_text(
+                        "can reroll PID"
+                    )
+                else:
+                    expect(panel.locator(".training-result")).to_contain_text(
+                        "retains PID"
+                    )
+                panel.get_by_role(
+                    "button", name="Find acquisition sources", exact=True
+                ).click()
+                page.locator(".acquisition-panel .link-button").filter(
+                    has_text="Test map"
+                ).click()
+                for _ in range(2):
+                    page.get_by_role(
+                        "button", name="← Back to previous reference", exact=True
+                    ).click()
+                expect(selector).to_have_value(
+                    key + " runtime capsule · Normal ability change"
+                )
+                if key == "MERCURY12":
+                    expect(seed_input).to_have_value("123456")
+                initial.select_option("2")
+                panel.get_by_role(
+                    "button", name="Preview native effect", exact=True
+                ).click()
+                expect(panel.locator(".training-result")).to_contain_text(
+                    "native ability guard rejects"
+                )
+                if key == "ROCKET":
+                    selector.fill("runtime patch")
+                    page.get_by_role(
+                        "option",
+                        name="ROCKET runtime patch · Hidden ability toggle",
+                        exact=True,
+                    ).click()
+                    panel.get_by_role(
+                        "button", name="Preview native effect", exact=True
+                    ).click()
+                    expect(panel.locator(".training-result")).to_contain_text(
+                        "native ability guard accepts"
+                    )
+                    expect(panel.locator("tbody tr").nth(1)).to_contain_text(
+                        "Hidden ability"
+                    )
+                    expect(panel.locator("tbody tr").nth(1)).to_contain_text(
+                        "First ability"
+                    )
+                hold[0] = True
+                panel.get_by_role(
+                    "button", name="Preview native effect", exact=True
+                ).click()
+                page.wait_for_timeout(100)
+                assert delayed
+                if key == "MERCURY12":
+                    seed_input.fill("123457")
+                else:
+                    initial.select_option("0")
+                route, data = delayed.pop()
+                route.fulfill(
+                    content_type="application/json",
+                    body=json.dumps(dict(ok=True, data=data)),
+                )
+                page.wait_for_timeout(100)
+                expect(panel.locator(".training-result")).to_have_count(0)
+                panel.get_by_role(
+                    "button", name="Preview native effect", exact=True
+                ).click()
+                expect(panel.locator(".training-result")).to_be_visible()
+            else:
+                expect(panel.get_by_label("Initial ability", exact=True)).to_have_count(
+                    0
+                )
+                expect(
+                    panel.get_by_label("Random seed for this preview", exact=True)
+                ).to_have_count(0)
             page.get_by_role("button", name="简体中文", exact=True).click()
             expect(panel).to_contain_text("培育道具与原生效果预览")
             if key == "ROCKET":
-                expect(panel).to_contain_text("持久化性格与能力处理阶段")
+                expect(panel).to_contain_text("独立特性槽位并保留 PID")
             page.set_viewport_size(dict(width=720, height=740))
             expect(panel).to_be_visible()
             assert panel.evaluate("(e)=>e.scrollWidth <= e.clientWidth + 1")
@@ -398,6 +622,12 @@ def main():
                 ).to_have_value("SWITCH EV item · HP · Increase EVs")
                 expect(panel.get_by_label("HP EVs", exact=True)).to_have_value("0")
                 expect(panel.locator(".training-result")).to_have_count(0)
+                expect(panel.get_by_label("Initial ability", exact=True)).to_have_count(
+                    0
+                )
+                expect(
+                    panel.get_by_label("Random seed for this preview", exact=True)
+                ).to_have_count(0)
                 expect(
                     panel.get_by_label("Initial effective nature", exact=True)
                 ).to_have_count(0)

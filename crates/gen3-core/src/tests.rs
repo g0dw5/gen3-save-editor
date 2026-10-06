@@ -7801,6 +7801,7 @@ fn local_training_classification_and_effect_match_native_all_profiles() {
                     Request {
                         expected_rom_md5: profile.md5.into(),
                         item,
+                        rng_seed: None,
                         individual: Individual::Stored { location: party() },
                     },
                 )
@@ -7819,12 +7820,14 @@ fn local_training_classification_and_effect_match_native_all_profiles() {
                 Request {
                     expected_rom_md5: profile.md5.into(),
                     item: 0,
+                    rng_seed: None,
                     individual: Individual::Simulated {
                         species: 25,
                         level: 5,
                         evs: [0; 6],
                         friendship: 70,
                         nature_override: None,
+                        ability_slot: None,
                     },
                 },
             )
@@ -7919,6 +7922,7 @@ fn local_training_nature_items_match_native_and_existing_save_editor() {
                     Request {
                         expected_rom_md5: rom.profile.md5.into(),
                         item,
+                        rng_seed: None,
                         individual: Individual::Stored { location: party() },
                     },
                 )
@@ -7963,5 +7967,248 @@ fn local_training_nature_items_match_native_and_existing_save_editor() {
         assert_eq!(crate::binary::sha256(&rom.data), hash);
         assert_eq!(crate::binary::sha256(&std::fs::read(path).unwrap()), hash);
         println!("Rocket: {} mint scenarios; {edited} native-equivalent party and boxed nature edits; original ROM/SAV unchanged", vectors["rows"].as_array().unwrap().len());
+    }
+}
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_TRAINING_ABILITY_PROBES independent mGBA vectors"]
+fn local_training_ability_items_match_native_and_keep_profiles_isolated() {
+    use crate::training::{ability_decision, AbilityExecution, Individual, Request};
+    use armv4t_emu::Memory;
+    let vectors: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_TRAINING_ABILITY_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
+        let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
+        let hash = crate::binary::sha256(&rom.data);
+        let catalog = rom.training_catalog().unwrap();
+        assert_eq!(catalog.offers.len(), 12);
+        assert_eq!(
+            catalog.nature_items.len(),
+            if key == "ROCKET" { 21 } else { 0 }
+        );
+        if !matches!(key, "ROCKET" | "MERCURY12") {
+            assert!(
+                catalog.ability_items.is_empty(),
+                "unverified handlers must not cross profiles"
+            );
+            continue;
+        }
+        let evidence = &vectors[key];
+        assert_eq!(evidence["md5"], rom.profile.md5);
+        assert_eq!(
+            catalog.ability_items.len(),
+            evidence["offers"].as_array().unwrap().len()
+        );
+        let b = rom.profile.breeding.unwrap();
+        let mut sources = 0;
+        let mut positioned = 0;
+        let index = crate::acquisition::AcquisitionIndex::build(&rom).unwrap();
+        for offer in &catalog.ability_items {
+            assert!(evidence["offers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|v| v["item"] == offer.item && v["handler"] == offer.handler));
+            let rule = rom
+                .profile
+                .training
+                .unwrap()
+                .abilities
+                .iter()
+                .find(|r| r.handler == offer.handler)
+                .unwrap();
+            assert_eq!(
+                offer.random_pid,
+                matches!(rule.execution, AbilityExecution::Pid { .. })
+            );
+            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
+            for guard in evidence["guards"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|v| v["item"] == offer.item)
+            {
+                let raw: Vec<u8> = serde_json::from_value(guard["before"].clone()).unwrap();
+                for (i, byte) in raw.iter().enumerate() {
+                    ram.w8(b.party + i as u32, *byte);
+                }
+                let decision = ability_decision(&mut ram, rule, offer.item).unwrap();
+                assert_eq!(decision.accepted, guard["accepted"].as_bool().unwrap());
+                assert_eq!(decision.target, guard["target"].as_u64().unwrap() as u32);
+                assert_eq!(
+                    (0..100).map(|i| ram.r8(b.party + i)).collect::<Vec<_>>(),
+                    raw
+                );
+            }
+            let report = index
+                .query(
+                    &rom,
+                    None,
+                    crate::acquisition::Target {
+                        kind: crate::acquisition::TargetKind::Item,
+                        id: offer.item,
+                    },
+                )
+                .unwrap();
+            for source in &report.sources {
+                sources += 1;
+                if let Some(map) = &source.map_id {
+                    assert_eq!(rom.map_navigation(map).unwrap().map_id, *map);
+                    positioned += 1;
+                }
+            }
+        }
+        let mut save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
+        let first = save.sections[1];
+        save.data[first + save.layout.party_count] = 1;
+        let at = first + save.layout.party;
+        let mut editor_matches = 0;
+        let mut changed_pids = 0;
+        let mut identity_differences = 0;
+        for row in evidence["rows"].as_array().unwrap() {
+            let raw: Vec<u8> = serde_json::from_value(row["before"].clone()).unwrap();
+            let expected: Vec<u8> = serde_json::from_value(row["after"].clone()).unwrap();
+            save.data[at..at + 100].copy_from_slice(&raw);
+            let old = save.data.clone();
+            let item = row["item"].as_u64().unwrap() as u16;
+            let seed = (key == "MERCURY12").then(|| row["seed"].as_u64().unwrap() as u32);
+            let actual = rom
+                .training_preview(
+                    Some(&save),
+                    Request {
+                        expected_rom_md5: rom.profile.md5.into(),
+                        item,
+                        rng_seed: seed,
+                        individual: Individual::Stored { location: party() },
+                    },
+                )
+                .unwrap();
+            assert_eq!(
+                actual.raw, expected,
+                "{key} item {item}, PID {}",
+                actual.before.pid
+            );
+            assert_eq!(actual.native_no_effect, !row["accepted"].as_bool().unwrap());
+            assert_eq!(actual.changed, raw != expected);
+            assert_eq!(actual.effect_scope, "ability_persistent_stage");
+            assert_eq!(actual.rng_seed, seed);
+            if seed.is_some() {
+                assert_eq!(
+                    actual.rng_after,
+                    Some(row["rng_after"].as_u64().unwrap() as u32)
+                );
+            }
+            assert_eq!(actual.before.ot_id, actual.after.ot_id);
+            assert_eq!(actual.before.ivs, actual.after.ivs);
+            assert_eq!(actual.before.evs, actual.after.evs);
+            assert_eq!(actual.before.moves, actual.after.moves);
+            assert_eq!(save.data, old);
+            changed_pids += usize::from(actual.before.pid != actual.after.pid);
+            identity_differences += usize::from(
+                actual.before.nature != actual.after.nature
+                    || actual.before.gender != actual.after.gender
+                    || actual.before.shiny != actual.after.shiny,
+            );
+            if !actual.native_no_effect {
+                let native_target = if key == "ROCKET" {
+                    rom.species(actual.before.species).unwrap().abilities
+                        [row["target"].as_u64().unwrap() as usize]
+                } else {
+                    row["target"].as_u64().unwrap() as u16
+                };
+                assert_eq!(actual.ability_target, Some(native_target));
+                if key == "ROCKET" {
+                    let patch = PokemonPatch {
+                        ability_slot: Some(row["target"].as_u64().unwrap() as u8),
+                        ..Default::default()
+                    };
+                    assert_eq!(
+                        pokemon::edit(&raw, &patch, &rom, Policy::Standard)
+                            .unwrap()
+                            .0,
+                        expected
+                    );
+                    assert_eq!(
+                        pokemon::edit(&raw[..80], &patch, &rom, Policy::Standard)
+                            .unwrap()
+                            .0,
+                        expected[..80]
+                    );
+                    editor_matches += 1;
+                }
+            } else {
+                assert!(actual.ability_target.is_none());
+            }
+        }
+        let item = catalog.ability_items[0].item;
+        if key == "MERCURY12" {
+            assert_eq!(
+                rom.training_preview(
+                    Some(&save),
+                    Request {
+                        expected_rom_md5: rom.profile.md5.into(),
+                        item,
+                        rng_seed: None,
+                        individual: Individual::Stored { location: party() },
+                    }
+                )
+                .unwrap_err()
+                .code,
+                "training_seed_required"
+            );
+        }
+        let invalid = serde_json::json!({"expected_rom_md5":rom.profile.md5,"item":item,"rng_seed":42,
+            "individual":{"kind":"simulated","species":1,"level":5,"evs":[0,0,0,0,0,0],"friendship":70,"ability_slot":4}});
+        assert_eq!(
+            rom.training_preview(None, serde_json::from_value(invalid).unwrap())
+                .unwrap_err()
+                .code,
+            "range"
+        );
+        assert_eq!(crate::binary::sha256(&rom.data), hash);
+        assert_eq!(crate::binary::sha256(&std::fs::read(path).unwrap()), hash);
+        println!("{key}: {} native guards; {} persistent scenarios; {editor_matches} exact existing party/box editor matches; {changed_pids} changed PIDs; {identity_differences} nature/gender/shiny differences; {sources} parsed item sources, {positioned} map refs; original ROM/SAV unchanged", evidence["guards"].as_array().unwrap().len(), evidence["rows"].as_array().unwrap().len());
+    }
+}
+
+#[test]
+fn training_requests_require_typed_rng_and_ability_scenarios() {
+    let base = serde_json::json!({"expected_rom_md5":"fixture","item":1,
+        "individual":{"kind":"simulated","species":1,"level":5,"evs":[0,0,0,0,0,0],"friendship":70}});
+    let parsed: crate::training::Request = serde_json::from_value(base.clone()).unwrap();
+    assert!(parsed.rng_seed.is_none());
+    for seed in [
+        serde_json::json!(-1),
+        serde_json::json!(4294967296u64),
+        serde_json::json!(0.5),
+        serde_json::json!("42"),
+        serde_json::json!(true),
+    ] {
+        let mut invalid = base.clone();
+        invalid["rng_seed"] = seed;
+        assert!(serde_json::from_value::<crate::training::Request>(invalid).is_err());
+    }
+    for seed in [0u32, u32::MAX] {
+        let mut valid = base.clone();
+        valid["rng_seed"] = serde_json::json!(seed);
+        assert_eq!(
+            serde_json::from_value::<crate::training::Request>(valid)
+                .unwrap()
+                .rng_seed,
+            Some(seed)
+        );
+    }
+    for ability in [
+        serde_json::json!(-1),
+        serde_json::json!(256),
+        serde_json::json!("1"),
+        serde_json::json!(0.5),
+    ] {
+        let mut invalid = base.clone();
+        invalid["individual"]["ability_slot"] = ability;
+        assert!(serde_json::from_value::<crate::training::Request>(invalid).is_err());
     }
 }

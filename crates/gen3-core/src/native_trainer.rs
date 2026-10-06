@@ -154,6 +154,18 @@ impl<'a> Sandbox<'a> {
         limit: usize,
         stop: u32,
     ) -> Result<[u32; 16]> {
+        Ok(self.observe_any(start, args, stack, limit, &[stop])?.0)
+    }
+    /// Observe one of several verified control-flow boundaries before UI effects.
+    /// A premature return, invalid access or execution limit never means rejection.
+    pub(crate) fn observe_any(
+        &mut self,
+        start: u32,
+        args: [u32; 4],
+        stack: [u32; 2],
+        limit: usize,
+        stops: &[u32],
+    ) -> Result<([u32; 16], u32)> {
         let sp = 0x03007e00;
         self.w32(sp, stack[0]);
         self.w32(sp + 4, stack[1]);
@@ -167,11 +179,21 @@ impl<'a> Sandbox<'a> {
         }
         for _ in 0..limit {
             let pc = cpu.reg_get(Mode::User, reg::PC);
-            if pc == stop {
-                return Ok(std::array::from_fn(|i| cpu.reg_get(Mode::User, i as u8)));
+            if stops.contains(&pc) {
+                return Ok((
+                    std::array::from_fn(|i| cpu.reg_get(Mode::User, i as u8)),
+                    pc,
+                ));
             }
             if pc == 0x0f000000 {
-                return Err(err("native_observation_missing", format!("{stop:08X}")));
+                return Err(err(
+                    "native_observation_missing",
+                    if stops.len() == 1 {
+                        format!("{:08X}", stops[0])
+                    } else {
+                        format!("{stops:08X?}")
+                    },
+                ));
             }
             if !self.step_unaligned_thumb_halfword(&mut cpu) && !cpu.step(self) {
                 return Err(err("trainer_native_instruction", format!("{pc:08X}")));
@@ -234,6 +256,18 @@ mod tests {
             .observe(0x08000000, [0; 4], [0; 2], 10, 0x08000004)
             .unwrap();
         assert_eq!((regs[0], regs[4], regs[15]), (7, 13, 0x08000004));
+        let (regs, boundary) = ram
+            .observe_any(0x08000000, [0; 4], [0; 2], 10, &[0x08000004, 0x08000002])
+            .unwrap();
+        assert_eq!(boundary, 0x08000002);
+        assert_eq!((regs[0], regs[4]), (7, 0));
+        assert_eq!(
+            ram.observe_any(0x08000000, [0; 4], [0; 2], 10, &[0x08000008, 0x0800000a])
+                .unwrap_err()
+                .code,
+            "native_observation_missing"
+        );
+
         assert_eq!(ram.call(0x08000000, [0; 4], [0; 2], 10).unwrap(), 7);
         assert_eq!(
             ram.observe(0x08000000, [0; 4], [0; 2], 10, 0x08000008)

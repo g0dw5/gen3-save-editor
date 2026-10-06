@@ -19,10 +19,18 @@ type NatureOffer = {
   handler: number;
   partial: boolean;
 };
+type AbilityOffer = {
+  item: number;
+  handler: number;
+  mechanism: string;
+  random_pid: boolean;
+  partial: boolean;
+};
 type TrainingCatalog = {
   rom_md5: string;
   offers: Offer[];
   nature_items?: NatureOffer[];
+  ability_items?: AbilityOffer[];
   partial: boolean;
 };
 type Preview = {
@@ -38,6 +46,9 @@ type Preview = {
   context: string;
   party_state: string;
   effect_scope?: string;
+  ability_target?: number | null;
+  rng_seed?: number | null;
+  rng_after?: number | null;
   partial: boolean;
 };
 const stats = ["hp", "attack", "defense", "speed", "spAttack", "spDefense"];
@@ -62,6 +73,8 @@ export function TrainingPanel({
   const [evs, setEvs] = useState([0, 0, 0, 0, 0, 0]);
   const [friendship, setFriendship] = useState(70);
   const [nature, setNature] = useState(26);
+  const [ability, setAbility] = useState(0);
+  const [seed, setSeed] = useState("42");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const ticket = useRef(0);
@@ -78,7 +91,12 @@ export function TrainingPanel({
       .then((r) => {
         if (!cancelled && r.rom_md5 === md5) {
           setReport(r);
-          setItem(r.offers[0]?.item ?? r.nature_items?.[0]?.item ?? 0);
+          setItem(
+            r.offers[0]?.item ??
+              r.nature_items?.[0]?.item ??
+              r.ability_items?.[0]?.item ??
+              0,
+          );
         }
       })
       .catch((e) => {
@@ -105,6 +123,7 @@ export function TrainingPanel({
       const r = await api<Preview>("training_preview", {
         expected_rom_md5: md5,
         item,
+        ...(abilityOffer?.random_pid ? { rng_seed: Number(seed) } : {}),
         individual:
           individual === "simulated"
             ? {
@@ -113,6 +132,9 @@ export function TrainingPanel({
                 level,
                 evs,
                 friendship,
+                ...(report?.ability_items?.length
+                  ? { ability_slot: ability }
+                  : {}),
                 ...(report?.nature_items?.length
                   ? { nature_override: nature }
                   : {}),
@@ -129,6 +151,25 @@ export function TrainingPanel({
   };
   const offer = report?.offers.find((o) => o.item === item);
   const natureOffer = report?.nature_items?.find((o) => o.item === item);
+  const abilityOffer = report?.ability_items?.find((o) => o.item === item);
+  const abilityName = (id: number) =>
+    catalog.abilities.find((a) => a.id === id)?.name ?? String(id);
+  const abilitySlotName = (slot: number) =>
+    t(
+      slot === 2
+        ? "trainingHiddenAbility"
+        : slot === 1
+          ? "trainingNormalAbility2"
+          : "trainingNormalAbility1",
+    );
+  const initialAbilities =
+    catalog.species.find((s) => s.id === species)?.abilities ?? [];
+  const invalidSeed =
+    abilityOffer?.random_pid &&
+    (!seed.trim() ||
+      !Number.isInteger(Number(seed)) ||
+      Number(seed) < 0 ||
+      Number(seed) > 4294967295);
   const natureName = (id: number) =>
     catalog.natures.find((n) => n.id === id)?.name ?? String(id);
   return (
@@ -137,7 +178,9 @@ export function TrainingPanel({
       <p className="small muted">{t("trainingScope")}</p>
       {!report ? (
         <p>{t("loading")}</p>
-      ) : !report.offers.length && !report.nature_items?.length ? (
+      ) : !report.offers.length &&
+        !report.nature_items?.length &&
+        !report.ability_items?.length ? (
         <p>{t("trainingNone")}</p>
       ) : (
         <>
@@ -152,6 +195,10 @@ export function TrainingPanel({
               ...(report.nature_items ?? []).map((o) => ({
                 value: o.item,
                 label: `${catalog.items.find((i) => i.id === o.item)?.name ?? o.item} · ${t("trainingNature")} · ${natureName(o.nature)}`,
+              })),
+              ...(report.ability_items ?? []).map((o) => ({
+                value: o.item,
+                label: `${catalog.items.find((i) => i.id === o.item)?.name ?? o.item} · ${t(o.mechanism === "hidden_toggle" ? "trainingHiddenChange" : "trainingNormalChange")}`,
               })),
             ]}
             onChange={(v) => {
@@ -205,6 +252,7 @@ export function TrainingPanel({
                 }))}
                 onChange={(v) => {
                   setSpecies(+v);
+                  setAbility(0);
                   reset();
                 }}
               />
@@ -256,6 +304,26 @@ export function TrainingPanel({
                   </select>
                 </label>
               )}
+              {!!report.ability_items?.length && (
+                <label>
+                  {t("trainingInitialAbility")}
+                  <select
+                    aria-label={t("trainingInitialAbility")}
+                    value={ability}
+                    onChange={(e) => {
+                      setAbility(+e.target.value);
+                      reset();
+                    }}
+                  >
+                    {initialAbilities.map((id, slot) => (
+                      <option key={slot} value={slot} disabled={!id}>
+                        {abilitySlotName(slot)} ·{" "}
+                        {id ? abilityName(id) : t("none")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <div className="clock-offsets">
                 {stats.map((stat, i) => (
                   <label key={stat}>
@@ -278,9 +346,30 @@ export function TrainingPanel({
               </div>
             </fieldset>
           )}
+          {abilityOffer?.random_pid && (
+            <label>
+              {t("trainingAbilitySeed")}
+              <input
+                aria-label={t("trainingAbilitySeed")}
+                type="number"
+                min={0}
+                max={4294967295}
+                step={1}
+                value={seed}
+                onChange={(e) => {
+                  setSeed(e.target.value);
+                  reset();
+                }}
+              />
+              <span className="small muted">
+                {t("trainingAbilitySeedScope")}
+              </span>
+            </label>
+          )}
           <button
             disabled={
               busy ||
+              !!invalidSeed ||
               !item ||
               (individual === "simulated" &&
                 (!Number.isInteger(level) ||
@@ -302,11 +391,24 @@ export function TrainingPanel({
               {preview.effect_scope === "nature_persistent_stage" && (
                 <p className="small muted">{t("trainingNatureScope")}</p>
               )}
+              {preview.effect_scope === "ability_persistent_stage" && (
+                <p className="small muted">
+                  {t(
+                    abilityOffer?.random_pid
+                      ? "trainingAbilityPidScope"
+                      : "trainingAbilitySlotScope",
+                  )}
+                </p>
+              )}
               <p>
                 {t(
-                  preview.native_no_effect
-                    ? "trainingNoEffect"
-                    : "trainingAccepted",
+                  abilityOffer
+                    ? preview.native_no_effect
+                      ? "trainingAbilityRejected"
+                      : "trainingAbilityAccepted"
+                    : preview.native_no_effect
+                      ? "trainingNoEffect"
+                      : "trainingAccepted",
                 )}
               </p>
               <table>
@@ -318,7 +420,7 @@ export function TrainingPanel({
                   </tr>
                 </thead>
                 <tbody>
-                  {natureOffer && (
+                  {(natureOffer || abilityOffer) && (
                     <tr>
                       <td>{t("trainingNature")}</td>
                       <td>
@@ -335,7 +437,27 @@ export function TrainingPanel({
                       </td>
                     </tr>
                   )}
-                  {natureOffer &&
+                  {abilityOffer && (
+                    <>
+                      <tr>
+                        <td>{t("ability")}</td>
+                        <td>
+                          {abilityName(preview.before.ability_id)} ·{" "}
+                          {abilitySlotName(preview.before.ability_slot)}
+                        </td>
+                        <td>
+                          {abilityName(preview.after.ability_id)} ·{" "}
+                          {abilitySlotName(preview.after.ability_slot)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>PID</td>
+                        <td>{preview.before.pid}</td>
+                        <td>{preview.after.pid}</td>
+                      </tr>
+                    </>
+                  )}
+                  {(natureOffer || abilityOffer) &&
                     stats.map((s, i) => (
                       <tr key={`ability-${s}`}>
                         <td>{t(s)}</td>
@@ -365,7 +487,16 @@ export function TrainingPanel({
                   </tr>
                 </tbody>
               </table>
+              {abilityOffer &&
+                preview.ability_target != null &&
+                preview.after.ability_id !== preview.ability_target && (
+                  <p className="small muted">
+                    {t("trainingAbilityTargetDifference")}{" "}
+                    {abilityName(preview.ability_target)}
+                  </p>
+                )}
               {!natureOffer &&
+                !abilityOffer &&
                 preview.before.evs.every(
                   (v, i) => preview.after.evs[i] === v,
                 ) && <p className="small muted">{t("trainingUnchangedEV")}</p>}
@@ -383,7 +514,7 @@ export function TrainingPanel({
                 <summary>{t("evidence")}</summary>
                 <pre>
                   {JSON.stringify(
-                    { offer: natureOffer ?? offer, preview },
+                    { offer: abilityOffer ?? natureOffer ?? offer, preview },
                     null,
                     2,
                   )}
