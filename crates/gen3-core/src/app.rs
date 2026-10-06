@@ -377,6 +377,15 @@ impl App {
                 }
                 Ok(serde_json::to_value(session.rom.training_catalog()?)?)
             }
+            "training_service_preview" => {
+                let session = self.session()?;
+                Ok(serde_json::to_value(
+                    session.rom.training_service_preview(
+                        session.save.as_ref(),
+                        serde_json::from_value(p)?,
+                    )?,
+                )?)
+            }
             "training_preview" => {
                 let session = self.session()?;
                 Ok(serde_json::to_value(session.rom.training_preview(

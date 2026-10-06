@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Preview referenced NPC crown-service effects on stored or simulated individuals.
+  Execute native level-gated helpers: Mercury changes base IVs and recalculates
+  party stats; Ultimate changes training flags without refreshing stored stats.
+  Keep hypothetical field effects separate from eligibility and full payment.
+- NPC 王冠服务新增同行／盒子／模拟个体的原生效果预览：水银修改基础 IV 并
+  重算同行能力，究极绿宝石修改训练标记而不立即刷新保存的能力。字段情景与
+  资格、完整支付分开展示，预览不消耗道具、不修改存档。
+
 - Add Mercury's runtime NPC base-IV training choices, unlock/level checks and
   item/map/prerequisite links. Separate required holdings from attempted payment:
   native silver checks silver but removes gold before stat selection, without an

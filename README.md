@@ -301,3 +301,10 @@ gold before the stat menu; this anomaly is shown without certifying the full
 transaction.
 Read-only CLI: `gen3 training-services ROM [SAVE]`.
 [Evidence and scope](docs/verification/training-crowns-20261006.md).
+
+Referenced crown services also preview native effects on stored or simulated
+individuals: Mercury changes base IVs and recalculates party stats; Ultimate
+changes training flags without immediately refreshing saved stats. Hypothetical
+effects remain separate from eligibility and full payment. Read-only CLI:
+`gen3 training-service-preview ROM REQUEST.json [SAVE]`.
+[Scope and evidence](docs/verification/training-service-previews-20261006.md).

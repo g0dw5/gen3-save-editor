@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { api } from "./api";
 import { SearchSelect } from "./SearchSelect";
+import { TrainingServicePreview } from "./TrainingServicePreview";
 import { ConditionDetails, ConditionQueryRevision } from "./ConditionDetails";
 import { useI18n } from "./i18n";
 import type {
@@ -8,10 +9,11 @@ import type {
   Catalog,
   MapFocus,
   QueryTarget,
+  Snapshot,
 } from "./types";
 
 type Check = AcquisitionSource["conditions"][number];
-type Service = {
+export type TrainingService = {
   kind: string;
   minimum_level: number;
   choices: {
@@ -39,17 +41,23 @@ type Service = {
   }[];
   text: string[];
   conditions: Check[];
-  evidence: unknown;
+  evidence: { root: number };
 };
-type Report = { rom_md5: string; services: Service[]; partial: boolean };
+type Report = {
+  rom_md5: string;
+  services: TrainingService[];
+  partial: boolean;
+};
 
 export function TrainingServices({
   catalog,
+  save,
   onMap,
   onTarget,
   onError,
 }: {
   catalog: Catalog;
+  save: Snapshot | null;
   onMap: (id: string, focus?: MapFocus) => void;
   onTarget: (target: QueryTarget) => void;
   onError: (error: unknown) => void;
@@ -84,6 +92,8 @@ export function TrainingServices({
       key={index}
       service={service}
       catalog={catalog}
+      save={save}
+      onError={onError}
       onMap={onMap}
       onTarget={onTarget}
     />
@@ -92,13 +102,17 @@ export function TrainingServices({
 function ServiceCard({
   service,
   catalog,
+  save,
   onMap,
   onTarget,
+  onError,
 }: {
-  service: Service;
+  service: TrainingService;
   catalog: Catalog;
+  save: Snapshot | null;
   onMap: (id: string, focus?: MapFocus) => void;
   onTarget: (target: QueryTarget) => void;
+  onError: (error: unknown) => void;
 }) {
   const { t } = useI18n();
   const [selected, setSelected] = useState(0);
@@ -228,6 +242,15 @@ function ServiceCard({
             />
           </details>
         </section>
+      )}
+      {choice && (
+        <TrainingServicePreview
+          catalog={catalog}
+          save={save}
+          service={service}
+          choice={choice}
+          onError={onError}
+        />
       )}
       <details>
         <summary>{t("trainingCrownDialogue")}</summary>

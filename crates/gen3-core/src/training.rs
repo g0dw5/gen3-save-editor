@@ -251,6 +251,8 @@ pub enum Individual {
         evs: [u8; 6],
         friendship: u8,
         #[serde(default)]
+        ivs: Option<[u8; 6]>,
+        #[serde(default)]
         nature_override: Option<u8>,
         #[serde(default)]
         ability_slot: Option<u8>,
@@ -456,6 +458,69 @@ impl Rom {
             partial: true,
         })
     }
+    pub(crate) fn prepare_training_individual(
+        &self,
+        save: Option<&Save>,
+        individual: Individual,
+    ) -> Result<(Vec<u8>, &'static str, &'static str)> {
+        let (raw, scenario, party_state) = match individual {
+            Individual::Stored { location } => {
+                let save = save.ok_or_else(|| err("save_required", "training individual"))?;
+                if save.layout.pokemon_codec != self.profile.save.pokemon_codec
+                    || save.layout.sizes != self.profile.save.sizes
+                {
+                    return Err(err("training_save_layout", "SAVE and ROM layouts differ"));
+                }
+                let raw = save.raw(location)?;
+                let state = if raw.len() == 100 {
+                    "stored_party"
+                } else {
+                    "boxed_full_hp_scenario"
+                };
+                let raw = if raw.len() == 100 {
+                    raw
+                } else {
+                    pokemon::to_party(&raw, self)?
+                };
+                (raw, "stored_individual", state)
+            }
+            Individual::Simulated {
+                species,
+                level,
+                evs,
+                friendship,
+                ivs,
+                nature_override,
+                ability_slot,
+            } => {
+                let raw = pokemon::create(self, species, 1, "", level, 42)?;
+                let (raw, _) = pokemon::edit(
+                    &raw,
+                    &pokemon::PokemonPatch {
+                        evs: Some(evs),
+                        ivs,
+                        friendship: Some(friendship),
+                        nature_override,
+                        ability_slot,
+                        ..Default::default()
+                    },
+                    self,
+                    pokemon::Policy::Free,
+                )?;
+                (
+                    pokemon::to_party(&raw, self)?,
+                    "simulated_individual",
+                    "simulated_full_hp",
+                )
+            }
+        };
+        pokemon::checked_unpack_with(&raw, self.profile.save.pokemon_codec)?;
+        let before = pokemon::decode(&raw, self)?;
+        if before.species == 0 || before.egg {
+            return Err(err("training_individual", "requires a non-egg individual"));
+        }
+        Ok((raw, scenario, party_state))
+    }
     pub fn training_preview(&self, save: Option<&Save>, request: Request) -> Result<Preview> {
         if request.expected_rom_md5 != self.profile.md5 {
             return Err(err("rom_mismatch", "training scenario"));
@@ -504,60 +569,9 @@ impl Rom {
         {
             return Err(err("training_item_unverified", request.item));
         }
-        let (raw, scenario, party_state) = match request.individual {
-            Individual::Stored { location } => {
-                let save = save.ok_or_else(|| err("save_required", "training individual"))?;
-                if save.layout.pokemon_codec != self.profile.save.pokemon_codec
-                    || save.layout.sizes != self.profile.save.sizes
-                {
-                    return Err(err("training_save_layout", "SAVE and ROM layouts differ"));
-                }
-                let raw = save.raw(location)?;
-                let state = if raw.len() == 100 {
-                    "stored_party"
-                } else {
-                    "boxed_full_hp_scenario"
-                };
-                let raw = if raw.len() == 100 {
-                    raw
-                } else {
-                    pokemon::to_party(&raw, self)?
-                };
-                (raw, "stored_individual", state)
-            }
-            Individual::Simulated {
-                species,
-                level,
-                evs,
-                friendship,
-                nature_override,
-                ability_slot,
-            } => {
-                let raw = pokemon::create(self, species, 1, "", level, 42)?;
-                let (raw, _) = pokemon::edit(
-                    &raw,
-                    &pokemon::PokemonPatch {
-                        evs: Some(evs),
-                        friendship: Some(friendship),
-                        nature_override,
-                        ability_slot,
-                        ..Default::default()
-                    },
-                    self,
-                    pokemon::Policy::Free,
-                )?;
-                (
-                    pokemon::to_party(&raw, self)?,
-                    "simulated_individual",
-                    "simulated_full_hp",
-                )
-            }
-        };
-        pokemon::checked_unpack_with(&raw, self.profile.save.pokemon_codec)?;
+        let (raw, scenario, party_state) =
+            self.prepare_training_individual(save, request.individual)?;
         let before = pokemon::decode(&raw, self)?;
-        if before.species == 0 || before.egg {
-            return Err(err("training_individual", "requires a non-egg individual"));
-        }
         let b = self
             .profile
             .breeding

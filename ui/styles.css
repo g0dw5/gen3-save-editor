@@ -2671,12 +2671,15 @@ summary {
   max-width: 100%;
   min-width: 0;
 }
-.training-result table {
+.training-result table,
+.training-service-result table {
   width: 100%;
   border-collapse: collapse;
 }
 .training-result th,
-.training-result td {
+.training-result td,
+.training-service-result th,
+.training-service-result td {
   padding: 6px;
   text-align: left;
   border-bottom: 1px solid var(--line);
@@ -2703,4 +2706,29 @@ summary {
 .training-service-choice {
   padding: 10px 0;
   border-top: 1px solid var(--line);
+}
+
+.training-service-preview {
+  margin: 12px 0;
+}
+.training-service-preview > label {
+  display: block;
+  margin: 10px 0;
+}
+.training-service-preview > label > select {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+}
+.training-service-result {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 8px;
+}
+.training-service-result .table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.training-service-result thead {
+  background: var(--soft);
 }

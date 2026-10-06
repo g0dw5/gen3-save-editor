@@ -477,3 +477,16 @@ does not by itself stop the next script instructions. Full menu/cancellation,
 access, unlock progression and complete item transaction remain unresolved.
 No new SAV editing or emulator export/reload guarantee is added by this increment.
 See [Mercury evidence](verification/training-mercury-crowns-20261006.md).
+
+### Read-only service effects / 只读服务效果
+
+Ultimate and Mercury referenced services now preview stored or simulated
+individual effects through native level-gated helpers. Mercury changes base IVs
+and recalculates stats; Ultimate marks training flags and leaves saved party
+stats unchanged. The API matches 252 Mercury independent field vectors and
+56 Ultimate level/header/choice cases; the five-profile legacy training
+regressions still pass. Parsed requirements and hypothetical effects stay
+separate. Box/simulated inputs use a full-HP projection, not a verified PC
+transfer. No items or SAVs are changed. Overall training stays **P**: full menu,
+payment/cancellation, story access and other-profile services remain unresolved.
+See [service-preview evidence](verification/training-service-previews-20261006.md).

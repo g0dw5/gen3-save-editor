@@ -83,6 +83,8 @@ def main():
             count = [0]
             delayed = []
             hold = [False]
+            hold_service = [False]
+            delayed_service = []
             save = dict(
                 trainer={"name": "TEST"},
                 pokemon=[
@@ -275,6 +277,56 @@ def main():
                         services=services,
                         partial=True,
                     )
+                elif cmd == "training_service_preview":
+                    assert payload["expected_rom_md5"] == catalog["profile"]["md5"]
+                    assert payload["service_root"] == 123
+                    source = payload["individual"]
+                    before = copy.deepcopy(save["pokemon"][0]["pokemon"])
+                    level = source.get("level", 100)
+                    before["ivs"] = source.get("ivs", [13] * 6)
+                    before["hyper_trained"] = [False] * 6
+                    before["current_hp"] = 70
+                    after = copy.deepcopy(before)
+                    threshold = 50 if key == "MERCURY12" else 100
+                    enough = level >= threshold
+                    index = payload["choice_index"]
+                    if enough:
+                        for stat in range(6):
+                            if index == 0 or stat == index - 1:
+                                if key == "MERCURY12":
+                                    after["ivs"][stat] = 31
+                                else:
+                                    after["hyper_trained"][stat] = True
+                    data = dict(
+                        rom_md5=catalog["profile"]["md5"],
+                        service_root=123,
+                        choice_index=index,
+                        before=before,
+                        after=after,
+                        party_stats_before=[70, 50, 40, 30, 20, 10],
+                        party_stats_after=[70, 50, 40, 30, 20, 10],
+                        native_level=level,
+                        minimum_level=threshold,
+                        level_satisfied=enough,
+                        known_requirements_met=False,
+                        changed=enough,
+                        stat_refresh="immediate" if key == "MERCURY12" else "deferred",
+                        scenario=(
+                            "simulated_individual"
+                            if source["kind"] == "simulated"
+                            else "stored_individual"
+                        ),
+                        party_state=(
+                            "simulated_full_hp"
+                            if source["kind"] == "simulated"
+                            else "stored_party"
+                        ),
+                        partial=True,
+                    )
+                    if hold_service[0]:
+                        hold_service[0] = False
+                        delayed_service.append((route, data))
+                        return
                 elif cmd == "training_catalog":
                     assert payload["expected_rom_md5"] == catalog["profile"]["md5"]
                     data = dict(
@@ -827,6 +879,85 @@ def main():
                 if key in ["ULTIMATE", "MERCURY12"]:
                     panel.evaluate("e => e.scrollTop = 0")
                     page.screenshot(path=str(d / f"training-{key}-service.png"))
+            if key in ["MERCURY12", "ULTIMATE"]:
+                page.get_by_role("button", name="English", exact=True).click()
+                card = panel.locator(".training-service")
+                card.get_by_role(
+                    "combobox", name="Choose a training option", exact=True
+                ).fill("gold")
+                page.get_by_role("listbox").get_by_role(
+                    "option", name="All stats (gold)", exact=True
+                ).click()
+                card.get_by_text(
+                    "Preview this service on an individual", exact=True
+                ).click()
+                effect = card.locator(".training-service-preview")
+                expect(
+                    effect.get_by_label("Service preview individual", exact=True)
+                ).to_be_visible()
+                field = effect.get_by_label("Service preview level", exact=True)
+                minimum = 50 if key == "MERCURY12" else 100
+                field.fill(str(minimum - 1))
+                effect.get_by_role(
+                    "button", name="Preview service field effects", exact=True
+                ).click()
+                expect(effect.locator(".training-service-result")).to_contain_text(
+                    "Below the required level"
+                )
+                field.fill(str(minimum))
+                effect.get_by_label("Simulated service IV · HP", exact=True).fill("13")
+                effect.get_by_role(
+                    "button", name="Preview service field effects", exact=True
+                ).click()
+                expect(effect.locator(".training-service-result")).to_contain_text(
+                    "Native individual-field result"
+                )
+                expect(effect.locator(".training-service-result")).to_contain_text(
+                    "recalculates party HP/stats"
+                    if key == "MERCURY12"
+                    else "leaves stored party stats unchanged"
+                )
+                expect(
+                    effect.locator(".training-service-result tbody tr").first
+                ).to_contain_text("13 → 31" if key == "MERCURY12" else "13 → 13")
+                hold_service[0] = True
+                effect.get_by_role(
+                    "button", name="Preview service field effects", exact=True
+                ).click()
+                page.wait_for_timeout(100)
+                assert delayed_service
+                field.fill(str(minimum - 1))
+                route, data = delayed_service.pop()
+                route.fulfill(
+                    content_type="application/json",
+                    body=json.dumps(dict(ok=True, data=data)),
+                )
+                expect(effect.locator(".training-service-result")).to_have_count(0)
+                field.fill(str(minimum))
+                effect.get_by_label(
+                    "Service preview individual", exact=True
+                ).select_option("p:0")
+                effect.get_by_role(
+                    "button", name="Preview service field effects", exact=True
+                ).click()
+                expect(effect.locator(".training-service-result")).to_contain_text(
+                    "Uses the saved party record"
+                )
+                page.get_by_role("button", name="简体中文", exact=True).click()
+                expect(effect.locator(".training-service-result")).to_contain_text(
+                    "原生个体字段结果"
+                )
+                assert panel.evaluate("e => e.scrollWidth <= e.clientWidth + 1")
+                if os.environ.get("GEN3_UI_ARTIFACTS"):
+                    effect.locator(
+                        ".training-service-result"
+                    ).scroll_into_view_if_needed()
+                    page.screenshot(
+                        path=str(
+                            Path(os.environ["GEN3_UI_ARTIFACTS"])
+                            / f"service-preview-{key}.png"
+                        )
+                    )
             if key in ["ROCKET", "MERCURY12", "ULTIMATE"]:
                 page.get_by_role("button", name="English", exact=True).click()
                 hold[0] = True

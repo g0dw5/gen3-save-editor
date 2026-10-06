@@ -3,6 +3,7 @@ import { api } from "./api";
 import { ConditionQueryRevision } from "./ConditionDetails";
 import { SearchSelect } from "./SearchSelect";
 import { TrainingServices } from "./TrainingServices";
+import { TrainingIndividualSelect } from "./TrainingIndividualSelect";
 import { useI18n } from "./i18n";
 import { fromKey, locationKey } from "./types";
 import type {
@@ -190,6 +191,7 @@ export function TrainingPanel({
       <p className="small muted">{t("trainingScope")}</p>
       <TrainingServices
         catalog={catalog}
+        save={save}
         onMap={onMap}
         onTarget={onTarget}
         onError={onError}
@@ -227,37 +229,16 @@ export function TrainingPanel({
           <button onClick={() => onTarget({ kind: "item", id: item })}>
             {t("trainingGetItem")}
           </button>
-          <label>
-            {t("trainingIndividual")}
-            <select
-              aria-label={t("trainingIndividual")}
-              value={individual}
-              onChange={(e) => {
-                setIndividual(e.target.value);
-                reset();
-              }}
-            >
-              <option value="simulated">{t("trainingSimulated")}</option>
-              {save?.pokemon
-                .filter((p) => !p.pokemon.egg && p.pokemon.species)
-                .map((p) => (
-                  <option
-                    key={locationKey(p.location)}
-                    value={locationKey(p.location)}
-                  >
-                    {p.pokemon.nickname} ·{" "}
-                    {
-                      catalog.species.find((s) => s.id === p.pokemon.species)
-                        ?.name
-                    }{" "}
-                    ·{" "}
-                    {p.location.kind === "party"
-                      ? `${t("party")} ${p.location.slot + 1}`
-                      : `${save.boxes[p.location.box_index]?.name} ${p.location.slot + 1}`}
-                  </option>
-                ))}
-            </select>
-          </label>
+          <TrainingIndividualSelect
+            catalog={catalog}
+            save={save}
+            label={t("trainingIndividual")}
+            value={individual}
+            onChange={(value) => {
+              setIndividual(value);
+              reset();
+            }}
+          />
           {individual === "simulated" && (
             <fieldset>
               <legend>{t("trainingSimulated")}</legend>

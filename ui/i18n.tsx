@@ -247,6 +247,39 @@ export const en = {
   trainingPIDNature: "Use PID nature (scenario default)",
   trainingNatureScope:
     "This previews the mint callback's persistent nature-and-stat stage and its unchanged-nature rejection. PID, trainer identity and unrelated individual data are retained. Menu eligibility, consumption, inheritance and current access remain outside this scenario.",
+  trainingServicePreview: "Preview this service on an individual",
+  trainingServicePreviewScope:
+    "Read-only field simulation, not a full NPC transaction. Level checks gate the helper; other parsed requirements are shown separately. Missing or unknown requirements do not become proof of eligibility. No item, credit or SAV data is changed.",
+  trainingServiceHypothetical:
+    "Requirements are missing or unknown. The table only simulates the field stage assuming those requirements are completed; it does not establish that you can use the service now.",
+  trainingServiceIndividual: "Service preview individual",
+  trainingServiceSpecies: "Service preview Pokémon",
+  trainingServiceLevel: "Service preview level",
+  trainingServiceIv: "Simulated service IV",
+  trainingServiceSimulated:
+    "Explicit scenario: zero EVs and friendship 70. Change the level and base IVs below; this does not create a stored Pokémon.",
+  trainingServiceRun: "Preview service field effects",
+  trainingServiceResult: "Native individual-field result",
+  trainingServiceKnownRequirements:
+    "Parsed requirements only (full menus remain unverified)",
+  trainingServiceBelowLevel:
+    "Below the required level; no field effect was applied. Minimum:",
+  trainingServiceDeferred:
+    "Training flags change, but the native marker helper leaves stored party stats unchanged. Later PC/stat refresh is outside this preview.",
+  trainingServiceImmediate:
+    "The native setter changes base IVs and recalculates party HP/stats. Item removal and full menu execution are outside this preview.",
+  trainingServiceBaseIvs: "Base IVs · before → after",
+  trainingServiceFlags: "Training flags · before → after",
+  trainingServiceFlagYes: "Trained",
+  trainingServiceFlagNo: "Untrained",
+  trainingServicePartyStats: "Party stats · before → after",
+  trainingServiceHp: "Current HP:",
+  trainingServiceStoredParty:
+    "Uses the saved party record, including its stored HP/stats.",
+  trainingServiceProjectedParty:
+    "Uses a simulated full-HP party projection; a box transfer is not replayed.",
+  trainingServiceUnchanged:
+    "The individual bytes are unchanged. This alone does not establish whether the complete service charges a fee.",
   trainingIvService: "NPC base-IV training",
   trainingIvEffect:
     "This service changes the selected base IVs to 31 and immediately recalculates party stats. It preserves PID, trainer identity, EVs and unrelated history. These are base IVs, unlike Hyper Training flags. This reference does not edit or pay for training.",
@@ -1418,6 +1451,36 @@ export const zh: Record<Key, string> = {
   trainingPIDNature: "使用 PID 性格（情景默认）",
   trainingNatureScope:
     "本次预览薄荷入口的持久化性格与能力处理阶段，以及性格不变时的拒绝使用分支。保留 PID、训练家身份和无关个体数据；菜单资格、消耗、遗传和当前可达性不在此情景验证范围内。",
+  trainingServicePreview: "预览服务对个体的效果",
+  trainingServicePreviewScope:
+    "只读字段模拟，不是完整 NPC 交易。等级检查决定是否执行字段步骤，其他已解析条件分别展示；缺少或未知条件不能视为已经具备资格。不消耗道具、认证或修改 SAV。",
+  trainingServiceHypothetical:
+    "条件尚未齐备或无法确定。下表只模拟完成这些条件后的字段效果，不能视为现在可以执行此服务。",
+  trainingServiceIndividual: "服务预览个体",
+  trainingServiceSpecies: "服务预览宝可梦",
+  trainingServiceLevel: "服务预览等级",
+  trainingServiceIv: "模拟服务个体值",
+  trainingServiceSimulated:
+    "明确模拟情景：六项努力值为 0，亲密度为 70。可调整等级和基础 IV，不会生成存档宝可梦。",
+  trainingServiceRun: "预览服务字段效果",
+  trainingServiceResult: "原生个体字段结果",
+  trainingServiceKnownRequirements: "仅已解析条件（完整菜单仍待验证）",
+  trainingServiceBelowLevel: "未达到等级要求，没有执行字段修改。最低等级：",
+  trainingServiceDeferred:
+    "原生步骤修改训练标记，但同行中保存的六围不变。后续电脑寄存／能力刷新不在本次预览范围。",
+  trainingServiceImmediate:
+    "原生步骤修改基础 IV 并重算同行 HP／六围；道具扣除和完整菜单执行不在本次预览范围。",
+  trainingServiceBaseIvs: "基础 IV · 前 → 后",
+  trainingServiceFlags: "训练标记 · 前 → 后",
+  trainingServiceFlagYes: "已训练",
+  trainingServiceFlagNo: "未训练",
+  trainingServicePartyStats: "同行能力 · 前 → 后",
+  trainingServiceHp: "当前 HP：",
+  trainingServiceStoredParty: "使用存档同行原始记录，包括其中保存的 HP／六围。",
+  trainingServiceProjectedParty:
+    "使用模拟满血同行投影，没有重放从盒子取出的流程。",
+  trainingServiceUnchanged:
+    "个体字节未发生变化；仅凭这一点不能判断完整服务是否收取费用。",
   trainingIvService: "NPC 基础个体值训练",
   trainingIvEffect:
     "服务将所选基础个体值改为 31，并立即重算同行能力，保留 PID、训练家身份、努力值和无关历史。这会改变基础个体值，与极限特训标记不同。当前页面只读，不修改个体、不支付费用。",

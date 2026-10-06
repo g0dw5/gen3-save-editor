@@ -7826,6 +7826,7 @@ fn local_training_classification_and_effect_match_native_all_profiles() {
                         level: 5,
                         evs: [0; 6],
                         friendship: 70,
+                        ivs: None,
                         nature_override: None,
                         ability_slot: None,
                     },
@@ -8620,4 +8621,234 @@ fn local_mercury_crown_services_match_native_fields_and_payment_anomaly() {
         base_report
     );
     assert_eq!(sha256(&r.data), digest);
+}
+
+#[test]
+fn service_previews_reject_unknown_sources_and_stale_identity_without_writes() {
+    use crate::app::{App, Request};
+    let rom = rom();
+    let mut app = App {
+        session: Some(session()),
+        ..Default::default()
+    };
+    let saved = app
+        .session
+        .as_ref()
+        .unwrap()
+        .save
+        .as_ref()
+        .unwrap()
+        .data
+        .clone();
+    let request = |fingerprint: &str| serde_json::json!({"expected_rom_md5":fingerprint,"service_root":1,"choice_index":0,"individual":{"kind":"stored","location":{"kind":"party","slot":0}}});
+    assert_eq!(
+        app.dispatch(Request {
+            command: "training_service_preview".into(),
+            payload: request("stale")
+        })
+        .err()
+        .unwrap()
+        .code,
+        "rom_mismatch"
+    );
+    assert_eq!(
+        app.dispatch(Request {
+            command: "training_service_preview".into(),
+            payload: request(rom.profile.md5)
+        })
+        .err()
+        .unwrap()
+        .code,
+        "training_service_unverified"
+    );
+    assert!(serde_json::from_value::<crate::training_service_preview::Request>(serde_json::json!({"expected_rom_md5":rom.profile.md5,"service_root":null,"choice_index":0,"individual":{"kind":"stored","location":{"kind":"party","slot":0}}})).is_err());
+    assert_eq!(
+        app.session.as_ref().unwrap().save.as_ref().unwrap().data,
+        saved
+    );
+}
+
+#[test]
+#[ignore = "requires five exact ROMs, GEN3_MERCURY_CROWN_PROBES and GEN3_TRAINING_CROWN_PROBES independent native vectors"]
+fn local_service_previews_match_native_and_keep_reference_save_read_only() {
+    use crate::training::Individual;
+    use crate::training_service_preview::Request;
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let rom =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        let hash = sha256(&rom.data);
+        let mut save = Save::open(save_bytes(&rom), rom.profile.save).unwrap();
+        let report = rom.training_services(None).unwrap();
+        if !matches!(key, "ULTIMATE" | "MERCURY12") {
+            assert!(report.services.is_empty());
+            assert_eq!(
+                rom.training_service_preview(
+                    None,
+                    Request {
+                        expected_rom_md5: rom.profile.md5.into(),
+                        service_root: 1,
+                        choice_index: 0,
+                        individual: Individual::Stored { location: party() }
+                    }
+                )
+                .err()
+                .unwrap()
+                .code,
+                "training_service_unverified"
+            );
+            continue;
+        }
+        let service = &report.services[0];
+        let root = match service.evidence {
+            crate::training_services::ServiceRules::Flags(r) => r.root,
+            crate::training_services::ServiceRules::BaseIvs(r) => r.root,
+        };
+        let at = save.sections[1] + save.layout.party;
+        if key == "MERCURY12" {
+            let vectors: serde_json::Value = serde_json::from_slice(
+                &std::fs::read(std::env::var("GEN3_MERCURY_CROWN_PROBES").unwrap()).unwrap(),
+            )
+            .unwrap();
+            let mut count = 0;
+            for row in vectors["rows"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|r| r["slot"] == 0)
+            {
+                let before: Vec<u8> = serde_json::from_value(row["before"].clone()).unwrap();
+                let native: Vec<u8> = serde_json::from_value(row["after"].clone()).unwrap();
+                save.data[at..at + 100].copy_from_slice(&before);
+                let old = save.data.clone();
+                let selector = row["selector"].as_u64().unwrap() as u8;
+                let choice_index = if selector == 6 { 0 } else { selector + 1 };
+                let preview = rom
+                    .training_service_preview(
+                        Some(&save),
+                        Request {
+                            expected_rom_md5: rom.profile.md5.into(),
+                            service_root: root,
+                            choice_index,
+                            individual: Individual::Stored { location: party() },
+                        },
+                    )
+                    .unwrap();
+                let level_ok = before[84] >= 50;
+                assert_eq!(preview.level_satisfied, level_ok);
+                assert_eq!(preview.raw, if level_ok { native } else { before });
+                assert_eq!(preview.stat_refresh, "immediate");
+                assert_eq!(preview.before.pid, preview.after.pid);
+                assert_eq!(preview.before.ot_id, preview.after.ot_id);
+                assert_eq!(save.data, old);
+                count += 1;
+            }
+            assert_eq!(count, 252);
+        } else {
+            let raw = pokemon::to_party(&pokemon::create(&rom, 25, 1, "", 100, 42).unwrap(), &rom)
+                .unwrap();
+            for level in [99, 100] {
+                for header in [0, 1, 0x56, 0xff] {
+                    for choice in &service.choices {
+                        let mut before = raw.clone();
+                        before[30] = header;
+                        before[84] = level;
+                        save.data[at..at + 100].copy_from_slice(&before);
+                        let old = save.data.clone();
+                        let preview = rom
+                            .training_service_preview(
+                                Some(&save),
+                                Request {
+                                    expected_rom_md5: rom.profile.md5.into(),
+                                    service_root: root,
+                                    choice_index: choice.menu_index,
+                                    individual: Individual::Stored { location: party() },
+                                },
+                            )
+                            .unwrap();
+                        let mut expected = before;
+                        if level >= 100 {
+                            expected[30] |= choice.mask;
+                        }
+                        assert_eq!(preview.raw, expected);
+                        assert_eq!(preview.stat_refresh, "deferred");
+                        assert_eq!(preview.before.ivs, preview.after.ivs);
+                        assert_eq!(preview.party_stats_before, preview.party_stats_after);
+                        assert_eq!(save.data, old);
+                    }
+                }
+            }
+        }
+        // ROM-only simulations and boxed individuals share preparation semantics.
+        for level in [service.minimum_level as u8 - 1, service.minimum_level as u8] {
+            let preview = rom
+                .training_service_preview(
+                    None,
+                    Request {
+                        expected_rom_md5: rom.profile.md5.into(),
+                        service_root: root,
+                        choice_index: 0,
+                        individual: Individual::Simulated {
+                            species: 25,
+                            level,
+                            evs: [0; 6],
+                            friendship: 70,
+                            ivs: Some([13; 6]),
+                            nature_override: None,
+                            ability_slot: None,
+                        },
+                    },
+                )
+                .unwrap();
+            assert_eq!(preview.before.ivs, [13; 6]);
+            assert_eq!(
+                preview.level_satisfied,
+                level >= service.minimum_level as u8
+            );
+            assert_eq!(
+                preview.known_requirements_met,
+                if level < service.minimum_level as u8 {
+                    Some(false)
+                } else {
+                    None
+                }
+            );
+        }
+        let boxed = pokemon::create(&rom, 25, 1, "", service.minimum_level as u8, 42).unwrap();
+        let loc = Location::Box {
+            box_index: 0,
+            slot: 0,
+        };
+        save.insert(loc, &boxed, &rom).unwrap();
+        let old = save.data.clone();
+        let preview = rom
+            .training_service_preview(
+                Some(&save),
+                Request {
+                    expected_rom_md5: rom.profile.md5.into(),
+                    service_root: root,
+                    choice_index: 0,
+                    individual: Individual::Stored { location: loc },
+                },
+            )
+            .unwrap();
+        assert_eq!(preview.party_state, "boxed_full_hp_scenario");
+        assert_eq!(save.data, old);
+        assert_eq!(
+            rom.training_service_preview(
+                Some(&save),
+                Request {
+                    expected_rom_md5: rom.profile.md5.into(),
+                    service_root: root,
+                    choice_index: 7,
+                    individual: Individual::Stored { location: loc }
+                }
+            )
+            .err()
+            .unwrap()
+            .code,
+            "training_service_choice"
+        );
+        assert_eq!(sha256(&rom.data), hash);
+    }
 }

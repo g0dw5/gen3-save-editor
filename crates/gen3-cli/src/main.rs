@@ -21,7 +21,7 @@ fn run() -> Result<()> {
         println!("{}", serde_json::to_string_pretty(&v).unwrap());
     };
     if command == "help" {
-        println!("gen3 profiles\ngen3 identify ROM\ngen3 cheats ROM\ngen3 cheat-code ROM CHEAT_ID gameshark_v1_v2|codebreaker [PARAMETERS.json]\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 game-clock ROM [SAVE]\ngen3 rtc-clock ROM REQUEST.json [SAVE]\ngen3 training-items ROM\ngen3 training-services ROM [SAVE]\ngen3 training-preview ROM REQUEST.json [SAVE]\ngen3 daycare-state ROM SAVE\ngen3 event-dependencies ROM CONDITION.json [SAVE]\ngen3 event-search ROM QUERY.json [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]");
+        println!("gen3 profiles\ngen3 identify ROM\ngen3 cheats ROM\ngen3 cheat-code ROM CHEAT_ID gameshark_v1_v2|codebreaker [PARAMETERS.json]\ngen3 catalog ROM\ngen3 contest-check ROM NATURE_ID CONDITION.json\ngen3 species ROM ID\ngen3 sprite ROM ID (PNG to stdout)\ngen3 world ROM\ngen3 fishing-spots ROM [SAVE]\ngen3 game-clock ROM [SAVE]\ngen3 rtc-clock ROM REQUEST.json [SAVE]\ngen3 training-items ROM\ngen3 training-services ROM [SAVE]\ngen3 training-service-preview ROM REQUEST.json [SAVE]\ngen3 training-preview ROM REQUEST.json [SAVE]\ngen3 daycare-state ROM SAVE\ngen3 event-dependencies ROM CONDITION.json [SAVE]\ngen3 event-search ROM QUERY.json [SAVE]\ngen3 inspect ROM SAVE\ngen3 validate ROM SAVE\ngen3 patch-save ROM SAVE ACTIONS.json OUTPUT.sav [--free] [--dry-run]");
         return Ok(());
     }
     if command == "profiles" {
@@ -146,11 +146,11 @@ fn run() -> Result<()> {
             }
             print(serde_json::to_value(rom.training_catalog()?)?);
         }
-        "training-preview" => {
+        "training-preview" | "training-service-preview" => {
             if !matches!(a.len(), 3 | 4) {
                 return Err(err(
                     "arguments",
-                    "gen3 training-preview ROM REQUEST.json [SAVE]",
+                    format!("gen3 {command} ROM REQUEST.json [SAVE]"),
                 ));
             }
             let request = serde_json::from_slice(&fs::read(arg(2)?)?)?;
@@ -158,9 +158,17 @@ fn run() -> Result<()> {
                 .get(3)
                 .map(|path| Save::open(fs::read(path)?, rom.profile.save))
                 .transpose()?;
-            print(serde_json::to_value(
-                rom.training_preview(save.as_ref(), request)?,
-            )?);
+            if command == "training-service-preview" {
+                print(serde_json::to_value(rom.training_service_preview(
+                    save.as_ref(),
+                    serde_json::from_value(request)?,
+                )?)?);
+            } else {
+                print(serde_json::to_value(rom.training_preview(
+                    save.as_ref(),
+                    serde_json::from_value(request)?,
+                )?)?);
+            }
         }
         "rtc-clock" => {
             if a.len() != 3 && a.len() != 4 {

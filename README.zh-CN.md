@@ -232,3 +232,9 @@ ROM 资料的“培育资料”页提供已验证努力值道具的获取跳转�
 选择；银色分支检查银冠却在单项菜单前尝试扣金冠，原生命令已核验，页面分别说明
 所需与尝试支付，不冒充完整交易验证。只读 CLI：
 `gen3 training-services ROM [SAVE]`。见[验证边界](docs/verification/training-crowns-20261006.md)。
+
+已定位王冠服务还可预览现有或模拟个体的原生效果：水银改基础 IV 并重算同行能力，
+究极绿宝石改训练标记而不立即刷新保存的能力。字段情景与资格、完整支付分别说明，
+不会消耗道具或修改存档。只读 CLI：
+`gen3 training-service-preview ROM REQUEST.json [SAVE]`。
+见[证据与边界](docs/verification/training-service-previews-20261006.md)。
