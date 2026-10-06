@@ -62,9 +62,12 @@ pub struct EntranceSuggestion {
     pub map_id: String,
     pub chains: Vec<Vec<MapLink>>,
     pub truncated: bool,
+    pub unresolved_incoming: Vec<MapLink>,
 }
 #[derive(Serialize)]
 pub struct CollectionPlan {
+    pub entrance_coverage: Option<crate::event_dependencies::Coverage>,
+    pub entrance_diagnostics: Vec<String>,
     pub prerequisites: Option<crate::event_dependencies::Bundle>,
     pub clock: Option<crate::clock::ClockReport>,
     pub rom_md5: &'static str,
@@ -214,6 +217,45 @@ impl AcquisitionIndex {
     }
 
     pub fn collection(
+        &self,
+        rom: &Rom,
+        save: &Save,
+        request: CollectionRequest,
+    ) -> Result<CollectionPlan> {
+        let passages = crate::event_dependencies::Index::build(rom, &self.world.maps)?;
+        self.collection_with_passages(rom, save, request, &passages)
+    }
+
+    /// Share the ROM-bound script index with map/reference/prerequisite queries.
+    pub fn collection_with_passages(
+        &self,
+        rom: &Rom,
+        save: &Save,
+        request: CollectionRequest,
+        passages: &crate::event_dependencies::Index,
+    ) -> Result<CollectionPlan> {
+        let graph = passages.navigation_graph(rom, &self.world.maps, Some(save))?;
+        let mut plan = self.collection_goals(rom, save, request)?;
+        let ids: BTreeSet<_> = plan
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .flat_map(|t| {
+                [
+                    t.source.as_ref(),
+                    t.preparation.as_ref().and_then(|p| p.source.as_ref()),
+                ]
+            })
+            .flatten()
+            .filter_map(|s| s.map_id.clone())
+            .collect();
+        plan.entrances = crate::navigation::suggestions(&self.world.maps, &graph, ids);
+        plan.entrance_coverage = Some(graph.coverage);
+        plan.entrance_diagnostics = graph.diagnostics;
+        Ok(plan)
+    }
+
+    fn collection_goals(
         &self,
         rom: &Rom,
         save: &Save,
@@ -464,33 +506,9 @@ impl AcquisitionIndex {
                     .push(task);
             }
         }
-        let used_maps: BTreeSet<_> = regions
-            .values()
-            .flatten()
-            .flat_map(|t| {
-                [
-                    t.source.as_ref(),
-                    t.preparation.as_ref().and_then(|p| p.source.as_ref()),
-                ]
-                .into_iter()
-                .flatten()
-                .filter_map(|s| s.map_id.clone())
-            })
-            .collect();
-        let (edges, _) = crate::navigation::links(&rom.data, &self.world.maps)?;
-        let entrances = used_maps
-            .into_iter()
-            .map(|id| {
-                let (chains, truncated) =
-                    crate::navigation::approaches(&self.world.maps, &edges, &id);
-                EntranceSuggestion {
-                    map_id: id,
-                    chains,
-                    truncated,
-                }
-            })
-            .collect();
         Ok(CollectionPlan {
+            entrance_coverage: None,
+            entrance_diagnostics: Vec::new(),
             prerequisites: None,
             clock,
             rom_md5: rom.profile.md5,
@@ -502,7 +520,7 @@ impl AcquisitionIndex {
                 .into_iter()
                 .map(|(region, tasks)| CollectionRegion { region, tasks })
                 .collect(),
-            entrances,
+            entrances: Vec::new(),
             breeding_coverage: breeding.map(|b| b.coverage),
             partial: true,
         })

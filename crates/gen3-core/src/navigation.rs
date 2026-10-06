@@ -109,6 +109,36 @@ pub struct MapNavigation {
     pub diagnostics: Vec<String>,
 }
 
+pub struct Graph {
+    pub edges: Vec<MapLink>,
+    pub diagnostics: Vec<String>,
+    pub coverage: crate::event_dependencies::Coverage,
+}
+
+pub(crate) fn suggestions(
+    maps: &[Map],
+    graph: &Graph,
+    ids: impl IntoIterator<Item = String>,
+) -> Vec<crate::collection::EntranceSuggestion> {
+    ids.into_iter()
+        .map(|id| {
+            let (chains, truncated) = approaches(maps, &graph.edges, &id);
+            let unresolved_incoming = graph
+                .edges
+                .iter()
+                .filter(|e| e.to.as_deref() == Some(&id) && e.unresolved.is_some())
+                .cloned()
+                .collect();
+            crate::collection::EntranceSuggestion {
+                map_id: id,
+                chains,
+                unresolved_incoming,
+                truncated: truncated || graph.coverage.truncated,
+            }
+        })
+        .collect()
+}
+
 pub(crate) fn links(data: &[u8], maps: &[Map]) -> Result<(Vec<MapLink>, Vec<String>)> {
     let by_id: BTreeMap<_, _> = maps.iter().map(|m| (m.id.clone(), m)).collect();
     let mut all = Vec::new();

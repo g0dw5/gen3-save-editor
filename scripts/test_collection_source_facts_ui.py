@@ -103,6 +103,63 @@ def main():
                 "offset": 200,
                 "unresolved": None,
             }
+
+            def scripted_edge(met=None, identifier=17, kind="flag"):
+                result = copy.deepcopy(edge)
+                c = dict(kind=kind, id=identifier, value=1, comparison=1, taken=True)
+                result.update(
+                    kind="script_warp",
+                    offset=201,
+                    x=3,
+                    y=2,
+                    target_x=2,
+                    target_y=2,
+                    script=dict(
+                        root=300,
+                        source_kind="npc",
+                        local_id=1,
+                        opcode=59,
+                        conditions=[c],
+                        checks=[
+                            dict(
+                                condition=c,
+                                satisfied=met,
+                                actual=None if met is None else int(met),
+                                unresolved=None,
+                            )
+                        ],
+                        stopped_at=[300],
+                        entry_unresolved=True,
+                    ),
+                )
+                return result
+
+            def collection_entrances():
+                if not scripted_passages:
+                    return [dict(map_id="0-1", chains=[[edge]], truncated=False)]
+                missing = scripted_edge(passage_satisfied[0])
+                dynamic = scripted_edge(None, 0x8001, "variable")
+                dynamic.update(
+                    offset=202,
+                    target_x=None,
+                    target_y=None,
+                    unresolved="dynamic_coordinates",
+                )
+                return [
+                    dict(
+                        map_id="0-1",
+                        chains=[
+                            [edge],
+                            [missing],
+                            [scripted_edge(None, 0x8001, "variable")],
+                            [scripted_edge(True, 19)],
+                            [missing],
+                        ],
+                        unresolved_incoming=[dynamic],
+                        truncated=True,
+                    )
+                ]
+
             maps = [
                 dict(id="0-0", name="Outside", region=1, width=4, height=4, map_type=1),
                 dict(id="0-1", name="Floor", region=1, width=4, height=4, map_type=4),
@@ -137,10 +194,22 @@ def main():
                 owned_count=1,
                 missing_count=1,
                 regions=[dict(region=1, tasks=tasks)],
-                entrances=[dict(map_id="0-1", chains=[[edge]], truncated=False)],
+                entrances=collection_entrances(),
                 partial=True,
                 clock=None,
             )
+
+            if scripted_passages:
+                tasks[0]["preparation"] = dict(
+                    origin=2,
+                    current_count=0,
+                    source=source,
+                    steps=[],
+                    breeding=None,
+                    needs_hatching=False,
+                    truncated=False,
+                    partial=True,
+                )
 
             def configure(label):
                 tag[0] = label
@@ -303,6 +372,18 @@ def main():
                         partial=True,
                     ),
                 ]
+                if scripted_passages:
+                    reports.append(
+                        dict(
+                            rom_md5=catalog["profile"]["md5"],
+                            condition=guard(17, passage_satisfied[0]),
+                            writers=[],
+                            coverage=coverage,
+                            total_matches=0,
+                            next_offset=None,
+                            partial=True,
+                        )
+                    )
                 return dict(
                     reports=reports,
                     routes=[
@@ -332,8 +413,13 @@ def main():
                             ],
                         ),
                         dict(report_index=2, goals=[[0, 0]], candidates=[]),
-                    ],
-                    entrances=[dict(map_id="0-1", chains=[[edge]], truncated=False)],
+                    ]
+                    + (
+                        [dict(report_index=3, goals=[[0, 0]], candidates=[])]
+                        if scripted_passages
+                        else []
+                    ),
+                    entrances=collection_entrances(),
                     skipped_conditions=0,
                     truncated=False,
                     partial=True,
@@ -363,6 +449,7 @@ def main():
                         assert payload["expected_rom_md5"] == catalog["profile"]["md5"]
                     data = dict(
                         plan,
+                        entrances=collection_entrances(),
                         prerequisites=(
                             prerequisites()
                             if prerequisites_enabled and cmd != "collection"
@@ -496,7 +583,7 @@ def main():
             page.get_by_role("button", name="Collection planning", exact=True).click()
             panel = page.locator(".collection-panel")
             card = panel.locator("article.encounter-card").first
-            expect(card.locator(".acquisition-source-facts")).to_contain_text(
+            expect(card.locator(".acquisition-source-facts").first).to_contain_text(
                 key + " ROM rod 1"
             )
             expect(card).to_contain_text("Lv. 5–10")
@@ -514,6 +601,50 @@ def main():
             expect(panel.locator("article.encounter-card").nth(2)).to_contain_text(
                 "Single receipt"
             )
+            if scripted_passages:
+                entries = card.locator(".collection-entrances").first
+                expect(entries).to_contain_text(
+                    "Each approach is a separate alternative"
+                )
+                expect(entries.locator(".entrance-path")).to_have_count(3)
+                expect(entries.locator(".entrance-path").nth(1)).to_contain_text(
+                    "Missing parsed conditions"
+                )
+                expect(entries.locator(".entrance-path").nth(2)).to_contain_text(
+                    "Conditions unresolved"
+                )
+                entries.get_by_role(
+                    "button", name="Show more approaches", exact=True
+                ).click()
+                expect(entries.locator(".entrance-path")).to_have_count(5)
+                expect(entries.locator(".entrance-path").nth(3)).to_contain_text(
+                    "Parsed conditions met; access unverified"
+                )
+                entries.locator(".entrance-unresolved > summary").click()
+                expect(entries.locator(".entrance-unresolved")).to_contain_text(
+                    "do not prove this passage is currently usable"
+                )
+                expect(
+                    card.locator(".collection-preparation .collection-entrances")
+                ).to_contain_text("Missing parsed conditions")
+                if os.environ.get("GEN3_UI_ARTIFACTS"):
+                    pictures = Path(os.environ["GEN3_UI_ARTIFACTS"])
+                    pictures.mkdir(parents=True, exist_ok=True)
+                    entries.scroll_into_view_if_needed()
+                    page.locator(".floating.wide").screenshot(
+                        path=str(pictures / (key + "-collection-entrances.png"))
+                    )
+                entries.locator(".entrance-path").nth(1).get_by_role(
+                    "button", name=key + " Outside (3, 2) ↗", exact=True
+                ).click()
+                expect(page.locator(".map-focus")).to_be_visible()
+                assert page.locator(".map-focus").evaluate(
+                    "e => [e.style.left, e.style.top]"
+                ) == ["87.5%", "62.5%"]
+                page.get_by_role(
+                    "button", name="Back to previous reference", exact=False
+                ).click()
+                expect(card).to_contain_text("Each approach is a separate alternative")
             # Each target type resolves its own current-ROM name and returns here.
             for kind, label in [
                 ("item", "stone"),
@@ -540,7 +671,7 @@ def main():
             panel.get_by_role(
                 "textbox", name="Search goals / regions / maps", exact=True
             ).fill("")
-            card.get_by_role("button", name=key + " Floor ↗", exact=True).click()
+            card.get_by_role("button", name=key + " Floor ↗", exact=True).first.click()
             expect(page.locator(".map-navigation")).to_contain_text(key + " Outside")
             if scripted_passages:
                 navigation = page.locator(".map-navigation")
@@ -603,6 +734,12 @@ def main():
             page.get_by_role(
                 "button", name="Back to previous reference", exact=False
             ).click()
+            if scripted_passages:
+                expect(
+                    card.locator(".collection-entrances")
+                    .first.locator(".entrance-path")
+                    .nth(1)
+                ).to_contain_text("Parsed conditions met; access unverified")
             if prerequisites_enabled:
                 panel.get_by_role(
                     "button", name="Trace prerequisites", exact=True
@@ -611,7 +748,7 @@ def main():
                 expect(prerequisites_panel).to_be_visible()
                 expect(
                     prerequisites_panel.locator(".prerequisite-route")
-                ).to_have_count(3)
+                ).to_have_count(4 if scripted_passages else 3)
                 first = prerequisites_panel.locator(".prerequisite-route").nth(0)
                 first.locator("summary").first.click()
                 expect(first.locator(".prerequisite-candidate")).to_have_count(8)
@@ -636,7 +773,7 @@ def main():
                 expect(second).to_have_attribute("open", "")
                 first.locator(".prerequisite-candidate").first.get_by_role(
                     "button", name=key + " Floor (1, 1) ↗", exact=True
-                ).click()
+                ).first.click()
                 expect(page.locator(".map-focus")).to_be_visible()
                 page.get_by_role(
                     "button", name="Back to previous reference", exact=False
@@ -671,6 +808,13 @@ def main():
                 "&lt;script&gt;unsafe&lt;/script&gt;" in html and "<script>" not in html
             )
             assert key + " required move" in html and "default-src 'none'" in html
+            if scripted_passages:
+                assert "每条入口是独立备选路线" in html and "条件无法确定" in html
+                assert "已解析条件满足；可达性未确认" in html
+                assert 'href="#prerequisite-flag%3A17%3A1%3A1%3Atrue"' in html
+                assert 'id="prerequisite-flag%3A17%3A1%3A1%3Atrue"' in html
+                assert "入口路线 5" in html and 'class="entrance-unresolved"' in html
+                assert "只表示 NPC 所在格位" in html or "踩上" in html
             if prerequisites_enabled:
                 assert "关联收集目标" in html and 'href="#task-0-0"' in html
                 assert "循环不代表目标无法完成" in html

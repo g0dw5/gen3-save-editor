@@ -1,3 +1,4 @@
+import { EntranceRoutes } from "./EntranceRoutes";
 import { WildHeldDetails } from "./WildHeldDetails";
 import { AcquisitionSourceFacts } from "./AcquisitionSourceFacts";
 import { acquisitionTargetName } from "./acquisitionLabels";
@@ -227,6 +228,29 @@ export function CollectionPanel({
                   {t(exporting ? "dependencyExporting" : "planExport")}
                 </button>
               </div>
+              {(plan.entrance_coverage?.truncated ||
+                !!plan.entrance_coverage?.failed_scripts) && (
+                <p className="small warning-text">
+                  {t("dependencyAppendixLimit")}
+                </p>
+              )}
+              {plan.entrance_coverage && (
+                <details className="collection-navigation-evidence">
+                  <summary>
+                    {t("evidence")} · {t("navApproaches")}
+                  </summary>
+                  <pre>
+                    {JSON.stringify(
+                      {
+                        coverage: plan.entrance_coverage,
+                        diagnostics: plan.entrance_diagnostics,
+                      },
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </details>
+              )}
               <CollectionPrerequisites
                 plan={plan}
                 catalog={catalog}
@@ -384,31 +408,13 @@ export function CollectionPanel({
                               {s.x !== null ? ` (${s.x}, ${s.y})` : ""} ↗
                             </button>
                           )}
-                          {!!entrance?.chains.length && (
-                            <p className="small">
-                              {t("navApproaches")}:{" "}
-                              {entrance.chains[0].map((e, k) => (
-                                <span key={k}>
-                                  <button
-                                    className="link-button"
-                                    onClick={() =>
-                                      onMap(
-                                        e.from,
-                                        e.x !== null && e.y !== null
-                                          ? { x: e.x, y: e.y }
-                                          : undefined,
-                                      )
-                                    }
-                                  >
-                                    {mapName(e.from)}
-                                    {e.x !== null ? ` (${e.x}, ${e.y})` : ""}
-                                  </button>{" "}
-                                  →{" "}
-                                </span>
-                              ))}
-                              {mapName(entrance.map_id)}
-                            </p>
-                          )}
+                          <EntranceRoutes
+                            entry={entrance}
+                            maps={maps}
+                            catalog={catalog}
+                            onMap={onMap}
+                            onTarget={onTarget}
+                          />
                           {task.alternatives > 1 && (
                             <small>
                               {t("planAlternatives")} {task.alternatives} ·{" "}

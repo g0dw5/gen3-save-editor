@@ -249,6 +249,12 @@ fn contest_matches_native_feeding_and_npc_bounds() {
 /// Synthetic labels deliberately differ from every supported game's names.
 fn label_fixture(b: &mut [u8], p: profile::Profile) {
     if let Some(rules) = p.event_state.and_then(|r| r.effects) {
+        for (opcode, handler) in [0x16, 0x17, 0x18, 0x19, 0x1a, 0x29, 0x2a, 0x0f]
+            .into_iter()
+            .zip(rules.handlers)
+        {
+            put32(b, rules.commands + opcode * 4, 0x08000001 + handler as u32);
+        }
         put32(
             b,
             rules.commands + 0x5c * 4,
@@ -3998,11 +4004,17 @@ fn script_passages_keep_guards_native_coordinate_width_and_rom_bound_state() {
         put16(b, 0x25400, 1);
         put16(b, 0x25402, 2);
         b[0x25406..0x25408].fill(255);
+        // A writer inside the destination itself adds a guarded/cyclic clue.
+        // Trace it as an alternative, never as proof that entering is possible.
+        b[0x26400..0x26405].copy_from_slice(&[0x2b, 13, 0, 6, 1]);
+        put32(b, 0x26405, 0x08026500);
+        b[0x26409] = 2;
+        b[0x26500..0x26504].copy_from_slice(&[0x29, 11, 0, 2]);
         let mut target = map.clone();
         target.id = "0-1".into();
         target.map_type = 4;
         target.events = Some(0x25300);
-        target.scripts.clear();
+        target.scripts = vec![0x26400];
         let maps = vec![map, target];
         let original = r.data.clone();
         let index = Index::build(&r, &maps).unwrap();
@@ -4031,6 +4043,77 @@ fn script_passages_keep_guards_native_coordinate_width_and_rom_bound_state() {
             .checks
             .iter()
             .any(|c| c.condition.id == 11 && c.satisfied == Some(false)));
+        // The planner must use the same referenced edges and fresh saved guards
+        // as the map page. A missing acquisition guard does not hide entrance guards.
+        let acquisition = crate::acquisition::AcquisitionIndex {
+            wild_cache: Default::default(),
+            breeding_cache: Default::default(),
+            world: crate::world::World {
+                maps: maps.clone(),
+                map_events: vec![],
+                encounters: vec![crate::world::Encounter {
+                    selector: None,
+                    periods: vec![],
+                    species: 3,
+                    map_id: "0-1".into(),
+                    map_name: "Interior".into(),
+                    region: 1,
+                    method: "grass".into(),
+                    min_level: 5,
+                    max_level: 5,
+                    weight: Some(20),
+                    encounter_rate: Some(20),
+                    slot: Some(0),
+                    offset: 0x27000,
+                    conditional: false,
+                }],
+                trainers: vec![],
+                trainer_locations: crate::world::TrainerLocationIndex {
+                    locations: vec![],
+                    unresolved_maps: vec![],
+                },
+                map_groups: &[],
+            },
+            species: vec![r.valid_species(3).unwrap()],
+            evolutions: Default::default(),
+            learnsets: Default::default(),
+        };
+        let request = || crate::collection::CollectionRequest {
+            basis: crate::collection::CollectionBasis::Individuals,
+            families: false,
+            include_unknown_rewards: false,
+        };
+        let plan = acquisition
+            .collection_with_passages(&r, &save, request(), &index)
+            .unwrap();
+        let entry = plan.entrances.iter().find(|e| e.map_id == "0-1").unwrap();
+        assert_eq!(
+            serde_json::to_value(&entry.chains).unwrap(),
+            serde_json::to_value(&saved.approaches).unwrap()
+        );
+        assert!(entry.unresolved_incoming.is_empty());
+        assert!(plan.entrance_coverage.is_some());
+        let bundle = index.trace_plan(&r, &save, &maps, &plan).unwrap();
+        let clue = bundle
+            .reports
+            .iter()
+            .position(|r| r.condition.condition.id == 11)
+            .unwrap();
+        assert!(!bundle.routes[clue].goals.is_empty());
+        assert_eq!(bundle.reports[clue].condition.satisfied, Some(false));
+        let writer = &bundle.routes[clue].candidates[0];
+        assert!(writer
+            .requires
+            .iter()
+            .any(|i| bundle.reports[*i].condition.condition.id == 13));
+        assert!(writer
+            .entry_requires
+            .iter()
+            .flatten()
+            .any(|i| bundle.reports[*i].condition.condition.id == 11));
+        assert!(writer.recursive);
+
+        assert_eq!(save.data, before);
         let range = &profile.event_state.unwrap().flags[0];
         let bit = (11 - range.first) as usize;
         let mut main = save.logical(1..=4);
@@ -4045,6 +4128,21 @@ fn script_passages_keep_guards_native_coordinate_width_and_rom_bound_state() {
             .checks
             .iter()
             .any(|c| c.condition.id == 11 && c.satisfied == Some(true)));
+        let refreshed = acquisition
+            .collection_with_passages(&r, &save, request(), &index)
+            .unwrap();
+        let bundle = index.trace_plan(&r, &save, &maps, &refreshed).unwrap();
+        assert!(bundle
+            .reports
+            .iter()
+            .any(|r| r.condition.condition.id == 11 && r.condition.satisfied == Some(true)));
+        assert!(
+            !bundle
+                .reports
+                .iter()
+                .any(|r| r.condition.condition.id == 13),
+            "already-met conditions do not expand writer or entrance guards"
+        );
         assert_eq!(save.data, changed);
         assert_ne!(save.data, before);
         let reverse = index.map_navigation(&r, &maps, "0-1", None).unwrap();
@@ -4058,6 +4156,14 @@ fn script_passages_keep_guards_native_coordinate_width_and_rom_bound_state() {
         assert_eq!(r.data, original);
         let mut stale = r.clone();
         std::sync::Arc::make_mut(&mut stale.data)[0] ^= 1;
+        assert_eq!(
+            acquisition
+                .collection_with_passages(&stale, &save, request(), &index)
+                .err()
+                .unwrap()
+                .code,
+            "rom_mismatch"
+        );
         assert_eq!(
             index
                 .map_navigation(&stale, &maps, "0-1", None)
@@ -9541,7 +9647,9 @@ fn local_collection_prerequisite_routes_all_profiles() {
             }
         }
         assert!(!tasks.is_empty(), "{key}: no guarded runtime source");
-        let plan = CollectionPlan {
+        let mut plan = CollectionPlan {
+            entrance_coverage: None,
+            entrance_diagnostics: vec![],
             prerequisites: None,
             clock: None,
             rom_md5: rom.profile.md5,
@@ -9558,6 +9666,26 @@ fn local_collection_prerequisite_routes_all_profiles() {
             partial: true,
         };
         let index = Index::build(&rom, &acquisition.world.maps).unwrap();
+        let graph = index
+            .navigation_graph(&rom, &acquisition.world.maps, Some(&save))
+            .unwrap();
+        let goal_maps = plan
+            .regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .filter_map(|t| t.source.as_ref().and_then(|s| s.map_id.clone()))
+            .collect::<std::collections::BTreeSet<_>>();
+        plan.entrances = crate::navigation::suggestions(&acquisition.world.maps, &graph, goal_maps);
+        for entry in &plan.entrances {
+            let navigation = index
+                .map_navigation(&rom, &acquisition.world.maps, &entry.map_id, Some(&save))
+                .unwrap();
+            assert_eq!(
+                serde_json::to_value(&entry.chains).unwrap(),
+                serde_json::to_value(&navigation.approaches).unwrap(),
+                "{key}: planner/map parity"
+            );
+        }
         let bundle = index
             .trace_plan(&rom, &save, &acquisition.world.maps, &plan)
             .unwrap();
@@ -9577,6 +9705,30 @@ fn local_collection_prerequisite_routes_all_profiles() {
                         .conditions
                         .iter()
                         .any(|c| c.satisfied != Some(true) && c.condition == guard.condition));
+                }
+                let entry = bundle
+                    .entrances
+                    .iter()
+                    .find(|e| e.map_id == report.writers[candidate.writer_index].reference.map_id)
+                    .unwrap();
+                assert_eq!(
+                    candidate.entry_requires.len(),
+                    entry.chains.len() + entry.unresolved_incoming.len()
+                );
+                for condition in candidate
+                    .entry_requires
+                    .iter()
+                    .flatten()
+                    .map(|i| &bundle.reports[*i].condition.condition)
+                {
+                    assert!(entry
+                        .chains
+                        .iter()
+                        .flatten()
+                        .chain(&entry.unresolved_incoming)
+                        .filter_map(|e| e.script.as_ref())
+                        .flat_map(|s| &s.checks)
+                        .any(|g| g.satisfied != Some(true) && &g.condition == condition));
                 }
                 for untraced in &candidate.untraced_conditions {
                     assert!(untraced.satisfied != Some(true));

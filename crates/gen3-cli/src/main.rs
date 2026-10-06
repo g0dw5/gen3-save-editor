@@ -91,9 +91,9 @@ fn run() -> Result<()> {
             let save = Save::open(fs::read(arg(2)?)?, rom.profile.save)?;
             save.validate(&rom)?;
             let index = gen3_core::acquisition::AcquisitionIndex::build(&rom)?;
-            let mut plan = index.collection(&rom, &save, request)?;
             let prerequisites =
                 gen3_core::event_dependencies::Index::build(&rom, &index.world.maps)?;
+            let mut plan = index.collection_with_passages(&rom, &save, request, &prerequisites)?;
             plan.prerequisites =
                 Some(prerequisites.trace_plan(&rom, &save, &index.world.maps, &plan)?);
             print(serde_json::to_value(plan)?);

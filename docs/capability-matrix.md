@@ -31,7 +31,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Requested workflow / 功能 | BW | DP | Rocket | Ultimate | Mercury 1.2 | Evidence and limit / 证据与边界 |
 |---|---|---|---|---|---|---|
 | Map layouts, NPC art / 地图与 NPC | P | P | P | P | P | `graphics.rs`, `map_events.rs`, [map palettes](research/map-palettes.md), [Rocket maps](research/rocket-map-and-trainer-display.md), [Mercury](research/mercury-fc-11.md). Static initial layouts; no live movement/layout replacement simulation. |
-| Entrances, connections, current reachability / 入口与可达性 | P | P | P | P | P | `navigation.rs`, shared map UI and five exact-ROM tests. Map windows now combine static links with [referenced script passages](verification/script-warps-20261006.md), guard overlays, source/target focus and return. 918 native operand cases cover the decoded handlers; activation, full map loading, dynamic destinations and current access remain unresolved. Collection HTML entrances still use static links. |
+| Entrances, connections, current reachability / 入口与可达性 | P | P | P | P | P | `navigation.rs`, shared map UI and five exact-ROM tests. Map windows now combine static links with [referenced script passages](verification/script-warps-20261006.md), guard overlays, source/target focus and return. 918 native operand cases cover the decoded handlers; activation, full map loading, dynamic destinations and current access remain unresolved. Collection UI/HTML now shares guarded script entrances; see [integration evidence](verification/collection-script-entrances-20261006.md). |
 | Pickup, hidden items, dialogue rewards / 拾取与奖励 | P | P | P | P | P | [map events](research/map-events.md): BW/DP 707 maps, 122 balls, 112 hidden items. Bounded scripts retain stop evidence; ordinary/hidden and qualified NPC receipt protocols have five-fingerprint evidence below. Custom commands, complete resource/runtime guards and access remain partial. |
 | Random encounters, probability, time tables / 随机相遇 | P | P | P | P | P | `world.rs`; [time selection](research/encounter-time-selection.md), Mercury native selector. Slot weights are separate from encounter frequency; no full weekday/clock-state validation. |
 | Static, gifted, traded Pokémon / 定点、赠送、交换 | P | P | P | P | P | Shared typed map-script sources and [bounded NPC trade quotes](verification/npc-trades-20261006.md); [Rocket reward egg](research/rocket-reward-egg.md). Native calls, roamers, actual delivery and custom exchanges are not comprehensively indexed. |
@@ -45,7 +45,7 @@ from missing code. A P row can contain individually verified subfeatures.
 | Difficulty/player-dependent trainer generation / 难度动态队伍 | U | U | U | P | U | [Ultimate](research/ultimate-emerald-55.md), `ultimate_ev.rs`, `ultimate_battle.rs`: bounded native execution with party/scenario. Script overrides and full facilities are not exhaustively replayed. U does not assert other games lack difficulty mechanics. |
 | Edit, drag/swap, batch, undo/export safety / 编辑事务 | V | V | V | V | V | `session.rs`, [save integrity](research/save-integrity.md). Checksums, record preservation, rollback, backup and source conflict checks; linked mail changes blocked. Scope is represented fields, not all in-game legitimacy rules. |
 | Edited SAV in-game save and re-read / 模拟器再次保存 | P | P | P | P | V | Mercury 1.2 mGBA party/box core fields and corrected expanded-bag editing/re-save verified; earlier vanilla-offset inventory claims were withdrawn. [Correction evidence](verification/mercury-display-storage-20261005.md). Other individual emulator experiments do not certify every edit or format. |
-| Missing collection, regional planning, HTML / 缺失与路线规划 | P | P | P | P | P | `collection.rs` and shared Collection planning UI: read-only SAV missing goals, regions, static entrances and standalone HTML. Full task DAG/access/time remain partial. Mercury uses existing individuals; expanded Dex flags stay disabled. |
+| Missing collection, regional planning, HTML / 缺失与路线规划 | P | P | P | P | P | `collection.rs` and shared Collection planning UI: read-only SAV missing goals, regions, guarded entrance alternatives and standalone HTML. Full task DAG/access/time remain partial. Mercury uses existing individuals; expanded Dex flags stay disabled. |
 
 ## Reproducible baseline / 可重复基线
 
@@ -560,9 +560,23 @@ markers and directed exterior-reference chains. Destination setters and
 unreferenced bytes do not become passage edges. **918 independent native operand
 cases** match the shared decoder; public core has **125 passes / 45 opt-in ignored**.
 Five-profile bilingual UI closure passes. Full activation, movement, dynamic
-layout/loading and current reachability remain unresolved. Collection HTML still
-uses the static entrance graph. See [scope and reproduction](verification/script-warps-20261006.md).
+layout/loading and current reachability remain unresolved. Collection HTML now shares the guarded graph in the later integration below. See [scope and reproduction](verification/script-warps-20261006.md).
 
 五款游戏的地图通道仍为部分解析。脚本入口新增定位、条件叠加、跳转及返回；不自动
 推导返程，不将设置目的地的指令当作通道。参数原生对照不等于完整地图加载或可达性
-验证；独立收集 HTML 的入口图目前仍是静态表。
+验证；独立收集 HTML 已在下文增量中共用脚本入口图。
+
+
+## Guarded entrances in collection / 收集脚本入口整合
+
+All five exact profiles remain **P** for map access, acquisition, story conditions
+and collection planning. Collection sources, directed-evolution preparation,
+prerequisite writers and standalone HTML now share the map window's ROM-bound
+script graph. Entry alternatives are separate from writer guards. Fresh SAV
+observations are not cached as eligibility; satisfied conditions stop recursive
+writer/entrance tracing. Unknown destination tiles remain separate incoming
+references. Coverage, cycles and bounded-search warnings are retained.
+
+五指纹共用入口查询与 UI，按当前 SAV 重查条件；不将各条备选路线当成一组必做
+任务，不将领取状态或可达性从入口推断出来。真实 ROM、原生参数对照、合成 SAV
+及合成界面测试分别说明。[验证与未完成范围](verification/collection-script-entrances-20261006.md)。

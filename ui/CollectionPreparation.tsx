@@ -1,3 +1,4 @@
+import { EntranceRoutes } from "./EntranceRoutes";
 import { acquisitionSourceSummary } from "./acquisitionLabels";
 import { AcquisitionSourceFacts } from "./AcquisitionSourceFacts";
 import { CollectionBreeding, breedingRouteSummary } from "./CollectionBreeding";
@@ -158,31 +159,13 @@ export function CollectionPreparation({
               {s.x !== null ? ` (${s.x}, ${s.y})` : ""} ↗
             </button>
           )}
-          {!!entrance?.chains.length && (
-            <p>
-              {t("navApproaches")}:{" "}
-              {entrance.chains[0].map((e, i) => (
-                <span key={i}>
-                  <button
-                    className="link-button"
-                    onClick={() =>
-                      onMap(
-                        e.from,
-                        e.x !== null && e.y !== null
-                          ? { x: e.x, y: e.y }
-                          : undefined,
-                      )
-                    }
-                  >
-                    {mapName(e.from)}
-                    {e.x !== null ? ` (${e.x}, ${e.y})` : ""}
-                  </button>{" "}
-                  →{" "}
-                </span>
-              ))}
-              {mapName(entrance.map_id)}
-            </p>
-          )}
+          <EntranceRoutes
+            entry={entrance}
+            maps={maps}
+            catalog={catalog}
+            onMap={onMap}
+            onTarget={onTarget}
+          />
         </>
       )}
       {p.needs_hatching && <p>{t("planPreparationHatch")}</p>}

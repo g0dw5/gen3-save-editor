@@ -32,10 +32,13 @@ unnecessary prerequisite expansion. These are bounded clues, not a complete ques
 sequence. CLI: `gen3 collection-plan ROM SAVE QUERY.json`. See the
 [route evidence](docs/verification/collection-prerequisites-20261006.md).
 
-Map entrances also include referenced script passages, with NPC/trigger tiles,
-branch conditions and fresh SAV checks. Destination setters do not create edges.
+Map references, collection sources, evolution preparation and prerequisite writers
+share referenced script passages, with NPC/trigger tiles, branch conditions and
+fresh SAV checks. Each entrance chain is a separate alternative in the live UI
+and standalone HTML; expand additional chains and unresolved incoming sources. Destination setters do not create edges.
 Satisfied saved guards do not prove access or a return route. See the
-[native verification and limits](docs/verification/script-warps-20261006.md).
+[native verification and limits](docs/verification/script-warps-20261006.md) and
+[collection entrance integration](docs/verification/collection-script-entrances-20261006.md).
 
 
 Missing species also show a bounded, directed permanent-evolution preparation

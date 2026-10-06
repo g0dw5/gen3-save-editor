@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Share guarded script entrances across collection sources, evolution preparation,
+  prerequisite candidates and standalone HTML. Keep route alternatives separate,
+  trace their persistent guards to affected goals, preserve unresolved incoming
+  references, and recheck SAV state. Access and full story coverage remain partial.
+- 收集来源、进化准备、前置事件和独立 HTML 共用带条件的脚本入口。各条路线分开
+  展示，持久条件关联到受影响目标，保留未解析目的格位的来源，并随 SAV 重查。
+  当前可达性、完整剧情和动态通道仍部分支持。
+
 - Add referenced script passages to map sources, destination tiles, entrance
   layers and qualified exterior chains across all five fingerprints. Recheck SAV
   guards without caching eligibility; exclude destination setters and unreferenced

@@ -1,3 +1,4 @@
+import { EntranceRoutes } from "./EntranceRoutes";
 import { useEffect, useRef, useState } from "react";
 import {
   ConditionDetails,
@@ -90,7 +91,6 @@ function PrerequisiteRoute({
   }, [selected, route.report_index]);
   const report = bundle.reports[route.report_index];
   if (!report) return null;
-  const mapName = (id: string) => maps.find((m) => m.id === id)?.name ?? id;
   const regions = new Map<number, typeof route.candidates>();
   for (const candidate of route.candidates.slice(0, limit)) {
     const writer = report.writers[candidate.writer_index];
@@ -238,45 +238,18 @@ function PrerequisiteRoute({
                         onTarget={onTarget}
                         onMap={onMap}
                       />
-                      {candidate.untraced_conditions.length > 0 && (
+                      {(candidate.untraced_conditions.length > 0 ||
+                        (candidate.entry_untraced_conditions?.length ?? 0) >
+                          0) && (
                         <p className="small muted">{t("planUntracedGuards")}</p>
                       )}
-                      {entrance?.chains.length ? (
-                        <div className="small">
-                          <p>{t("navApproaches")}</p>
-                          {entrance.chains.slice(0, 3).map((chain, i) => (
-                            <p key={i}>
-                              {chain.map((edge, j) => (
-                                <span key={j}>
-                                  <button
-                                    className="link-button"
-                                    onClick={() =>
-                                      onMap(
-                                        edge.from,
-                                        edge.x != null && edge.y != null
-                                          ? { x: edge.x, y: edge.y }
-                                          : undefined,
-                                      )
-                                    }
-                                  >
-                                    {mapName(edge.from)}
-                                    {edge.x != null
-                                      ? ` (${edge.x}, ${edge.y})`
-                                      : ""}
-                                  </button>{" "}
-                                  →{" "}
-                                </span>
-                              ))}
-                              {w.reference.map_name}
-                            </p>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="small muted">{t("navNoApproach")}</p>
-                      )}
-                      {entrance?.truncated && (
-                        <p>{t("dependencyAppendixLimit")}</p>
-                      )}
+                      <EntranceRoutes
+                        entry={entrance}
+                        maps={maps}
+                        catalog={catalog}
+                        onMap={onMap}
+                        onTarget={onTarget}
+                      />
                       {!w.path_complete && <p>{t("dependencyPathPartial")}</p>}
                       <details>
                         <summary>{t("evidence")}</summary>

@@ -246,7 +246,7 @@ impl App {
                     )?)
                 } else if matches!(
                     input.command.as_str(),
-                    "collection_export" | "collection_prerequisites"
+                    "collection" | "collection_export" | "collection_prerequisites"
                 ) {
                     #[derive(Deserialize)]
                     #[serde(deny_unknown_fields)]
@@ -254,13 +254,16 @@ impl App {
                         expected_rom_md5: String,
                         query: crate::collection::CollectionRequest,
                     }
-                    let request: Input = serde_json::from_value(p)?;
+                    let request = if input.command == "collection" {
+                        serde_json::from_value(p)?
+                    } else {
+                        let request: Input = serde_json::from_value(p)?;
+                        if request.expected_rom_md5 != self.session()?.rom.profile.md5 {
+                            return Err(err("rom_mismatch", request.expected_rom_md5));
+                        }
+                        request.query
+                    };
                     let session = self.session()?;
-                    if request.expected_rom_md5 != session.rom.profile.md5 {
-                        return Err(err("rom_mismatch", request.expected_rom_md5));
-                    }
-                    let mut plan =
-                        index.collection(&session.rom, session.save_ref()?, request.query)?;
                     if self
                         .event_dependency_cache
                         .as_ref()
@@ -273,22 +276,23 @@ impl App {
                         self.event_dependency_cache = Some((session.rom.data.clone(), deps));
                     }
                     let session = self.session()?;
-                    plan.prerequisites =
-                        Some(self.event_dependency_cache.as_ref().unwrap().1.trace_plan(
-                            &session.rom,
-                            session.save_ref()?,
-                            &self.acquisition_cache.as_ref().unwrap().1.world.maps,
-                            &plan,
-                        )?);
-                    Ok(serde_json::to_value(plan)?)
-                } else if input.command == "collection" {
-                    let request = serde_json::from_value(p)?;
-                    let session = self.session()?;
-                    Ok(serde_json::to_value(index.collection(
+                    let index = &self.acquisition_cache.as_ref().unwrap().1;
+                    let passages = &self.event_dependency_cache.as_ref().unwrap().1;
+                    let mut plan = index.collection_with_passages(
                         &session.rom,
                         session.save_ref()?,
                         request,
-                    )?)?)
+                        passages,
+                    )?;
+                    if input.command != "collection" {
+                        plan.prerequisites = Some(passages.trace_plan(
+                            &session.rom,
+                            session.save_ref()?,
+                            &index.world.maps,
+                            &plan,
+                        )?);
+                    }
+                    Ok(serde_json::to_value(plan)?)
                 } else {
                     #[derive(Deserialize)]
                     #[serde(deny_unknown_fields)]

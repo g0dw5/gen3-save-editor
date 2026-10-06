@@ -86,9 +86,9 @@ extended/native/special transitions, live trigger selectors, moving actors,
 dynamic layouts and random facilities remain incomplete. Unknown variables,
 negative/dynamic destinations and invalid target records are retained as
 unresolved and do not enter resolved entrance chains. Script stops and technical
-evidence are expandable. Existing collection HTML entrance suggestions still
-use the static map-table graph; integrating guarded script alternatives into
-that planner is further work. No shortest-route or full-map-loading claim is made.
+evidence are expandable. Collection UI/HTML now shares these guarded script alternatives; see the later
+[integration evidence](collection-script-entrances-20261006.md). This does not
+upgrade a referenced edge into verified access. No shortest-route or full-map-loading claim is made.
 
 整体入口能力仍为部分解析；未知脚本、动态布局、随机设施和完整地图切换尚未穷尽。
 本轮没有修改用户 SAV、ROM、剧情或图鉴，也没有打包或发布。

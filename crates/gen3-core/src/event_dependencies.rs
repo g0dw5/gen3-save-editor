@@ -281,6 +281,9 @@ pub struct PlanningCandidate {
     pub writer_index: usize,
     pub requires: Vec<usize>,
     pub untraced_conditions: Vec<ConditionCheck>,
+    /// Each entry is a separate approach, never a conjunction of all entrances.
+    pub entry_requires: Vec<Vec<usize>>,
+    pub entry_untraced_conditions: Vec<ConditionCheck>,
     /// The indexed alternatives contain a path back to the requested condition.
     /// This does not make the condition impossible: another alternative may exit.
     pub recursive: bool,
@@ -293,9 +296,58 @@ pub struct PlanningRoute {
     pub candidates: Vec<PlanningCandidate>,
 }
 
+fn entry_checks(entry: &crate::collection::EntranceSuggestion) -> Vec<Vec<&ConditionCheck>> {
+    entry
+        .chains
+        .iter()
+        .map(|path| {
+            path.iter()
+                .filter_map(|e| e.script.as_ref())
+                .flat_map(|s| &s.checks)
+                .collect()
+        })
+        .chain(entry.unresolved_incoming.iter().map(|e| {
+            e.script
+                .as_ref()
+                .map(|s| s.checks.iter().collect())
+                .unwrap_or_default()
+        }))
+        .collect()
+}
+
+fn task_conditions<'a>(
+    plan: &'a crate::collection::CollectionPlan,
+    task: &'a crate::collection::CollectionTask,
+) -> Vec<&'a EventCondition> {
+    let mut conditions = Vec::new();
+    for source in [
+        task.source.as_ref(),
+        task.preparation.as_ref().and_then(|p| p.source.as_ref()),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        conditions.extend(source.conditions.iter().map(|c| &c.condition));
+        if let Some(entry) = plan
+            .entrances
+            .iter()
+            .find(|e| Some(&e.map_id) == source.map_id.as_ref())
+        {
+            conditions.extend(
+                entry_checks(entry)
+                    .into_iter()
+                    .flatten()
+                    .map(|c| &c.condition),
+            );
+        }
+    }
+    conditions
+}
+
 pub(crate) fn planning_routes(
     reports: &[Report],
     plan: &crate::collection::CollectionPlan,
+    entrances: &[crate::collection::EntranceSuggestion],
 ) -> Vec<PlanningRoute> {
     let indices: BTreeMap<_, _> = reports
         .iter()
@@ -326,10 +378,38 @@ pub(crate) fn planning_routes(
                             untraced_conditions.push(guard.clone());
                         }
                     }
+                    let mut entry_untraced_conditions = BTreeMap::new();
+                    let entry_requires = entrances
+                        .iter()
+                        .find(|e| e.map_id == writer.reference.map_id)
+                        .map(|entry| {
+                            entry_checks(entry)
+                                .into_iter()
+                                .map(|path| {
+                                    let mut path_requires = BTreeSet::new();
+                                    for guard in
+                                        path.into_iter().filter(|g| g.satisfied != Some(true))
+                                    {
+                                        if let Some(i) = indices.get(&guard.condition) {
+                                            path_requires.insert(*i);
+                                        } else {
+                                            entry_untraced_conditions
+                                                .insert(guard.condition.clone(), guard.clone());
+                                        }
+                                    }
+                                    path_requires.into_iter().collect()
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_default();
                     PlanningCandidate {
                         writer_index,
                         requires: requires.into_iter().collect(),
                         untraced_conditions,
+                        entry_requires,
+                        entry_untraced_conditions: entry_untraced_conditions
+                            .into_values()
+                            .collect(),
                         recursive: false,
                     }
                 })
@@ -344,7 +424,7 @@ pub(crate) fn planning_routes(
             }
             r.candidates
                 .iter()
-                .flat_map(|c| &c.requires)
+                .flat_map(|c| c.requires.iter().chain(c.entry_requires.iter().flatten()))
                 .copied()
                 .collect()
         })
@@ -361,15 +441,10 @@ pub(crate) fn planning_routes(
     };
     for (region_index, region) in plan.regions.iter().enumerate() {
         for (task_index, task) in region.tasks.iter().enumerate() {
-            let starts = [
-                task.source.as_ref(),
-                task.preparation.as_ref().and_then(|p| p.source.as_ref()),
-            ]
-            .into_iter()
-            .flatten()
-            .flat_map(|s| &s.conditions)
-            .filter_map(|c| indices.get(&c.condition).copied())
-            .collect();
+            let starts = task_conditions(plan, task)
+                .into_iter()
+                .filter_map(|c| indices.get(c).copied())
+                .collect();
             for i in reachable(starts) {
                 routes[i].goals.push([region_index, task_index]);
             }
@@ -377,8 +452,15 @@ pub(crate) fn planning_routes(
     }
     for route in &mut routes {
         for candidate in &mut route.candidates {
-            candidate.recursive =
-                reachable(candidate.requires.clone()).contains(&route.report_index);
+            candidate.recursive = reachable(
+                candidate
+                    .requires
+                    .iter()
+                    .chain(candidate.entry_requires.iter().flatten())
+                    .copied()
+                    .collect(),
+            )
+            .contains(&route.report_index);
         }
     }
     routes
@@ -515,13 +597,12 @@ fn references(rom: &Rom, maps: &[Map]) -> Result<Vec<Reference>> {
 }
 impl Index {
     /// Reuse the loaded-ROM script index; never cache SAV eligibility in it.
-    pub fn map_navigation(
+    pub fn navigation_graph(
         &self,
         rom: &Rom,
         maps: &[Map],
-        id: &str,
         save: Option<&Save>,
-    ) -> Result<crate::navigation::MapNavigation> {
+    ) -> Result<crate::navigation::Graph> {
         self.check_rom(rom)?;
         let state = save
             .zip(rom.profile.event_state)
@@ -558,7 +639,22 @@ impl Index {
             diagnostics.push(format!("Partial script passages: {failures} failed destinations; {} failed roots; bounded={}", self.coverage.failed_scripts, self.coverage.truncated));
         }
         diagnostics.push("Script passages retain branch/visibility guards; activation and current reachability remain unverified. Hole, native/special and extended transitions are not fully covered. Destination setters do not create edges.".into());
-        crate::navigation::report(maps, &edges, diagnostics, id)
+        Ok(crate::navigation::Graph {
+            edges,
+            diagnostics,
+            coverage: self.coverage.clone(),
+        })
+    }
+
+    pub fn map_navigation(
+        &self,
+        rom: &Rom,
+        maps: &[Map],
+        id: &str,
+        save: Option<&Save>,
+    ) -> Result<crate::navigation::MapNavigation> {
+        let graph = self.navigation_graph(rom, maps, save)?;
+        crate::navigation::report(maps, &graph.edges, graph.diagnostics, id)
     }
 
     pub fn trainer(
@@ -647,17 +743,16 @@ impl Index {
             return Err(err("rom_mismatch", plan.rom_md5));
         }
         use std::collections::VecDeque;
+        let graph = self.navigation_graph(rom, maps, Some(save))?;
+        let mut writer_entrances = BTreeMap::new();
         let mut queue = VecDeque::new();
         for task in plan.regions.iter().flat_map(|r| &r.tasks) {
-            for source in [
-                task.source.as_ref(),
-                task.preparation.as_ref().and_then(|p| p.source.as_ref()),
-            ]
-            .into_iter()
-            .flatten()
-            {
-                queue.extend(source.conditions.iter().map(|c| (c.condition.clone(), 0)));
-            }
+            queue.extend(
+                task_conditions(plan, task)
+                    .into_iter()
+                    .cloned()
+                    .map(|c| (c, 0)),
+            );
         }
         let mut seen = BTreeSet::new();
         let mut reports = Vec::new();
@@ -699,16 +794,34 @@ impl Index {
                 },
             )?;
             truncated |= report.next_offset.is_some();
-            for guard in report
-                .writers
-                .iter()
-                .flat_map(|w| &w.conditions)
-                .filter(|g| report.condition.satisfied != Some(true) && g.satisfied != Some(true))
-            {
-                if depth < 3 {
-                    queue.push_back((guard.condition.clone(), depth + 1));
-                } else if !seen.contains(&guard.condition) {
-                    truncated = true;
+            // Trace each writer's guarded entrance independently. This is a
+            // clue graph, not a claim that all alternative paths are required.
+            if report.condition.satisfied != Some(true) {
+                for writer in &report.writers {
+                    let id = &writer.reference.map_id;
+                    if !writer_entrances.contains_key(id) && writer_entrances.len() < 256 {
+                        if let Some(entry) =
+                            crate::navigation::suggestions(maps, &graph, [id.clone()]).pop()
+                        {
+                            writer_entrances.insert(id.clone(), entry);
+                        }
+                    }
+                    let entry_guards = writer_entrances
+                        .get(id)
+                        .map(entry_checks)
+                        .unwrap_or_default();
+                    for guard in writer
+                        .conditions
+                        .iter()
+                        .chain(entry_guards.into_iter().flatten())
+                        .filter(|g| g.satisfied != Some(true))
+                    {
+                        if depth < 3 {
+                            queue.push_back((guard.condition.clone(), depth + 1));
+                        } else if !seen.contains(&guard.condition) {
+                            truncated = true;
+                        }
+                    }
                 }
             }
             reports.push(report);
@@ -718,21 +831,17 @@ impl Index {
             .flat_map(|r| &r.writers)
             .map(|w| w.reference.map_id.clone())
             .collect();
-        let (edges, _) = crate::navigation::links(&rom.data, maps)?;
-        truncated |= ids.len() > 256;
+        truncated |= ids.len() > 256 || graph.coverage.truncated;
         let entrances = ids
             .into_iter()
             .take(256)
-            .map(|id| {
-                let (chains, truncated) = crate::navigation::approaches(maps, &edges, &id);
-                crate::collection::EntranceSuggestion {
-                    map_id: id,
-                    chains,
-                    truncated,
-                }
+            .filter_map(|id| {
+                writer_entrances
+                    .remove(&id)
+                    .or_else(|| crate::navigation::suggestions(maps, &graph, [id]).pop())
             })
-            .collect();
-        let routes = planning_routes(&reports, plan);
+            .collect::<Vec<_>>();
+        let routes = planning_routes(&reports, plan, &entrances);
         Ok(Bundle {
             reports,
             routes,
@@ -1054,6 +1163,8 @@ mod route_tests {
     #[test]
     fn prerequisite_routes_keep_alternatives_cycles_and_untraced_guards_separate() {
         let plan = crate::collection::CollectionPlan {
+            entrance_coverage: None,
+            entrance_diagnostics: vec![],
             prerequisites: None,
             clock: None,
             rom_md5: "fixture",
@@ -1084,7 +1195,7 @@ mod route_tests {
             report(12, vec![vec![guard(11, Some(false))]]),
             report(13, vec![]),
         ];
-        let routes = planning_routes(&reports, &plan);
+        let routes = planning_routes(&reports, &plan, &[]);
         assert_eq!(routes[0].candidates.len(), 2);
         let first = &routes[0].candidates[0];
         assert_eq!(first.requires, vec![1]);
@@ -1097,5 +1208,80 @@ mod route_tests {
         assert!(!alternate.recursive);
         assert!(routes[2].candidates.is_empty());
         assert!(routes.iter().all(|r| r.goals.is_empty()));
+    }
+    #[test]
+    fn writer_entrance_alternatives_do_not_become_one_mandatory_guard_list() {
+        let plan = crate::collection::CollectionPlan {
+            entrance_coverage: None,
+            entrance_diagnostics: vec![],
+            prerequisites: None,
+            clock: None,
+            rom_md5: "fixture",
+            basis: crate::collection::CollectionBasis::Individuals,
+            families: true,
+            owned_count: 0,
+            missing_count: 0,
+            regions: vec![],
+            entrances: vec![],
+            breeding_coverage: None,
+            partial: true,
+        };
+        let edge = |checks: Vec<ConditionCheck>, unresolved| crate::navigation::MapLink {
+            from: "0-1".into(),
+            to: Some("0-0".into()),
+            kind: "script_warp",
+            x: Some(1),
+            y: Some(2),
+            target_x: Some(1),
+            target_y: Some(2),
+            warp_index: None,
+            target_warp: None,
+            direction: None,
+            displacement: None,
+            offset: 200,
+            unresolved,
+            script: Some(crate::navigation::ScriptPassage {
+                root: 100,
+                source_kind: "npc",
+                local_id: Some(1),
+                opcode: 59,
+                conditions: checks.iter().map(|c| c.condition.clone()).collect(),
+                checks,
+                stopped_at: vec![],
+                entry_unresolved: true,
+            }),
+        };
+        let mut native_guard = guard(40, None);
+        native_guard.condition.kind = "bag_item_runtime";
+        let entrances = vec![crate::collection::EntranceSuggestion {
+            map_id: "0-0".into(),
+            chains: vec![
+                vec![edge(vec![guard(12, Some(false))], None)],
+                vec![edge(vec![guard(13, Some(true))], None)],
+            ],
+            unresolved_incoming: vec![edge(vec![native_guard], Some("dynamic_coordinates"))],
+            truncated: false,
+        }];
+        let reports = vec![
+            report(11, vec![vec![]]),
+            report(12, vec![vec![guard(11, Some(false))]]),
+            report(13, vec![]),
+        ];
+        let routes = planning_routes(&reports, &plan, &entrances);
+        let candidate = &routes[0].candidates[0];
+        assert!(
+            candidate.requires.is_empty(),
+            "entrance alternatives must not contaminate writer guards"
+        );
+        assert_eq!(candidate.entry_requires, vec![vec![1], vec![], vec![]]);
+        assert_eq!(candidate.entry_untraced_conditions.len(), 1);
+        assert_eq!(
+            candidate.entry_untraced_conditions[0].condition.kind,
+            "bag_item_runtime"
+        );
+        assert!(
+            candidate.recursive,
+            "cycle remains a qualified clue; a met alternate entrance still exists"
+        );
     }
 }

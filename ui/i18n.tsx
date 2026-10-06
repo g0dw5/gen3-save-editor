@@ -512,6 +512,13 @@ export const en = {
   navTitle: "Entrances and connected maps",
   navHelp:
     "ROM table and referenced-script links. Script guards may be checked against your SAV; activation, collision and dynamic layouts still need verification. Links do not prove current access or a return route.",
+  planEntranceAlternatives:
+    "Each approach is a separate alternative; their conditions are not all required together.",
+  planEntranceNumber: "Approach {n}",
+  planEntranceMore: "Show more approaches",
+  planEntranceBlocked: "Missing parsed conditions",
+  planEntranceUnknown: "Conditions unresolved",
+  planEntranceMet: "Parsed conditions met; access unverified",
   navApproaches: "Suggested exterior entrance chains",
   navNoApproach:
     "Exterior map or no resolved entrance reference chain. Additional scripted and dynamic access may exist.",
@@ -1732,6 +1739,13 @@ export const zh: Record<Key, string> = {
   navTitle: "入口与关联地图",
   navHelp:
     "以下为 ROM 表与已引用脚本中的连接。脚本条件可叠加 SAV 判断，但触发方式、碰撞及动态布局仍需验证；存在连接不代表当前可达，也不保证能原路返回。",
+  planEntranceAlternatives:
+    "每条入口是独立备选路线，不要求同时完成所有路线的条件。",
+  planEntranceNumber: "入口路线 {n}",
+  planEntranceMore: "显示更多入口",
+  planEntranceBlocked: "尚缺已解析条件",
+  planEntranceUnknown: "条件无法确定",
+  planEntranceMet: "已解析条件满足；可达性未确认",
   navApproaches: "外部入口链（参考）",
   navNoApproach:
     "当前已是外部地图，或未找到可解析的入口引用链；可能还存在其他脚本或动态入口。",

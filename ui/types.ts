@@ -687,6 +687,12 @@ export interface CollectionBreedingRoute {
   offspring_pid: number;
   partial: boolean;
 }
+export interface EntranceSuggestion {
+  map_id: string;
+  chains: MapLink[][];
+  unresolved_incoming?: MapLink[];
+  truncated: boolean;
+}
 export interface CollectionPlan {
   prerequisites?: {
     reports: EventDependencyReport[];
@@ -696,11 +702,13 @@ export interface CollectionPlan {
       candidates: {
         writer_index: number;
         requires: number[];
+        entry_requires?: number[][];
+        entry_untraced_conditions?: AcquisitionSource["conditions"];
         untraced_conditions: AcquisitionSource["conditions"];
         recursive: boolean;
       }[];
     }[];
-    entrances: { map_id: string; chains: MapLink[][]; truncated: boolean }[];
+    entrances: EntranceSuggestion[];
     skipped_conditions: number;
     truncated: boolean;
     partial: boolean;
@@ -712,7 +720,9 @@ export interface CollectionPlan {
   owned_count: number;
   missing_count: number;
   regions: { region: number | null; tasks: CollectionTask[] }[];
-  entrances: { map_id: string; chains: MapLink[][]; truncated: boolean }[];
+  entrances: EntranceSuggestion[];
+  entrance_coverage?: EventDependencyReport["coverage"] | null;
+  entrance_diagnostics?: string[];
   breeding_coverage?: {
     parent_count: number;
     checked_pairs: number;
