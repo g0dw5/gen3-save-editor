@@ -8852,3 +8852,153 @@ fn local_service_previews_match_native_and_keep_reference_save_read_only() {
         assert_eq!(sha256(&rom.data), hash);
     }
 }
+
+#[test]
+#[ignore = "requires five exact ROMs and GEN3_TRAINING_SERVICE_MENU_PROBES independent native evidence"]
+fn local_training_service_menus_match_native_input_decisions() {
+    use armv4t_emu::Memory;
+    let vectors: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_TRAINING_SERVICE_MENU_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        let rom =
+            Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
+                .unwrap();
+        let digest = sha256(&rom.data);
+        let report = rom.training_services(None).unwrap();
+        if !matches!(key, "ULTIMATE" | "MERCURY12") {
+            assert!(report.services.is_empty());
+            continue;
+        }
+        let v = &vectors[key];
+        assert_eq!(v["md5"], rom.profile.md5);
+        let rule = &v["rules"];
+        let number = |name: &str| rule[name].as_u64().unwrap() as u32;
+        let menus = &report.services[0].menus;
+        assert_eq!(menus.len(), if key == "MERCURY12" { 2 } else { 1 });
+        for entry in v["entries"].as_array().unwrap() {
+            let at = entry["command"].as_u64().unwrap() as usize;
+            let menu = menus.iter().find(|m| m.command == at).unwrap();
+            let params: Vec<u32> = entry["params"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_u64().unwrap() as u32)
+                .collect();
+            assert_eq!(menu.cancel_with_b, params[3] & number("ignore_b_mask") == 0);
+            assert_eq!(menu.payment_precedes_menu, menu.stage == "stat_choice");
+            assert_eq!(menu.single_stat_only, menu.stage == "stat_choice");
+            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
+            ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
+            let entry = u32(&rom.data, number("commands") as usize + 0x6f * 4).unwrap() & !1;
+            let regs = ram
+                .observe(
+                    entry,
+                    [0x02010000, 0, 0, 0],
+                    [0; 2],
+                    10_000,
+                    number("menu_entry"),
+                )
+                .unwrap();
+            assert_eq!(regs[..4], params);
+        }
+        assert_eq!(
+            v["rows"].as_array().unwrap().len(),
+            if key == "MERCURY12" { 32 } else { 28 }
+        );
+        for row in v["rows"].as_array().unwrap() {
+            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
+            let flags = row["params"][3].as_u64().unwrap() as u32;
+            let id = row["params"][2].as_u64().unwrap() as u32;
+            let count = row["count"].as_u64().unwrap() as u32;
+            ram.call(
+                number("create"),
+                [flags & number("ignore_b_mask"), count, 0, id],
+                [0; 2],
+                100_000,
+            )
+            .unwrap();
+            assert_eq!(ram.r8(number("tasks") + 4), 1);
+            assert_eq!(
+                ram.r16(number("tasks") + 16),
+                (flags & number("ignore_b_mask")) as u16
+            );
+            for _ in 0..row["startup_ticks"].as_u64().unwrap() {
+                ram.call(number("callback"), [0; 4], [0; 2], 100_000)
+                    .unwrap();
+            }
+            assert_eq!(ram.r8(number("delay")), 0);
+            ram.w8(number("cursor") + 2, row["cursor"].as_u64().unwrap() as u8);
+            ram.w8(number("cursor") + 11, 1);
+            ram.w16(number("keys"), row["keys"].as_u64().unwrap() as u16);
+            ram.w16(number("result"), 255);
+            let regs = ram
+                .observe(
+                    number("callback"),
+                    [0; 4],
+                    [0; 2],
+                    100_000,
+                    row["stop"].as_u64().unwrap() as u32,
+                )
+                .unwrap();
+            if row["kind"] == "selected" {
+                assert_eq!(regs[1], row["cursor"].as_u64().unwrap() as u32);
+            }
+            assert_eq!(ram.r16(number("result")), 255);
+            if row["kind"] == "cancel" {
+                assert_eq!(row["cancel_result"], 127);
+            }
+        }
+        for path in v["cancel_paths"].as_array().unwrap() {
+            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
+            ram.w16(number("result"), 127);
+            for step in path["trace"].as_array().unwrap() {
+                let at = step["command"].as_u64().unwrap() as usize;
+                let op = rom.data[at];
+                assert!(matches!(op, 0x21 | 0x05 | 0x06));
+                let native =
+                    u32(&rom.data, number("commands") as usize + op as usize * 4).unwrap() & !1;
+                ram.w32(0x02010008, 0x08000000 + at as u32 + 1);
+                ram.call(native, [0x02010000, 0, 0, 0], [0; 2], 100_000)
+                    .unwrap();
+                assert_eq!(
+                    ram.r32(0x02010008),
+                    0x08000000 + step["next"].as_u64().unwrap() as u32
+                );
+            }
+            assert_eq!(rom.data[path["dialogue"].as_u64().unwrap() as usize], 0x0f);
+        }
+        assert_eq!(v["transforms"].as_array().unwrap().len(), 256);
+        for row in v["transforms"].as_array().unwrap() {
+            let mut ram = crate::native_trainer::Sandbox::new(&rom.data);
+            let flags = row["flags"].as_u64().unwrap() as u32;
+            ram.w32(0x03007e00 + number("transform_local"), flags);
+            let regs = ram
+                .observe(
+                    number("transform_start"),
+                    [0; 4],
+                    [
+                        if number("transform_local") == 0 {
+                            flags
+                        } else {
+                            0
+                        },
+                        0,
+                    ],
+                    1000,
+                    number("transform_stop"),
+                )
+                .unwrap();
+            assert_eq!(
+                regs[number("transform_reg") as usize],
+                row["actual"].as_u64().unwrap() as u32
+            );
+            assert_eq!(
+                row["actual"].as_u64().unwrap() as u32,
+                flags & number("ignore_b_mask")
+            );
+        }
+        assert_eq!(sha256(&rom.data), digest);
+    }
+}

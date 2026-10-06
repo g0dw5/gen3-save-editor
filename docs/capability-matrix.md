@@ -457,7 +457,7 @@ complete NPC interaction or edited-SAV emulator round trip. Full menus, credit
 acquisition, current access, immediate stat refresh and other-ROM crown services
 remain incomplete. Mercury now has a separate base-IV service adapter, with
 runtime unlock/level/menu and required-versus-payment records. Its native silver
-branch checks silver but attempts to remove gold, before the cancellable stat
+branch checks silver but attempts to remove gold, before the single-stat
 menu; field/payment probes do not certify the full interaction. BW/DP/Rocket
 empty service results remain unknown, not absence.
 See [evidence and scope](verification/training-crowns-20261006.md).
@@ -490,3 +490,15 @@ separate. Box/simulated inputs use a full-HP projection, not a verified PC
 transfer. No items or SAVs are changed. Overall training stays **P**: full menu,
 payment/cancellation, story access and other-profile services remain unresolved.
 See [service-preview evidence](verification/training-service-previews-20261006.md).
+
+### Service-menu cancellation / 服务菜单取消
+
+Runtime menu flags now distinguish Mercury's cancellable initial menu from its
+single-stat menu that ignores B after the payment attempt. Ultimate's training
+choice menu allows B. Three parameter observations, 60 native input decisions
+and eight cancel-routing commands match independent mGBA probes and the core
+runner. Another 512 native flag-transfer slices verify the distinct Mercury
+bit-mask and Ultimate full-byte rules. This corrects the earlier unsupported “cancellable stat menu” wording;
+it does not certify rendered windows, party selection, transaction/refund or
+current story access. Training remains **P** across all five fingerprints.
+See [menu evidence](verification/training-service-menus-20261006.md).

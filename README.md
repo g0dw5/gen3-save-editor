@@ -308,3 +308,8 @@ changes training flags without immediately refreshing saved stats. Hypothetical
 effects remain separate from eligibility and full payment. Read-only CLI:
 `gen3 training-service-preview ROM REQUEST.json [SAVE]`.
 [Scope and evidence](docs/verification/training-service-previews-20261006.md).
+
+Service menus now show runtime B-cancellation rules. Mercury's single-stat menu
+ignores B after its payment attempt; its initial menu and Ultimate's training
+choice permit cancellation. This corrects the earlier menu description; full
+NPC transactions remain partial. [Native menu evidence](docs/verification/training-service-menus-20261006.md).

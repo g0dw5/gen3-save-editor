@@ -264,6 +264,28 @@ def main():
                                     )
                                 ],
                                 text=[key + " runtime service dialogue"],
+                                menus=[
+                                    dict(
+                                        stage="training_choice",
+                                        single_stat_only=False,
+                                        cancel_with_b=True,
+                                        payment_precedes_menu=False,
+                                        command=124,
+                                    )
+                                ]
+                                + (
+                                    [
+                                        dict(
+                                            stage="stat_choice",
+                                            single_stat_only=True,
+                                            cancel_with_b=False,
+                                            payment_precedes_menu=True,
+                                            command=125,
+                                        )
+                                    ]
+                                    if key == "MERCURY12"
+                                    else []
+                                ),
                                 evidence=dict(root=123),
                                 partial=True,
                             )
@@ -503,6 +525,10 @@ def main():
                     + ("50" if key == "MERCURY12" else "100")
                 )
                 expect(service.locator(".training-service-choice")).to_have_count(1)
+                expect(service).to_contain_text("B cancels this menu")
+                expect(service).not_to_contain_text(
+                    "B is ignored; select an option to continue"
+                )
                 expect(
                     service.get_by_role(
                         "combobox", name="Choose a training option", exact=True
@@ -550,7 +576,13 @@ def main():
                     expect(service).to_contain_text(
                         "The ROM checks one item but attempts to remove a different one"
                     )
-                    expect(service).to_contain_text("Before the cancellable stat menu")
+                    expect(service).to_contain_text("Before the single-stat menu")
+                    expect(service).to_contain_text(
+                        "B is ignored; select an option to continue"
+                    )
+                    expect(service).to_contain_text(
+                        "Payment has already been attempted at this stage"
+                    )
                     expect(
                         service.get_by_role(
                             "button", name="MERCURY12 runtime gold × 1 ↗", exact=True
@@ -943,9 +975,68 @@ def main():
                 expect(effect.locator(".training-service-result")).to_contain_text(
                     "Uses the saved party record"
                 )
+                card.get_by_role(
+                    "button", name="Test map · (3, 4) ↗", exact=True
+                ).click()
+                expect(page.locator(".map-navigation")).to_be_visible()
+                page.get_by_role(
+                    "button", name="← Back to previous reference", exact=True
+                ).click()
+                expect(effect.locator(".training-service-result")).to_contain_text(
+                    "Uses the saved party record"
+                )
+                card.get_by_role(
+                    "button", name=key + " runtime gold × 1 ↗", exact=True
+                ).first.click()
+                expect(page.locator(".acquisition-panel")).to_be_visible()
+                page.get_by_role(
+                    "button", name="← Back to previous reference", exact=True
+                ).click()
+                expect(effect.locator(".training-service-result")).to_contain_text(
+                    "Uses the saved party record"
+                )
+                # A new SAV snapshot invalidates a request already in flight.
+                hold_service[0] = True
+                effect.get_by_role(
+                    "button", name="Preview service field effects", exact=True
+                ).click()
+                page.wait_for_timeout(100)
+                assert delayed_service
+                with page.expect_file_chooser() as chooser:
+                    page.get_by_role(
+                        "button", name="Open save", exact=True
+                    ).first.click()
+                chooser.value.set_files(
+                    dict(
+                        name="synthetic-refresh.sav",
+                        mimeType="application/octet-stream",
+                        buffer=b"fixture-only",
+                    )
+                )
+                route, data = delayed_service.pop()
+                route.fulfill(
+                    content_type="application/json",
+                    body=json.dumps(dict(ok=True, data=data)),
+                )
+                expect(panel.locator(".training-service-result")).to_have_count(0)
+                card.get_by_text(
+                    "Preview this service on an individual", exact=True
+                ).click()
+                effect.get_by_label(
+                    "Service preview individual", exact=True
+                ).select_option("p:0")
+                effect.get_by_role(
+                    "button", name="Preview service field effects", exact=True
+                ).click()
+                expect(effect.locator(".training-service-result")).to_contain_text(
+                    "Uses the saved party record"
+                )
                 page.get_by_role("button", name="简体中文", exact=True).click()
                 expect(effect.locator(".training-service-result")).to_contain_text(
                     "原生个体字段结果"
+                )
+                expect(panel.locator(".training-service")).to_contain_text(
+                    "可按 B 取消此菜单"
                 )
                 assert panel.evaluate("e => e.scrollWidth <= e.clientWidth + 1")
                 if os.environ.get("GEN3_UI_ARTIFACTS"):
@@ -960,6 +1051,13 @@ def main():
                     )
             if key in ["ROCKET", "MERCURY12", "ULTIMATE"]:
                 page.get_by_role("button", name="English", exact=True).click()
+                if key in ["MERCURY12", "ULTIMATE"]:
+                    hold_service[0] = True
+                    effect.get_by_role(
+                        "button", name="Preview service field effects", exact=True
+                    ).click()
+                    page.wait_for_timeout(100)
+                    assert delayed_service
                 hold[0] = True
                 panel.get_by_role(
                     "button", name="Preview native effect", exact=True
@@ -978,6 +1076,12 @@ def main():
                     )
                 )
                 expect(panel).to_have_count(0)
+                if key in ["MERCURY12", "ULTIMATE"]:
+                    route, data = delayed_service.pop()
+                    route.fulfill(
+                        content_type="application/json",
+                        body=json.dumps(dict(ok=True, data=data)),
+                    )
                 route, data = delayed.pop()
                 route.fulfill(
                     content_type="application/json",

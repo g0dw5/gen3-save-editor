@@ -42,6 +42,13 @@ export type TrainingService = {
   text: string[];
   conditions: Check[];
   evidence: { root: number };
+  menus: {
+    stage: string;
+    single_stat_only: boolean;
+    cancel_with_b: boolean;
+    payment_precedes_menu: boolean;
+    command: number;
+  }[];
 };
 type Report = {
   rom_md5: string;
@@ -214,6 +221,26 @@ function ServiceCard({
               {t("trainingServicePaymentMismatch")}
             </p>
           )}
+          {service.menus
+            .filter((menu) => !menu.single_stat_only || choice.stat !== null)
+            .map((menu) => (
+              <p className="small" key={menu.command}>
+                {t(
+                  menu.stage === "stat_choice"
+                    ? "trainingServiceStatMenu"
+                    : "trainingServiceMainMenu",
+                )}
+                {" · "}
+                {t(
+                  menu.cancel_with_b
+                    ? "trainingServiceCanCancel"
+                    : "trainingServiceCannotCancel",
+                )}
+                {menu.payment_precedes_menu && (
+                  <span> · {t("trainingServicePaymentAlreadyAttempted")}</span>
+                )}
+              </p>
+            ))}
           {choice.credit && (
             <p className="small">
               {t("trainingCrownCredit")} ·{" "}

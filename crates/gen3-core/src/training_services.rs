@@ -29,6 +29,7 @@ pub struct CrownRules {
     pub level_check: usize,
     pub menu_command: usize,
     pub menu_table: usize,
+    pub menu_ignore_b_mask: u8,
     pub gold: CrownBranch,
     pub silver: CrownBranch,
     pub messages: &'static [usize],
@@ -43,6 +44,7 @@ pub const ULTIMATE_CROWNS: CrownRules = CrownRules {
     level_check: 0x181278f,
     menu_command: 0x181279a,
     menu_table: 0x1700000,
+    menu_ignore_b_mask: 0xff,
     gold: CrownBranch {
         credit_check: 0x18127bb,
         item_check: 0x18127c6,
@@ -87,6 +89,8 @@ pub struct IvCrownRules {
     pub level_reader: u32,
     pub setter: u32,
     pub selected_individual: u32,
+    pub menu_commands: [usize; 2],
+    pub menu_ignore_b_mask: u8,
 }
 pub const MERCURY_CROWNS: IvCrownRules = IvCrownRules {
     root: 0x7b05ba,
@@ -102,6 +106,8 @@ pub const MERCURY_CROWNS: IvCrownRules = IvCrownRules {
     level_reader: 0x0896a730,
     setter: 0x09d5c1d8,
     selected_individual: 0x020370c0,
+    menu_commands: [0x7b003d, 0x7b01fb],
+    menu_ignore_b_mask: 1,
 };
 #[derive(Serialize)]
 pub struct ServiceLocation {
@@ -128,10 +134,18 @@ pub struct CrownChoice {
 pub struct ServicePayment {
     pub item: u16,
     pub quantity: u16,
-    /// Some ROM scripts attempt payment before a cancellable stat menu and
+    /// Some ROM scripts attempt payment before a stat menu and
     /// continue even when removal fails. Preserve this distinction as evidence.
     pub before_stat_selection: bool,
     pub result_checked: bool,
+}
+#[derive(Serialize)]
+pub struct ServiceMenu {
+    pub stage: &'static str,
+    pub single_stat_only: bool,
+    pub cancel_with_b: bool,
+    pub payment_precedes_menu: bool,
+    pub command: usize,
 }
 #[derive(Serialize)]
 pub struct CrownService {
@@ -141,6 +155,7 @@ pub struct CrownService {
     pub locations: Vec<ServiceLocation>,
     pub text: Vec<String>,
     pub conditions: Vec<ConditionCheck>,
+    pub menus: Vec<ServiceMenu>,
     pub evidence: ServiceRules,
     pub partial: bool,
 }
@@ -187,6 +202,25 @@ fn branch(rom: &Rom, rule: CrownBranch) -> Result<(u16, u16, u16, u8)> {
     Ok((credit, item, quantity, mask))
 }
 impl Rom {
+    // Opcode 0x6f's fourth argument reaches the exact engine's ignore-B flag.
+    // Mercury masks bit 0 (bit 1 is presentation); Ultimate retains the byte.
+    fn service_menu(
+        &self,
+        command: usize,
+        stage: &'static str,
+        single_stat_only: bool,
+        payment_precedes_menu: bool,
+        ignore_b_mask: u8,
+    ) -> Result<ServiceMenu> {
+        instruction(self, command, 0x6f)?;
+        Ok(ServiceMenu {
+            stage,
+            single_stat_only,
+            cancel_with_b: bytes(&self.data, command + 4, 1)?[0] & ignore_b_mask == 0,
+            payment_precedes_menu,
+            command,
+        })
+    }
     pub fn training_services(&self, save: Option<&Save>) -> Result<Report> {
         if let Some(save) = save {
             if save.layout.pokemon_codec != self.profile.save.pokemon_codec
@@ -313,6 +347,13 @@ impl Rom {
                 locations,
                 text,
                 conditions: vec![],
+                menus: vec![self.service_menu(
+                    rule.menu_command,
+                    "training_choice",
+                    false,
+                    false,
+                    rule.menu_ignore_b_mask,
+                )?],
                 evidence: ServiceRules::Flags(rule),
                 partial: true,
             });
@@ -431,7 +472,7 @@ impl Rom {
             {
                 return Err(err("training_service_payment", pay_at));
             }
-            // Silver removes an item before setting up the cancellable menu.
+            // Silver attempts payment before setting up the single-stat menu.
             // No comparison/branch inspects the remove command's result here.
             if branch == 1 {
                 instruction(self, pay_at + 5, 0x16)?;
@@ -511,6 +552,22 @@ impl Rom {
             locations,
             conditions,
             text,
+            menus: vec![
+                self.service_menu(
+                    rule.menu_commands[0],
+                    "training_choice",
+                    false,
+                    false,
+                    rule.menu_ignore_b_mask,
+                )?,
+                self.service_menu(
+                    rule.menu_commands[1],
+                    "stat_choice",
+                    true,
+                    true,
+                    rule.menu_ignore_b_mask,
+                )?,
+            ],
             evidence: ServiceRules::BaseIvs(rule),
             partial: true,
         }))

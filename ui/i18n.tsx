@@ -288,7 +288,13 @@ export const en = {
   trainingServiceRequired: "Required holding:",
   trainingServicePayment: "Script attempts to remove:",
   trainingServiceEarlyPayment:
-    "Before the cancellable stat menu; do not assume cancellation refunds this attempt",
+    "Before the single-stat menu; menu cancellation rules are shown separately",
+  trainingServiceStatMenu: "Single-stat selection",
+  trainingServiceMainMenu: "Training option selection",
+  trainingServiceCanCancel: "B cancels this menu",
+  trainingServiceCannotCancel: "B is ignored; select an option to continue",
+  trainingServicePaymentAlreadyAttempted:
+    "Payment has already been attempted at this stage",
   trainingServicePaymentMismatch:
     "The ROM checks one item but attempts to remove a different one. Native removal failure is not guarded before continuing. Do not assume the listed required item is consumed; the complete NPC transaction remains unverified.",
   trainingCrownChoice: "Choose a training option",
@@ -1489,7 +1495,12 @@ export const zh: Record<Key, string> = {
   trainingServiceRequired: "需要持有：",
   trainingServicePayment: "脚本尝试扣除：",
   trainingServiceEarlyPayment:
-    "在可取消的单项选择菜单之前尝试扣除；不要假定取消会退还",
+    "在单项选择菜单之前尝试扣除；菜单取消规则另行展示",
+  trainingServiceStatMenu: "单项能力选择",
+  trainingServiceMainMenu: "训练项目选择",
+  trainingServiceCanCancel: "可按 B 取消此菜单",
+  trainingServiceCannotCancel: "B 键无效，需选择一项继续",
+  trainingServicePaymentAlreadyAttempted: "到此阶段已尝试支付",
   trainingServicePaymentMismatch:
     "ROM 检查的道具与尝试扣除的不同。原生命令扣除失败后，后续没有立即检查结果再继续。不要将所需道具等同于实际消耗，完整 NPC 交易仍待验证。",
   trainingCrownChoice: "选择训练项目",

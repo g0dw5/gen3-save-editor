@@ -66,13 +66,18 @@ set up stat-menu labels, without a branch checking the removal result. The UI
 therefore calls this an attempted payment and warns about the mismatch/order.
 This is an exact-ROM script anomaly, not a modification by the editor.
 
-No complete menu/gameplay transaction or cancellation/refund path is claimed.
-Cancelling the later stat menu must not be assumed to refund an earlier attempt.
+No complete menu/gameplay transaction or refund path is claimed.
+The later stat menu ignores B; the earlier “cancellable menu” wording was
+incorrect. The initial service-choice menu permits B, which routes to exit
+dialogue. These native input/branch decisions are now independently verified;
+see [menu evidence](training-service-menus-20261006.md). This does not certify
+rendered windows, the complete party selector or an entire service transaction.
 No new cheat/ROM patch or automatic inventory adjustment is provided.
 
 银色分支检查银冠，尝试扣金冠：只有银冠时检查成功、扣除失败且银冠保留；两者都有
 时扣掉金冠。扣除之后立即设置单项菜单，没有先依据返回值退出。资料页分别展示
-所需／尝试支付和发生顺序，不把完整操作、取消返还等未验证路径包装成结论。
+所需／尝试支付和发生顺序。单项菜单实际忽略 B，早先称“可取消”的说法已纠正；
+主菜单可按 B 转入退出对话。完整操作、返还等未验证路径不包装成结论。
 
 ## Independent evidence and regression
 

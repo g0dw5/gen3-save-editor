@@ -238,3 +238,7 @@ ROM 资料的“培育资料”页提供已验证努力值道具的获取跳转�
 不会消耗道具或修改存档。只读 CLI：
 `gen3 training-service-preview ROM REQUEST.json [SAVE]`。
 见[证据与边界](docs/verification/training-service-previews-20261006.md)。
+
+服务菜单新增当前 ROM 的 B 键取消规则：水银单项菜单在尝试支付后忽略 B，
+其主菜单与究极绿宝石训练项目菜单允许取消。早先的单项菜单描述已纠正，
+完整 NPC 交易仍为部分验证。见[原生菜单证据](docs/verification/training-service-menus-20261006.md)。

@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Read NPC service-menu cancellation rules from the loaded ROM. Correct Mercury's
+  single-stat menu description: it ignores B after an attempted payment; its
+  initial menu and Ultimate's training-choice menu allow B cancellation. Native
+  input/branch evidence remains separate from full window and transaction replay.
+- NPC 服务菜单按当前 ROM 显示取消规则。修正水银单项选择的描述：尝试支付之后
+  的菜单忽略 B；其主菜单与究极绿宝石训练项目菜单可按 B 取消。原生输入／分支
+  已对照，完整窗口与支付交易仍保留验证边界。
+
 - Preview referenced NPC crown-service effects on stored or simulated individuals.
   Execute native level-gated helpers: Mercury changes base IVs and recalculates
   party stats; Ultimate changes training flags without refreshing stored stats.
