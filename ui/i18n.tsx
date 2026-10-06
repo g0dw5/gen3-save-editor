@@ -391,6 +391,9 @@ export const en = {
   planDexReadOnly:
     "Historical Dex records are read-only here; planning does not mark entries or create Pokémon.",
   planDexUninitialized: "Uninitialized Dex range:",
+  planDexInconsistent: "Dex records failing the game's checks:",
+  planDexNativeChecks:
+    "Shown using this ROM's native seen/caught checks. Raw records stay unchanged; queries do not repair the save.",
   planDexProjection:
     "The game's native reader initializes this range as unseen and uncaught. The report projects that result without writing the save.",
   planFamily: "Permanent evolution family",
@@ -1639,6 +1642,9 @@ export const zh: Record<Key, string> = {
   planIndividuals: "现有个体",
   planDex: "图鉴捕获记录",
   planDexReadOnly: "此处只读取历史图鉴记录；规划不会点亮图鉴或生成宝可梦。",
+  planDexInconsistent: "未通过游戏校验的图鉴记录：",
+  planDexNativeChecks:
+    "按本 ROM 原生已见／已捕获校验显示，原始记录保持不变；查询不会自动修复存档。",
   planDexUninitialized: "未初始化的图鉴范围：",
   planDexProjection:
     "游戏原生读取会将该范围初始化为未见、未捕获。此报告只按该结果判断，不写入存档。",

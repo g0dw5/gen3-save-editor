@@ -1,5 +1,6 @@
 import { ConditionQueryRevision } from "./ConditionDetails";
 import { speciesDisplayName } from "./speciesDisplay";
+import { dexReadSummary } from "./DexReadDetails";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -1405,6 +1406,11 @@ function DexEditor({
     <main className="data-page">
       <h1>{t("pokedex")}</h1>
       <p className="muted">{t("dexHelp")}</p>
+      {dexReadSummary(save.dex_status, t).map((line, i) => (
+        <p key={i} className="warning-text small">
+          {line}
+        </p>
+      ))}
       <label className="field narrow">
         <span>{t("number")}</span>
         <input value={query} onChange={(e) => setQuery(e.target.value)} />

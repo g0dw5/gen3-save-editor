@@ -10894,3 +10894,195 @@ fn read_only_dex_planning_distinguishes_history_from_current_individuals() {
     assert_eq!(plan.dex_status.unwrap().uninitialized_ranges.len(), 1);
     assert_eq!(save.data, original);
 }
+
+/// Set one synthetic legacy record across rotated logical save sectors.
+fn set_legacy_dex_record(save: &mut Save, number: u16, state: u8) {
+    let layout = save.layout.dex.unwrap();
+    let index = number as usize - 1 + layout.bit_bias as usize;
+    let mask = 1 << (index % 8);
+    let fields = [
+        (layout.main_block, layout.owned),
+        (layout.main_block, layout.seen),
+    ]
+    .into_iter()
+    .chain(layout.seen_mirrors.iter().map(|at| (true, *at)));
+    for (bit, (main, at)) in fields.enumerate() {
+        let mut offset = at + index / 8;
+        let mut section = usize::from(main);
+        while offset >= save.layout.sizes[section] {
+            offset -= save.layout.sizes[section];
+            section += 1;
+            assert!(section <= 4);
+        }
+        let byte = &mut save.data[save.sections[section] + offset];
+        *byte = (*byte & !mask) | if state & (1 << bit) != 0 { mask } else { 0 };
+    }
+}
+
+#[test]
+fn legacy_dex_native_checks_preserve_raw_records_and_explicit_editing() {
+    for profile in profile::PROFILES {
+        let Some(layout) = profile.save.dex else {
+            continue;
+        };
+        let r = adapter_rom(profile);
+        for number in [1, 7, 8, 9, layout.count] {
+            for state in 0..1u8 << (2 + layout.seen_mirrors.len()) {
+                let mut save = Save::open(save_bytes(&r), profile.save).unwrap();
+                set_legacy_dex_record(&mut save, number, state);
+                let raw_owned = state & 1 != 0;
+                let raw_seen = state & 2 != 0;
+                let seen =
+                    raw_seen && (0..layout.seen_mirrors.len()).all(|i| state & (1 << (i + 2)) != 0);
+                let owned = raw_owned && (!layout.owned_requires_seen || seen);
+                let before = save.data.clone();
+                let flags = save.dex().unwrap();
+                let flag = &flags[number as usize - 1];
+                assert_eq!(
+                    (flag.seen, flag.owned),
+                    (seen, owned),
+                    "{} {number} {state}",
+                    profile.id
+                );
+                let status = save.dex_read_status().unwrap().unwrap();
+                assert_eq!(
+                    status.inconsistent_numbers,
+                    if (seen, owned) != (raw_seen, raw_owned) {
+                        vec![number]
+                    } else {
+                        vec![]
+                    }
+                );
+                assert_eq!(
+                    save.data, before,
+                    "query must not perform native invalidation"
+                );
+                save.edit_dex(number, true, true).unwrap();
+                let flag = &save.dex().unwrap()[number as usize - 1];
+                assert!(flag.seen && flag.owned);
+                assert!(save
+                    .dex_read_status()
+                    .unwrap()
+                    .unwrap()
+                    .inconsistent_numbers
+                    .is_empty());
+                let after = save.data.clone();
+                let reopened = Save::open(after.clone(), profile.save).unwrap();
+                assert!(reopened.dex().unwrap()[number as usize - 1].owned);
+                assert_eq!(reopened.data, after);
+            }
+        }
+    }
+}
+
+#[test]
+#[ignore = "requires four exact local ROMs and GEN3_DEX_FLAG_PROBES"]
+fn local_legacy_dex_matches_complete_native_getters() {
+    use sha2::{Digest, Sha256};
+    let proof: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(std::env::var("GEN3_DEX_FLAG_PROBES").unwrap()).unwrap(),
+    )
+    .unwrap();
+    let mut total = 0;
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE"] {
+        let bytes = std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap();
+        let r = Rom::open(bytes.clone()).unwrap();
+        let p = &proof[key];
+        assert_eq!(p["md5"], r.profile.md5);
+        assert_eq!(p["rom_sha256"], format!("{:x}", Sha256::digest(&bytes)));
+        let layout = r.profile.save.dex.unwrap();
+        assert_eq!(p["count"], layout.count);
+        assert_eq!(p["bit_bias"], layout.bit_bias);
+        assert_eq!(p["main_block"], layout.main_block);
+        assert_eq!(p["seen"], layout.seen);
+        assert_eq!(p["owned"], layout.owned);
+        assert_eq!(
+            p["mirrors"],
+            serde_json::to_value(layout.seen_mirrors).unwrap()
+        );
+        assert_eq!(p["owned_requires_seen"], layout.owned_requires_seen);
+        let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+        let rows = p["rows"].as_array().unwrap();
+        assert_eq!(
+            rows.len(),
+            layout.count as usize * (1 << (2 + layout.seen_mirrors.len())) * 2
+        );
+        for row in rows {
+            let number = row["number"].as_u64().unwrap() as u16;
+            set_legacy_dex_record(&mut save, number, row["state"].as_u64().unwrap() as u8);
+            let before = save.data.clone();
+            let flags = save.dex().unwrap();
+            let flag = &flags[number as usize - 1];
+            assert_eq!(flag.seen, row["seen"].as_bool().unwrap(), "{key} {row}");
+            assert_eq!(flag.owned, row["owned"].as_bool().unwrap(), "{key} {row}");
+            assert_eq!(save.data, before);
+            total += 1;
+        }
+        assert_eq!(
+            bytes,
+            std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap()
+        );
+    }
+    assert_eq!(total, 41504);
+}
+
+#[test]
+fn invalid_native_dex_records_remain_missing_in_collection() {
+    use crate::{
+        acquisition::AcquisitionIndex,
+        collection::{CollectionBasis, CollectionRequest},
+        world::{TrainerLocationIndex, World},
+    };
+    let r = adapter_rom(profile::BW);
+    let mut save = Save::open(save_bytes(&r), r.profile.save).unwrap();
+    // Both raw caught bits are set; only #2 has consistent seen mirrors.
+    set_legacy_dex_record(&mut save, 1, 0b0111);
+    set_legacy_dex_record(&mut save, 2, 0b1111);
+    let mut species = (1..=2)
+        .map(|id| r.valid_species(id).unwrap())
+        .collect::<Vec<_>>();
+    for (n, entry) in species.iter_mut().enumerate() {
+        entry.dex_number = n as u16 + 1;
+    }
+    let index = AcquisitionIndex {
+        wild_cache: Default::default(),
+        breeding_cache: Default::default(),
+        world: World {
+            maps: vec![],
+            map_events: vec![],
+            encounters: vec![],
+            trainers: vec![],
+            trainer_locations: TrainerLocationIndex {
+                locations: vec![],
+                unresolved_maps: vec![],
+            },
+            map_groups: &[],
+        },
+        species,
+        evolutions: Default::default(),
+        learnsets: Default::default(),
+    };
+    let before = save.data.clone();
+    let plan = index
+        .collection(
+            &r,
+            &save,
+            CollectionRequest {
+                basis: CollectionBasis::Dex,
+                families: false,
+                include_unknown_rewards: false,
+            },
+        )
+        .unwrap();
+    assert_eq!((plan.owned_count, plan.missing_count), (1, 1));
+    assert_eq!(plan.dex_status.unwrap().inconsistent_numbers, [1]);
+    assert_eq!(
+        plan.regions
+            .iter()
+            .flat_map(|r| &r.tasks)
+            .map(|t| t.target.id)
+            .collect::<Vec<_>>(),
+        [1]
+    );
+    assert_eq!(save.data, before);
+}

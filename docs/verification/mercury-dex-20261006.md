@@ -29,8 +29,11 @@ and explicitly reports the uninitialized range. It preserves the marker and raw
 flag bytes in the SAV. Nonzero stale bytes cannot masquerade as captured entries.
 
 The reusable read-only bank model is separate from editable legacy layouts.
-Mercury still has no editable Dex layout/capability. Existing BW/DP, Rocket and
-Ultimate readers and edit rules remain unchanged. Names, forms and
+Mercury still has no editable Dex layout/capability. At this increment, existing
+BW/DP, Rocket and Ultimate readers and edit rules remained unchanged. Subsequent
+[native legacy read verification](dex-read-checks-20261006.md) corrects BW/DP
+mirror checks and Ultimate caught-to-seen dependencies; explicit edit boundaries
+stay unchanged. Names, forms and
 species-to-national-number relationships continue to come from the loaded ROM.
 Shared Dex numbers establish historical species ownership, not possession of
 all separately stored forms or presently usable breeding parents.

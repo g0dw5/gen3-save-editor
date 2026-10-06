@@ -935,25 +935,10 @@ impl Save {
         if self.layout.dex_read.is_some() {
             return self.read_dex_banks();
         }
-        let Some(layout) = self.layout.dex else {
+        if self.layout.dex.is_none() {
             return Ok(Vec::new());
-        };
-        let main = self.logical(1..=4);
-        let block = if layout.main_block {
-            &main[..]
-        } else {
-            &self.data[self.sections[0]..]
-        };
-        Ok((1..=layout.count)
-            .map(|n| {
-                let i = (n - 1 + layout.bit_bias as u16) as usize;
-                DexFlag {
-                    number: n,
-                    owned: block[layout.owned + i / 8] & (1 << (i % 8)) != 0,
-                    seen: block[layout.seen + i / 8] & (1 << (i % 8)) != 0,
-                }
-            })
-            .collect())
+        }
+        Ok(self.read_legacy_dex()?.0)
     }
     pub fn edit_dex(&mut self, n: u16, seen: bool, owned: bool) -> Result<()> {
         let layout = self

@@ -296,7 +296,26 @@ def main():
         assert not errors,errors
         page.set_viewport_size(dict(width=720,height=740))
         expect(page.get_by_role('button',name='Export standalone HTML',exact=True)).to_be_visible()
-        print('query tile/entrance/back, reward link, read-only planner, escaped standalone HTML and compact window passed')
+        # A later, separate save overlay has inconsistent legacy records, not
+        # Mercury's lazy bank initialization. Loading it must replace the notice.
+        save['dex_status'] = dict(count=416,read_only=False,uninitialized_ranges=[],inconsistent_numbers=[1,8,9])
+        with page.expect_file_chooser() as choice:
+            page.get_by_role('button',name='Open save',exact=True).first.click()
+        choice.value.set_files(dict(name='legacy-fixture.sav',mimeType='application/octet-stream',buffer=b'fixture-only'))
+        basis.select_option('dex')
+        expect(page.locator('.collection-panel')).to_contain_text("Dex records failing the game's checks: 3")
+        expect(page.locator('.collection-panel')).to_contain_text('Dex number: 1, 8, 9')
+        expect(page.locator('.collection-panel')).not_to_contain_text('Uninitialized Dex range')
+        page.get_by_role('button',name='简体中文',exact=True).click()
+        expect(page.locator('.collection-panel')).to_contain_text('未通过游戏校验的图鉴记录： 3')
+        with page.expect_download() as info:
+            page.get_by_role('button',name='导出独立 HTML',exact=True).click()
+        html=Path(info.value.path()).read_text()
+        assert '未通过游戏校验的图鉴记录' in html and '查询不会自动修复存档' in html and '1, 8, 9' in html
+        assert '未初始化的图鉴范围' not in html
+        assert not any(r['command'] in ('action','export_save','save_bytes') for r in requests)
+        assert not errors,errors
+        print('query tile/entrance/back, reward link, native Dex notices, read-only planner, escaped standalone HTML and compact window passed')
         browser.close()
 
 

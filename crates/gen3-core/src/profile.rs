@@ -262,6 +262,8 @@ pub struct DexLayout {
     pub owned: usize,
     pub seen: usize,
     pub seen_mirrors: &'static [usize],
+    /// Native GET_CAUGHT may require a valid GET_SEEN record as well.
+    pub owned_requires_seen: bool,
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct DexReadBank {
@@ -287,6 +289,7 @@ pub const EMERALD: SaveLayout = SaveLayout {
         owned: 0x28,
         seen: 0x5c,
         seen_mirrors: &[0x988, 0x3b24],
+        owned_requires_seen: true,
     }),
     sizes: [
         3884, 3968, 3968, 3968, 3848, 3968, 3968, 3968, 3968, 3968, 3968, 3968, 3968, 2000,
@@ -813,6 +816,7 @@ pub const ROCKET: Profile = Profile {
             owned: 0x2f5c,
             seen: 0x2ee4,
             seen_mirrors: &[],
+            owned_requires_seen: false,
         }),
         ..EMERALD
     },

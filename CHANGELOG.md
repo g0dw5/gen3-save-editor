@@ -10,6 +10,14 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Follow native Dex mirror and seen/caught dependencies in Dark Phantom BW/DP
+  and Ultimate; retain independent Rocket flags and Mercury split banks. Explain
+  invalid positive records in the editor, collection planner and standalone HTML
+  without changing SAV bytes. Verified against complete native getters.
+- 漆黑 BW／DP 与究极绿宝石的图鉴读取遵循本作原生镜像及已见／已捕获依赖校验，
+  西班牙火箭队独立标记、水银分段读取保持不变。修改页、收集规划与独立 HTML
+  提示异常记录，查询不写入 SAV；已与完整原生例程逐项核对。
+
 - Add Mercury 1.2 historical-Dex collection planning through native split-bank
   reads. Explain lazy initialization in both languages and standalone HTML;
   preserve raw SAV bytes and keep Dex editing disabled. Five-ROM regressions retain

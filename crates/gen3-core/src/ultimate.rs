@@ -293,6 +293,7 @@ pub const PROFILE: Profile = Profile {
             owned: 0x5d8,
             seen: 0x560,
             seen_mirrors: &[],
+            owned_requires_seen: true,
         }),
         ..EMERALD
     },

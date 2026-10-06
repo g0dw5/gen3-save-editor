@@ -676,3 +676,17 @@ Only adapter layouts/bounds/initialization semantics are configured. Names and
 species-to-Dex mappings are read from the loaded ROM. Uninitialized extended flags
 are explained rather than silently trusting nonzero raw bytes. Neither projection
 nor planning initializes the save, marks the Dex or creates individuals.
+
+
+## Native Dex read validation / 原生图鉴读取校验
+
+[Four-ROM native read evidence](verification/dex-read-checks-20261006.md) adds
+**83,008 complete getters** across BW/DP, Rocket and Ultimate. Read projections
+are **V within these exact flag-layout boundaries**: BW/DP mirror checks and
+owned-to-seen dependency, Ultimate owned-to-seen dependency, Rocket independent
+flags. Mercury's separate split-bank evidence remains verified. Raw mismatches
+are explained in both languages, the Dex page and collection HTML; query paths
+never clear bits or mark the Dex. Explicit legacy edits retain synchronized
+flag writes; Mercury's Dex write capability stays disabled. Flag allocation
+counts are not counts of obtainable species/forms. Complete regional collection,
+all acquisition methods and current task/access dependencies remain **P**.

@@ -220,6 +220,7 @@ export interface DexReadStatus {
   count: number;
   read_only: boolean;
   uninitialized_ranges: { first: number; count: number }[];
+  inconsistent_numbers?: number[];
 }
 export interface LearnSource {
   move_id: number;

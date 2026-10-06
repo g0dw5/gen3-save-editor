@@ -17,6 +17,9 @@ pub struct DexReadStatus {
     pub count: usize,
     pub read_only: bool,
     pub uninitialized_ranges: Vec<DexRange>,
+    /// Flag numbers whose raw positive records fail the native read checks.
+    /// Read-only queries project the native result without clearing these bytes.
+    pub inconsistent_numbers: Vec<u16>,
 }
 
 impl Save {
@@ -28,6 +31,7 @@ impl Save {
                 count: 0,
                 read_only: true,
                 uninitialized_ranges: Vec::new(),
+                inconsistent_numbers: Vec::new(),
             };
             for bank in banks {
                 let block = if bank.main_block { &main } else { &trainer };
@@ -55,11 +59,55 @@ impl Save {
             }
             return Ok(Some(status));
         }
-        Ok(self.layout.dex.map(|layout| DexReadStatus {
+        if self.layout.dex.is_some() {
+            return Ok(Some(self.read_legacy_dex()?.1));
+        }
+        Ok(None)
+    }
+
+    pub(crate) fn read_legacy_dex(&self) -> Result<(Vec<DexFlag>, DexReadStatus)> {
+        let layout = self
+            .layout
+            .dex
+            .ok_or_else(|| err("unsupported_feature", "dex_read"))?;
+        let main = self.logical(1..=4);
+        let trainer = self.logical(0..=0);
+        let block = if layout.main_block { &main } else { &trainer };
+        let mut status = DexReadStatus {
             count: layout.count as usize,
             read_only: false,
             uninitialized_ranges: Vec::new(),
-        }))
+            inconsistent_numbers: Vec::new(),
+        };
+        let mut result = Vec::with_capacity(status.count);
+        for number in 1..=layout.count {
+            let index = number as usize - 1 + layout.bit_bias as usize;
+            let byte = index / 8;
+            let mask = 1 << (index % 8);
+            let bit = |data: &[u8], offset: usize| -> Result<bool> {
+                let value = offset
+                    .checked_add(byte)
+                    .and_then(|at| data.get(at))
+                    .ok_or_else(|| err("save_layout", "invalid native Dex flag"))?;
+                Ok(value & mask != 0)
+            };
+            let raw_seen = bit(block, layout.seen)?;
+            let raw_owned = bit(block, layout.owned)?;
+            let mut seen = raw_seen;
+            for offset in layout.seen_mirrors {
+                seen &= bit(&main, *offset)?;
+            }
+            let owned = raw_owned && (!layout.owned_requires_seen || seen);
+            if (seen, owned) != (raw_seen, raw_owned) {
+                status.inconsistent_numbers.push(number);
+            }
+            result.push(DexFlag {
+                number,
+                seen,
+                owned,
+            });
+        }
+        Ok((result, status))
     }
 
     pub(crate) fn read_dex_banks(&self) -> Result<Vec<DexFlag>> {
