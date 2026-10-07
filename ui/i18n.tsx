@@ -480,9 +480,6 @@ export const en = {
   formAttack: "Attack Forme",
   formDefense: "Defense Forme",
   formSpeed: "Speed Forme",
-  formBase: "Base form",
-  formVariant: "Form {n} (name unconfirmed)",
-  formSameName: "Same-name entry #{n}",
   currentForm: "Current form",
   formDetails: "View forms and evolution",
   formFamily: "Other forms",
@@ -788,8 +785,8 @@ export const en = {
   trainerRomOnlyPreview:
     "This ordinary party has no enhanced template. Its ROM roster, level-up moves and untrained IVs/EVs can be previewed without a save.",
   trainerMaxLevelNeeded: "Needs the highest party level · open a SAV",
-  trainerLevelSource_rom: "ROM level in an ordinary trainer battle.",
-  trainerLevelSource_player_max: "Uses the player's highest party level.",
+  trainerLevelSource_rom: "ROM level",
+  trainerLevelSource_player_max: "Highest party level",
   trainerLevelSource_lunatic_scaled:
     "Raised to the player's highest party level in Lunatic mode.",
   trainerLevelSource_needs_player_max:
@@ -820,9 +817,10 @@ export const en = {
   contextUnresolved: "Location unresolved",
   trainerSearchHint: "Name, tag, map, Pokémon…",
   nativeTrainerScenarioValue: "Value in this scenario",
-  nativeTrainerTitle: "Native ordinary-party scenario",
+  trainerLoadout: "Nature · ability · item",
+  nativeTrainerTitle: "Generated team preview",
   nativeTrainerScope:
-    "Runs this ROM's party constructor in isolated RAM. Shows generated nature, ability, IVs, EVs, moves and items with zeroed story/context state. Script replacements, special facilities and real battle-entry settings are not included; this is not a guarantee of the team in your current save.",
+    "Shows an ordinary generated team. Story-specific teams, special facilities and battle-entry settings are not included.",
   dynamicLevel: "Dynamic level",
   partyMaxNoSave: "Matches your highest party level. Open a save to preview.",
   partyMaxWithSave: "Preview based on the current party’s highest level.",
@@ -1225,7 +1223,7 @@ export const zh: Record<Key, string> = {
     "动态预览自动使用当前存档同行；随机分支并列显示可能结果，不保证下一场战斗取其中哪组。",
   trainerAutomaticNoSave:
     "打开 SAV 后才能计算依赖同行的数值。未知值保留“?”，固定记录仍可直接查看。",
-  trainerPreviewError: "暂无法预览 · 查看详情",
+  trainerPreviewError: "暂无法预览",
   nativeTrainerSample:
     "原生随机生成的字段展示一组可复现样例，并非下一场战斗的保证值。",
 
@@ -1585,9 +1583,6 @@ export const zh: Record<Key, string> = {
   formAttack: "攻击形态",
   formDefense: "防御形态",
   formSpeed: "速度形态",
-  formBase: "基础形态",
-  formVariant: "形态 {n}（名称待确认）",
-  formSameName: "同名条目 #{n}",
   currentForm: "当前形态",
   formDetails: "查看形态与进化关系",
   formFamily: "其他形态",
@@ -1876,10 +1871,10 @@ export const zh: Record<Key, string> = {
   trainerRomOnlyPreview:
     "这支普通队伍没有强化培养模板。只打开 ROM 就能预览其成员、升级招式以及未培养的个体值和努力值。",
   trainerMaxLevelNeeded: "需要同行最高等级 · 请打开 SAV",
-  trainerLevelSource_rom: "普通训练家战沿用 ROM 表中的等级。",
-  trainerLevelSource_player_max: "等级取玩家同行最高等级。",
-  trainerLevelSource_lunatic_scaled: "疯子模式下提升到玩家同行最高等级。",
-  trainerLevelSource_needs_player_max: "实战等级取决于玩家同行最高等级。",
+  trainerLevelSource_rom: "ROM 等级",
+  trainerLevelSource_player_max: "同行最高等级",
+  trainerLevelSource_lunatic_scaled: "疯子：同行最高等级",
+  trainerLevelSource_needs_player_max: "需同行最高等级",
   trainerLevelSource_unsupported_raw: "这个原始等级仍需结合战斗场景核对。",
   trainerEvCalculating: "正在按当前 ROM 计算…",
   trainerEvTotal: "努力值合计",
@@ -1904,9 +1899,10 @@ export const zh: Record<Key, string> = {
   contextUnresolved: "地点待解析",
   trainerSearchHint: "姓名、标签、地图、宝可梦…",
   nativeTrainerScenarioValue: "当前情景生成值",
-  nativeTrainerTitle: "原生普通配队情景",
+  trainerLoadout: "性格 · 特性 · 道具",
+  nativeTrainerTitle: "生成配队预览",
   nativeTrainerScope:
-    "在隔离内存中执行当前 ROM 的配队构造器，展示生成后的性格、特性、IV、EV、招式及道具。剧情与情景状态清零；不含脚本换队、特殊设施及实际入战设置，不保证等于当前存档下一场战斗的队伍。",
+    "普通配队的生成预览；剧情换队、特殊设施和实际入战设置尚未纳入。",
   dynamicLevel: "动态等级",
   partyMaxNoSave: "跟随同行最高等级；打开存档后可预览。",
   partyMaxWithSave: "按当前同行最高等级预览。",

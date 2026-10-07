@@ -3,6 +3,7 @@ import { api } from "./api";
 import { Sprite, Types } from "./components";
 import { statKeys, useI18n } from "./i18n";
 import { hiddenPower } from "./hiddenPower";
+import { speciesDisplayName } from "./speciesDisplay";
 import type {
   Catalog,
   Opponent,
@@ -241,229 +242,277 @@ export function TrainerParty({
           <summary>{t("nativeTrainerTitle")}</summary>
           <p className="small">{t("nativeTrainerScope")}</p>
           <p className="small muted">{t("nativeTrainerSample")}</p>
-          {nativeError && <p role="alert">{nativeError}</p>}
+          {nativeError && <p role="alert">{t("trainerPreviewError")}</p>}
           {!nativePreview && !nativeError && <p>{t("trainerEvCalculating")}</p>}
         </details>
       )}
-      {trainer.party.map((p, i) => {
-        const native =
-          nativePreview?.rom_md5 === catalog.profile.md5 &&
-          nativePreview.trainer_id === trainer.id &&
-          nativePreview.seed === nativeSeed
-            ? nativePreview.mons[i]
-            : null;
-        const renderedSpecies = native?.species ?? p.species;
-        const species = catalog.species.find((s) => s.id === renderedSpecies);
-        const g = native
-          ? {
-              context: "native_scenario",
-              gender: native.gender,
-              nature: native.effective_nature ?? native.nature,
-              ability_id: native.ability_id,
-              ability_options: [native.ability_id],
-              ivs: native.ivs,
-              evs: native.evs,
-              personality_parameter: 0,
-              ev_increment: null,
-            }
-          : p.generation;
-        const template = g?.context === "ultimate_template";
-        const simulated =
-          template &&
-          preview?.trainer_id === trainer.id &&
-          preview.difficulty === difficulty
-            ? preview.mons[i]
-            : null;
-        const battleMon = currentBattle?.mons[i];
-        const resolvedIvs = template
-          ? simulated?.ivs
-          : (battleMon?.ivs ?? g?.ivs);
-        const resolvedEvs = template
-          ? simulated?.evs
-          : (battleMon?.evs ?? g?.evs);
-        const hpRules = catalog.profile.hidden_power;
-        const hp = hiddenPower(hpRules, resolvedIvs);
-        const hpAlternate = hiddenPower(hpRules, simulated?.alternate_ivs);
-        const dynamic = p.level_rule === "party_max";
-        const level = native
-          ? native.level
-          : battleMon
-            ? battleMon.level
-            : dynamic
-              ? highestLevel
-              : p.level;
-        const moveIds = native?.moves ?? battleMon?.moves ?? p.moves;
-        const heldItem = native?.held_item ?? p.held_item;
-        const gender = g?.gender;
-        const abilities = [
-          ...new Set(g?.ability_options ?? (g ? [g.ability_id] : [])),
-        ];
-        return (
-          <article className="trainer-mon-card" key={i}>
-            <div className="trainer-mon-heading">
-              <Sprite catalog={catalog} species={renderedSpecies} />
-              <div>
-                <div className="trainer-mon-title">
-                  <button
-                    className="link-button"
-                    onClick={() => onSpecies(renderedSpecies)}
-                  >
-                    {species?.name ?? `#${renderedSpecies}`}
-                  </button>
-                  <span className={`gender-badge ${gender ?? ""}`}>
-                    {t("gender")} · {gender ? t(gender) : t("unresolved")}
-                  </span>
-                  <strong>
-                    {battleMon && level === null
-                      ? t(
-                          battleMon.level_source === "needs_player_max"
-                            ? "trainerMaxLevelNeeded"
-                            : "dynamicLevel",
-                        )
-                      : level === null
-                        ? t("dynamicLevel")
-                        : p.level_rule === "difficulty"
-                          ? battleMon
-                            ? `Lv. ${level}`
-                            : `${t("trainerBaseLevel")} ${level}`
-                          : `Lv. ${level}`}
-                  </strong>
-                </div>
-                {species && <Types catalog={catalog} values={species.types} />}
-                {p.level_rule === "difficulty" && (
-                  <p className="small muted">
-                    {battleMon
-                      ? t(`trainerLevelSource_${battleMon.level_source}`)
-                      : t("ultimateTrainerLevel")}
-                  </p>
-                )}
-                {dynamic && (
-                  <div className="small muted">
-                    {t(
-                      highestLevel === null
-                        ? "partyMaxNoSave"
-                        : "partyMaxWithSave",
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            <dl className="trainer-mon-facts">
-              <div>
-                <dt>{t("ability")}</dt>
-                <dd>
-                  {g
-                    ? abilities.map((id) => (
+      <table className="trainer-party-table">
+        <colgroup>
+          <col className="trainer-pokemon-column" />
+          <col className="trainer-loadout-column" />
+          <col />
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">{t("species")}</th>
+            <th scope="col">{t("trainerLoadout")}</th>
+            <th scope="col">{t("moves")}</th>
+          </tr>
+        </thead>
+        {trainer.party.map((p, i) => {
+          const native =
+            nativePreview?.rom_md5 === catalog.profile.md5 &&
+            nativePreview.trainer_id === trainer.id &&
+            nativePreview.seed === nativeSeed
+              ? nativePreview.mons[i]
+              : null;
+          const renderedSpecies = native?.species ?? p.species;
+          const species = catalog.species.find((s) => s.id === renderedSpecies);
+          const g = native
+            ? {
+                context: "native_scenario",
+                gender: native.gender,
+                nature: native.effective_nature ?? native.nature,
+                ability_id: native.ability_id,
+                ability_options: [native.ability_id],
+                ivs: native.ivs,
+                evs: native.evs,
+                personality_parameter: 0,
+                ev_increment: null,
+              }
+            : p.generation;
+          const template = g?.context === "ultimate_template";
+          const simulated =
+            template &&
+            preview?.trainer_id === trainer.id &&
+            preview.difficulty === difficulty
+              ? preview.mons[i]
+              : null;
+          const battleMon = currentBattle?.mons[i];
+          const resolvedIvs = template
+            ? simulated?.ivs
+            : (battleMon?.ivs ?? g?.ivs);
+          const resolvedEvs = template
+            ? simulated?.evs
+            : (battleMon?.evs ?? g?.evs);
+          const hpRules = catalog.profile.hidden_power;
+          const hp = hiddenPower(hpRules, resolvedIvs);
+          const hpAlternate = hiddenPower(hpRules, simulated?.alternate_ivs);
+          const dynamic = p.level_rule === "party_max";
+          const level = native
+            ? native.level
+            : battleMon
+              ? battleMon.level
+              : dynamic
+                ? highestLevel
+                : p.level;
+          const moveIds = native?.moves ?? battleMon?.moves ?? p.moves;
+          const heldItem = native?.held_item ?? p.held_item;
+          const gender = g?.gender;
+          const abilities = [
+            ...new Set(g?.ability_options ?? (g ? [g.ability_id] : [])),
+          ];
+          return (
+            <tbody
+              className="trainer-party-entry"
+              key={i}
+              data-species={renderedSpecies}
+            >
+              <tr>
+                <td>
+                  <div className="trainer-mon-heading">
+                    <Sprite
+                      catalog={catalog}
+                      species={renderedSpecies}
+                      pid={native?.pid}
+                    />
+                    <div>
+                      <div className="trainer-mon-title">
                         <button
-                          key={id}
                           className="link-button"
-                          onClick={() => onAbility(id)}
-                          title={catalog.abilities[id]?.description}
+                          onClick={() => onSpecies(renderedSpecies)}
                         >
-                          {catalog.abilities[id]?.name ?? `#${id}`} ↗
+                          {speciesDisplayName(catalog, renderedSpecies)}
                         </button>
-                      ))
-                    : t("unresolved")}
-                  {g && (
-                    <span className="small muted">
-                      {t(
-                        native
-                          ? "nativeTrainerScenarioValue"
-                          : abilities.length > 1
-                            ? "abilityChoice"
-                            : "abilityFixed",
-                      )}
-                    </span>
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>{t("nature")}</dt>
-                <dd>{g ? catalog.natures[g.nature]?.name : t("unresolved")}</dd>
-              </div>
-              <div>
-                <dt>{t("held_item")}</dt>
-                <dd>
-                  {heldItem
-                    ? (catalog.items[heldItem]?.name ?? heldItem)
-                    : t("noHeldItem")}
-                </dd>
-              </div>
-            </dl>
-            <div className="trainer-moves">
-              <span className="small muted">
-                {t("moves")} ·{" "}
-                {t(p.moves_explicit ? "explicitMoves" : "levelSource")}
-              </span>
-              <div>
-                {((dynamic && !native) ||
-                  (battleMon && battleMon.moves === null)) &&
-                !p.moves_explicit
-                  ? t("dynamicMoves")
-                  : moveIds.filter(Boolean).map((id) => (
-                      <span key={id}>
-                        {catalog.moves[id]?.name ?? id}
-                        {id === hpRules?.move_id && (
-                          <>
-                            {" "}
-                            ·{" "}
-                            {hp
-                              ? `${catalog.type_names[hp.type]} · ${t("power")} ${hp.power}${hpAlternate && (hpAlternate.type !== hp.type || hpAlternate.power !== hp.power) ? ` / ${catalog.type_names[hpAlternate.type]} · ${t("power")} ${hpAlternate.power}` : ""}`
-                              : t("hiddenPowerUnknown")}
-                          </>
-                        )}
+                        <strong>
+                          {battleMon && level === null
+                            ? t(
+                                battleMon.level_source === "needs_player_max"
+                                  ? "trainerMaxLevelNeeded"
+                                  : "dynamicLevel",
+                              )
+                            : level === null
+                              ? t("dynamicLevel")
+                              : p.level_rule === "difficulty"
+                                ? battleMon
+                                  ? `Lv. ${level}`
+                                  : `${t("trainerBaseLevel")} ${level}`
+                                : `Lv. ${level}`}
+                        </strong>
+                      </div>
+                      <span className={`gender-badge ${gender ?? ""}`}>
+                        {t("gender")} · {gender ? t(gender) : t("unresolved")}
                       </span>
-                    ))}
-              </div>
-            </div>
-            <table className="trainer-stat-table">
-              <thead>
-                <tr>
-                  <th>{t("stat")}</th>
-                  {statKeys.map((key) => (
-                    <th key={key}>{t(key)}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th>{t("ivs")}</th>
-                  {statKeys.map((key, s) => (
-                    <td key={key}>
-                      {resolvedIvs?.[s] ?? "?"}
-                      {simulated?.alternate_ivs &&
-                      simulated.alternate_ivs[s] !== simulated.ivs?.[s]
-                        ? ` / ${simulated.alternate_ivs[s]}`
-                        : ""}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th>{t("evs")}</th>
-                  {statKeys.map((key, s) => (
-                    <td key={key}>
-                      {resolvedEvs?.[s] ?? "?"}
+                      {species && (
+                        <Types catalog={catalog} values={species.types} />
+                      )}
+                      {p.level_rule === "difficulty" && (
+                        <p className="small muted">
+                          {battleMon
+                            ? t(`trainerLevelSource_${battleMon.level_source}`)
+                            : t("ultimateTrainerLevel")}
+                        </p>
+                      )}
+                      {dynamic && (
+                        <div className="small muted">
+                          {t(
+                            highestLevel === null
+                              ? "partyMaxNoSave"
+                              : "partyMaxWithSave",
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <dl className="trainer-mon-facts">
+                    <div>
+                      <dt>{t("nature")}</dt>
+                      <dd>
+                        {(g && catalog.natures[g.nature]?.name) ||
+                          t("unresolved")}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{t("ability")}</dt>
+                      <dd>
+                        {g
+                          ? abilities.map((id) => (
+                              <button
+                                key={id}
+                                className="link-button"
+                                onClick={() => onAbility(id)}
+                                title={catalog.abilities[id]?.description}
+                              >
+                                {catalog.abilities[id]?.name ?? `#${id}`} ↗
+                              </button>
+                            ))
+                          : t("unresolved")}
+                        {g && (
+                          <span className="small muted">
+                            {t(
+                              native
+                                ? "nativeTrainerScenarioValue"
+                                : abilities.length > 1
+                                  ? "abilityChoice"
+                                  : "abilityFixed",
+                            )}
+                          </span>
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{t("held_item")}</dt>
+                      <dd>
+                        {heldItem
+                          ? (catalog.items[heldItem]?.name ?? heldItem)
+                          : t("noHeldItem")}
+                      </dd>
+                    </div>
+                  </dl>
+                </td>
+                <td className="trainer-moves">
+                  <span className="small muted">
+                    {t(p.moves_explicit ? "explicitMoves" : "levelSource")}
+                  </span>
+                  <div>
+                    {((dynamic && !native) ||
+                      (battleMon && battleMon.moves === null)) &&
+                    !p.moves_explicit
+                      ? t("dynamicMoves")
+                      : moveIds.filter(Boolean).map((id) => (
+                          <span key={id}>
+                            {catalog.moves[id]?.name ?? id}
+                            {id === hpRules?.move_id && (
+                              <>
+                                {" "}
+                                ·{" "}
+                                {hp
+                                  ? `${catalog.type_names[hp.type]} · ${t("power")} ${hp.power}${hpAlternate && (hpAlternate.type !== hp.type || hpAlternate.power !== hp.power) ? ` / ${catalog.type_names[hpAlternate.type]} · ${t("power")} ${hpAlternate.power}` : ""}`
+                                  : t("hiddenPowerUnknown")}
+                              </>
+                            )}
+                          </span>
+                        ))}
+                  </div>
+                </td>
+              </tr>
+              <tr className="trainer-values-row">
+                <td colSpan={3}>
+                  <table className="trainer-stat-table">
+                    <thead>
+                      <tr>
+                        <th scope="col" aria-label={t("stat")}></th>
+                        {statKeys.map((key) => (
+                          <th key={key} scope="col">
+                            {t(key)}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <th scope="row" title={t("ivs")}>
+                          IV
+                        </th>
+                        {statKeys.map((key, s) => (
+                          <td key={key}>
+                            {resolvedIvs?.[s] ?? "?"}
+                            {simulated?.alternate_ivs &&
+                            simulated.alternate_ivs[s] !== simulated.ivs?.[s]
+                              ? ` / ${simulated.alternate_ivs[s]}`
+                              : ""}
+                          </td>
+                        ))}
+                      </tr>
+                      <tr>
+                        <th scope="row" title={t("evs")}>
+                          EV
+                        </th>
+                        {statKeys.map((key, s) => (
+                          <td key={key}>
+                            {resolvedEvs?.[s] ?? "?"}
+                            {simulated?.alternate_evs &&
+                            simulated.alternate_evs[s] !== simulated.evs?.[s]
+                              ? ` / ${simulated.alternate_evs[s]}`
+                              : ""}
+                          </td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                  {resolvedEvs && (
+                    <p className="small muted">
+                      {t("trainerEvTotal")}:{" "}
+                      {resolvedEvs.reduce((a, b) => a + b, 0)}
                       {simulated?.alternate_evs &&
-                      simulated.alternate_evs[s] !== simulated.evs?.[s]
-                        ? ` / ${simulated.alternate_evs[s]}`
-                        : ""}
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-            {simulated?.evs && (
-              <p className="small muted">
-                {t("trainerEvTotal")}:{" "}
-                {simulated.evs.reduce((a, b) => a + b, 0)}
-                {(simulated.alternate_evs || simulated.alternate_ivs) &&
-                  ` · ${t("trainerEvAlternate")}`}
-              </p>
-            )}
-            {g && !g.ivs && <p className="small muted">{t("randomIVs")}</p>}
-          </article>
-        );
-      })}
+                        simulated.alternate_evs.reduce((a, b) => a + b, 0) !==
+                          resolvedEvs.reduce((a, b) => a + b, 0) &&
+                        ` / ${simulated.alternate_evs.reduce((a, b) => a + b, 0)}`}
+                      {(simulated?.alternate_evs || simulated?.alternate_ivs) &&
+                        ` · ${t("trainerEvAlternate")}`}
+                    </p>
+                  )}
+                  {g && !resolvedIvs && !template && (
+                    <p className="small muted">{t("randomIVs")}</p>
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          );
+        })}
+      </table>
     </div>
   );
 }

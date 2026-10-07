@@ -1,6 +1,5 @@
 import { LearnsetPanel } from "./LearnsetPanel";
 import { MapEncounters } from "./MapEncounters";
-import { speciesDisplayName } from "./speciesDisplay";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Search, ArrowUpRight } from "lucide-react";
 import { api } from "./api";
@@ -170,14 +169,8 @@ export function ReferenceWindow({
         : tab === "trainers"
           ? (world?.trainers ?? [])
           : catalog[tab]
-      )
-        .filter((row) => row.id !== 0)
-        .map((row) =>
-          tab === "species"
-            ? { ...row, name: speciesDisplayName(catalog, Number(row.id), t) }
-            : row,
-        ),
-    [tab, world, catalog, t],
+      ).filter((row) => row.id !== 0),
+    [tab, world, catalog],
   );
   useEffect(() => {
     if (rows.length && !rows.some((r) => r.id === selected))

@@ -396,9 +396,7 @@ export default function App() {
     const isDraft = draft && locationKey(draft.location) === key;
     const species = mon?.species ?? (isDraft ? draft.template.species : 0);
     const speciesName =
-      catalog && species
-        ? speciesDisplayName(catalog, species, t, mon?.pid)
-        : "";
+      catalog && species ? speciesDisplayName(catalog, species) : "";
     const match =
       !query ||
       `${mon?.nickname ?? ""} ${speciesName} ${species}`
@@ -1091,7 +1089,7 @@ function Draft({
     >
       <span className="eyebrow amber">{t("draft")}</span>
       <Sprite catalog={catalog} species={value.species} large />
-      <h2>{speciesDisplayName(catalog, value.species, t)}</h2>
+      <h2>{speciesDisplayName(catalog, value.species)}</h2>
       <p className="muted">{t("draftHelp")}</p>
       <SelectField
         searchable

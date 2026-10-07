@@ -1,4 +1,4 @@
-import { speciesDisplayName, speciesFormLabel } from "./speciesDisplay";
+import { speciesFormLabel } from "./speciesDisplay";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   BookOpen,
@@ -263,12 +263,7 @@ export function PokemonEditor({
                 onChange={(v) => change("species", +v)}
                 options={catalog.species
                   .filter((s) => s.stats[0] > 0)
-                  .map((s) =>
-                    romOption({
-                      ...s,
-                      name: speciesDisplayName(catalog, s.id, t),
-                    }),
-                  )}
+                  .map(romOption)}
               />
               <label className="field">
                 <span>{t("nickname")}</span>

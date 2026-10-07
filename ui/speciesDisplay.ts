@@ -25,14 +25,7 @@ export function speciesFormLabel(
     approved: decision && row ? { decision, form: row.form } : undefined,
   });
 }
-export function speciesDisplayName(
-  catalog: Catalog,
-  id: number,
-  t: (key: Key) => string,
-  pid?: number,
-  detail?: SpeciesDetail,
-) {
-  const name = catalog.species.find((row) => row.id === id)?.name ?? `#${id}`;
-  const form = speciesFormLabel(catalog, id, t, pid, detail);
-  return form ? `${name} · ${form}` : name;
+/** Names always come from the loaded ROM; form metadata is shown separately. */
+export function speciesDisplayName(catalog: Catalog, id: number): string {
+  return catalog.species.find((row) => row.id === id)?.name ?? `#${id}`;
 }

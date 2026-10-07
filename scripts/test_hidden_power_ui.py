@@ -59,6 +59,11 @@ def main():
             data = {'species': species(payload['id']), 'evolutions': [], 'encounters': [],
                     'learnset': [dict(move_id=i, source='level', species=1,
                                       level=1, index=None, offset=0) for i in (1, 237)]}
+        elif command == 'acquisition':
+            data = dict(target=payload, sources=[], partial=True, clock=None)
+        elif command == 'trainer_references':
+            data = dict(rom_md5=catalog['profile']['md5'], trainer_id=payload['trainer_id'],
+                        references=[], total_matches=0, next_offset=None, partial=True, coverage={})
         elif command == 'action':
             action = payload['action']
             actions.append(action)

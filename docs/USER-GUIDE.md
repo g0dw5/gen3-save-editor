@@ -7,7 +7,8 @@ on your computer; the program never writes ROM bytes.
 ## Browse and find
 
 The ROM reference window has Pokémon, moves, items, abilities, maps and trainers.
-Names, artwork and values come from the opened ROM. You can follow a source to
+Names, artwork and values come from the opened ROM. Pokémon names keep the
+ROM wording; duplicate entries remain distinct by ID. You can follow a source to
 its map, highlight a tile and return to the previous reference.
 
 - **Pokémon:** compare base stats with the reviewed official reference, follow
@@ -21,8 +22,10 @@ its map, highlight a tile and return to the previous reference.
 - **Maps:** toggle NPCs, item balls, hidden items and rewards independently.
   Pokémon Encounter uses compact tables by method. If the ROM has time tables,
   select a time period or saved game time. The program does not change the clock.
-- **Trainers:** check the roster and identified locations. Ultimate Emerald has
-  a difficulty selector; dynamic previews use your saved party automatically.
+- **Trainers:** check the compact roster table and identified locations. Each entry
+  includes level, gender, nature, ability, held item, moves and IVs/EVs. Ultimate
+  Emerald has a difficulty selector; dynamic previews use your saved party
+  automatically.
   Without a save, unresolved generated values remain unknown.
 
 Reserved item slots and maps with mismatched layouts or no identified entrance

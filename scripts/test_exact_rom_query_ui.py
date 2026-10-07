@@ -35,8 +35,8 @@ def main():
             expect(page.locator('.map-navigation h4').first).to_be_visible()
             if catalog['profile'].get('native_trainers'):
                 page.locator('.reference-tabs').get_by_role('button', name='Trainers', exact=True).click()
-                expect(page.get_by_text('Native ordinary-party scenario', exact=True)).to_be_visible()
-                cell = page.locator('.trainer-mon-card .trainer-stat-table tbody tr').first.locator('td').first
+                expect(page.get_by_text('Generated team preview', exact=True)).to_be_visible()
+                cell = page.locator('.trainer-party-entry .trainer-stat-table tbody tr').first.locator('td').first
                 import re
                 expect(cell).to_have_text(re.compile(r'^\d+$'))
                 expect(page.locator('.trainer-party [role=alert]')).to_have_count(0)

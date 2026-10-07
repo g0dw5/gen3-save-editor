@@ -10,6 +10,12 @@ bilingual file.
 
 ## 0.3.0 — Unreleased / 未发布
 
+- Use current-ROM Pokémon names throughout references and editing, without
+  appended form/duplicate-name labels. Keep IDs and verified form details separate.
+  Compact trainer tables retain gender, nature, abilities, items, moves and IVs/EVs.
+- 宝可梦及关联页统一显示当前 ROM 原名，不追加形态或同名说明；编号与已确认的形态
+  详情独立保留。训练家配队改为紧凑表格，保留性别、性格、特性、道具、招式及 IV／EV。
+
 - Align ten common cheat features across all five exact ROMs, adding Mercury 1.2
   bindings and compatible daycare eggs for BW/DP/Ultimate. Shorten player help.
 - 五个精确 ROM 拉齐 10 项通用金手指；补齐水银 1.2 与漆黑 BW／DP、究绿的兼容

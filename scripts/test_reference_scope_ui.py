@@ -27,6 +27,7 @@ def main():
                               md5=key, label=key, max_level=100,
                               capabilities=dict(world=True, save_edit=True, dex=True))
         cat['species'] = [dict(species(i), name=f'{key} Pokémon {i}') for i in [1, 2]]
+        cat['form_families'] = [dict(species=[1, 2], offset=1)]
         cat['moves'] = [dict(id=1, name=f'{key} Move', pp=10, power=50, accuracy=90, priority=0,
                              move_type=0, category=0, description='Description', effect=0, chance=0, target=0, flags=0)]
         cat['items'] = [dict(id=0, name='', tm_move=None), dict(id=1, name=f'{key} Item', tm_move=None, description='Item description', price=100, pocket=1)]
@@ -71,7 +72,7 @@ def main():
             assert payload['player_party'][0]['speed'] == 95 and len(payload['player_party']) == 1
             level = 70 if payload['difficulty']==4 else 50
             assert payload['opponent_levels'] == [level]
-            result = dict(trainer_id=1,difficulty=payload['difficulty'],mons=[dict(species=1,level=level,ivs=[31]*6,evs=[payload['difficulty']]*6,alternate_ivs=None,alternate_evs=None)])
+            result = dict(trainer_id=1,difficulty=payload['difficulty'],mons=[dict(species=1,level=level,ivs=[31]*6,evs=[payload['difficulty']]*6,alternate_ivs=[31,30,31,31,31,31],alternate_evs=[payload['difficulty'],0,0,0,0,0])])
         elif command == 'map_navigation': result = dict(map_id=payload['id'],incoming=[],outgoing=[],approaches=[],truncated=False,diagnostics=[])
         elif command in ['map_image','sprite','trainer_sprite','object_sprite']:
             result = dict(url='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="%23cce5d5"/></svg>',warnings=[])
@@ -96,7 +97,7 @@ def main():
                 page.get_by_role('button',name='ROM reference' if locale=='en' else 'ROM 资料',exact=True).click()
                 dialog = page.get_by_role('dialog')
                 expect(dialog.locator('.reference-tabs button')).to_have_count(6)
-                expect(dialog.locator('.reference-detail h2')).to_contain_text(f'{key} Pokémon')
+                expect(dialog.locator('.reference-detail h2')).to_have_text(f'{key} Pokémon 1 #1')
                 learnset = dialog.locator('.reference-section')
                 expect(learnset).not_to_have_attribute('open','')
                 expect(learnset.get_by_role('button',name=f'{key} Move',exact=True).first).not_to_be_visible()
@@ -108,14 +109,17 @@ def main():
                 dialog.get_by_role('button',name='Back to previous reference' if locale=='en' else '返回上一条资料',exact=False).click()
                 expect(dialog.locator('.reference-detail h2')).to_contain_text(f'{key} Pokémon')
                 dialog.locator('.reference-tabs button').nth(5).click()
-                expect(dialog.locator('.trainer-mon-card')).to_contain_text(f'{key} Ability')
+                expect(dialog.locator('.trainer-party-entry')).to_contain_text(f'{key} Ability')
                 expect(dialog.locator('.trainer-party input')).to_have_count(0)
                 mode = dialog.get_by_label('Difficulty · whole trainer reference' if locale=='en' else '难度 · 全部训练家资料')
                 if key == 'Ultimate':
                     for difficulty in [1,2,3,4]:
                         mode.select_option(str(difficulty))
                         expect(dialog.locator('.trainer-stat-table tbody tr').nth(1).locator('td').first).to_have_text(str(difficulty))
-                    expect(dialog.locator('.trainer-mon-card')).to_contain_text('Lv. 70')
+                        expect(dialog.locator('.trainer-stat-table tbody tr').first.locator('td').nth(1)).to_have_text('31 / 30')
+                        expect(dialog.locator('.trainer-stat-table tbody tr').nth(1).locator('td').nth(1)).to_have_text(f'{difficulty} / 0')
+                        expect(dialog.locator('.trainer-values-row')).to_contain_text(f'{difficulty*6} / {difficulty}')
+                    expect(dialog.locator('.trainer-party-entry')).to_contain_text('Lv. 70')
                     expect(dialog.locator('.trainer-mode-note')).to_contain_text('Species base stats' if locale=='en' else '种族值仍取 ROM')
                 else: expect(mode).to_have_count(0)
                 if os.environ.get('GEN3_UI_ARTIFACTS') and key=='Ultimate':

@@ -82,7 +82,7 @@ with sync_playwright() as p:
     dialog.get_by_label('Role', exact=True).select_option('联盟冠军')
     expect(dialog.locator('.reference-rows > button')).to_have_count(1)
     expect(dialog.locator('.reference-detail h2')).to_contain_text('#335')
-    expect(dialog.locator('.trainer-mon-card')).to_have_count(6)
+    expect(dialog.locator('.trainer-party-entry')).to_have_count(6)
     expect(dialog.get_by_role('img', name='Battle portrait', exact=True)).to_be_visible()
     expect(dialog.get_by_role('img', name='Map character', exact=True)).to_be_visible()
     assert dialog.locator('.trainer-stat-table tbody tr').first.locator('td').all_text_contents() == ['31'] * 6
@@ -114,11 +114,11 @@ with sync_playwright() as p:
     assert dialog.locator('.reference-rows .id').all_text_contents() == ['255', '998']
     dialog.get_by_label('Name, tag, map, Pokémon…', exact=True).fill('no-such-trainer')
     expect(dialog.locator('.reference-rows > button')).to_have_count(0)
-    expect(dialog.locator('.trainer-mon-card')).to_have_count(0)
+    expect(dialog.locator('.trainer-party-entry')).to_have_count(0)
     dialog.get_by_role('button', name='Reset', exact=True).click()
     dialog.get_by_label('Name, tag, map, Pokémon…', exact=True).fill('三春')
     expect(dialog.locator('.reference-detail h2')).to_contain_text('#74')
-    miltank = dialog.locator('.trainer-mon-card').last
+    miltank = dialog.locator('.trainer-party-entry').last
     expect(miltank.locator('.gender-badge')).to_contain_text('Female')
     expect(miltank).to_contain_text('厚脂肪')
     expect(miltank).to_contain_text('Bashful')

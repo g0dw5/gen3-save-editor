@@ -45,7 +45,7 @@ def main():
         page.goto(os.environ.get('GEN3_UI_URL','http://127.0.0.1:5173'))
         page.get_by_role('button',name='ROM reference',exact=True).click()
         page.locator('.reference-tabs').get_by_role('button',name='Trainers',exact=True).click()
-        card=page.locator('.trainer-mon-card')
+        card=page.locator('.trainer-party-entry')
         expect(card).to_contain_text('Native Ability')
         expect(card).to_contain_text('Native Item')
         expect(card).to_contain_text('Native Move')

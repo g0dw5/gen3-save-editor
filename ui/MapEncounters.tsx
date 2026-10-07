@@ -140,7 +140,7 @@ export function MapEncounters({
       )}
       {tables.map((table, i) => {
         const rows = table.rows.filter((e) =>
-          speciesDisplayName(catalog, e.species, t)
+          speciesDisplayName(catalog, e.species)
             .toLocaleLowerCase()
             .includes(query.toLocaleLowerCase()),
         );
@@ -199,7 +199,7 @@ export function MapEncounters({
                           onClick={() => onSpecies(e.species)}
                         >
                           <Sprite catalog={catalog} species={e.species} />
-                          {speciesDisplayName(catalog, e.species, t)}
+                          {speciesDisplayName(catalog, e.species)}
                         </button>
                       </td>
                       <td>

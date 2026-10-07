@@ -1,7 +1,7 @@
 """Display native form identity in both ROM references and stored Pokémon."""
 import copy,json,os
 from playwright.sync_api import sync_playwright,expect
-from test_reference_navigation import CATALOG,species
+from test_reference_navigation import CATALOG,WORLD,species
 from test_editor_navigation import pokemon
 
 
@@ -23,6 +23,8 @@ def main():
         req=route.request.post_data_json;cmd=req['command'];calls.append(cmd)
         if cmd=='state':data=dict(catalog=catalog,save=save)
         elif cmd=='sprite':data=dict(url='')
+        elif cmd=='world':data=WORLD
+        elif cmd=='acquisition':data=dict(target=req['payload'],sources=[],partial=True,clock=None)
         elif cmd=='species':
             id=req['payload']['id'];data=dict(species=next(s for s in catalog['species']if s['id']==id),evolutions=[],learnset=[],encounters=[],battle_forms=[],relations=dict(species=ids,evolutions=[],battle_forms=[],form_families=catalog['form_families'] if id!=920 else [],name_relations=[]))
         else:raise AssertionError(req)
@@ -31,19 +33,22 @@ def main():
         b=p.chromium.launch(channel='chrome',headless=True);page=b.new_page(viewport=dict(width=1440,height=1000));page.add_init_script("localStorage.setItem('gen3.locale','zh')");page.on('pageerror',lambda e:errors.append(str(e)));page.route('**/api',respond)
         page.goto(os.environ.get('GEN3_UI_URL','http://127.0.0.1:5173'))
         expect(page.locator('.pokemon-form-label')).to_contain_text('攻击形态')
-        expect(page.locator('[data-location="p:0"]')).to_have_attribute('title','代欧奇希斯 · 攻击形态')
+        expect(page.locator('[data-location="p:0"]')).to_have_attribute('title','代欧奇希斯')
         page.locator('[data-location="0:0"]').click();expect(page.locator('.pokemon-form-label')).to_contain_text('速度形态')
         page.locator('[data-location="0:1"]').click();expect(page.locator('.pokemon-form-label')).to_contain_text('?')
         page.get_by_role('button',name='ROM 资料',exact=True).click();dialog=page.get_by_role('dialog')
         dialog.locator('.reference-rows button').filter(has_text='1128代欧奇希斯').click()
-        expect(dialog.locator('.reference-detail h2')).to_contain_text('攻击形态')
-        for label in ['普通形态','攻击形态','防御形态','速度形态']:
-            expect(dialog.locator('.evolution-tree')).to_contain_text(label)
-        dialog.locator('.evolution-tree .evolution-node').filter(has_text='防御形态').click();expect(dialog.locator('.reference-detail h2')).to_contain_text('防御形态')
-        dialog.locator('.reference-rows button').filter(has_text='920代欧奇希斯').click();expect(dialog.locator('.reference-detail h2')).to_contain_text('同名条目 #920')
+        expect(dialog.locator('.reference-detail h2')).to_have_text('代欧奇希斯 #1128')
+        for id in [386,1128,1129,1130]:
+            expect(dialog.locator(f'.evolution-card[data-species="{id}"]')).to_have_count(1)
+        dialog.locator('.evolution-forms summary').click()
+        dialog.locator('.evolution-card[data-species="1129"] .evolution-node').click();expect(dialog.locator('.reference-detail h2')).to_have_text('代欧奇希斯 #1129')
+        dialog.locator('.reference-rows button').filter(has_text='920代欧奇希斯').click();expect(dialog.locator('.reference-detail h2')).to_have_text('代欧奇希斯 #920')
+        expect(dialog).not_to_contain_text('同名条目')
+        expect(dialog).not_to_contain_text('基础形态')
         assert 'action' not in calls and before==save and not errors,(calls,errors)
         b.close()
-    print('Passed: reference names, linked family navigation, party/box form labels, PID letter, ambiguous duplicate name and zero save actions.')
+    print('Passed: reference names, linked family navigation, party/box form labels, PID letter, unadorned ROM names and distinct duplicate IDs and zero save actions.')
 
 
 if __name__=='__main__':main()

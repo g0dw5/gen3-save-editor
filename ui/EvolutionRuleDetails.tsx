@@ -56,7 +56,7 @@ export function EvolutionRuleDetails({
   const locations = evolutionLocationMaps(rule, maps);
   const name = (target: QueryTarget) =>
     target.kind === "species"
-      ? speciesDisplayName(catalog, target.id, t)
+      ? speciesDisplayName(catalog, target.id)
       : ((target.kind === "item" ? catalog.items : catalog.moves).find(
           (row) => row.id === target.id,
         )?.name ?? `#${target.id}`);

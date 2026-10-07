@@ -23,8 +23,7 @@ export function EvolutionTree({
   const { t } = useI18n();
   const id = detail.species.id;
   const graph = evolutionGraph(detail);
-  const label = (value: number) =>
-    speciesDisplayName(catalog, value, t, undefined, detail);
+  const label = (value: number) => speciesDisplayName(catalog, value);
   const sourceLink = (value: number, arrow = "→") => (
     <button className="link-button" onClick={() => onNavigate(value)}>
       {label(value)} {arrow}

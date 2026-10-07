@@ -40,7 +40,7 @@ export function EvolutionUsesPanel({
                   className="link-button"
                   onClick={() => onTarget({ kind: "species", id })}
                 >
-                  {speciesDisplayName(catalog, id, t)} ↗
+                  {speciesDisplayName(catalog, id)} ↗
                 </button>
               </span>
             ))}

@@ -69,19 +69,6 @@ export function formLabel(
   if (options.approved?.decision.status === "direct" && options.approved.form) {
     return options.approved.form;
   }
-  if (family) {
-    const index = family.species.indexOf(id);
-    return index === 0
-      ? t("formBase")
-      : t("formVariant").replace("{n}", String(index + 1));
-  }
-  if (battles.some((row) => row.source === id)) return t("formBase");
-  const name = catalog.species.find((row) => row.id === id)?.name;
-  if (
-    name &&
-    catalog.species.some((row) => row.id !== id && row.name === name)
-  ) {
-    return t("formSameName").replace("{n}", String(id));
-  }
+  // An unlabelled family or duplicate name does not establish a form identity.
   return "";
 }
