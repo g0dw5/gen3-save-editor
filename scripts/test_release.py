@@ -21,7 +21,8 @@ class ReleaseChecks(unittest.TestCase):
             target.write_bytes((release.ROOT / name).read_bytes())
         self.version, _ = release.version_and_notes(self.root)
         (self.root / "CHANGELOG.md").write_text(
-            f"## {self.version} — Unreleased / 未发布\n\nEnglish / 中文\n")
+            f"## {self.version} — Unreleased / 未发布\n\nEnglish / 中文\n",
+            encoding="utf-8")
 
     def test_development_allowed_but_not_release_tag(self):
         with self.assertRaisesRegex(ValueError, "dated"):
@@ -31,16 +32,16 @@ class ReleaseChecks(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "does not match"):
             release.version_and_notes(self.root, "v999.0.0")
         path = self.root / "apps/desktop/tauri.conf.json"
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         data["version"] = "999.0.0"
-        path.write_text(json.dumps(data))
+        path.write_text(json.dumps(data), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "Version mismatch"):
             release.version_and_notes(self.root)
 
     def test_dated_release_extracts_only_its_notes(self):
         path = self.root / "CHANGELOG.md"
         path.write_text(f"## {self.version} — 2026-01-01\n\nEnglish / 中文\n\n"
-                        "## 0.0.1 — 2025-01-01\n\nPrevious\n")
+                        "## 0.0.1 — 2025-01-01\n\nPrevious\n", encoding="utf-8")
         _, notes = release.version_and_notes(self.root, f"v{self.version}")
         self.assertEqual(notes, "English / 中文\n")
 
@@ -92,7 +93,7 @@ class ReleaseChecks(unittest.TestCase):
         output = self.root / "out"
         self.assertEqual(len(list(output.iterdir())), 3)
         self.assertFalse(any(f.suffix == ".gba" for f in output.iterdir()))
-        info = json.loads((output / "build-info-windows-x64.json").read_text())
+        info = json.loads((output / "build-info-windows-x64.json").read_text(encoding="utf-8"))
         self.assertEqual(info["commit"], "test-sha")
         self.assertEqual(info["signing"], "unsigned")
         self.assertEqual(len(info["files"]), 2)
