@@ -72,6 +72,7 @@ class ReleaseChecks(unittest.TestCase):
         with zipfile.ZipFile(archive) as docs:
             self.assertIn("README.md", docs.namelist())
             self.assertIn("README.zh-CN.md", docs.namelist())
+            self.assertIn("cheats.md", docs.namelist())
             self.assertFalse(any("research/" in p or "verification/" in p for p in docs.namelist()))
             self.assertEqual(set(docs.namelist()), set(release.DOCS.values()))
         with self.assertRaisesRegex(ValueError, "empty staging"):

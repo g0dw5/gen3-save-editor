@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS = {
     "docs/USER-GUIDE.md": "README.md",
     "docs/USER-GUIDE.zh-CN.md": "README.zh-CN.md",
+    "docs/cheats.md": "cheats.md",
     "CHANGELOG.md": "CHANGELOG.md",
     "LICENSE": "LICENSE",
     "THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",

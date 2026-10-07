@@ -27,8 +27,8 @@ bilingual file.
   当前日志并定位已识别的任务地图。后续日志默认折叠，未知依赖保持未知。
 
 - Replace developer JSON/evidence widgets with concise player-facing notes; ship
-  bilingual user guides instead of research/verification documents.
-- 移除玩家界面的研发 JSON／证据控件；说明包改为中英文使用说明，不附逆向与验证文档。
+  bilingual user guides and concise cheat instructions instead of research/verification documents.
+- 移除玩家界面的研发 JSON／证据控件；说明包改为中英文使用说明及简明金手指用法，不附逆向与验证文档。
 - Move references focus on machine pickups/shops, positioned tutors and egg-move
   offspring. Learnsets filter by source, category, type and current-ROM name.
   Map encounters use compact method/time tables with verified per-ROM time labels.
