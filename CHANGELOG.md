@@ -8,563 +8,68 @@ bilingual file.
 首次公开发布版本为 **0.1.5**，不追记此前的开发版本。0.1.6、0.1.7 按工程提交补记，
 不代表这些构建的对外发布日期。每次发布包均附带本中英文日志。
 
-## 0.3.0 — Unreleased / 未发布
+## 0.3.0 — 2026-10-07
 
-- Use current-ROM Pokémon names throughout references and editing, without
-  appended form/duplicate-name labels. Keep IDs and verified form details separate.
-  Compact trainer tables retain gender, nature, abilities, items, moves and IVs/EVs.
-- 宝可梦及关联页统一显示当前 ROM 原名，不追加形态或同名说明；编号与已确认的形态
-  详情独立保留。训练家配队改为紧凑表格，保留性别、性格、特性、道具、招式及 IV／EV。
+### 中文
 
-- Align ten common cheat features across all five exact ROMs, adding Mercury 1.2
-  bindings and compatible daycare eggs for BW/DP/Ultimate. Shorten player help.
-- 五个精确 ROM 拉齐 10 项通用金手指；补齐水银 1.2 与漆黑 BW／DP、究绿的兼容
-  产蛋代码，精简玩家使用说明。
-- Correct Mercury's 25 compact PC boxes and preserve physical records in box
-  moves/swaps. Limit edits of fields the game does not store in its boxes.
-  Exclude CFRU battle-form reversion records from transformation/evolution links.
-- 修正水银 25 个压缩盒子的存档读写，盒内移动／交换保留原始个体记录；限制修改
-  本作盒子不保存的字段。CFRU 战斗形态还原记录不再误列为新的变身或进化关系。
+- 新增究极绿宝石 5.5「失落之古遗」与宝可梦水银 FC 1.2，继续支持漆黑的魅影
+  5.0EX+BW／DP、西班牙火箭队 2.1 汉化版。每份 ROM 按精确指纹核验；水银 1.1
+  不在本次支持范围。
+- 只打开 ROM 即可查宝可梦、招式、道具、特性、地图及训练家。名称、数值、地图、
+  图片和配队读取当前 ROM；资料始终只读，修改与导出仅针对 SAV。
+- 获取来源可以跳转地图并定位 NPC／道具格位。地图区分道具球、隐藏道具和 NPC
+  奖励图层；相遇表按草丛、冲浪、钓鱼等分类，并展示已核实的本作时段。
+- 宝可梦页精简官方参照与形态信息，修复进化关系重复；可学招式按来源、分类、
+  属性和名字筛选。招式页补充招式机拾取／购买、定点教学和遗传来源。
+- 训练家配队改为紧凑表格，保留等级、性别、性格、特性、招式、携带道具、IV／EV。
+  究极绿宝石按难度显示已验证的实战生成结果；动态结果自动使用当前 SAV 同行，
+  缺少情景或未解析的值明确显示未知。
+- 独立冒险攻略可搜索已解析对白、奖励和前置线索。水银 1.2 见闻录读取本作任务、
+  日志及 SAV 接取／完成状态；西班牙火箭队主线提供已识别分支的下一步线索。
+  完整主线、全部支线和当前可达性仍有未核实部分。
+- 五份 ROM 均提供 10 项通用金手指：暂停步行遇怪、野生捕获、加速孵化、兼容
+  产蛋、随身电脑、指定遇怪、野生闪光、地图传送、战斗紧急整队恢复与己方持续
+  守住。究极绿宝石另有关闭读取本轮指令和命中加成方向修正。代码按当前 ROM
+  与模拟器格式生成，程序不自动启用；各条目的操作与停用条件见使用说明。
+- 修复水银背包、相遇地点和扩展地图绘制；支持其 25 个压缩盒子，限制修改本作
+  盒内不保存的字段。同行／盒子拖拽、交换、批量修改保留个体原始记录，并提供
+  撤销、备份、导出事务校验与外部文件变更检查。
+- 中英文界面与说明同步精简，发行包不附研发证据，不含 ROM、SAV 或提取素材。
+  五份精确 ROM 已完成本轮编辑后的 mGBA 加载、游戏内保存和重启回读；特殊设施、
+  所有手机模拟器及全部剧情机制尚未完整验证。Windows 安装包的 CI 构建不等同于
+  真实 Windows 游戏测试。
 
-- Add Mercury 1.2's ROM-native quest journal to the separate Adventure guide:
-  searchable titles/objectives, accepted/completed state, current pages and map
-  links. Keep later pages collapsed and unresolved dependencies explicit.
-- 水银 1.2 冒险攻略新增本作见闻录：搜索任务与目标，按 SAV 显示接取／完成状态、
-  当前日志并定位已识别的任务地图。后续日志默认折叠，未知依赖保持未知。
+### English
 
-- Replace developer JSON/evidence widgets with concise player-facing notes; ship
-  bilingual user guides and concise cheat instructions instead of research/verification documents.
-- 移除玩家界面的研发 JSON／证据控件；说明包改为中英文使用说明及简明金手指用法，不附逆向与验证文档。
-- Move references focus on machine pickups/shops, positioned tutors and egg-move
-  offspring. Learnsets filter by source, category, type and current-ROM name.
-  Map encounters use compact method/time tables with verified per-ROM time labels.
-- 招式页改按招式机拾取／购买、定点教学及遗传组织；宝可梦可学招式支持来源、分类、
-  属性与本 ROM 名字筛选。地图相遇改成分类紧凑表格，按各 ROM 已核实的时段筛选。
-- Filter reserved/uncertain items and retained mismatched/unreferenced maps without
-  deleting ROM data. Reduce official-reference controls and stop guessed name
-  links from joining evolution families; keep native forms separately grouped.
-- 筛掉空位、用途未确认的道具及贴图异常／入口未确认的地图，保留还原与直接跳转。
-  官方参照展示精简；进化关系不再按相似名字串联，原生形态单独分组。
-- Add a read-only illustrated adventure guide from loaded-ROM scenes/rewards and
-  persistent checks, searchable with prerequisite alternatives and map targeting.
-  Rocket’s main-story states are non-monotonic; only matched branches suggest next
-  actions. Full story tracking in other ROMs and complete side-quest coverage remain
-  unverified. Newly opened reference windows now appear above their source window.
-- 新增只读图文冒险攻略：读取当前 ROM 的对白／奖励及存档条件，可搜索任务、展开
-  前置候选并定位地图。西班牙火箭队主线按分支给下一步线索，不用序号大小推断完成；
-  其他 ROM 的完整主线及全部支线仍未核实。新打开的资料浮窗显示在来源窗口上方。
-
-- Simplify ROM reference to six tabs. Remove Event clues, Collection planning,
-  Game time and Training reference, their dedicated UI/helpers and product APIs,
-  collection planner and training/RTC projection implementations. Preserve key
-  addresses and prior verification boundaries in developer research documents.
-- ROM 资料精简为六页；删除事件线索、收集规划、游戏时钟、培育机制及专用调用链，
-  收集规划器、培育预览与 RTC 情景计算转为逆向地址文档。早先未发布条目中的这些
-  页面与命令已撤去，不代表最终产品功能。
-- Collapse long learnsets, conditions and map connections; remove duplicate
-  trainer locations. Ultimate difficulty uses one selector and the current SAV
-  party automatically, with no manual roster, seed or level overrides.
-- 技能表、条件与地图连接按需展开，合并训练家重复位置；究绿仅保留简单难度选择，
-  自动取当前 SAV 同行，区分种族值与难度相关等级／IV／EV。
-  [Cleanup verification / 精简验证](docs/verification/reference-cleanup-20261006.md).
-
-- Read Dark Phantom BW/DP's native seven-row alternate evolution table instead
-  of omitting its last two routes. Mercury item-evolution references now include
-  the native gender requirement, resolved from current ROM operands. Tree,
-  reverse uses and collection/HTML share these facts; full eligibility remains
-  separate from the verified item-selector scenarios.
-- 漆黑 BW／DP 按原生七条扩展进化表读取，补回遗漏的两条；水银道具进化补充
-  原生性别限制，道具参数与性别均读取当前 ROM。进化树、用途反查和收集／HTML
-  共用这些条件；道具判定情景验证不冒充完整进化资格、消耗或动画验证。
-
-- Link evolution requirements to current-ROM items/moves and add separate reverse
-  evolution uses. Share decoded location maps/entrances across reference queries,
-  collection preparation and HTML; preserve compound conditions when deduplicating
-  the tree. Location references do not prove current access or eligibility.
-- 进化条件可跳转当前 ROM 的道具／招式，并单独反查进化用途；资料、收集准备与
-  HTML 共用已解析的地点及入口。进化树去重保留附加携带物和复合条件，地点引用
-  不冒充当前可达或可以进化的证明。
-
-- Reverse-query explicit fixed-encounter held items from item pages, with species,
-  map/return links and optional unconfirmed collection/HTML suggestions. Native
-  real-command checks distinguish setup fields from capture/access/receipt and
-  keep encounter and held-item probabilities separate.
-- 道具页补齐定点宝可梦指定携带物的反查、宝可梦／地图／返回跳转，并按“包含
-  未确认来源”纳入收集与 HTML。实际 ROM 指令原生核对生成字段；捕捉、进入、
-  领取及随机概率保持独立判断，不将指定携带误写成必然取得。
-
-- Read both members of the native Rocket fixed-encounter pair, with shared
-  Mercury pair context, companion/item navigation and collection HTML facts.
-  Check native dispatch bindings; unknown operands and capture/access conditions
-  remain explicit. Verified native setup capability is not a located encounter.
-- 补齐西班牙火箭队原生双对手指令的第二只，共用水银的组信息展示、同场宝可梦／
-  道具跳转和收集 HTML。校验当前 ROM 原生分派；未知参数和捕捉／进入条件保留
-  提示。原生生成能力不冒充已发现的游戏内相遇。
-
-- Identify native actor-action/wait references across all five ROM fingerprints.
-  Maps explain initial actor tiles and expose map-level action evidence; movement
-  operands do not become navigation edges. Background execution and receipt
-  boundaries remain conservative, verified with native lifecycle fixtures.
-- 五指纹识别原生角色行动／等待引用，地图明确提示小人为初始格位，并展示地图级
-  行动证据；行动中的地图参数不作为入口。保留后台执行与领取判断的未知边界，
-  已用原生动作生命周期测试核对。
-
-- Follow native Dex mirror and seen/caught dependencies in Dark Phantom BW/DP
-  and Ultimate; retain independent Rocket flags and Mercury split banks. Explain
-  invalid positive records in the editor, collection planner and standalone HTML
-  without changing SAV bytes. Verified against complete native getters.
-- 漆黑 BW／DP 与究极绿宝石的图鉴读取遵循本作原生镜像及已见／已捕获依赖校验，
-  西班牙火箭队独立标记、水银分段读取保持不变。修改页、收集规划与独立 HTML
-  提示异常记录，查询不写入 SAV；已与完整原生例程逐项核对。
-
-- Add Mercury 1.2 historical-Dex collection planning through native split-bank
-  reads. Explain lazy initialization in both languages and standalone HTML;
-  preserve raw SAV bytes and keep Dex editing disabled. Five-ROM regressions retain
-  legacy readers/edit boundaries; full acquisition/access coverage remains partial.
-- 水银 1.2 收集规划增加按图鉴捕获记录判断，按原生两段图鉴读取并解释未初始化
-  范围。中英文界面与独立 HTML 共用说明，不改存档；图鉴写入仍关闭。其他 ROM
-  的原有读取与编辑边界交叉回归，完整获取方式和可达性仍部分支持。
-
-- Preserve reward operands, entrance coordinates and conditions through verified,
-  bounded native name/number buffers across five fingerprints. Unknown formatting,
-  long strings and Mercury's runtime custom-berry name keep conservative stops.
-- 五指纹的名称／数字填充指令经原生核对后，保留奖励数量、入口坐标与条件。
-  长字符串、未知格式及水银的运行时自定义树果名称继续保留未知边界。
-
-- Preserve verified native player-gender reads and copied-result comparisons across
-  references, maps and collection HTML. SAV overlays show the saved value; ROM-only
-  checks stay unknown. Five-ROM native read/copy/branch evidence and bilingual UI
-  regression cover this bounded rule; other story/access gaps remain partial.
-- 五指纹补齐原生玩家性别读取、复制后比较与中英文条件展示，资料／地图／收集
-  HTML 共用说明。读取 SAV 后代入存档身份；仅读 ROM 保留未知。其他剧情、领取
-  与可达性缺口不因此升级为完整支持。
-
-- Correct Dark Phantom BW/DP berry/key-item ROM category IDs. Standard pocket
-  edits, ordinary holdings and reference labels now select the proper category.
-  Normal choices follow the loaded ROM; free/PC choices stay broad and existing
-  mismatches remain visible. Verified with five-ROM native pockets and save/reload.
-- 修正漆黑 BW／DP 的树果与重要道具分类编号，恢复正确的栏位编辑校验、持有量
-  判断和资料标签。普通选择按当前 ROM 分类筛选，自由编辑／电脑保留完整选择；
-  已有错放道具保留并提示。五指纹原生栏位与游戏内保存回读已交叉验证。
-
-- Verify production SAV edits through full-frame mGBA Continue, in-game Save and
-  fresh reboot for all five fingerprints. Native party/storage bytes and every
-  inventory pocket preserve tested IV/EV/marking, batch/move/swap and quantity
-  results. Mercury's empty-box fixture and RTC trailers retain explicit limits.
-- 五个精确 ROM 补齐正常按键的编辑、游戏内保存与重启回读验证，独立核对同行／
-  整块盒子和所有背包栏位。本轮多字段、批量、移动／交换及数量修改保留结果；
-  水银无盒子个体的副本、RTC 尾部和其他未测试操作明确保留边界。
-
-- Preserve script-assigned coordinates and item operands through verified field
-  prompts, close-message and delay commands. Read standard bodies from each ROM,
-  account for the expanded message gate, and retain unknown choices and access.
-  Five-ROM native comparison resolves 48 referenced coordinate cases; it does
-  not establish 48 distinct doors or complete field interactions.
-- 修复对话、关闭消息及等待后丢失入口坐标和道具参数的问题。通用脚本按当前 ROM
-  读取，究极绿宝石的额外分派单独处理；选择与可达性仍保留未知。五指纹原生
-  对照后，48 条坐标引用可定位，不将引用数当作独立入口数或完整现场验证。
-
-- Share guarded script entrances across collection sources, evolution preparation,
-  prerequisite candidates and standalone HTML. Keep route alternatives separate,
-  trace their persistent guards to affected goals, preserve unresolved incoming
-  references, and recheck SAV state. Access and full story coverage remain partial.
-- 收集来源、进化准备、前置事件和独立 HTML 共用带条件的脚本入口。各条路线分开
-  展示，持久条件关联到受影响目标，保留未解析目的格位的来源，并随 SAV 重查。
-  当前可达性、完整剧情和动态通道仍部分支持。
-
-- Add referenced script passages to map sources, destination tiles, entrance
-  layers and qualified exterior chains across all five fingerprints. Recheck SAV
-  guards without caching eligibility; exclude destination setters and unreferenced
-  bytes. Verify 918 native operand cases; full activation/access remains partial.
-- 五个精确 ROM 的地图页补入已引用脚本通道、来源／目标格位、入口图层及带提示的
-  外部入口链。SAV 条件实时重查，不缓存资格；设置目的地的指令及无引用数据不当作
-  通道。918 个原生参数用例已对照，触发方式、可达性及完整地图切换仍部分验证。
-
-- Connect collection goals to regional prerequisite-event alternatives in the
-  live UI and HTML. Preserve state when following references, discard stale
-  ROM/SAV responses, retain cycles and unknown guards, and stop tracing already-met
-  conditions. Add read-only `gen3 collection-plan`; full story/access remain partial.
-- 收集规划新增按区域查看前置事件、关联目标及地图入口，并贯通独立 HTML。
-  跨资料返回保留分析状态，换 ROM／SAV 丢弃旧响应；保留循环与未知条件，
-  已满足条件不再推荐其解锁任务。新增只读命令行规划，完整剧情与可达性仍部分支持。
-
-- Show acquisition type, known quantity, encounter-slot probability, periods and
-  repeatability in collection rows and standalone HTML, with related item/move/
-  Pokémon links. Period hours use the loaded adapter's verified rules; unknown
-  rules show names only. These remain suggestions, not new reachability proofs.
-- 收集清单与独立 HTML 补齐获取方式、已知数量、相遇槽位概率、时段及重复获取说明，
-  支持关联道具／招式／宝可梦跳转。时段小时采用当前适配器已验证规则；未知规则只
-  显示名称，不套用其他版本。仍为建议路线，不新增可达性或完整任务依赖的保证。
-
-- Qualify crown-service selection as party-only, with B cancellation and separate
-  later level checks. Native selection does not exclude fainted individuals or
-  eggs; the read-only editor preview deliberately accepts non-eggs only. Box
-  previews now explain the required in-game withdrawal and expose its scenario
-  separately from service eligibility. No PC transfer or full transaction claim.
-- 王冠服务明确为同行选择，可按 B 取消，之后另有等级检查。原生选择步骤不排除
-  已倒下个体或蛋；修改器只读预览仍只接受非蛋个体。盒子预览提示先在游戏内取回
-  同行，并区分模拟状态与实际服务资格，不冒充完整取回或交易验证。
-
-- Read NPC service-menu cancellation rules from the loaded ROM. Correct Mercury's
-  single-stat menu description: it ignores B after an attempted payment; its
-  initial menu and Ultimate's training-choice menu allow B cancellation. Native
-  input/branch evidence remains separate from full window and transaction replay.
-- NPC 服务菜单按当前 ROM 显示取消规则。修正水银单项选择的描述：尝试支付之后
-  的菜单忽略 B；其主菜单与究极绿宝石训练项目菜单可按 B 取消。原生输入／分支
-  已对照，完整窗口与支付交易仍保留验证边界。
-
-- Preview referenced NPC crown-service effects on stored or simulated individuals.
-  Execute native level-gated helpers: Mercury changes base IVs and recalculates
-  party stats; Ultimate changes training flags without refreshing stored stats.
-  Keep hypothetical field effects separate from eligibility and full payment.
-- NPC 王冠服务新增同行／盒子／模拟个体的原生效果预览：水银修改基础 IV 并
-  重算同行能力，究极绿宝石修改训练标记而不立即刷新保存的能力。字段情景与
-  资格、完整支付分开展示，预览不消耗道具、不修改存档。
-
-- Add Mercury's runtime NPC base-IV training choices, unlock/level checks and
-  item/map/prerequisite links. Separate required holdings from attempted payment:
-  native silver checks silver but removes gold before stat selection, without an
-  immediate removal-result guard. Keep full transactions qualified and read-only.
-- 水银新增实时读取的 NPC 基础个体值训练：选择、解锁／等级检查、道具来源与
-  地图／前置跳转。区分持有与尝试支付：原生银色分支检查银冠却在单项菜单前扣
-  金冠，没有立即检查扣除结果；完整交易保留未知，资料页只读，不新增存档写入。
-
-- Add runtime NPC Hyper Training reference for Ultimate: actual menu choices,
-  item fees, earned-credit conditions and positioned NPC/map links. Keep base IVs
-  distinct from training flags and explain the delayed party-stat refresh. SAV
-  overlays are read-only; other-ROM crown services remain unverified.
-- 究极绿宝石新增实时读取的 NPC 极限特训资料：菜单选择、王冠费用、认证次数条件、
-  NPC 格位及地图跳转。区分基础个体值与训练标记，说明同行能力延迟刷新；
-  存档条件只读叠加，其他 ROM 的王冠服务不冒充已验证。
-
-- Add Ultimate's runtime ability-item variants and native script-prefix previews.
-  Distinguish seeded normal-slot selection from PID generation, retain unrelated
-  header/Hyper Training bits, and show successful-but-unchanged results.
-- 究极绿宝石特性道具接入运行时变体与原生脚本前缀预览，区分随机普通槽位选择
-  和 PID 生成，保留无关头部／王冠位；允许使用却未改变个体时明确提示。
-
-- Read Rocket/Mercury ability-item handlers at runtime and preview native guards,
-  actual abilities, PID and stats, linked to acquisition and maps. Rocket retains
-  PID; Mercury requires an explicit seed and may reroll PID. Qualify menu/access,
-  consumption, live RNG and unverified services separately; previews are read-only.
-- 实时读取西班牙火箭队／水银的特性道具入口，预览原生允许／拒绝判断、实际特性、
-  PID 与能力值并关联获取地图。西班牙火箭队保留 PID；水银需明确随机种子情景，
-  可能重选 PID。菜单资格、可达性、消耗、实时随机状态及未验证服务分别说明；
-  预览只读，不新增 SAV 写入，不向其他 ROM 套用规则。
-
-- Read Rocket mint targets from current-ROM handlers and native getters; preview
-  effective nature and stats while retaining PID/identity/history. Link item
-  acquisition and map navigation. Reject unchanged effective-nature scenarios;
-  qualify persistent-stage evidence separately from menus/consumption/access.
-- 从当前 ROM 的入口与原生取值读取西班牙火箭队薄荷目标，预览实际性格与能力，
-  保留 PID、身份和历史并关联道具来源／地图。重复性格情景保持不变；持久化阶段
-  与菜单资格、消耗、可达性分开说明，不新增存档写入操作。
-
-- Add read-only EV-item reference and native field-effect previews for stored or
-  simulated individuals, linked to acquisition and map navigation. Read handlers
-  from the current ROM; show actual before/after values and unresolved context.
-  Do not infer a gain from classification or success, consume items or edit SAVs.
-- 新增努力值道具资料及同行／盒子／模拟个体的原生战斗外效果预览，可跳转获取
-  与地图。处理入口实时读取当前 ROM，展示实际前后数值和未确认上下文；不凭
-  用途分类或返回成功推断增加量，不消耗道具、不修改存档。
-
-- Add a shared read-only Game time reference page. Mercury retains its saved
-  virtual clock; four hardware-clock profiles expose SAV offsets/checkpoints
-  and explicit RTC scenarios calculated by the loaded ROM's native routines.
-  Keep current RTC, weekday and unverified refresh rules unresolved.
-- ROM 资料新增统一只读游戏时间页。水银保留虚拟时钟；其余四份指纹展示存档
-  时间偏移与检查点，可输入 RTC 情景按当前 ROM 原生例程计算。不推断当前
-  硬件时间、星期或未验证的事件刷新规则。
-
-- Link qualified trainer-script references to actors, static tiles, guard checks,
-  event contexts and exterior entrances. Keep rematch bases and setup records
-  distinct from final parties and current access. Verify command boundaries with
-  native execution across five fingerprints; correct Mercury's extended type-10
-  boundary and stop unsupported formats rather than consume guessed bytes.
-- 训练家资料新增战斗脚本引用、NPC／格位、条件及事件上下文跳转，可沿地图查看外部
-  入口。再战基础记录、准备指令与最终配队分开展示，不推断当前可达。五份指纹核对
-  原生命令参数边界，修正水银类型 10 的扩展宽度；未知格式保留停止证据。
-
-- Add ROM-text/map search for referenced event clues with guarded writes,
-  SAV snapshot observations, prerequisite tracing and tile/entrance navigation.
-  Preserve search/filter/selection/page on return; keep floating windows inside
-  the viewport when dragged or resized. Keep visibility, observed
-  values, task completion and access distinct; no bundled quest catalog.
-- 新增事件线索页：按当前 ROM 对话／地图搜索引用，查看脚本条件与保存快照，
-  追查前置线索并定位格位／入口。返回保留搜索、筛选、条目和分页；浮窗拖动和缩放
-  保持在窗口内，防止右侧内容越界。不把 NPC
-  可见或标记值一致解释成任务已完成，不内置任务目录。
-
-- Trace persistent prerequisites to potential referenced NPC/tile/map scripts,
-  current-ROM text contexts, guard chains and map entrances. Add fingerprint-bound
-  lazy queries and a linked, escaped collection HTML appendix. Verify native
-  command semantics across five ROMs (360 writes); correct shared copyvar/subvar
-  handling. Keep full task graphs, native writes and current access unresolved.
-- 前置条件可追查可能改变它的 NPC／格位／地图脚本，关联当前 ROM 文字上下文、
-  其他条件及地图入口；新增按指纹隔离的只读查询和独立 HTML 线索附录。五份 ROM
-  原生命令验证 360 次写入，修正共享变量复制／减法语义。完整任务树、原生剧情写入
-  和当前可达性保留未知，不修改剧情标记。
-
-- Connect collection preparation to sampled native ordinary breeding outcomes
-  from exact existing party/box parents, with held-item links, receiving-service
-  references, hatching and directed evolution steps. Add a one-click full native
-  receipt preview and the same explanation to standalone HTML. Cache by current
-  ROM and complete SAV hash; show sampling bounds and unresolved scenarios.
-- 收集准备链加入现有同行／盒子亲本的原生普通孵蛋抽样结果，关联携带道具、已定位
-  领蛋服务、孵化及后续进化；可一键用完整领蛋例程复核，独立 HTML 同步说明。
-  缓存绑定当前 ROM 与完整 SAV 哈希，展示搜索边界及未确定情景，不生成个体。
-
-- Read ordinary daycare snapshots from SAV using each current ROM's native
-  getters: deposited individuals, saved egg availability and the next ordinary
-  production-check phase. Use exact deposited records in read-only scenarios.
-  Verify 576 saved states and 40 sequential phases across five fingerprints;
-  Mercury availability follows its patched flag rather than the legacy field.
-  Keep custom services, live RNG and complete inheritance/hatching unresolved.
-- 普通寄养支持只读存档快照：按当前 ROM 原生读取亲本、待领蛋状态及下一次普通
-  产蛋检查的步数，可用实际寄养记录进行情景预览。五份指纹验证 576 个保存状态和
-  40 个连续步数情景；水银按补丁标记判断待领蛋。自定义服务、实时随机状态及完整
-  遗传／孵化仍有缺口，不生成蛋或修改寄养数据。
-
-- Expand collection suggestions with bounded, directed permanent-evolution
-  preparation chains, actual non-egg ancestor counts, referenced ancestor
-  maps/entrances and item/move links, shared with standalone HTML. Correct missing
-  held-item, gender-dependent and compound evolution cross-links. Keep current
-  eligibility, breeding reversals and global route optimality unproven.
-- 收集建议加入有界的永久进化准备链，区分现有非蛋个体与图鉴历史记录，关联前代
-  来源、地图入口及道具／招式，独立 HTML 同步展示。修复携带道具、性别条件和复合
-  进化的跳转遗漏；不推断当前可进化，不反转进化边代替孵蛋验证，不宣称全局最短。
-
-- Preview ordinary daycare production with the current ROM's native step/item
-  branches, an ordinary SAV-bag projection or explicit item simulation, and
-  links to required-item acquisition. Verify 270 complete steps, 30 gate cases
-  and every 16-bit roll across five fingerprints. Keep live pending eggs,
-  service setup/access and complete inheritance/hatching unresolved.
-- 原生寄养预览加入普通产蛋检查：运行当前 ROM 的步数与道具分支，支持普通
-  存档背包投影／明确的道具模拟，并跳转所需道具的获取途径。五份指纹通过
-  270 次完整步数执行、30 个门控情景及全部 16 位随机抽值；实际待领蛋、
-  服务初始化／可达性和完整遗传／孵化继续保留未知。
-
-- Add read-only native daycare scenarios with stored/simulated parents, offspring
-  links and located receiving NPC/map navigation. Verify 210 scenarios across five
-  fingerprints with mGBA, and correct shared odd Thumb halfword loads using 120
-  independent microcases. Keep complete production context, next real eggs, complete inheritance
-  and Rocket/Mercury service references explicitly unresolved.
-- 新增只读原生寄养情景：选择存档／模拟亲本，跳转后代资料与已定位领蛋 NPC、地图。
-  五份指纹的 210 个情景对照 mGBA；以 120 个独立微测试修正共享 CPU 的奇地址
-  Thumb 半字读取。完整产蛋情景、下一颗真实蛋、完整遗传及西班牙火箭队／水银服务引用仍
-  明确保留未知，不生成或改动存档中的蛋。
-
-- Connect wild held-item sources to referenced encounter maps, levels, slots and
-  time selectors. Execute each current ROM's ordinary single-wild assignment
-  routine for a simulated baseline and the current SAV's first party member;
-  show held-item chances separately from encounter slot probabilities. Preserve
-  unreferenced records and unresolved access as unknown. Queries, collection
-  suggestions and bilingual HTML share the same explanation.
-- 野生携带道具来源关联真实相遇引用、地图、等级、槽位和时段；执行当前 ROM 的
-  普通单只野生携带例程，分别展示无修正模拟基准和存档同行首位情景。携带概率与
-  相遇槽位概率分开；无相遇引用和未确认可达性仍保留未知。查询、收集建议和
-  中英文 HTML 共用说明。
-
-- Preserve native item/money holdings predicates through script result copies and
-  branch comparisons, with ROM-scoped widths and bag slot rules. Link required
-  items, maps, collection planning and human-readable bilingual HTML. Keep
-  facility/RAM bag selection and checks after resource-changing scripts unknown;
-  holdings are not payment or receipt evidence.
-- 保留原生道具／金钱持有量检查与结果复制、分支关系，按 ROM 核对数量位宽和
-  背包槽位规则；所需道具、地图、收集建议和中英文 HTML 相互关联。设施临时
-  背包及脚本改变资源后的检查保持未知，不把持有量当成费用、已支付或领奖证明。
-
-- Correct Dark Phantom BW/DP tutor lookup to the table used by native code (six
-  changed slots), and connect parsed teaching offers to move queries, NPC tiles,
-  exterior entrances and return navigation across all five fingerprints. Execute
-  indexed move selection from current ROM code, including Mercury special cases;
-  keep payment, eligibility, receipt and repeat limits explicitly unresolved.
-- 修正漆黑 BW／DP 教招表地址（6 个槽位与旧表不同），五份指纹的已解析教学报价
-  接入招式查询、NPC 格位、外部入口和返回。索引取招执行当前 ROM 原生代码，覆盖
-  水银特殊取招；费用、资格、领取和次数限制继续明确保留未知。
-
-- Index bounded NPC trade quotes from the current ROM and connect requested/
-  received Pokémon, held items, NPC tiles and entrance navigation. SAV queries
-  distinguish matching non-egg party/box donors and retain unknown completion
-  and access. Verify 29 offer records with 174 native ordinary-generation cases
-  across five fingerprints; Mercury's alternate constructor remains separate.
-  Acquisition, planning and standalone HTML explain the exchange in both languages.
-- 实时解析有界 NPC 交换报价，关联交出／获得的宝可梦、携带道具、NPC 格位及
-  入口导航；SAV 查询区分同行／盒子的对应非蛋个体，不把报价当成已完成或当前
-  可达。五份指纹的 29 条报价通过 174 个原生普通生成情景；水银的特殊构造分支
-  单独保留未知。获取途径、收集建议和独立 HTML 共用中英文交换说明。
-
-- Connect parsed scripted Pokémon gifts, gift eggs and fixed encounters to NPC
-  tiles, acquisition queries, map-to-species navigation and collection HTML.
-  Keep unplaced sources separate and delivery/access conditions undetermined.
-  Decode Rocket's extended wild operands and Mercury's single/double wild
-  operands per adapter; read gift-egg levels from the current native constructor.
-- 已解析的宝可梦赠送、赠蛋及定点相遇接入 NPC 格位、获取途径、地图宝可梦跳转
-  与收集 HTML；无可靠格位的来源单列，发放结果与当前可达性保持未知。分别解析
-  西班牙火箭队扩展遇怪参数、水银单只／双只参数，赠蛋等级实时读取原生构造例程。
-
-- Trace bounded NPC gift receipt protocols at runtime, with per-reward guards,
-  native boolean award outcomes and success-only flag writes. Verify 80 reward
-  rows / 320 native cases across all five exact ROMs. Connect receipt evidence to
-  acquisition, map details, collection filtering and bilingual standalone HTML;
-  preserve uncertainty for unqualified/custom rewards and complete refresh/story rules.
-- 实时追踪有界 NPC 礼物领取协议，按奖励核对条件、原生发放结果及仅成功后写入的
-  标记；五份精确 ROM 的 80 条记录通过 320 个原生情景。证据贯通获取途径、地图详情、
-  收集过滤和中英文独立 HTML；未资格化／自定义奖励、完整刷新与剧情条件保留未知。
-
-- Verify ordinary item-ball receipt branches across all five exact ROMs and
-  overlay 1,956 qualified script records in acquisition/collection queries.
-  Keep receipt evidence separate from object visibility; compound scripts,
-  dynamic quantities and out-of-range flags stay undetermined. Explain missing
-  receipt evidence in both languages and avoid unproven one-time-only claims.
-- 五份精确 ROM 的普通道具球领取分支通过原生验证，1,956 条符合协议的脚本记录
-  接入获取途径与收集建议。领取证据与对象可见性分开；复杂脚本、动态数量和未验证
-  标记保持未知，补充中英文说明，不再未经证明就宣称只能领取一次。
-
-- Read native persistent event ranges for all five exact ROMs, including Ultimate's
-  segmented flags and Mercury's extensions. Overlay verified hidden-item receipt
-  state on acquisition/collection queries. Decode Mercury region-dependent hidden
-  flags and packed quantities from ROM; explain underfoot pickup in maps, sources,
-  planning and HTML. Unknown/native reward paths stay undetermined; NPC/compound
-  pickup receipt protocols and full refresh rules still need separate proof.
-- 五份精确 ROM 的存档事件条件改为按原生持久化范围读取，补齐隐藏道具领取叠加。
-  水银实时读取 ROM 区域列表选择标记基址，解析数量与脚下探测器取物，并贯通地图、
-  获取途径、收集建议和 HTML。未解析奖励路径保持未知，不把 NPC 消失等同已领奖；
-  复杂拾取／NPC 领取协议及完整刷新规则仍待验证。
-
-- Read Mercury 1.2's native virtual clock from SAVE extensions: date, independent
-  weekday, time, speed and forced-night override. Annotate acquisition queries,
-  regional collection suggestions and standalone HTML with this saved snapshot;
-  retain explicit simulated-hour and all-period modes. Native restoration,
-  leap/calendar validation, jump-menu behavior and post-jump re-save are verified.
-  Hardware RTC and complete weekday-event refresh remain unresolved.
-- 水银 1.2 查询原生扩展存档中的虚拟日期、独立星期、时间、速度及强制夜晚条件；
-  获取途径、区域收集建议和独立 HTML 共用保存时间依据，仍可模拟小时或查看全部
-  时段。已对照原生恢复／历法／跳时菜单，并验证跳时后的游戏再次保存回读；
-  硬件 RTC 与完整星期事件刷新仍待验证。查询不修改时钟或存档。
-
-- Correct Mercury 1.2 expanded bag storage (sector tails and auxiliary sectors),
-  plaintext quantities, and native map/met-location names. Preserve displayed
-  zero quantities instead of silently treating them as one. Reproduce extended
-  metatile layers, filler/backdrop transparency, and flag unresolved native layouts.
-- 修正水银 1.2 的扩展背包位置与数量读写、地图及相遇地点名称；数量为零时
-  列表和详情一致显示，不擅自变成一个。按原生规则绘制扩展图层、填充及透明
-  背景；标注在原生模拟器直接加载时同样错乱或图层行为无法确定的静态布局。
-  已用含物品的真实存档副本验证加载、编辑、撤销、导出及游戏再次保存回读。
-
-
-- Execute Mercury 1.2 ordinary trainer construction in read-only isolated RAM,
-  with explicit scenario seeds and independently verified generated values.
-  Preserve unknown FireRed hidden-item quantity/receipt packing; improve alternate
-  reward selection and collection goals for forms with parsed permanent sources.
-- 水银 1.2 新增隔离内存中的原生普通配队预览，明确情景种子并逐项独立验证。
-  火红系隐藏道具数量及领取打包方式保留未知；改善奖励分支选择及存在已解析
-  永久来源的形态收集目标。完整入战设置和特殊设施仍待验证。
-
-- Audit actual capabilities across all five exact fingerprints. Add runtime
-  acquisition queries, static map entrances/connections and target-tile navigation,
-  reference back navigation, SAV receipt overlays with verified rules, and regional
-  collection suggestions with standalone HTML export. Unknown conditions remain
-  explicit; planning and ROM references never write save or ROM data.
-- 审计五份精确 ROM 的实际能力；新增实时来源查询、静态入口／连接与目标格位
-  定位、资料返回、按已验证规则叠加 SAV 领取状态，以及区域收集建议和独立 HTML
-  导出。未知条件明确保留，规划和 ROM 资料均不写入 ROM 或存档。
-
-
-- Remove Mercury FC 1.1 support; list and accept only the verified 1.2 fingerprint.
-- 移除水银 FC 1.1 支持；首页及 ROM 加载只接受已验证的 1.2 指纹。
-
-- Add exact-ROM Mercury FC 1.2 reference: species, moves, items,
-  descriptions, evolutions and battle forms, complete move sources, native
-  experience thresholds, appearance, maps, timed encounters, trainers and
-  ROM-rendered map/NPC artwork. Add core save editing verified against native
-  routines, private-copy round trips and a complete 1.2 mGBA load/resave/reopen.
-  Expanded Pokédex flags and cheats remain pending
-  verification; no ROM bytes or extracted assets are bundled.
-- 新增宝可梦水银 FC 1.2 的精确指纹资料：宝可梦、招式／道具及说明、进化与
-  对战形态、完整招式来源、ROM 原生经验表、外观、地图、分时段相遇、训练家，
-  以及从 ROM 渲染的地图和 NPC。核心存档编辑经过原生函数对照、副本读写回读及
-  1.2 mGBA 加载、游戏再次保存和回读验证；扩展图鉴位与金手指暂不开放。
-  不内置 ROM 字节或导出素材。
-- Verify Mercury's unencrypted individual layout against both ROMs' native
-  getters/setters and stat routines. Keep its ball byte separate from Gigantamax
-  flags; distinguish PID-selected ordinary abilities from its hidden-ability bit.
-- 逐字段对照两版水银的原生读写及能力值例程，采用不加密的个体布局；捕获球
-  与超极巨化标记分开，普通特性按 PID 选择，隐藏特性按独立标记处理。
-
-- Add exact-ROM persistent player-side Protect for all four supported ROMs.
-  Four CodeBreaker lines OR the native Protect bit for both player-side battler
-  slots only while a battle callback exists. mGBA single-battle comparisons
-  confirmed blocked Protect-affected attacks and preservation of other turn
-  flags; complete doubles, facilities and mobile emulators remain unverified.
-- 四款受支持 ROM 新增精确指纹绑定的「己方持续守住」。四行 CodeBreaker 仅在战斗
-  中为己方两个场上位置按位加入原生守住标记，保留其他临时状态。mGBA 单打对照
-  验证了可守住攻击被拦截；双打完整流程、设施和手机模拟器仍待验证。
-
-- Add exact-ROM emergency battle-party recovery to Dark Phantom BW/DP, Team
-  Rocket 2.1 Chinese and Ultimate Emerald 5.5.
-  At the player's command menu, L+R+SELECT invokes the ROM's native whole-party
-  heal without an item turn, then synchronizes active battlers and health bars.
-  The complete GameShark V1/V2 groups were exercised in mGBA single battles for
-  all four ROMs and doubles for Ultimate, including fainted reserves, guard
-  conditions and live removal.
-  Authored payload and reproducible build check are included; ROM files remain
-  read-only. Mobile emulators and full battle-facility runs remain unverified.
-- 漆黑的魅影 BW／DP、西班牙火箭队 2.1 汉化版和究极绿宝石 5.5 均新增按完整 ROM
-  指纹绑定的战斗紧急整队恢复金手指：己方指令阶段按
-  L＋R＋SELECT，调用本作原生全队治疗，无需消耗吃药回合，同步场上数据与血条。
-  mGBA 四款单打、究绿双打验证包含昏厥后备队员、保护条件和即时停用；附可重建的自编指令。
-  ROM 文件保持只读，手机模拟器与完整设施流程仍未验证。
-
-- Add an exact-ROM Ultimate Emerald cheat correcting the reversed Casual/Lunatic
-  accuracy-bonus side. Keep the original +20% multiplier and other difficulty
-  rules; verify encoded GameShark codes in mGBA and the native accuracy branches.
-- 究极绿宝石新增精确 ROM 绑定的命中修正金手指，纠正养生／疯子模式加成阵营写反的
-  问题，保留原有相对 +20% 倍率及其他难度规则；验证 mGBA 加密码与原生分支。
-- Remove ROM writing from the app, CLI and core. ROM reference remains read-only;
-  only save data can be edited and exported. Reject `.gba` export paths. Verify
-  combined Speed IV/EV and ability edits survive one save transaction on all
-  supported ROMs.
-- 移除应用、命令行和核心中的 ROM 写入功能；ROM 资料保持只读，只修改、导出存档。
-  禁止以 `.gba` 路径导出。逐一验证四款受支持 ROM 的暴鲤龙：速度个体值／努力值
-  与特性可在同一存档事务中保存。
-- Calculate Ultimate Emerald trainer IVs and EVs by executing the loaded ROM's
-  bounded native constructor for the selected difficulty and player party.
-  Use the opened save party or a manually entered battle scenario; display
-  possible random outcomes and allow per-opponent level input.
-- 究绿训练家按所选难度和玩家同行执行当前 ROM 的原生个体值／努力值例程，
-  可使用已打开存档的队伍或手动设置对战情景，显示随机分支并可逐只指定模拟等级。
-- List every supported ROM from the registered adapters on the start screen.
-  Cheats now belong only to the opened ROM; their panel cannot import another
-  ROM and is no longer linked from ROM reference. Add a shared four-mode
-  Ultimate trainer difficulty selector with explicit source-party and generated
-  stat boundaries. Label Charizard's item-702 form as Gigantamax appearance.
-- 首页从适配器自动列出全部受支持 ROM；金手指仅对应当前打开的 ROM，不再在
-  窗口内另选 ROM，也不从 ROM 资料跳转。究绿训练家资料增加四档通用难度选择，
-  区分 ROM 基础队伍与实战生成数值；喷火龙携带 702 对应的形态标为超极巨化外观。
-- Add an exact-fingerprint Ultimate Emerald 5.5 adapter to the shared ROM reference
-  and save editor. Read expanded species, moves, abilities, learning sources,
-  evolutions, battle transformations, trainers and maps from the supplied ROM.
-  Read enhanced trainer templates without presenting difficulty-dependent EVs as
-  fixed values. Unreviewed official-species mappings remain unconfirmed.
-- 究极绿宝石 5.5 按完整指纹接入共用 ROM 资料和存档修改界面，实时读取扩展宝可梦、
-  招式、特性、学习来源、进化、战斗变身、训练家和地图。强化队伍展示 ROM 培养模板，
-  不将受难度影响的努力值误报为固定值；官方参照映射未经审核时不冒充已确认。
-- Preserve Ultimate's plain Pokémon records, disabled native checksum fields,
-  mint nature, hidden ability and Hyper Training bits. Support expanded inventory
-  in sector extensions and its shifted Pokédex bits; retain ordinary editor
-  transactions, storage transfers, preview, undo/redo and safe export.
-- 适配究绿明文个体、原生停用的校验字段、薄荷性格、隐藏特性与极限训练标记，支持
-  扇区扩展背包和不同的图鉴位布局，沿用编辑事务、盒子转移、预览、撤销重做与导出。
-- Add portable PC, walking-encounter suppression, guaranteed wild capture, faster
-  hatching, species/level encounters, shiny wild encounters and map teleport for
-  Ultimate, alongside its existing all-mode no-peeking code. Encounter/shiny hooks
-  are isolated from other ROMs and retain native generation constraints.
-- 究绿在全模式去窥屏之外新增随身电脑、暂停走路遇敌、野生必捕、快速孵蛋、指定遇怪
-  与等级、野生闪光、地图传送；遇怪与闪光使用独立适配，保留原生个体生成约束。
-- Version-specific verification and known boundaries:
-  [Ultimate Emerald 5.5](docs/research/ultimate-emerald-55.md).
-- 本次未制作发布安装包；具体验证范围见上述适配说明。
+- Add Ultimate Emerald 5.5 “Lost Ancient Ruins” and Pokémon Mercury FC 1.2,
+  alongside Dark Phantom 5.0EX+BW/DP and Team Rocket 2.1 Chinese. Support is tied
+  to exact ROM fingerprints; Mercury 1.1 is not supported.
+- Browse Pokémon, moves, items, abilities, maps and trainers with ROM alone.
+  Read game names, values, maps, artwork and parties from the loaded ROM.
+  ROM input stays read-only; edits and exports target SAV files only.
+- Link acquisition sources to map tiles, NPCs and entrances. Separate item-ball,
+  hidden-item and NPC-reward layers; group encounters by method and verified
+  game-specific time periods.
+- Simplify official comparisons and form information, fix duplicate evolution
+  relationships, filter learnsets, and expose machine pickups/shops, positioned
+  tutors and egg-move sources.
+- Compact trainer tables retain gender, nature, abilities, moves, held items and
+  IVs/EVs. Ultimate difficulty previews use verified native generation rules and
+  the loaded SAV party where needed; missing context stays explicitly unknown.
+- A separate Adventure guide searches parsed dialogue, rewards and prerequisite
+  clues. Mercury's native quest journal overlays saved accepted/completed states;
+  Rocket's identified story branches provide next-action clues. Complete story,
+  side-quest and current-access coverage remains partial.
+- Align ten common cheat features across all five fingerprints, with two extra
+  Ultimate-specific options. Generate codes for the loaded ROM and chosen code
+  format; activation and stop conditions remain the user's emulator operation.
+- Correct Mercury inventory, met locations, expanded maps and its 25 compact PC
+  boxes. Preserve individual records through edits, drag/swap and batch actions,
+  with undo, backups, transaction checks and external-change detection.
+- Ship concise bilingual player guides, without developer evidence, ROMs, saves
+  or extracted assets. Five-ROM edit/load/in-game-save/reboot checks were completed
+  in mGBA; complete facilities, mobile emulators and story mechanics remain
+  unverified. Windows CI builds do not establish real Windows gameplay coverage.
 
 ## 0.2.2 — Development builds / 开发构建
 

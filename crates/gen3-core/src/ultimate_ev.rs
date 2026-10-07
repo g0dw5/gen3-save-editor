@@ -291,6 +291,8 @@ impl<'a> Sandbox<'a> {
         }
     }
 
+    // Keep the native battler inputs together when constructing isolated RAM.
+    #[allow(clippy::too_many_arguments)]
     fn mon(
         &mut self,
         address: u32,
@@ -505,8 +507,10 @@ mod tests {
         for mon in casual.mons.iter().filter(|m| m.evs.is_some()) {
             assert_eq!(mon.evs, Some([0; 6]));
         }
-        let mut app = crate::app::App::default();
-        app.session = Some(crate::session::Session::new(rom.clone()));
+        let mut app = crate::app::App {
+            session: Some(crate::session::Session::new(rom.clone())),
+            ..Default::default()
+        };
         let response = app
             .dispatch(crate::app::Request {
                 command: "trainer_ev_preview".into(),

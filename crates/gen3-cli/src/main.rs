@@ -67,8 +67,13 @@ fn run() -> Result<()> {
             if let Some(path) = a.get(2) {
                 session.load(fs::read(path)?, None)?;
             }
-            let mut app = gen3_core::app::App::default();
-            app.session = Some(session);
+            // App keeps its caches private; use its public session entry point.
+            #[allow(clippy::field_reassign_with_default)]
+            let mut app = {
+                let mut app = gen3_core::app::App::default();
+                app.session = Some(session);
+                app
+            };
             print(app.dispatch(gen3_core::app::Request {
                 command: "adventure_guide".into(),
                 payload: serde_json::json!({"expected_rom_md5": md5}),

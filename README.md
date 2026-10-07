@@ -1,43 +1,35 @@
 # Gen III ROM Hack Editor
 
-Downloads: [GitHub Releases](https://github.com/g0dw5/gen3-save-editor/releases/latest). Choose Windows x64 or macOS Apple Silicon. Release assets contain the application and documentation, not ROMs or saves.
+[Download releases](https://github.com/g0dw5/gen3-save-editor/releases/latest) · [简体中文](README.zh-CN.md)
 
-[简体中文](README.zh-CN.md)
+Browse your own ROM, then open its SAV to edit individuals and inventory.
+The desktop app runs locally without an emulator connection. Game names, values,
+maps and artwork come from the loaded ROM. ROM input is always read-only.
 
-A local desktop editor for user-supplied Gen III Pokémon ROM hacks and battery
-saves. Rust owns parsing and transactions; React provides a bilingual workspace;
-Tauri supplies native file dialogs. ROM data and artwork are read at runtime.
+## Browse, follow clues and edit
 
-**Development preview.** BW, DP, Team Rocket 2.1 Chinese and Ultimate Emerald 5.5 share the editing
-workspace. Core regression tests
-run against generated fixtures and optionally your exact ROMs. See
-[verification and remaining work](docs/IMPLEMENTATION.md) before using a build.
-Mercury FC 1.2 ROM reference and save editing are available on the development
-branch. Historical Pokédex reads use its verified split banks; Pokédex writing stays disabled. Its ten common cheat features are available.
+- **ROM reference:** Pokémon stats, official comparisons, evolutions and learnsets;
+  machine/tutor sources; item acquisition; maps, NPCs, hidden items, encounters and
+  trainer parties. Follow cross-links to locate targets on maps.
+- **Adventure guide:** Search parsed dialogue, rewards and prerequisite clues.
+  Mercury 1.2 reads its native quest journal with saved accepted/completed states;
+  Rocket provides next-action clues for identified story branches.
+- **Save editing:** Expanded party/boxes, drag/swap, batch edits, nature, abilities,
+  IVs/EVs, moves/PP, bag/PC items, undo/redo, backups and checked exports.
+  Fields absent from a game's stored format are restricted, including Mercury's
+  boxed current PP, contest values and ribbons.
+- **Cheats:** Ten common features across five ROMs, including portable PC, wild
+  species/level, shiny wild encounters, teleport and battle recovery. Ultimate
+  additionally offers no-peeking and accuracy-direction correction. Generate codes
+  for the loaded ROM, then activate the matching format in your emulator.
+  See [usage and stop conditions](docs/cheats.md).
 
-## ROM reference
+No SAV is needed to browse. Loading one adds verified receipt/task states and
+party-dependent scenarios. Missing bag items never establish unclaimed rewards.
+Complete task dependencies, dynamic maps, facilities and unknown scripts remain
+partial; a parsed record is not proof of current obtainability.
 
-The read-only floating window has six tabs: Pokémon, moves, items, abilities,
-maps and trainers. Learnsets support source/category/type/name filters; conditions and connections expand on
-demand; acquisition links and map locations still read the current ROM.
-Ultimate Emerald has one difficulty selector. Dynamic trainers automatically use
-the current SAV party; without a SAV, fixed records remain and unknowns are marked.
-There are no manual roster, level-override or random-seed controls.
-The four advanced tabs and their dedicated APIs have been removed. Their findings
-are preserved as [reverse-engineering addresses](docs/research/reference-key-addresses.md),
-not advertised as current product features.
-
-The separate Adventure guide links runtime NPC rewards, dialogue and prerequisite clues, with map thumbnails and SAV receipt checks. Spanish Rocket also exposes its bounded main-story state; Mercury 1.2 reads native quests, objectives and current journal pages, with later stages collapsed. Full story and side-quest dependencies remain partial. No developer JSON or evidence panels are included in the player UI or documentation bundle. See the [player guide](docs/USER-GUIDE.md).
-
-## Cheat codes
-
-Open the matching ROM, then **Cheats** in the toolbar; no save is required.
-All five ROMs share ten features: pause walking encounters, guaranteed eligible
-capture, faster hatching, compatible daycare eggs, portable PC, specified wild
-species/level, shiny ordinary wild Pokémon, teleport, emergency party recovery
-and persistent Protect. Ultimate Emerald adds all-mode no-peeking and difficulty
-accuracy correction. Codes are generated for the exact currently opened ROM.
-See the concise [usage and format guide](docs/cheats.md).
+[Player guide](docs/USER-GUIDE.md) · [Changelog](CHANGELOG.md)
 
 ## Supported inputs
 
@@ -47,115 +39,61 @@ See the concise [usage and format guide](docs/cheats.md).
 | Dark Phantom 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | 33,554,188 |
 | Team Rocket 2.1 Chinese | `59c658a1081f542086de1060bb65f0b3` | 33,554,432 |
 | Ultimate Emerald 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | 33,554,432 |
-| Mercury FC 1.2 (development branch) | `f323df1792ac68462a34b42fe8571533` | 33,554,432 |
+| Mercury FC 1.2 | `f323df1792ac68462a34b42fe8571533` | 33,554,432 |
+
 
 Use a 128 KiB `.sav`/`.srm` battery save (Mercury also accepts its 16-byte RTC
-trailer). Emulator save states are not supported.
-Renaming a ROM cannot change its compatibility. The ROM is read-only; edits
-and exports apply only to save files.
+trailer), not an emulator save state. Compatibility follows the fingerprint,
+not the filename. Mercury 1.1 is not supported.
 
-Five exact-ROM 128 KiB fixtures now pass normal-key mGBA edit → game Save →
-reboot checks for tested IV/EV/marking and inventory changes. First-four fixtures
-also cover batch edits and existing party/box moves/swaps. Mercury additionally
-passes populated compact-box IV/EV/batch/move/swap tests across all storage
-regions; see the [25-box verification](docs/verification/mercury-cheats-storage-20261006.md).
-This is bounded persistence evidence, not a claim
-about all edits, RTC trailers, emulators or gameplay equivalence. See the
-[native round-trip record](docs/verification/save-roundtrip-20261006.md).
+Installers target Windows 10/11 x64 and Apple Silicon Macs. The Windows installer
+can download WebView2 if needed. Builds are unsigned/ad hoc signed and not notarized.
+Assets include bilingual guides and the changelog, without ROMs, saves or extracted
+artwork.
 
-## Workspace
+## Save workflow
 
-The same editor registers five exact ROMs across four games. Rocket adds its packed nature,
-third ability, nine inventory pockets, level cap, graphics and expanded ROM tables
-through reusable adapter components. ROM reference windows remain read-only.
-See [coverage, verification and extension rules](docs/multi-rom-adapters.md).
+Back up the original SAV, apply and review changes, then export a separate copy.
+Load that file in your emulator and save normally in game. External source-file
+changes block overwriting. Free editing allows exceptions while retaining binary
+integrity checks. Species base stats are global ROM data; a SAV edit cannot change
+them for one Pokémon.
 
-- Individual sprites use PID-derived Unown letters and Spinda spots, with normal
-  and shiny palettes read from the ROM. See [appearance verification](docs/research/pokemon-appearance.md).
-- Keep the party and all boxes visible (25 in Mercury, 14 in the other games); switch compact/comfortable density or
-  hide the inspector. Search dims nonmatches without moving storage coordinates.
-- Edit identity, nature/shiny/gender, level/experience, IVs/EVs, moves/PP, abilities,
-  held items, origin, eggs, Pokérus, ribbons and contest values/fullness.
-  See [feeding rules and validation scope](docs/research/contest-condition.md).
-- Search editing fields by names/IDs from the loaded ROM.
-  Standard origin choices include the species and its pre-evolutions, with a
-  separate hatch source. See [search and origin rules](docs/research/search-and-origins.md).
-- Drag between slots to move or swap. Alt-drag copies. Buttons provide a pointer
-  alternative; modifier-click selects multiple Pokémon for batch edits.
-- Browse Pokémon, learning sources, items, abilities, maps and trainers in movable
-  nonmodal windows. Trainers and maps link to each other through parsed battle
-  scripts, with readable condition and unresolved-access labels. Drag an encounter to an empty slot to create an editable draft.
-- Follow the evolution tree in both directions, including sibling branches and
-  separately labeled battle/form families. Compare vertical ROM base stats and
-  totals with the latest available official values from 52Poké Wiki. This small,
-  separately attributed numeric reference is the only bundled Pokémon catalog;
-  ambiguous or custom species may have no official reference. See the
-  [runtime-data audit](docs/research/runtime-data-and-evolution-tree.md).
-- Normal bag choices follow the current ROM's pocket categories; free editing
-  and PC storage retain the full list. Existing mismatched items remain visible
-  with a warning. See [native inventory classification](docs/verification/inventory-categories-20261006.md).
-- Edit player identity, money, coins, bags, box names and Pokédex flags. Inspect
-  before/after changes, undo/redo, then export. Existing output is backed up.
-- Free editing permits game-rule exceptions. Binary bounds, native checksum rules and supported
-  IDs remain enforced. Missing learning evidence is “unverified”, not “illegal”.
-- Change Chinese/English at any time. ROM names retain their original language.
-
-ROMs are read-only. Pokémon IVs, EVs and ability selection are edited in the SAV;
-species base stats are global ROM data and cannot be changed for one Pokémon in a SAV.
+Five-ROM edit/load/in-game-save/reboot checks were completed in mGBA. This does
+not cover every field, mobile emulator or facility. Windows CI builds do not
+establish real Windows gameplay verification.
 
 ## Development
 
-Install stable Rust, Node.js 22+, and the platform prerequisites in the official
-[Tauri setup guide](https://v2.tauri.app/start/prerequisites/).
+Install stable Rust, Node.js 22+ and the official
+[Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/).
 
 ```sh
 npm ci
 npm run desktop
-```
-
-```sh
-cargo test -p gen3-core -p gen3-cli
+cargo test -p gen3-core -p gen3-cli --locked
 cargo fmt --all --check
-cargo clippy -p gen3-core -p gen3-cli --all-targets --all-features -- -D warnings
-npm run check
+cargo clippy -p gen3-core -p gen3-cli --all-targets --all-features --locked -- -D warnings
 npm run format:check
 npm run build
 ```
 
-Optional real-ROM regression (both files remain local):
+Use shared models, readers and SAV transactions. Keep version differences in
+adapters and verified engine rules. Real ROM/SAV fixtures remain local.
+See the [capability matrix](docs/capability-matrix.md), [architecture](docs/ARCHITECTURE.md)
+and [native verification records](docs/verification).
+
+Optional local ROM regression:
 
 ```sh
 GEN3_ROM_BW='/path/BW.gba' GEN3_ROM_DP='/path/DP.gba' \
   cargo test -p gen3-core local_rom_regression -- --ignored --nocapture
 ```
 
-For native encounter-selection verification (Python Unicorn required), run
-`scripts/verify_encounter_selection.py` with the same ROM environment variables.
-See [encounter selection and time conditions](docs/research/encounter-time-selection.md)
-for the audited code paths and validation limits.
-
-For browser tests, run `cargo run -p gen3-cli --features dev-server --bin gen3-dev`
-and `npm run dev` with the same random `GEN3_DEV_TOKEN` (32+ characters). The
-bridge binds only `127.0.0.1:8766` and requires that token. Generate a disposable
-fixture by adding `GEN3_TEST_SAVE=/tmp/test.sav` to the real-ROM test, then run
-`scripts/test_ui.py` with `GEN3_ROM_BW`, `GEN3_TEST_SAVE`, `GEN3_DEV_TOKEN` and
-Playwright/Chrome installed. This bridge is opt-in and absent from release builds.
-
-For the synthetic reference-navigation regression, start `npm run dev` and run
-`python3 scripts/test_reference_navigation.py`. This test requires Playwright and
-Chrome but no ROM, save, or development bridge; API responses are generated fixtures.
-
-Static map palette rules and the native-ROM verification harness are documented
-in [map palettes](docs/research/map-palettes.md).
-
-The editor preserves its active tab across Pokémon selections and keeps its
-header and action footer outside the scrolling fields. Run
-`python3 scripts/test_editor_navigation.py` against Vite to verify tab retention,
-draft isolation and scrolling at desktop, minimum-window and mobile sizes.
-The test uses synthetic data and requires Playwright and Chrome. Run
-`python3 scripts/test_search_origins.py` for searchable fields and origin choices.
-
-## CLI and architecture
+For browser tests, start `npm run dev`; synthetic tests such as
+`scripts/test_trainer_table_ui.py` require Playwright and Chrome. Integration tests
+can use the opt-in `gen3-dev` localhost bridge with a random `GEN3_DEV_TOKEN` of at
+least 32 characters. It binds only `127.0.0.1:8766` and is absent from releases.
 
 ```sh
 cargo run -p gen3-cli --bin gen3 -- help
@@ -163,55 +101,6 @@ cargo run -p gen3-cli --bin gen3 -- identify /path/game.gba
 cargo run -p gen3-cli --bin gen3 -- inspect /path/game.gba /path/game.sav
 ```
 
-`identify` accepts unknown ROMs. Other game-aware commands require a matched
-profile. `patch-save` accepts JSON actions and supports `--dry-run` and `--free`.
-See [architecture and adapter boundaries](docs/ARCHITECTURE.md) and the independent
-[ROM research skill](skills/gen3-rom-research/SKILL.md).
-
-MIT license applies to this project's code. Refer to
-[third-party notices](THIRD_PARTY_NOTICES.md) for format research sources.
-
-Map references include independently switchable item-ball, hidden-item, dialogue-reward
-and NPC layers, with tile coordinates, search, grid and zoom. See
-[map event evidence and limitations](docs/research/map-events.md).
-
-Release history: [Changelog](CHANGELOG.md), starting with the first public release 0.1.5. Route 119 fishing spots are calculated from the loaded save; use the map layer or the species reference shortcut.
-
-Mercury 1.2 uses its native expanded inventory and section-name table. Static maps
-with independently reproduced native layout mismatches or unresolved layer types
-show warnings; a parsed map entry is not proof of a normally accessible area.
-Validation scope: [Mercury display/storage](docs/verification/mercury-display-storage-20261005.md).
-
-Parsed tutor offers now link move queries to NPC tiles, exterior entrances and back navigation. Dark Phantom BW/DP uses the corrected native tutor table; payment, one-time limits and special eligibility remain unresolved. See [teaching evidence](docs/verification/tutor-sources-20261006.md).
-
-Parsed resource checks show item names and holdings, with prerequisite-item links
-in sources and maps. Money checks are not payment
-proof; alternate facility bags and post-mutation checks remain unknown.
-See [native rules and evidence](docs/verification/resource-conditions-20261006.md).
-
-Wild held-item queries link referenced Pokémon to encounter maps and preserve
-slot/time selectors. The current ROM's native ordinary single-wild routine
-provides a simulated no-modifier baseline and, with a SAV, the first party
-member's context. Held chances are conditional on that Pokémon being encountered;
-encounter slot probabilities remain separate. Unreferenced records do not prove
-obtainability. See [native evidence and limits](docs/verification/wild-held-20261006.md).
-
-Pokémon acquisition includes a read-only native daycare preview. Choose saved
-parents or explicit simulated parents, follow the resulting offspring and located
-receiving NPC/map links. A separate ordinary production check projects the SAV bag
-or an explicit item scenario, with current-ROM probabilities and a required-item
-link. Neither predicts the next real egg; Rocket/Mercury service locations and full breeding coverage
-remain unresolved. See [native daycare evidence](docs/verification/breeding-20261006.md).
-Production assumptions and exhaustive native evidence are [documented separately](docs/verification/breeding-production-20261006.md).
-
-With a SAV loaded, the preview also shows the saved ordinary daycare's deposited
-individuals, native egg-availability marker and distance to the next ordinary
-production check. Deposited parents can be used directly in a read-only scenario;
-their original records are preserved. This is a saved snapshot, not live emulator
-state or a forecast of the next egg. Mercury's additional custom service record
-remains unresolved. See [saved-state evidence](docs/verification/daycare-state-20261006.md).
-
-Trainer references now link qualified battle-record operands to guarded script
-contexts, static actors/tiles and map entrances. Rematch bases and setup records
-are identified separately; a referenced record does not establish an available
-battle or its final party. See [native boundary evidence and limits](docs/verification/trainer-locations-20261006.md).
+The independent [ROM research method](skills/gen3-rom-research/SKILL.md) also
+covers unknown ROM research. Code is MIT-licensed; see
+[third-party notices](THIRD_PARTY_NOTICES.md) for research and reference attribution.

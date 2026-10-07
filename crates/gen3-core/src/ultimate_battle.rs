@@ -208,8 +208,10 @@ mod tests {
             [Some(30), Some(30)]
         );
         assert!(lunatic.mons.iter().all(|mon| mon.moves.is_some()));
-        let mut app = crate::app::App::default();
-        app.session = Some(crate::session::Session::new(rom));
+        let mut app = crate::app::App {
+            session: Some(crate::session::Session::new(rom)),
+            ..Default::default()
+        };
         let response = app
             .dispatch(crate::app::Request {
                 command: "trainer_battle_preview".into(),

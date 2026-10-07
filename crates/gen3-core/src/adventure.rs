@@ -114,9 +114,7 @@ pub fn build(rom: &Rom, save: Option<&Save>, index: &Index, world: &World) -> Re
         .zip(rom.profile.event_state)
         .map(|(s, l)| EventSnapshot::new(s, l));
     let variable = story_variable(rom);
-    let current_stage = variable
-        .and_then(|id| state.as_ref()?.variable(id))
-        .map(|v| v as u16);
+    let current_stage = variable.and_then(|id| state.as_ref()?.variable(id));
     let mut tasks = Vec::new();
     let mut seen = BTreeSet::new();
     if let Some(variable) = variable {
@@ -499,7 +497,10 @@ mod tests {
             actual: Some(2),
             unresolved: None,
         };
-        assert_eq!(status(Some(1), &[blocked.clone()], true), "completed");
+        assert_eq!(
+            status(Some(1), std::slice::from_ref(&blocked), true),
+            "completed"
+        );
         assert_eq!(status(Some(0), &[blocked], true), "blocked");
         assert_eq!(status(None, &[], true), "unknown");
         assert_eq!(

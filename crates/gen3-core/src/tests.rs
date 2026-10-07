@@ -8742,7 +8742,7 @@ fn local_player_references_and_adventure_are_read_only_across_profiles() {
         if let Ok(path) = std::env::var(format!("GEN3_SAVE_{name}")) {
             let original = std::fs::read(path).unwrap();
             let save = Save::open(original.clone(), r.profile.save).unwrap();
-            let saved = crate::adventure::build(&r, Some(&save), &events, &index.world).unwrap();
+            let saved = crate::adventure::build(&r, Some(&save), events, &index.world).unwrap();
             if name == "ROCKET" {
                 assert!(saved.current_stage.is_some());
             }

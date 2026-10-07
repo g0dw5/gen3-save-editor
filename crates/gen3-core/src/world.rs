@@ -588,7 +588,7 @@ impl Rom {
                             // The native ordinary constructor passes fixed PID 0
                             // and fixed IV 0 to CreateMon, then skips the
                             // enhanced training routine for party flags 0.
-                            let ability = mon_species.abilities[0] as u16;
+                            let ability = mon_species.abilities[0];
                             Some(TrainerMonGeneration {
                                 context: "ultimate_plain",
                                 ev_increment: None,

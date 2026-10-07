@@ -151,21 +151,19 @@ impl Rom {
                 out.push(BattleForm {
                     source,
                     target,
-                    kind: if matches!(rules, BattleFormRules::CfruEvolutionMethods)
-                        && method == 0xfd
+                    kind: if (matches!(rules, BattleFormRules::CfruEvolutionMethods)
+                        && method == 0xfd)
+                        || (method == 251 && parameter == 702)
                     {
                         BattleFormKind::Gigantamax
-                    } else if method == 251 && parameter == 702 {
-                        BattleFormKind::Gigantamax
-                    } else if method == 250 {
-                        BattleFormKind::Transformation
-                    } else if matches!(rules, BattleFormRules::CfruEvolutionMethods) && variant == 3
+                    } else if method == 250
+                        || (matches!(rules, BattleFormRules::CfruEvolutionMethods) && variant == 3)
                     {
                         BattleFormKind::Transformation
-                    } else if matches!(rules, BattleFormRules::CfruEvolutionMethods) && variant == 1
+                    } else if (matches!(rules, BattleFormRules::CfruEvolutionMethods)
+                        && variant == 1)
+                        || matches!(method, 0xfffd | 253)
                     {
-                        BattleFormKind::Primal
-                    } else if matches!(method, 0xfffd | 253) {
                         BattleFormKind::Primal
                     } else {
                         BattleFormKind::Mega

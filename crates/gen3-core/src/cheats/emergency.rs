@@ -81,7 +81,7 @@ pub(super) fn patches(md5: &str) -> Option<Vec<RomHalfword>> {
             });
         }
     }
-    for (i, word) in config.payload.chunks_exact(2).enumerate() {
+    for (i, word) in config.payload.as_chunks::<2>().0.iter().enumerate() {
         result.push(RomHalfword {
             offset: config.cave_offset + 4 + (i as u32) * 2,
             before: (config.cave_before & 0xffff) as u16,

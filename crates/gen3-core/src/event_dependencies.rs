@@ -583,7 +583,6 @@ impl Index {
     }
     /// Search loaded-ROM context, never a bundled quest catalog. Visibility,
     /// branch guards and observed writes do not establish quest completion.
-
     pub fn query(&self, rom: &Rom, save: Option<&Save>, request: Request) -> Result<Report> {
         self.check_rom(rom)?;
         if request.expected_rom_md5 != rom.profile.md5 {
