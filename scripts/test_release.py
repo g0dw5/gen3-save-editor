@@ -1,6 +1,8 @@
 """Regression checks for source/artifact version alignment and release staging."""
 import json
+import hashlib
 from pathlib import Path
+import shutil
 import sys
 import tempfile
 import unittest
@@ -107,6 +109,55 @@ class ReleaseChecks(unittest.TestCase):
             self.assertEqual(set(docs.namelist()), set(release.DOCS.values()))
         with self.assertRaisesRegex(ValueError, "empty staging"):
             release.stage(self.root, output, "windows-x64")
+
+    def dual_platform_assets(self):
+        assets = self.root / "assets"
+        assets.mkdir()
+        for platform, subdir, name in [
+            ("windows-x64", "nsis", "fixture-setup.exe"),
+            ("macos-arm64", "dmg", "fixture.dmg"),
+        ]:
+            bundle = self.root / platform
+            (bundle / subdir).mkdir(parents=True)
+            (bundle / subdir / name).write_bytes(b"installer fixture")
+            output = self.root / (platform + "-staged")
+            with patch.object(release.subprocess, "check_output", return_value="approved-source"):
+                release.stage(bundle, output, platform)
+            for artifact in output.iterdir():
+                shutil.copyfile(artifact, assets / artifact.name)
+        self.refresh_checksums(assets)
+        return assets
+
+    @staticmethod
+    def refresh_checksums(assets):
+        lines = [f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n"
+                 for path in sorted(assets.iterdir()) if path.name != "SHA256SUMS.txt"]
+        (assets / "SHA256SUMS.txt").write_text("".join(lines), encoding="utf-8")
+
+    def test_verify_accepts_complete_approved_dual_platform_set(self):
+        release.verify_artifacts(self.dual_platform_assets(), self.version, "approved-source")
+
+    def test_verify_rejects_partial_platform_set(self):
+        assets = self.dual_platform_assets()
+        (assets / f"Gen3RomHackEditor-{self.version}-macos-arm64.dmg").unlink()
+        with self.assertRaisesRegex(ValueError, "both platform"):
+            release.verify_artifacts(assets, self.version, "approved-source")
+
+    def test_verify_rejects_tampered_installer(self):
+        assets = self.dual_platform_assets()
+        (assets / f"Gen3RomHackEditor-{self.version}-windows-x64-setup.exe").write_bytes(b"altered")
+        with self.assertRaisesRegex(ValueError, "Checksum mismatch"):
+            release.verify_artifacts(assets, self.version, "approved-source")
+
+    def test_verify_rejects_other_source_even_with_matching_checksums(self):
+        assets = self.dual_platform_assets()
+        path = assets / "build-info-windows-x64.json"
+        info = json.loads(path.read_text(encoding="utf-8"))
+        info["commit"] = "unapproved-source"
+        path.write_text(json.dumps(info), encoding="utf-8")
+        self.refresh_checksums(assets)
+        with self.assertRaisesRegex(ValueError, "Source provenance mismatch"):
+            release.verify_artifacts(assets, self.version, "approved-source")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,100 @@
+name: Publish authorized release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Annotated release tag (blank uses the current package version)
+        required: false
+        type: string
+  workflow_run:
+    workflows: ["Build release artifacts"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths: [".github/workflows/publish-release.yml"]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: publish-release-${{ inputs.tag || github.event.workflow_run.head_branch || 'current' }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Read authorization from the original annotated tag
+        id: approval
+        env:
+          TAG_INPUT: ${{ inputs.tag }}
+          BUILD_TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          RELEASE_TAG="${TAG_INPUT:-$BUILD_TAG}"
+          if [ -z "$RELEASE_TAG" ]; then
+            RELEASE_TAG="$(python3 -c 'import json; print("v" + json.load(open("package.json", encoding="utf-8"))["version"])')"
+          fi
+          python3 scripts/release.py check --tag "$RELEASE_TAG"
+          git fetch --force --no-tags origin "+refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          test "$(git cat-file -t "refs/tags/$RELEASE_TAG")" = tag
+          RELEASE_COMMIT="$(git rev-parse "$RELEASE_TAG^{}")"
+          git merge-base --is-ancestor "$RELEASE_COMMIT" origin/main
+          if git for-each-ref --format='%(contents)' "refs/tags/$RELEASE_TAG" |
+             grep -Fxq 'Release-Publication: approved'; then
+            echo "authorized=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+            echo "commit=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
+          else
+            echo "No explicit publication authorization; keep the draft private."
+          fi
+      - name: Require a successful release build for this exact source
+        if: steps.approval.outputs.authorized == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.approval.outputs.tag }}
+          RELEASE_COMMIT: ${{ steps.approval.outputs.commit }}
+        run: |
+          gh run list --workflow release.yml --commit "$RELEASE_COMMIT" \
+            --json headBranch,conclusion > completed-runs.json
+          python3 - <<'PY'
+          import json, os
+          runs = json.load(open("completed-runs.json", encoding="utf-8"))
+          assert any(run["headBranch"] == os.environ["RELEASE_TAG"] and
+                     run["conclusion"] == "success" for run in runs), "No successful tagged dual-platform build"
+          PY
+      - name: Inspect the existing draft without replacing its attachments
+        if: steps.approval.outputs.authorized == 'true'
+        id: state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.approval.outputs.tag }}
+        run: |
+          IS_DRAFT="$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)"
+          echo "is_draft=$IS_DRAFT" >> "$GITHUB_OUTPUT"
+      - name: Verify both platform attachments and their source hashes
+        if: steps.state.outputs.is_draft == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.approval.outputs.tag }}
+          RELEASE_COMMIT: ${{ steps.approval.outputs.commit }}
+        run: |
+          gh release download "$RELEASE_TAG" --dir release-assets
+          python3 scripts/release.py verify --assets release-assets \
+            --tag "$RELEASE_TAG" --commit "$RELEASE_COMMIT"
+      - name: Publish and confirm the release is public
+        if: steps.state.outputs.is_draft == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.approval.outputs.tag }}
+        run: |
+          gh release edit "$RELEASE_TAG" --draft=false --verify-tag --latest
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = false

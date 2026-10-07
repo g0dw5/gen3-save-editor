@@ -66,10 +66,16 @@ or replace an already published tag/installer in place. Use a new patch version.
    untested platforms explicitly. Publish the draft only when authorized.
    If the user has already authorized publication and the source/artifact checks
    are complete, add an exact `Release-Publication: approved` line to the annotated
-   tag message before pushing. After **both** platform builds succeed, the workflow
-   publishes that draft using its scoped token; local GitHub CLI login is not
+   tag message before pushing. After **both** platform builds succeed, the separate
+   `Publish authorized release` workflow verifies the draft's complete attachment
+   set, SHA-256 values and source manifests, then publishes it using its scoped token; local GitHub CLI login is not
    required. Ordinary tags and branch builds do not opt in. Never add the marker
    merely because building, drafting an announcement or uploading was requested.
+   The publisher fetches the original annotated tag explicitly because a
+   commit-based checkout can replace the local tag ref with its peeled commit.
+   To finish an existing authorized draft without rebuilding or replacing assets,
+   dispatch that publication workflow with the tag. Editing the publisher on
+   `main` also rechecks the current version; already public releases stay untouched.
 6. Link announcements to `/releases/tag/vX.Y.Z` for a fixed version or
    `/releases/latest` for the maintained download entry. A netdisk mirror is a
    second download option, and must match the same installer SHA-256 values.
@@ -78,7 +84,9 @@ or replace an already published tag/installer in place. Use a new patch version.
 标签触发双平台构建，附件含安装包、双语说明、构建信息与校验值；先生成草稿。
 检查安装包内容和目标平台运行情况后才公开，不把编译成功当作实机验证。用户已明确
 授权发布时，可在带注释的标签中加入单独一行 `Release-Publication: approved`；
-双平台构建都成功后流程会公开 Release。普通标签仍只生成草稿。
+双平台构建都成功后，独立发布流程检查附件、校验值和源码记录，再公开 Release。
+普通标签仍只生成草稿。已有授权草稿可在 Actions 中运行独立发布流程，不重新编译、
+不替换已有附件；公开的 Release 保持不变。
 宣传可同时给出 GitHub Release 与网盘镜像，两个入口的安装包校验值应一致。
 
 ## Historical baseline / 历史基线
@@ -96,3 +104,5 @@ GitHub 的标签与 Release 从 0.2.0 开始维护，更新日志继续保留最
 
 Workflow behavior follows [GitHub release documentation](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)
 and [tag-triggered workflow events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+Checkout's tag-ref handling is documented by its [ref helper](https://github.com/actions/checkout/blob/v4/src/ref-helper.ts)
+and [fetch implementation](https://github.com/actions/checkout/blob/v4/src/git-source-provider.ts).

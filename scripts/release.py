@@ -78,6 +78,41 @@ def stage(bundle, output, platform):
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
 
+def verify_artifacts(assets, version, commit):
+    """Require a complete, untampered two-platform set from the approved source."""
+    suffixes = {"macos-arm64": ".dmg", "windows-x64": "-setup.exe"}
+    expected = {"SHA256SUMS.txt"}
+    for platform, suffix in suffixes.items():
+        prefix = f"Gen3RomHackEditor-{version}-{platform}"
+        expected.update([prefix + suffix, prefix + "-docs.zip", f"build-info-{platform}.json"])
+    if {f.name for f in assets.iterdir()} != expected:
+        raise ValueError("Expected exactly both platform installers, docs, manifests and checksums")
+    hashes = {}
+    for line in (assets / "SHA256SUMS.txt").read_text(encoding="utf-8").splitlines():
+        digest, name = line.split("  ", 1)
+        if name not in expected or name in hashes or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise ValueError("Invalid or duplicate checksum entry")
+        path = assets / name
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("Release assets must be regular files")
+        if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            raise ValueError(f"Checksum mismatch: {name}")
+        hashes[name] = digest
+    if set(hashes) != expected - {"SHA256SUMS.txt"}:
+        raise ValueError("Incomplete checksum list")
+    for platform, suffix in suffixes.items():
+        prefix = f"Gen3RomHackEditor-{version}-{platform}"
+        info = json.loads((assets / f"build-info-{platform}.json").read_text(encoding="utf-8"))
+        if (info["version"], info["commit"], info["platform"]) != (version, commit, platform):
+            raise ValueError(f"Source provenance mismatch: {platform}")
+        names = {prefix + suffix, prefix + "-docs.zip"}
+        if set(info["files"]) != names or any(hashes[name] != info["files"][name] for name in names):
+            raise ValueError(f"Manifest checksum mismatch: {platform}")
+        with zipfile.ZipFile(assets / (prefix + "-docs.zip")) as docs:
+            if set(docs.namelist()) != set(DOCS.values()) or docs.testzip() is not None:
+                raise ValueError(f"Invalid player documentation: {platform}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -89,14 +124,22 @@ def main():
     package.add_argument("--output", type=Path, required=True)
     package.add_argument("--platform", choices=["macos-arm64", "windows-x64"],
                          required=True)
+    verify = commands.add_parser("verify")
+    verify.add_argument("--assets", type=Path, required=True)
+    verify.add_argument("--commit", required=True)
+    verify.add_argument("--tag", required=True)
     args = parser.parse_args()
     if args.command == "check":
         version, notes = version_and_notes(tag=args.tag)
         if args.notes:
             args.notes.write_text(notes, encoding="utf-8")
         print(version)
-    else:
+    elif args.command == "stage":
         stage(args.bundle, args.output, args.platform)
+    else:
+        version, _ = version_and_notes(tag=args.tag)
+        verify_artifacts(args.assets, version, args.commit)
+        print(f"Verified both platforms for {args.tag} at {args.commit}")
 
 
 if __name__ == "__main__":
