@@ -22,10 +22,10 @@ DOCS = {
 
 
 def version_and_notes(root=ROOT, tag=None):
-    version = json.loads((root / "package.json").read_text())["version"]
-    lock = json.loads((root / "package-lock.json").read_text())
-    tauri = json.loads((root / "apps/desktop/tauri.conf.json").read_text())
-    cargo = (root / "Cargo.toml").read_text()
+    version = json.loads((root / "package.json").read_text(encoding="utf-8"))["version"]
+    lock = json.loads((root / "package-lock.json").read_text(encoding="utf-8"))
+    tauri = json.loads((root / "apps/desktop/tauri.conf.json").read_text(encoding="utf-8"))
+    cargo = (root / "Cargo.toml").read_text(encoding="utf-8")
     cargo_version = re.search(r'\[workspace.package\]\s*version = "([^"]+)"', cargo)
     if not cargo_version:
         raise ValueError("Missing Cargo workspace version")
@@ -35,7 +35,7 @@ def version_and_notes(root=ROOT, tag=None):
         raise ValueError(f"Version mismatch: npm={version}, other manifests={versions}")
     if tag is not None and tag != f"v{version}":
         raise ValueError(f"Tag {tag} does not match v{version}")
-    log = (root / "CHANGELOG.md").read_text()
+    log = (root / "CHANGELOG.md").read_text(encoding="utf-8")
     match = re.search(rf"^## {re.escape(version)} — ([^\n]+)\n(.*?)(?=^## |\Z)",
                       log, re.M | re.S)
     if not match:
@@ -75,7 +75,7 @@ def stage(bundle, output, platform):
                   for f in sorted(output.iterdir())},
     }
     (output / f"build-info-{platform}.json").write_text(
-        json.dumps(manifest, indent=2) + "\n")
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
 
 def main():
@@ -93,7 +93,7 @@ def main():
     if args.command == "check":
         version, notes = version_and_notes(tag=args.tag)
         if args.notes:
-            args.notes.write_text(notes)
+            args.notes.write_text(notes, encoding="utf-8")
         print(version)
     else:
         stage(args.bundle, args.output, args.platform)

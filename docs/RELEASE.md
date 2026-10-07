@@ -4,7 +4,8 @@ Run CI on the exact commit; run local ROM and UI tests for every advertised
 profile; verify a disposable gameplay save in an emulator. Record platform and
 architecture. Build installers through the artifact workflow. Branch dispatches produce build
 artifacts; version tags produce a GitHub Release draft after validation.
-Public publication remains a separate, reviewed action.
+Public publication requires explicit user authorization. Tags stay drafts unless
+their annotation records that authorization as described below.
 
 Before publishing, include both README languages, license and third-party
 notices; state that users provide ROMs and 128 KiB battery saves. Verify that the
@@ -15,7 +16,8 @@ notarization credentials belong in CI secrets, never the repository.
 
 发布前验证同一提交上的测试、全部宣称支持的 ROM、模拟器回读及目标平台安装包。
 发布说明同时提供中英文，列明版本 MD5、已验证能力和研究缺口。分支手动构建只生成
-产物；版本标签构建通过后创建 Release 草稿，不自动公开。
+产物；版本标签构建通过后创建 Release 草稿。仅在用户已明确授权且标签注释记录了
+该授权时，流程才公开双平台附件。
 
 ## Changelog / 更新日志
 
@@ -62,13 +64,21 @@ or replace an already published tag/installer in place. Use a new patch version.
 5. Test the downloaded installers on the target systems, audit payloads, verify
    checksums, and add bilingual compatibility/signing/validation notes. Mark
    untested platforms explicitly. Publish the draft only when authorized.
+   If the user has already authorized publication and the source/artifact checks
+   are complete, add an exact `Release-Publication: approved` line to the annotated
+   tag message before pushing. After **both** platform builds succeed, the workflow
+   publishes that draft using its scoped token; local GitHub CLI login is not
+   required. Ordinary tags and branch builds do not opt in. Never add the marker
+   merely because building, drafting an announcement or uploading was requested.
 6. Link announcements to `/releases/tag/vX.Y.Z` for a fixed version or
    `/releases/latest` for the maintained download entry. A netdisk mirror is a
    second download option, and must match the same installer SHA-256 values.
 
 先完成各 ROM 回归，再统一版本、确认中英文日志、提交并标注准确的源码。
 标签触发双平台构建，附件含安装包、双语说明、构建信息与校验值；先生成草稿。
-检查安装包内容和目标平台运行情况后才公开，不把编译成功当作实机验证。
+检查安装包内容和目标平台运行情况后才公开，不把编译成功当作实机验证。用户已明确
+授权发布时，可在带注释的标签中加入单独一行 `Release-Publication: approved`；
+双平台构建都成功后流程会公开 Release。普通标签仍只生成草稿。
 宣传可同时给出 GitHub Release 与网盘镜像，两个入口的安装包校验值应一致。
 
 ## Historical baseline / 历史基线

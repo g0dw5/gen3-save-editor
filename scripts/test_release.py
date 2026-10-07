@@ -1,6 +1,7 @@
 """Regression checks for source/artifact version alignment and release staging."""
 import json
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -42,6 +43,34 @@ class ReleaseChecks(unittest.TestCase):
                         "## 0.0.1 — 2025-01-01\n\nPrevious\n")
         _, notes = release.version_and_notes(self.root, f"v{self.version}")
         self.assertEqual(notes, "English / 中文\n")
+
+    def test_read_notes_with_legacy_windows_text_defaults(self):
+        path = self.root / "CHANGELOG.md"
+        path.write_text(f"## {self.version} — 2026-10-07\n\nRelease / 发布说明\n",
+                        encoding="utf-8")
+        read_text = Path.read_text
+
+        def legacy_read(path, encoding=None, errors=None):
+            return read_text(path, encoding=encoding or "cp1252", errors=errors)
+
+        with patch.object(Path, "read_text", legacy_read):
+            _, notes = release.version_and_notes(self.root, f"v{self.version}")
+        self.assertEqual(notes, "Release / 发布说明\n")
+
+    def test_cli_notes_are_utf8_under_legacy_windows_text_defaults(self):
+        output = self.root / "notes.md"
+        notes = "Release / 发布说明\n"
+        write_text = Path.write_text
+
+        def legacy_write(path, data, encoding=None, errors=None):
+            return write_text(path, data, encoding=encoding or "cp1252",
+                              errors=errors)
+
+        with patch.object(release, "version_and_notes", return_value=(self.version, notes)), \
+                patch.object(Path, "write_text", legacy_write), \
+                patch.object(sys, "argv", ["release.py", "check", "--notes", str(output)]):
+            release.main()
+        self.assertEqual(output.read_bytes().decode("utf-8"), notes)
 
     def test_staging_requires_exactly_one_installer(self):
         with self.assertRaisesRegex(ValueError, "Expected one"):

@@ -93,6 +93,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
@@ -110,4 +112,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$RELEASE_TAG" release-assets/* --verify-tag --draft             --title "Gen III ROM Hack Editor $RELEASE_TAG" --notes-file release-notes.md
+          gh release create "$RELEASE_TAG" release-assets/* --verify-tag --draft \
+            --title "Gen III ROM Hack Editor $RELEASE_TAG" --notes-file release-notes.md
+      - name: Publish only when the annotated tag records explicit authorization
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [ "$(git cat-file -t "refs/tags/$RELEASE_TAG")" = tag ] &&
+             git for-each-ref --format='%(contents)' "refs/tags/$RELEASE_TAG" |
+               grep -Fxq 'Release-Publication: approved'; then
+            gh release edit "$RELEASE_TAG" --draft=false
+          fi
