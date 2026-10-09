@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Opt-in mGBA regression for the final four-line native Protect codes.
 
-Set GEN3_BIN, MGBA_SOURCE, MGBA_BUILD and GEN3_ROM_{BW,DP,ROCKET,ULTIMATE,MERCURY12}.
+Set GEN3_BIN, MGBA_SOURCE, MGBA_BUILD and GEN3_ROM_{BW,DP,ROCKET,ULTIMATE,MERCURY133}.
 Private battle-menu states live in ignored .local/analysis; no input is modified.
 """
 import ctypes
@@ -16,7 +16,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 STATES = ROOT / ".local/analysis"
 PROFILES = {
-    "MERCURY12": ("f323df1792ac68462a34b42fe8571533", "mercury-cheats-20261006/battle-menu.state", 0x03004f84, 0x02023e8c, 16, 0x02023be4, 0x58, 0x28, 0x24),
+    "MERCURY133": ("5ffb1cbd5c28cda9b987b3b445da68e0", "mercury-133-20261009/battle-menu.state", 0x03004f84, 0x02023e8c, 16, 0x02023be4, 0x58, 0x28, 0x24),
     "BW": ("0d9b129f7dd76895f79bb47ad7dec2fe", "emergency-cross-20260926/BW-menu-4.state", 0x03005d04, 0x0202433c, 16, 0x02024084, 0x58, 0x28, 0x24),
     "DP": ("cb2940215f4dafb1bef133c3af379f44", "emergency-cross-20260926/DP-battle-menu.state", 0x03005d04, 0x0202433c, 16, 0x02024084, 0x58, 0x28, 0x24),
     "ROCKET": ("59c658a1081f542086de1060bb65f0b3", "emergency-cross-20260926/ROCKET-menu-2.state", 0x030051b4, 0x02024f6c, 20, 0x02024c50, 0x5c, 0x2a, 0x25),

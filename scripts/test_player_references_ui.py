@@ -14,7 +14,7 @@ from test_editor_navigation import pokemon
 def main():
     expect.set_options(timeout=15000)
     requests, errors = [], []
-    profiles = ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"]
+    profiles = ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"]
     with sync_playwright() as p:
         browser = p.chromium.launch(channel="chrome", headless=True)
         for locale in ["en", "zh"]:
@@ -39,7 +39,7 @@ def main():
                     row=dict(id=id,kind='side',map_id='0-0',x=1,y=1,actor=1,goals=[],text=[f'{key} Dialogue clue'],checks=[],status='unknown',stage=None,next_candidate=False,prerequisites=[],partial=True,journal=None)
                     row.update(extra);return row
                 tasks=[task('next',kind='main',stage=7,next_candidate=True,status='ready',prerequisites=[['prior']]),task('reward',goals=[dict(kind='item',id=2)],status='completed'),task('prior',kind='prerequisite',text=['Fulfil this earlier scene'],prerequisites=[['next']])]
-                if key == 'MERCURY12':
+                if key == 'MERCURY133':
                     tasks.append(task('journal:2', kind='journal', status='in_progress', journal=dict(
                         title='Test journey', objective='Visit the forest', accepted=True,
                         locations=[dict(map_id='0-0',x=1,y=1,actor=1)],
@@ -60,6 +60,7 @@ def main():
                     else: raise AssertionError(f'Unexpected request {req}')
                     route.fulfill(content_type='application/json',body=json.dumps(dict(ok=True,data=result)))
                 page=browser.new_page(viewport=dict(width=1100,height=840))
+                page.set_default_navigation_timeout(120000)
                 page.on('pageerror',lambda error: errors.append(str(error)))
                 page.add_init_script(f"localStorage.setItem('gen3.locale','{locale}')")
                 page.route('**/api',respond)
@@ -107,7 +108,7 @@ def main():
                 expect(guide.locator('.adventure-layout')).to_be_visible()
                 expect(guide.locator('.guide-map')).to_be_visible()
                 if key=='ROCKET': expect(guide.locator('.guide-next')).to_contain_text('6')
-                elif key == 'MERCURY12':
+                elif key == 'MERCURY133':
                     expect(guide.locator('.guide-filters select').first).to_have_value('journal')
                     expect(guide.locator('.reference-detail h2')).to_have_text('Test journey')
                     expect(guide.locator('.quest-journal')).to_contain_text('Visit the forest')

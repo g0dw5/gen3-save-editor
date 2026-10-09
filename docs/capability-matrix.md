@@ -30,10 +30,22 @@ traces and verification documentation are excluded from player distributions.
 | Dark Phantom / 漆黑的魅影 DP | `cb2940215f4dafb1bef133c3af379f44` |
 | Team Rocket / 西班牙火箭队 2.1 汉化 | `59c658a1081f542086de1060bb65f0b3` |
 | Ultimate Emerald / 究极绿宝石 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` |
-| Mercury / 宝可梦水银 FC 1.2 | `f323df1792ac68462a34b42fe8571533` |
+| Mercury / 宝可梦水银 FC 1.33 | `5ffb1cbd5c28cda9b987b3b445da68e0` |
 
-Mercury 1.1 is rejected. Fingerprints establish input identity, not feature completeness.
-水银 1.1 不再接受；指纹校验确认输入身份，不代表所有功能已经验证。
+Mercury 1.1 and 1.2 ROMs are rejected. Fingerprints establish input identity, not feature completeness.
+水银 1.1／1.2 不再接受；指纹校验确认输入身份，不代表所有功能已经验证。
+
+## Mercury 1.33 increment / 水银 1.33 增量（2026-10-09）
+
+Current code registers only Mercury FC 1.33. The dated Mercury 1.2 observations
+below remain historical evidence; they do not certify 1.33 by themselves. The new
+[1.33 verification](verification/mercury-133-20261009.md) records fresh native
+checks, save/reboot tests and cross-ROM results. The [current addresses](research/mercury-fc-133.md)
+replace Mercury 1.2 addresses for active development.
+
+当前仅注册水银 FC 1.33。下方带日期的 1.2 数据保留为历史证据，不自动视为 1.33
+已验证；本轮重新执行原生例程、存档重启与跨 ROM 回归，范围见新验证记录。
+动态地图、特殊设施、完整剧情依赖及所有手机模拟器的表现仍未全部验证。
 
 ## Status / 状态
 

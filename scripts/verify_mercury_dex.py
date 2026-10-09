@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mercury 1.2 native split Dex flags and read-only battery projection.
+"""Mercury 1.33 native split Dex flags and read-only battery projection.
 
 Complete, unmodified ARM7 getters; synthetic RAM and optional booted SAV RAM.
 No source ROM/SAV writes, patching, native hooks or derived-ROM outputs.
@@ -25,21 +25,21 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     assert not args.output.exists() and args.output.suffix == ".json"
-    rompath = Path(os.environ["GEN3_ROM_MERCURY12"]).resolve()
-    savepath = Path(os.environ["GEN3_SAVE_MERCURY12"]).resolve()
+    rompath = Path(os.environ["GEN3_ROM_MERCURY133"]).resolve()
+    savepath = Path(os.environ["GEN3_SAVE_MERCURY133"]).resolve()
     assert args.output.resolve() not in [rompath, savepath]
     hashes = {
         p: hashlib.sha256(p.read_bytes()).hexdigest() for p in [rompath, savepath]
     }
     rom = rompath.read_bytes()
-    assert hashlib.md5(rom).hexdigest() == b.MD5["MERCURY12"]
+    assert hashlib.md5(rom).hexdigest() == b.MD5["MERCURY133"]
     word = lambda at: struct.unpack_from("<I", rom, at)[0]
     half = lambda at: struct.unpack_from("<H", rom, at)[0]
     assert rom[0x88E74:0x88E78] == bytes.fromhex("004a1047")
     wrapper = (word(0x88E78) & ~1) - 0x08000000
     assert rom[wrapper : wrapper + 4] == bytes.fromhex("074a1047")
     native = (word(wrapper + 0x20) & ~1) - 0x08000000
-    assert native == 0x1D6680C
+    assert native == 0x1D6970C
     first = (-word(native + 0xE4)) & 0xFFFFFFFF
     assert half(native + 10) & 0xFF00 == 0x2B00
     count = (half(native + 10) & 255) + 1
@@ -59,7 +59,7 @@ def main():
         clear_end,
         ordinary_owned,
     ) == (0x03005008, 0x40A, 0x40C, 0x41C, 0x11DE, 0x42C, 0x38D)
-    assert word(0x1D669E8) == first + count
+    assert word(0x1D698E8) == first + count
     b.ROM_PATH = rompath
     b.MGBA_PROBE = args.mgba_probe.resolve()
     rows = []
@@ -169,7 +169,7 @@ def main():
                     )
                     assert cpu.read(base, len(block)) == before
         result = dict(
-            md5=b.MD5["MERCURY12"],
+            md5=b.MD5["MERCURY133"],
             rom_sha256=hashes[rompath],
             save_sha256=hashes[savepath],
             native=native,

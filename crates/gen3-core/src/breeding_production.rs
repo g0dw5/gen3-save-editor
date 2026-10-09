@@ -56,12 +56,12 @@ pub const MERCURY: Rules = Rules {
     roll: 0x4631e,
     bag_descriptors: 0x0203988c,
     modifier: Some(ItemOperand::Immediate {
-        offset: 0x1d1bf0c,
+        offset: 0x1d1c800,
         shift: 1,
     }),
     item_check: Some(0x08099f40),
     pending_flag: Some(PendingFlag {
-        operand: 0x1d1bb9c,
+        operand: 0x1d1c490,
         clear: 0x0806e6a8,
     }),
 };

@@ -187,7 +187,7 @@ def main():
                         source=source,
                         output=output.hex(),
                         context_dependent=(
-                            key == "MERCURY12"
+                            key == "MERCURY133"
                             and op == 0x80
                             and value
                             == (struct.unpack_from("<H", rom, 0x99E98)[0] & 255)

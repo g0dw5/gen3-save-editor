@@ -29,7 +29,7 @@ def emerald(key,rom):
 
 def mercury(rom):
  cpu=Native(rom);regions=[]
- for value in rom[0x1dddb6e:0x1dddb6e+256]:
+ for value in rom[0x1de3a7e:0x1de3a7e+256]:
   if value==255:break
   regions.append(value)
  else:raise AssertionError('unterminated region list')
@@ -56,5 +56,5 @@ if __name__=='__main__':
  for key,profile in PROFILES.items():
   path=Path(os.environ['GEN3_ROM_'+key]);rom=path.read_bytes();digest=hashlib.sha256(rom).digest()
   assert hashlib.md5(rom).hexdigest()==profile[0]
-  print(key,mercury(rom) if key=='MERCURY12' else emerald(key,rom),'native hidden-item comparisons',flush=True)
+  print(key,mercury(rom) if key=='MERCURY133' else emerald(key,rom),'native hidden-item comparisons',flush=True)
   assert hashlib.sha256(path.read_bytes()).digest()==digest

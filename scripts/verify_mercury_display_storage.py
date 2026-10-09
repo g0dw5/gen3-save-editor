@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify Mercury 1.2 names, expanded bag and metatile hook in native Thumb code.
+"""Verify Mercury 1.33 names, expanded bag and metatile hook in native Thumb code.
 
 Supply an exact private ROM. Optional dev-bridge JSON and loaded emulator EWRAM
 cross-check current SAV observations. Only synthetic RAM is written; no ROM/SAV
@@ -15,7 +15,7 @@ from unicorn import UC_HOOK_CODE
 from unicorn.arm_const import UC_ARM_REG_LR, UC_ARM_REG_PC
 from verify_rocket_battle_forms import Native
 
-MD5 = "f323df1792ac68462a34b42fe8571533"
+MD5 = "5ffb1cbd5c28cda9b987b3b445da68e0"
 BASE = 0x0203B174
 POCKETS = [("items", 0x9AC, 450), ("key_items", 0x10B4, 75),
            ("balls", 0x11E0, 50), ("tmhm", 0x12A8, 128), ("berries", 0x14A8, 75)]
@@ -29,7 +29,7 @@ def terminated(data):
 def verify(rom, snapshot=None, ram=None, iwram=None):
     assert hashlib.md5(rom).hexdigest() == MD5, "wrong ROM fingerprint"
     native = Native(rom)
-    native.call(0x1D40C70, 0, 0, 0x0203988C)
+    native.call(0x1D42844, 0, 0, 0x0203988C)
     for i, (_, offset, count) in enumerate(POCKETS):
         assert struct.unpack("<II", native.read(0x0203988C + i * 8, 8)) == (BASE + offset, count)
     # Quantity is plaintext, including with a nonzero FireRed security key.
@@ -42,14 +42,14 @@ def verify(rom, snapshot=None, ram=None, iwram=None):
     # Independently execute the native save-tail hook with patterned extension RAM.
     pattern = bytes((i * 29 + 7) & 255 for i in range(0xEC4))
     native.write(BASE, pattern)
-    fast_pointer = struct.unpack_from("<I", rom, 0x1D5AE48)[0]
+    fast_pointer = struct.unpack_from("<I", rom, 0x1D5CBF4)[0]
     native.word(fast_pointer, 0x02010000)
     position = 0
     for section, start in [(0, 0xF24), (4, 0xD98), (13, 0x450)]:
         native.write(0x02010000, bytes([0xA5]) * 0x1000)
         native.half(0x02010FF4, section)
         before = native.read(0x02010000, 0x1000)
-        native.call(0x1D5AE08)
+        native.call(0x1D5CBB4)
         n = 0xFF0 - start
         expected = bytearray(before)
         expected[start:0xFF0] = pattern[position:position + n]

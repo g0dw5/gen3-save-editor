@@ -12,7 +12,7 @@ import os
 import struct
 from pathlib import Path
 from verify_common_cheats_mgba import pack, unpack
-MD5 = dict(BW='0d9b129f7dd76895f79bb47ad7dec2fe',DP='cb2940215f4dafb1bef133c3af379f44',ROCKET='59c658a1081f542086de1060bb65f0b3',ULTIMATE='17ce9785b33319b3dbda9a5d37c57ec1',MERCURY12='f323df1792ac68462a34b42fe8571533')
+MD5 = dict(BW='0d9b129f7dd76895f79bb47ad7dec2fe',DP='cb2940215f4dafb1bef133c3af379f44',ROCKET='59c658a1081f542086de1060bb65f0b3',ULTIMATE='17ce9785b33319b3dbda9a5d37c57ec1',MERCURY133='5ffb1cbd5c28cda9b987b3b445da68e0')
 
 # Addresses/layouts only; no extracted species, items or game text catalog.
 CONFIG = {
@@ -20,7 +20,7 @@ CONFIG = {
     'DP': (0x708c8, 0x70d4c, 0x3030, 0x03005d8c, 0x03005d90, 0x03005d80, 0x020244ec, 0x020244e9, 4),
     'ROCKET': (0x9e8b0, 0x9ed3c, 0x297c, 0x0300524c, 0x03005250, 0x03005240, 0x02025170, 0x0202516d, 4),
     'ULTIMATE': (0x708c8, 0x70d4c, 0x3030, 0x03005d8c, 0x03005d90, 0x03005d80, 0x020244ec, 0x020244e9, 4),
-    'MERCURY12': (0x460d4, 0x4654c, 0x2f80, 0x03005008, 0x0300500c, 0x03005000, 0x02024284, 0x02024029, 2),
+    'MERCURY133': (0x460d4, 0x4654c, 0x2f80, 0x03005008, 0x0300500c, 0x03005000, 0x02024284, 0x02024029, 2),
 }
 
 class MGBANative:
@@ -68,7 +68,7 @@ def parent(key, species, pid, ot, item=0):
     c[20:24] = bytes([10]*4)
     struct.pack_into('<I', c, 40, 0x12345678)
     if key == 'ROCKET': struct.pack_into('<I', c, 8, 26 << 13)
-    if key in ('ULTIMATE','MERCURY12'):
+    if key in ('ULTIMATE','MERCURY133'):
         raw[32:80] = c
         struct.pack_into('<H', raw, 28, sum(struct.unpack('<24H',c)) & 65535)
     else: raw = pack(raw, c)
@@ -113,7 +113,7 @@ def verify(key):
     exp_base,exp_stride,stats,stat_stride = {
         'BW':(0x31f72c,404,0x3203cc,28),'DP':(0x31f72c,404,0x3203cc,28),
         'ROCKET':(0x5b3484,604,0x5b4764,36),'ULTIMATE':(0x31f72c,404,0xf186e0,28),
-        'MERCURY12':(0x1e052c8,1024,0x176dfbc,28)}[key]
+        'MERCURY133':(0x1e0b258,1024,0x176dfbc,28)}[key]
     growth=rom[stats+25*stat_stride+(21 if stat_stride==36 else 19)]
     xp=struct.unpack_from('<I',rom,exp_base+growth*exp_stride+5*4)[0]
     simulated=[]
@@ -122,7 +122,7 @@ def verify(key):
         c=bytearray(48);struct.pack_into('<HI',c,0,25,0)
         struct.pack_into('<I',c,4,xp)
         if key=='ROCKET':struct.pack_into('<I',c,8,26<<13)
-        if key in ('ULTIMATE','MERCURY12'):
+        if key in ('ULTIMATE','MERCURY133'):
             raw[32:80]=c;struct.pack_into('<H',raw,28,0)
         else:raw=bytearray(pack(raw,c))
         simulated.append(bytes(raw))

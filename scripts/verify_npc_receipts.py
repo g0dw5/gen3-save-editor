@@ -23,7 +23,7 @@ from verify_event_state import PROFILES
 from verify_rocket_battle_forms import Native
 
 ADD_BAG = {'BW': 0xD6928, 'DP': 0xD6928, 'ULTIMATE': 0xD6928,
-           'ROCKET': 0x10ED14, 'MERCURY12': 0x9A084}
+           'ROCKET': 0x10ED14, 'MERCURY133': 0x9A084}
 # Mercury's standard gift formats text and creates/destroys item icon sprites.
 # These helpers do not determine VAR_RESULT or the caller's receipt flag.
 MERCURY_PRESENTATION = {0x9A824, 0x1D5DEB0, 0x1D5DEE0}
@@ -51,7 +51,7 @@ def verify(key, rom, world):
         if address == 0x08000000 + ADD_BAG[key]:
             uc.reg_write(UC_ARM_REG_R0, int(fits))
             uc.reg_write(UC_ARM_REG_PC, uc.reg_read(UC_ARM_REG_LR))
-        if key == 'MERCURY12' and address - 0x08000000 in MERCURY_PRESENTATION:
+        if key == 'MERCURY133' and address - 0x08000000 in MERCURY_PRESENTATION:
             uc.reg_write(UC_ARM_REG_PC, uc.reg_read(UC_ARM_REG_LR))
     cpu.cpu.hook_add(UC_HOOK_CODE, hook)
     rows, cases = [], 0
@@ -93,7 +93,7 @@ def verify(key, rom, world):
                             if pc == 0x08000000 + reward['offset']:
                                 awarded = True
                             cpu.word(CONTEXT + 8, pc + 1)
-                            if op in NATIVE_OPS or (key == 'MERCURY12' and op == 0xC7):
+                            if op in NATIVE_OPS or (key == 'MERCURY133' and op == 0xC7):
                                 entry = struct.unpack_from('<I', rom, rules.commands + 4 * op)[0]
                                 cpu.call(entry - 0x08000001, CONTEXT)
                             elif op in PRESENTATION:

@@ -16,9 +16,9 @@ CONFIG = {
  'DP': (0x6ea68,0x6f5cc,0x03005d80,0x02024744,0x020244ec,0x6a518,0x6b6d8,0x3203cc,412,28,0x02037318,0x03005d8c,0x03005d90,0x6ea54),
  'ROCKET': (0x9c610,0x9d40c,0x03005240,0x020253c8,0x02025170,0x976d0,0x988f0,0x5b4764,1395,36,0x02036de0,0x0300524c,0x03005250,0x9c5fc),
  'ULTIMATE': (0x6ea68,0x6f5cc,0x03005d80,0x02024744,0x020244ec,0x6a518,0x6b6d8,0xf186e0,1200,28,0x02037318,0x03005d8c,0x03005d90,0x6ea54),
- 'MERCURY12': (0x443f4,0x44ec8,0x03005000,0x0202402c,0x02024284,0x3fbe8,0x40d38,0x176dfbc,1554,28,0,0x03005008,0x0300500c,0),
+ 'MERCURY133': (0x443f4,0x44ec8,0x03005000,0x0202402c,0x02024284,0x3fbe8,0x40d38,0x176dfbc,1554,28,0,0x03005008,0x0300500c,0),
 }
-MD5 = dict(BW='0d9b129f7dd76895f79bb47ad7dec2fe',DP='cb2940215f4dafb1bef133c3af379f44',ROCKET='59c658a1081f542086de1060bb65f0b3',ULTIMATE='17ce9785b33319b3dbda9a5d37c57ec1',MERCURY12='f323df1792ac68462a34b42fe8571533')
+MD5 = dict(BW='0d9b129f7dd76895f79bb47ad7dec2fe',DP='cb2940215f4dafb1bef133c3af379f44',ROCKET='59c658a1081f542086de1060bb65f0b3',ULTIMATE='17ce9785b33319b3dbda9a5d37c57ec1',MERCURY133='5ffb1cbd5c28cda9b987b3b445da68e0')
 
 def fixture(name,species,egg=False,hp=100,slot=0):
  raw=bytearray(100);struct.pack_into('<II',raw,0,24,0x12345678)
@@ -28,10 +28,10 @@ def fixture(name,species,egg=False,hp=100,slot=0):
  if name=='ROCKET': c[47]=slot;struct.pack_into('<I',c,8,26<<13)
  else: struct.pack_into('<I',c,40,((1 if slot else 0)<<31)|(int(egg)<<30))
  if name=='ULTIMATE' and slot==2:raw[30]|=1
- if name=='MERCURY12' and slot==1:struct.pack_into('<I',raw,0,25)
+ if name=='MERCURY133' and slot==1:struct.pack_into('<I',raw,0,25)
  if name=='ROCKET' and egg:struct.pack_into('<I',c,40,1<<30)
  raw[84]=50;struct.pack_into('<HH',raw,86,hp,100)
- if name in ['MERCURY12','ULTIMATE']:
+ if name in ['MERCURY133','ULTIMATE']:
   raw[32:80]=c;struct.pack_into('<H',raw,28,sum(struct.unpack('<24H',c))&65535)
   return bytes(raw)
  return pack(raw,c)

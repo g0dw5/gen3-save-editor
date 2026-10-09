@@ -17,7 +17,7 @@ FIELDS = {
     "DP": (0x02038BEC, 0x02038BCA, 0x02038BCC),
     "ROCKET": (0x02039BCC, 0x02039BAA, 0x02039BAC),
     "ULTIMATE": (0x02038BEC, 0x02038BCA, 0x02038BCC),
-    "MERCURY12": (0x020386C4, 0x020386AE, 0x020386B0),
+    "MERCURY133": (0x020386C4, 0x020386AE, 0x020386B0),
 }
 
 
@@ -38,13 +38,13 @@ def main():
         rows = []
         for typ in range(17):
             for trainer, context in [(1, 0), (0x123, 0), (0x4321, 0)] + (
-                [(0x123, 1), (0x123, 2)] if key == "MERCURY12" else []
+                [(0x123, 1), (0x123, 2)] if key == "MERCURY133" else []
             ):
                 cpu = fresh(rom)
                 cpu.word(sb1, 0x02030000)
                 cpu.word(sb2, 0x02038000)
                 cpu.word(CONTEXT + 8, OPERANDS)
-                if key == "MERCURY12":
+                if key == "MERCURY133":
                     cpu.write(0x03000F28, bytes([context]))
                 data = bytearray(32)
                 data[0] = typ

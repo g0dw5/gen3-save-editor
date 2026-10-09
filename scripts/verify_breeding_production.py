@@ -31,21 +31,21 @@ CONFIG = {
     "DP": (0x70AC4, 0x70B2C, 0x70B1E, 0x02039DD8, 0x310EA2, 0, "immediate", 0xD6724),
     "ULTIMATE": (0x70AC4, 0x70B2C, 0x70B1E, 0x02039DD8, None, 0, None, None),
     "ROCKET": (0x9EAAC, 0x9EB1C, 0x9EB0E, 0x0203ADDC, 0x9F35C, 0, "word", 0x10EAE0),
-    "MERCURY12": (
+    "MERCURY133": (
         0x462C4,
         0x4632C,
         0x4631E,
         0x0203988C,
-        0x1D1BF0C,
+        0x1D1C800,
         1,
         "immediate",
         0x99F40,
     ),
 }
 POCKET = dict(
-    BW=0xD7590, DP=0xD7590, ULTIMATE=0xD7590, ROCKET=0x10F958, MERCURY12=0x9A9D8
+    BW=0xD7590, DP=0xD7590, ULTIMATE=0xD7590, ROCKET=0x10F958, MERCURY133=0x9A9D8
 )
-KEY_OFFSET = dict(BW=0xAC, DP=0xAC, ULTIMATE=0xAC, ROCKET=0xAC, MERCURY12=0xF20)
+KEY_OFFSET = dict(BW=0xAC, DP=0xAC, ULTIMATE=0xAC, ROCKET=0xAC, MERCURY133=0xF20)
 
 
 def observe(cpu, start, stop, *args):
@@ -107,7 +107,7 @@ def verify(name):
                             0x02010002,
                             (
                                 (int(present) ^ (key & 65535))
-                                if name != "MERCURY12"
+                                if name != "MERCURY133"
                                 else int(present)
                             ),
                         )
@@ -146,8 +146,8 @@ def verify(name):
                     # egg-available flag. Its legacy 16-bit personality stays zero.
                     flag = (
                         None
-                        if name != "MERCURY12"
-                        else struct.unpack_from("<I", rom, 0x1D1BB9C)[0]
+                        if name != "MERCURY133"
+                        else struct.unpack_from("<I", rom, 0x1D1C490)[0]
                     )
                     available = (
                         bool(pending) if flag is None else bool(cpu.call(0x6E6D0, flag))

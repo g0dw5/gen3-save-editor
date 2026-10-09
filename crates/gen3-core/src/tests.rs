@@ -2217,7 +2217,7 @@ fn local_teaching_sources_match_native_getters_and_crosslinks() {
         &std::fs::read(std::env::var("GEN3_TUTOR_PROBES").unwrap()).unwrap(),
     )
     .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let r =
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
                 .unwrap();
@@ -2341,7 +2341,7 @@ fn local_npc_trades_match_native_quote_and_generation() {
         &std::fs::read(std::env::var("GEN3_TRADE_PROBES").unwrap()).unwrap(),
     )
     .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let r =
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
                 .unwrap();
@@ -3799,7 +3799,7 @@ fn local_standard_dialogues_match_native_and_resolve_referenced_coordinates() {
         &std::fs::read(std::env::var("GEN3_DIALOGUE_PROBES").unwrap()).unwrap(),
     )
     .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
         let original = std::fs::read(&path).unwrap();
         let rom = Rom::open(original.clone()).unwrap();
@@ -3856,7 +3856,7 @@ fn local_standard_dialogues_match_native_and_resolve_referenced_coordinates() {
                         || u16(&original, edge.offset + 6).unwrap() >= 0x4000)
             })
             .collect();
-        assert_eq!(coordinates.len(), if key == "MERCURY12" { 0 } else { 12 });
+        assert_eq!(coordinates.len(), if key == "MERCURY133" { 0 } else { 12 });
         assert!(coordinates.iter().all(|edge| {
             edge.unresolved.is_none() && edge.target_x.is_some() && edge.target_y.is_some()
         }));
@@ -3892,7 +3892,7 @@ fn local_script_warp_operands_match_native_all_profiles() {
     let probes: serde_json::Value =
         serde_json::from_slice(&std::fs::read(std::env::var("GEN3_WARP_PROBES").unwrap()).unwrap())
             .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
         let original = Rom::open(std::fs::read(&path).unwrap()).unwrap();
         let hash = crate::binary::sha256(&original.data);
@@ -3968,11 +3968,11 @@ fn native_extension_configuration_rejects_overlaps_and_invalid_sector_bounds() {
 }
 
 #[test]
-#[ignore = "requires private exact Mercury 1.2 ROM and current SAV"]
+#[ignore = "requires private exact Mercury 1.33 ROM and current SAV"]
 fn local_mercury_storage_roundtrip() {
     let r =
-        Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap()).unwrap();
-    let original = std::fs::read(std::env::var("GEN3_SAVE_MERCURY12").unwrap()).unwrap();
+        Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY133").unwrap()).unwrap()).unwrap();
+    let original = std::fs::read(std::env::var("GEN3_SAVE_MERCURY133").unwrap()).unwrap();
     let save = Save::open(original.clone(), r.profile.save).unwrap();
     save.validate(&r).unwrap();
     assert_eq!(save.bag().unwrap().len(), 808);
@@ -4159,13 +4159,13 @@ fn saved_clock_preserves_bytes_and_distinguishes_rtc_invalid_and_simulated_time(
     }
 }
 #[test]
-#[ignore = "requires exact Mercury 1.2 ROM/SAV and verify_mercury_clock.py parity vectors"]
+#[ignore = "requires exact Mercury 1.33 ROM/SAV and verify_mercury_clock.py parity vectors"]
 fn local_mercury_clock_matches_native_restore_and_period_selection() {
     use crate::clock::ClockScenario;
     let r =
-        Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap()).unwrap();
+        Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY133").unwrap()).unwrap()).unwrap();
     let mut save = Save::open(
-        std::fs::read(std::env::var("GEN3_SAVE_MERCURY12").unwrap()).unwrap(),
+        std::fs::read(std::env::var("GEN3_SAVE_MERCURY133").unwrap()).unwrap(),
         r.profile.save,
     )
     .unwrap();
@@ -4310,7 +4310,7 @@ fn local_pickup_receipts_match_native_protocol() {
         &std::fs::read(std::env::var("GEN3_PICKUP_PROBES").unwrap()).unwrap(),
     )
     .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let r =
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
                 .unwrap();
@@ -4477,7 +4477,7 @@ fn local_npc_receipts_match_native_control_flow() {
     let vectors: serde_json::Value =
         serde_json::from_slice(&std::fs::read(std::env::var("GEN3_NPC_PROBES").unwrap()).unwrap())
             .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let r =
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
                 .unwrap();
@@ -4906,7 +4906,7 @@ fn local_resource_guards_match_native_width_inventory_and_money() {
         &std::fs::read(std::env::var("GEN3_RESOURCE_PROBES").unwrap()).unwrap(),
     )
     .unwrap();
-    for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let r =
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{name}")).unwrap()).unwrap())
                 .unwrap();
@@ -5292,7 +5292,7 @@ fn local_breeding_production_matches_native_rolls_bag_and_steps() {
         &std::fs::read(std::env::var("GEN3_PRODUCTION_PROBES").unwrap()).unwrap(),
     )
     .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let rom =
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
                 .unwrap();
@@ -5471,7 +5471,7 @@ fn local_saved_daycare_matches_native_state_and_deposited_parent_records() {
         &std::fs::read(std::env::var("GEN3_DAYCARE_STATE_PROBES").unwrap()).unwrap(),
     )
     .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let r =
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
                 .unwrap();
@@ -5802,7 +5802,7 @@ fn local_event_effects_match_native_commands_and_referenced_dependency_queries()
     )
     .unwrap();
     let mut app = crate::app::App::default();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
         let data = std::fs::read(&path).unwrap();
         let r = Rom::open(data.clone()).unwrap();
@@ -6086,7 +6086,7 @@ fn local_trainer_reference_formats_match_native_boundaries_and_current_roots() {
     )
     .unwrap();
     let mut app = crate::app::App::default();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
         let data = std::fs::read(&path).unwrap();
         let r = Rom::open(data.clone()).unwrap();
@@ -6244,7 +6244,7 @@ fn local_inventory_categories_match_booted_native_pockets_and_checks() {
         &std::fs::read(std::env::var("GEN3_INVENTORY_CATEGORY_PROBES").unwrap()).unwrap(),
     )
     .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let r =
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
                 .unwrap();
@@ -6446,7 +6446,7 @@ fn local_player_conditions_match_complete_native_reads_copies_and_branches() {
         &std::fs::read(std::env::var("GEN3_PLAYER_CONDITION_PROBES").unwrap()).unwrap(),
     )
     .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
         let bytes = std::fs::read(&path).unwrap();
         let rom = Rom::open(bytes.clone()).unwrap();
@@ -6714,7 +6714,7 @@ fn local_script_buffers_match_complete_native_state_preservation() {
         &std::fs::read(std::env::var("GEN3_SCRIPT_BUFFER_PROBES").unwrap()).unwrap(),
     )
     .unwrap();
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
         let bytes = std::fs::read(&path).unwrap();
         let rom = Rom::open(bytes.clone()).unwrap();
@@ -6865,14 +6865,14 @@ fn native_read_only_dex_banks_preserve_flags_initialization_and_edit_boundaries(
 }
 
 #[test]
-#[ignore = "requires GEN3_ROM_MERCURY12, GEN3_SAVE_MERCURY12 and GEN3_MERCURY_DEX_PROBES"]
+#[ignore = "requires GEN3_ROM_MERCURY133, GEN3_SAVE_MERCURY133 and GEN3_MERCURY_DEX_PROBES"]
 fn local_mercury_dex_matches_native_split_banks_and_booted_save() {
     use sha2::{Digest, Sha256};
     let proof: serde_json::Value = serde_json::from_slice(
         &std::fs::read(std::env::var("GEN3_MERCURY_DEX_PROBES").unwrap()).unwrap(),
     )
     .unwrap();
-    let rom_bytes = std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap();
+    let rom_bytes = std::fs::read(std::env::var("GEN3_ROM_MERCURY133").unwrap()).unwrap();
     let r = Rom::open(rom_bytes.clone()).unwrap();
     assert_eq!(r.profile.md5, proof["md5"]);
     assert_eq!(
@@ -6925,7 +6925,7 @@ fn local_mercury_dex_matches_native_split_banks_and_booted_save() {
         }
     }
     assert_eq!(total, 8 * 1027);
-    let original = std::fs::read(std::env::var("GEN3_SAVE_MERCURY12").unwrap()).unwrap();
+    let original = std::fs::read(std::env::var("GEN3_SAVE_MERCURY133").unwrap()).unwrap();
     assert_eq!(
         format!("{:x}", Sha256::digest(&original)),
         proof["save_sha256"]
@@ -7206,7 +7206,7 @@ fn local_script_movement_operands_match_native_dispatch_and_lifecycle() {
     )
     .unwrap();
     let mut cases = 0;
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let bytes = std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap();
         let mut r = Rom::open(bytes.clone()).unwrap();
         let p = &proofs[key];
@@ -7287,7 +7287,7 @@ fn local_static_battle_sources_match_complete_native_setup() {
     )
     .unwrap();
     let mut total = 0;
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let original =
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap())
                 .unwrap();
@@ -7406,7 +7406,7 @@ fn local_referenced_static_held_items_match_native_setup_and_collection() {
     )
     .unwrap();
     let mut count = 0;
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
         let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
         assert_eq!(probes[key]["md5"], rom.profile.md5);
@@ -7618,7 +7618,7 @@ fn local_item_evolutions_match_native_selectors_and_reference_closure() {
     .unwrap();
     let mut calls = 0;
     let mut gender_calls = 0;
-    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let path = std::env::var(format!("GEN3_ROM_{key}")).unwrap();
         let rom = Rom::open(std::fs::read(&path).unwrap()).unwrap();
         assert_eq!(probes[key]["md5"], rom.profile.md5);
@@ -7754,7 +7754,7 @@ fn local_item_evolutions_match_native_selectors_and_reference_closure() {
 #[ignore = "requires all five exact ROMs via GEN3_ROM_* and optional GEN3_SAVE_*"]
 fn local_query_acquisition_all_profiles() {
     use crate::acquisition::{AcquisitionIndex, Target, TargetKind};
-    for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let r =
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{name}")).unwrap()).unwrap())
                 .unwrap();
@@ -8628,7 +8628,7 @@ fn removed_reference_commands_have_no_side_effects() {
 #[ignore = "requires five exact private ROMs and optional GEN3_SAVE_* inputs"]
 fn local_player_references_and_adventure_are_read_only_across_profiles() {
     use crate::acquisition::{AcquisitionIndex, Target, TargetKind};
-    for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+    for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
         let r =
             Rom::open(std::fs::read(std::env::var(format!("GEN3_ROM_{name}")).unwrap()).unwrap())
                 .unwrap();
@@ -8884,7 +8884,7 @@ fn compact_storage_moves_preserve_physical_records_across_all_25_boxes() {
 #[ignore = "requires Mercury ROM and independent mGBA compact-storage vectors"]
 fn compact_storage_matches_native_mercury_converters() {
     let rom =
-        Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap()).unwrap();
+        Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY133").unwrap()).unwrap()).unwrap();
     let layout = rom.profile.save.compressed_boxes.unwrap();
     let vectors: Vec<serde_json::Value> = serde_json::from_slice(
         &std::fs::read(std::env::var("GEN3_COMPACT_VECTORS").unwrap()).unwrap(),

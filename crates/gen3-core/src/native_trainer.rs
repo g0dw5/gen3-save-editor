@@ -348,9 +348,9 @@ mod tests {
 mod local_tests {
     use super::*;
     #[test]
-    #[ignore = "requires exact private Mercury 1.2 ROM; probe output stays local"]
+    #[ignore = "requires exact private Mercury 1.33 ROM; probe output stays local"]
     fn local_native_trainer_mercury() {
-        let rom = Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap())
+        let rom = Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY133").unwrap()).unwrap())
             .unwrap();
         let original = rom.data.clone();
         let mut probes = vec![];

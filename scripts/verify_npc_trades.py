@@ -25,7 +25,7 @@ CONFIG = {
     'DP': (0x1DBA64, 0xFF, 4, 0x6A518, 0x03005D90, 0x03005D80),
     'ULTIMATE': (0x1DBA64, 0xFF, 8, 0x6A518, 0x03005D90, 0x03005D80),
     'ROCKET': (0x22B620, 0xFF, 4, 0x976D0, 0x03005250, 0x03005240),
-    'MERCURY12': (0x15FD60, 0xFC, 9, 0x3FBE8, 0x0300500C, 0x03005000),
+    'MERCURY133': (0x15FD60, 0xFC, 9, 0x3FBE8, 0x0300500C, 0x03005000),
 }
 
 
@@ -59,7 +59,7 @@ def verify(key, rom):
                 # Record their party destination from native SetMonData calls.
                 destinations = []
                 setter = {'BW': 0x6ACAC, 'DP': 0x6ACAC, 'ULTIMATE': 0x6ACAC,
-                          'ROCKET': 0x97E2C, 'MERCURY12': 0x4037C}[key]
+                          'ROCKET': 0x97E2C, 'MERCURY133': 0x4037C}[key]
 
                 def hook(cpu, address, size, unused):
                     if address == 0x08000000 + getter and cpu.reg_read(UC_ARM_REG_R1) == 56:
@@ -81,7 +81,7 @@ def verify(key, rom):
         assert len({(c['species'], c['held_item']) for c in cases}) == 1
         rows.append(dict(index=index, requested_species=requested, cases=cases))
     alternate = None
-    if key == 'MERCURY12':
+    if key == 'MERCURY133':
         native = setup(key, rom, 0, 1)
         native.call(RULES[key].set_flag, 0x15F8)
         assert native.call(PROFILES[key][1], 0x15F8) == 1

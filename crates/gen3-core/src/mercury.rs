@@ -1,4 +1,4 @@
-//! Exact-ROM adapter for Pokémon Mercury FC 1.2.
+//! Exact-ROM adapter for Pokémon Mercury FC 1.33.
 //!
 //! ROM tables and save layouts are specific to this FireRed/CFRU build. In
 //! particular, they do not borrow Emerald offsets or world pointers.
@@ -68,7 +68,7 @@ const MERCURY_POCKETS: [Pocket; 6] = [
         category: 5,
     },
 ];
-// SetMemoryForBagStorage (0x1D40C70) copies the ROM table at 0x1DDDB84.
+// SetMemoryForBagStorage (0x1D42844) copies the ROM table at 0x1DE3A94.
 // Bag RAM starts at 0x0203BB20 within the parasite block at 0x0203B174;
 // native quantity getters/setters (0x99DD8/0x99DDC) are plaintext.
 const MERCURY_SAVE: SaveLayout = SaveLayout {
@@ -78,7 +78,7 @@ const MERCURY_SAVE: SaveLayout = SaveLayout {
     pokemon_codec: PokemonCodec::Cfru,
     pockets: &MERCURY_POCKETS,
     dex: None,
-    // GetSetPokedexFlag 0x88E74 -> 0x1D6680C reads two SaveBlock1 banks.
+    // GetSetPokedexFlag 0x88E74 -> 0x1D6970C reads two SaveBlock1 banks.
     // The second bank is lazily cleared unless its native marker is 0x11DE.
     dex_read: Some(&[
         DexReadBank {
@@ -134,7 +134,7 @@ pub const PROFILE: Profile = Profile {
     script_pokemon: crate::script_pokemon::PokemonScriptRules {
         wild: crate::script_pokemon::WildCommand::MercuryDouble,
         wild_handler: 0x6c368,
-        egg_level_instruction: 0x1d1b31e,
+        egg_level_instruction: 0x1d1bc12,
         native_battle: None,
         trade: Some(crate::script_pokemon::TradeRules {
             specials: 0x15fd60,
@@ -148,10 +148,10 @@ pub const PROFILE: Profile = Profile {
     hidden_items: Some(crate::profile::HiddenItemRules {
         packed: true,
         flag_base: 0x3e8,
-        region_override: Some((0x1dddb6e, 0xd00)),
+        region_override: Some((0x1de3a7e, 0xd00)),
     }),
     native_trainers: Some(crate::native_trainer::NativeTrainerRules {
-        constructor: 0x09d0b150,
+        constructor: 0x9d0ba44,
         enemy_party: 0x0202402c,
         battle_flags: 0x02022b4c,
         save_pointers: [0x03005008, 0x0300500c],
@@ -161,11 +161,11 @@ pub const PROFILE: Profile = Profile {
     hardware_clock: None,
     clock: Some(crate::clock::ClockRules {
         starts: [4, 8, 17, 20],
-        native_predicates: [0x1d20de0, 0x1d20df8, 0x1d20814],
+        native_predicates: [0x1d216d4, 0x1d216ec, 0x1d21108],
         forced_night_flag: Some(0x1041),
         saved: Some(crate::clock::SavedClockRules {
             block: PocketBlock::SectorExtensions,
-            // Native expanded FlagGet/VarGet, clock restore 0x1D5AA94 and persist 0x1D5A65C.
+            // Native expanded FlagGet/VarGet, clock restore 0x1D5C840 and persist 0x1D5C408.
             enabled_byte: 0x146,
             enabled_mask: 0x20,
             forced_night_byte: 0xe8,
@@ -174,7 +174,7 @@ pub const PROFILE: Profile = Profile {
             speed_word: 0x5e6,
             year_min: 2000,
             year_max: 3199,
-            month_lengths: 0x1ddedf8,
+            month_lengths: 0x1de4d0c,
         }),
     }),
     event_state: Some(crate::profile::EventStateLayout {
@@ -210,9 +210,9 @@ pub const PROFILE: Profile = Profile {
         pickup_receipt: true,
         gift_result: true,
     }),
-    id: "mercury-fc-1.2",
-    label: "宝可梦水银 FC · 1.2",
-    md5: "f323df1792ac68462a34b42fe8571533",
+    id: "mercury-fc-1.33",
+    label: "宝可梦水银 FC · 1.33",
+    md5: "5ffb1cbd5c28cda9b987b3b445da68e0",
     size: 33_554_432,
     formats: RomFormats {
         trainers: TrainerFormat::FireRed,
@@ -237,30 +237,30 @@ pub const PROFILE: Profile = Profile {
     trainer_exclusions: &[],
     max_level: 100,
     experience_table: Some(Table {
-        offset: 0x1e052c8,
+        offset: 0x1e0b258,
         count: 6,
         stride: 1024,
     }),
     battle_forms: Some(BattleFormRules::CfruEvolutionMethods),
     storage_forms: None,
     form_families: None,
-    nature_names: 0x1ff2888,
+    nature_names: 0x1ff38f0,
     nature_effects: 0x252b48,
     nature_product_u16: false,
     type_names: Table {
-        offset: 0x1db5da4,
+        offset: 0x1dbba70,
         count: 24,
         stride: 7,
     },
     move_names: SplitText {
-        first: 0x1d93f34,
+        first: 0x1d97378,
         second: 0,
         split: 1015,
         stride: 13,
     },
     move_descriptions: 0x1cc8ebc,
     ability_names: SplitText {
-        first: 0x1d8b430,
+        first: 0x1d8e858,
         second: 0,
         split: 300,
         stride: 13,
@@ -284,7 +284,7 @@ pub const PROFILE: Profile = Profile {
         stride: 28,
     },
     moves: Table {
-        offset: 0x1dfd2df,
+        offset: 0x1e0326f,
         count: 1015,
         stride: 12,
     },
@@ -302,7 +302,7 @@ pub const PROFILE: Profile = Profile {
         stride: 128,
     },
     evolution_overrides: &[],
-    item_evolution_gender_check: Some(0x1d2870e),
+    item_evolution_gender_check: Some(0x1d2a006),
     learnsets: 0x17c32bc,
     eggs: 0x1781b64,
     teaching: TeachingRules {
@@ -362,7 +362,7 @@ pub const PROFILE: Profile = Profile {
     region_count: 253,
     wild: 0xcf915c,
     wild_selection: None,
-    wild_time_tables: Some([0x1e4779c, 0x1e3ffb0, 0x1e458a0, 0x1e4380c]),
+    wild_time_tables: Some([0x1e4e09c, 0x1e468b0, 0x1e4c1a0, 0x1e4a10c]),
     feebas: None,
     fishing_rods: [262, 263, 264],
     trainers: Table {
@@ -387,7 +387,7 @@ pub const PROFILE: Profile = Profile {
         stride: 4,
     }],
     object_palettes: Table {
-        offset: 0x1e0e080,
+        offset: 0x1e14010,
         count: 341,
         stride: 8,
     },
@@ -418,6 +418,31 @@ mod tests {
     };
 
     #[test]
+    fn registry_only_supports_current_mercury_fingerprint() {
+        let profiles = crate::profile::PROFILES;
+        assert_eq!(profiles.len(), 5);
+        assert_eq!(
+            profiles
+                .iter()
+                .filter(|p| p.id.starts_with("mercury-"))
+                .count(),
+            1
+        );
+        assert!(!profiles
+            .iter()
+            .any(|p| p.md5 == "f323df1792ac68462a34b42fe8571533"));
+        assert_eq!(PROFILE.id, "mercury-fc-1.33");
+        assert_eq!(PROFILE.md5, "5ffb1cbd5c28cda9b987b3b445da68e0");
+    }
+
+    #[test]
+    #[ignore = "requires the removed 1.2 ROM via GEN3_ROM_MERCURY12"]
+    fn removed_12_rom_is_rejected() {
+        let bytes = std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap();
+        assert_eq!(Rom::open(bytes).err().unwrap().code, "unsupported_rom");
+    }
+
+    #[test]
     #[ignore = "requires the removed 1.1 ROM via GEN3_ROM_MERCURY11"]
     fn removed_11_rom_is_rejected() {
         let bytes = std::fs::read(std::env::var("GEN3_ROM_MERCURY11").unwrap()).unwrap();
@@ -427,9 +452,9 @@ mod tests {
     #[test]
     #[ignore = "requires exact ROM and in-game Mercury save"]
     fn exact_save_layout_regression() {
-        let rom = Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap())
+        let rom = Rom::open(std::fs::read(std::env::var("GEN3_ROM_MERCURY133").unwrap()).unwrap())
             .unwrap();
-        let original = std::fs::read(std::env::var("GEN3_SAVE_MERCURY12").unwrap()).unwrap();
+        let original = std::fs::read(std::env::var("GEN3_SAVE_MERCURY133").unwrap()).unwrap();
         let save = Save::open(original.clone(), rom.profile.save).unwrap();
         assert!(save.party_count() <= 6);
         save.validate(&rom).unwrap();
@@ -453,12 +478,12 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires exact ROM and user-supplied Mercury 1.2 save"]
-    fn exact_save_12_edit_probe() {
+    #[ignore = "requires exact ROM and user-supplied Mercury 1.33 save"]
+    fn exact_save_133_edit_probe() {
         check_save_edit(
-            "GEN3_ROM_MERCURY12",
-            "GEN3_SAVE_MERCURY12",
-            "GEN3_SAVE_MERCURY12_PROBE",
+            "GEN3_ROM_MERCURY133",
+            "GEN3_SAVE_MERCURY133",
+            "GEN3_SAVE_MERCURY133_PROBE",
         );
     }
 
@@ -515,9 +540,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires native in-game resave of the Mercury 1.2 edit probe"]
-    fn exact_native_resave_12_regression() {
-        check_native_resave("GEN3_ROM_MERCURY12", "GEN3_SAVE_MERCURY12_NATIVE");
+    #[ignore = "requires native in-game resave of the Mercury 1.33 edit probe"]
+    fn exact_native_resave_133_regression() {
+        check_native_resave("GEN3_ROM_MERCURY133", "GEN3_SAVE_MERCURY133_NATIVE");
     }
 
     fn check_native_resave(rom_key: &str, save_key: &str) {
@@ -564,9 +589,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires exact local ROM via GEN3_ROM_MERCURY12"]
-    fn exact_rom_12_regression() {
-        check_rom(PROFILE, "GEN3_ROM_MERCURY12", 739);
+    #[ignore = "requires exact local ROM via GEN3_ROM_MERCURY133"]
+    fn exact_rom_133_regression() {
+        check_rom(PROFILE, "GEN3_ROM_MERCURY133", 739);
     }
 
     fn check_rom(profile: crate::profile::Profile, key: &str, trainer_locations: usize) {

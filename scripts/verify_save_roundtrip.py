@@ -40,7 +40,7 @@ POCKET_ORDER = {
         "tmhm",
         "key_items",
     ),
-    "MERCURY12": ("items", "key_items", "balls", "tmhm", "berries"),
+    "MERCURY133": ("items", "key_items", "balls", "tmhm", "berries"),
 }
 
 
@@ -88,7 +88,7 @@ def loaded_storage(probe, save, snapshot, layout, ram):
         # Compare every native box pointer, including RAM outside storage.
         # The table is the game's actual GetCompressedMonPtr input, not an
         # independently invented contiguous 80-byte layout.
-        pointers = struct.unpack("<25I", probe.read(0x09DDEB68, 100))
+        pointers = struct.unpack("<25I", probe.read(0x9DE4A7C, 100))
         blocks = {"Trainer": logical(data, snapshot, layout, [0]),
                   "Main": logical(data, snapshot, layout, range(1, 5)),
                   "Storage": expected}

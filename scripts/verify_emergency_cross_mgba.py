@@ -17,7 +17,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 STATES = ROOT / ".local/analysis/emergency-cross-20260926"
 PROFILES = {
-    "MERCURY12": ("f323df1792ac68462a34b42fe8571533", str(ROOT / ".local/analysis/mercury-cheats-20261006/battle-menu.state"), 0x12424, 0x03004f84, 0xff, "mercury", 0x03004f84, 0x08014041, 0x02022b4c, 0x02024284, 0x02023be4, 0x58, 0x28, 0x2c, 0x4c, 0x24),
+    "MERCURY133": ("5ffb1cbd5c28cda9b987b3b445da68e0", str(ROOT / ".local/analysis/mercury-133-20261009/battle-menu.state"), 0x12424, 0x03004f84, 0xff, "mercury", 0x03004f84, 0x08014041, 0x02022b4c, 0x02024284, 0x02023be4, 0x58, 0x28, 0x2c, 0x4c, 0x24),
     "BW": ("0d9b129f7dd76895f79bb47ad7dec2fe", "BW-menu-4.state", 0x39f30, 0x03005d04, 0, "ultimate", 0x03005d04, 0x0803be75, 0x02022fec, 0x020244ec, 0x02024084, 0x58, 0x28, 0x2c, 0x4c, 0x24),
     "DP": ("cb2940215f4dafb1bef133c3af379f44", "DP-battle-menu.state", 0x39f30, 0x03005d04, 0, "ultimate", 0x03005d04, 0x0803be75, 0x02022fec, 0x020244ec, 0x02024084, 0x58, 0x28, 0x2c, 0x4c, 0x24),
     "ROCKET": ("59c658a1081f542086de1060bb65f0b3", "ROCKET-menu-2.state", 0x4ee70, 0x030051b4, 0xff, "rocket", 0x030051b4, 0x08050d51, 0x02024bb8, 0x02025170, 0x02024c50, 0x5c, 0x2a, 0x2e, 0x50, 0x25),
@@ -44,7 +44,7 @@ def main():
             assert hashlib.md5(data).hexdigest() == md5, name
             payload = (ROOT/f"crates/gen3-core/src/cheats/emergency_{payload_name}.bin").read_bytes()
             assert data[hook:hook+4] == struct.pack("<I", original)
-            cave_offset = 0x13fd400 if name == "MERCURY12" else 0x1fff200
+            cave_offset = 0x13fd400 if name == "MERCURY133" else 0x1fff200
             target = 0x08000000 + cave_offset
             assert data[cave_offset:cave_offset+4+len(payload)] == bytes([cave])*(4+len(payload))
             codes = json.loads(subprocess.check_output([os.environ["GEN3_BIN"], "cheat-code", str(rom), "emergency-battle-heal", "gameshark_v1_v2"]))["lines"]

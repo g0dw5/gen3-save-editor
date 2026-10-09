@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only Mercury 1.2 virtual-clock and jump-time native verification.
+"""Read-only Mercury 1.33 virtual-clock and jump-time native verification.
 
 Requires Unicorn. Exact ROM and optional SAV stay private and unchanged. Native
 routines operate only on isolated RAM. --output produces private parity vectors
@@ -14,7 +14,7 @@ from unicorn import UC_HOOK_CODE
 from unicorn.arm_const import UC_ARM_REG_PC, UC_ARM_REG_LR
 from verify_rocket_battle_forms import Native
 
-MD5 = 'f323df1792ac68462a34b42fe8571533'
+MD5 = '5ffb1cbd5c28cda9b987b3b445da68e0'
 BASE = 0x0203B174
 CLOCK = 0x03005EA0
 WORDS = 0x5DE
@@ -83,26 +83,26 @@ def verify(rom, save=None):
                 values = [2026, 0xA05, hour << 8 | 24, 17 << 8 | weekday]
                 setup(cpu, values, forced)
                 before = cpu.read(BASE, 0x700)
-                cpu.call(0x1D5AA94)
+                cpu.call(0x1D5C840)
                 expected = clock(cpu)
                 assert expected == dict(year=2026,month=10,day=5,weekday=weekday,hour=hour,minute=24,second=17)
-                night = cpu.call(0x1D20814)
-                morning = cpu.call(0x1D20DE0)
-                dusk = cpu.call(0x1D20DF8)
+                night = cpu.call(0x1D21108)
+                morning = cpu.call(0x1D216D4)
+                dusk = cpu.call(0x1D216EC)
                 period = 'night' if night else 'morning' if morning else 'dusk' if dusk else 'day'
                 assert period == ('night' if forced or hour < 4 or hour >= 20 else 'morning' if hour < 8 else 'day' if hour < 17 else 'dusk')
                 # Clock restore/queries retain these packed words and flags; speed normalization may write only its own word.
                 assert cpu.read(BASE, 0x700) == before
-                cpu.call(0x1D5A65C)
+                cpu.call(0x1D5C408)
                 assert packed(cpu) == values
                 vectors.append(dict(words=values, forced=forced, speed=1, expected=expected, period=period))
     # Native month table and leap semantics, including the century exception.
     calendar = 0
     for year in [2000, 2004, 2026, 2100, 2400, 3199]:
         for month in range(1, 13):
-            base = struct.unpack_from('<I', rom, 0x1DDEDF8 + 4*(month-1))[0] & 255
+            base = struct.unpack_from('<I', rom, 0x1DE4D0C + 4*(month-1))[0] & 255
             days = base + int(month == 2 and year % 4 == 0 and (year % 100 != 0 or year % 400 == 0))
-            assert cpu.call(0x1D5A618, year, month) == days
+            assert cpu.call(0x1D5C3C4, year, month) == days
             calendar += 1
     jumps = []
     for year,month,day,weekday,start,target,force_next in [
@@ -113,7 +113,7 @@ def verify(rom, save=None):
     ]:
         values = [year, month<<8|day, start<<8|31, 29<<8|weekday]
         setup(cpu, values)
-        assert cpu.call(0x1D5ABE0, target, force_next) == 1
+        assert cpu.call(0x1D5C98C, target, force_next) == 1
         result = clock(cpu)
         assert result['hour'] == (start if force_next else target), result
         assert (result['minute'], result['second']) == ((31,29) if force_next else (0,0)), result
@@ -127,10 +127,10 @@ def verify(rom, save=None):
     for speed in [0,1,2,3,5,10,30,60,255]:
         values = [2026,0xA05,0xA18,0x1101]
         setup(cpu, values, speed=speed)
-        cpu.call(0x1D5AA94)
+        cpu.call(0x1D5C840)
         normalized = speed if speed in [1,2,5,10,30,60] else 1
-        assert cpu.call(0x1D5A6B0) == normalized
-        cpu.call(0x1D5A9A8)
+        assert cpu.call(0x1D5C45C) == normalized
+        cpu.call(0x1D5C754)
         assert cpu.read(CLOCK+9,1)[0] == normalized % 60
         assert clock(cpu)['second'] == (18 if normalized == 60 else 17)
         assert packed(cpu) == (values if normalized != 60 else [2026,0xA05,0xA18,0x1201])
@@ -139,7 +139,7 @@ def verify(rom, save=None):
     # Identify the native fallback without faking an RTC reading.
     fallbacks = []
     def rtc_fallback(uc, address, _size, _data):
-        if address == 0x09D5A90C:
+        if address == 0x9D5C6B8:
             fallbacks.append(True)
             uc.reg_write(UC_ARM_REG_PC, uc.reg_read(UC_ARM_REG_LR))
     hook = cpu.cpu.hook_add(UC_HOOK_CODE, rtc_fallback)
@@ -148,7 +148,7 @@ def verify(rom, save=None):
                    [2026,0xA05,0x3C,0],[2026,0xA05,0,0x3C00],[2026,0xA05,0,7]]:
         setup(cpu, values)
         before = len(fallbacks)
-        cpu.call(0x1D5AA94)
+        cpu.call(0x1D5C840)
         assert len(fallbacks) == before+1
         invalid.append(values)
     cpu.cpu.hook_del(hook)
@@ -159,7 +159,7 @@ def verify(rom, save=None):
         cpu.write(BASE,extra)
         assert cpu.call(0x6E6D0,0x1335) == 1, 'current file does not use virtual time'
         values = list(struct.unpack_from('<4H',extra,WORDS))
-        cpu.call(0x1D5AA94)
+        cpu.call(0x1D5C840)
         actual=dict(counter=counter,words=values,clock=clock(cpu),forced_night=bool(cpu.call(0x6E6D0,0x1041)))
         assert packed(cpu)==values
     return dict(rom_md5=MD5,restore_vectors=vectors,month_comparisons=calendar,

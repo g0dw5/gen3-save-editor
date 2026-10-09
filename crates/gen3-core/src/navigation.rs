@@ -468,7 +468,7 @@ mod tests {
     #[test]
     #[ignore = "requires all five exact local ROMs"]
     fn local_query_navigation_all_profiles() {
-        for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        for name in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
             let rom = Rom::open(
                 std::fs::read(std::env::var(format!("GEN3_ROM_{name}")).unwrap()).unwrap(),
             )

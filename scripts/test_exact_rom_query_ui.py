@@ -1,6 +1,6 @@
 """Real-ROM read-only UI smoke across every registered game profile.
 
-Requires GEN3_ROM_BW/DP/ROCKET/ULTIMATE/MERCURY12, an authorized development
+Requires GEN3_ROM_BW/DP/ROCKET/ULTIMATE/MERCURY133, an authorized development
 bridge and Vite. ROMs stay private. This replaces the bridge's current ROM but
 never opens a SAV or sends mutation/export requests. Run fixtures separately.
 """
@@ -15,10 +15,11 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(channel='chrome', headless=True)
         page = browser.new_page(viewport={'width': 1360, 'height': 920})
+        page.set_default_navigation_timeout(120000)
         page.add_init_script("localStorage.setItem('gen3.locale','en')")
         errors = []
         page.on('pageerror', lambda e: errors.append(str(e)))
-        for key in ['BW', 'DP', 'ROCKET', 'ULTIMATE', 'MERCURY12']:
+        for key in ['BW', 'DP', 'ROCKET', 'ULTIMATE', 'MERCURY133']:
             path = Path(os.environ[f'GEN3_ROM_{key}']).resolve()
             response = page.request.post(f'{url}/api', data={
                 'command': 'open_rom', 'payload': {'path': str(path)}

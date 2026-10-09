@@ -238,7 +238,7 @@ mod tests {
             &std::fs::read(std::env::var("GEN3_EVENT_PROBES").unwrap()).unwrap(),
         )
         .unwrap();
-        for (name, p) in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"]
+        for (name, p) in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"]
             .into_iter()
             .zip(profile::PROFILES)
         {

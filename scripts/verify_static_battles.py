@@ -23,7 +23,7 @@ READERS = {
     "DP": (0x6A518, 0x02024744),
     "ROCKET": (0x976D0, 0x020253C8),
     "ULTIMATE": (0x6A518, 0x02024744),
-    "MERCURY12": (0x3FBE8, 0x0202402C),
+    "MERCURY133": (0x3FBE8, 0x0202402C),
 }
 
 
@@ -39,7 +39,7 @@ def operands(key, first, second, level, held, double, variable):
             level + 1,
             held + 1,
         )
-    if key == "MERCURY12" and double:
+    if key == "MERCURY133" and double:
         return (
             struct.pack("<HBHB", 0xFFFF, 173, 0xBEEF, 201)
             + struct.pack("<HBHB", species, level, held, 229)
@@ -68,9 +68,9 @@ def main():
         rows = []
         try:
             modes = [(False, False)]
-            if key in ["ROCKET", "MERCURY12"]:
+            if key in ["ROCKET", "MERCURY133"]:
                 modes.append((True, False))
-            if key == "MERCURY12":
+            if key == "MERCURY133":
                 modes.extend([(False, True), (True, True)])
             for (double, variable), pair, level, held, seed in itertools.product(
                 modes,

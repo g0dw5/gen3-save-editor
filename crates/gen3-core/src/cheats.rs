@@ -177,7 +177,7 @@ const MERCURY: &[Binding] = &[
     Binding {
         id: NO_ENCOUNTERS,
         patches: &[RomHalfword {
-            offset: 0x1d69e72,
+            offset: 0x1d6cd7e,
             before: 0xd1f3,
             after: 0xe7f3,
         }],
@@ -185,7 +185,7 @@ const MERCURY: &[Binding] = &[
     Binding {
         id: GUARANTEED_CATCH,
         patches: &[RomHalfword {
-            offset: 0x1d0e9e6,
+            offset: 0x1d0f2da,
             before: 0xd92e,
             after: 0x46c0,
         }],
@@ -947,7 +947,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires five private ROMs via GEN3_ROM_ULTIMATE/BW/DP/ROCKET/MERCURY12"]
+    #[ignore = "requires five private ROMs via GEN3_ROM_ULTIMATE/BW/DP/ROCKET/MERCURY133"]
     fn local_cheat_catalog_cross_rom_regression() {
         use crate::app::{App, Request};
         use serde_json::{json, Value};
@@ -1000,7 +1000,7 @@ mod tests {
             ("GEN3_ROM_BW", crate::profile::BW),
             ("GEN3_ROM_DP", crate::profile::DP),
             ("GEN3_ROM_ROCKET", crate::profile::ROCKET),
-            ("GEN3_ROM_MERCURY12", crate::mercury::PROFILE),
+            ("GEN3_ROM_MERCURY133", crate::mercury::PROFILE),
         ] {
             let path = std::env::var(env).expect(env);
             let source = std::fs::read(&path).unwrap();

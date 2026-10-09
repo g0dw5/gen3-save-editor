@@ -23,12 +23,12 @@ CONFIG = {
     'DP': (0x99A6C, 0x9B4C0, 0xD7590, 0x02039DD8, 0x03005D90, 0xAC, 0x490, True),
     'ULTIMATE': (0x99A6C, 0x9B4C0, 0xD7590, 0x02039DD8, 0x03005D90, 0xAC, 0x490, True),
     'ROCKET': (0xCF95C, 0xD1420, 0x10F958, 0x0203ADDC, 0x03005250, 0xAC, 0x490, True),
-    'MERCURY12': (0x6A6E4, 0x6C18C, 0x9A9D8, 0x0203988C, 0x0300500C, 0xF20, 0x290, False),
+    'MERCURY133': (0x6A6E4, 0x6C18C, 0x9A9D8, 0x0203988C, 0x0300500C, 0xF20, 0x290, False),
 }
-SANITIZERS = {"BW": 0xD745C, "DP": 0xD745C, "ROCKET": 0x10F820, "ULTIMATE": 0xD745C, "MERCURY12": 0x9A8A4}
+SANITIZERS = {"BW": 0xD745C, "DP": 0xD745C, "ROCKET": 0x10F820, "ULTIMATE": 0xD745C, "MERCURY133": 0x9A8A4}
 ITEM_LAYOUT = {
     "BW": (0x5839A0,377), "DP": (0x5839A0,377), "ROCKET": (0xC3D558,923),
-    "ULTIMATE": (0xFC2C7C,800), "MERCURY12": (0x7C7E00,750),
+    "ULTIMATE": (0xFC2C7C,800), "MERCURY133": (0x7C7E00,750),
 }
 OPERANDS, SLOTS = 0x02008000, 0x02009000
 KEY = 0xDEAD4321
@@ -73,14 +73,14 @@ def verify(name):
             cpu.half(result, 7)
             cpu.call(item_code, CONTEXT)
             actual = struct.unpack('<H', cpu.read(result, 2))[0]
-            effective = requested if name == 'MERCURY12' else requested & 255
-            total = (quantities[0] if quantities else 0) if name == 'MERCURY12' else sum(quantities)
+            effective = requested if name == 'MERCURY133' else requested & 255
+            total = (quantities[0] if quantities else 0) if name == 'MERCURY133' else sum(quantities)
             assert actual == int(bool(quantities) and total >= effective), (name, quantities, requested, actual)
             rows.append(dict(kind='bag_item', item=item, quantities=quantities, requested=requested,
                              value=effective, result=actual))
     # Native alternate-bag selection can differ from the ordinary inventory.
     alternate = []
-    if name != 'MERCURY12':
+    if name != 'MERCURY133':
         cpu.half(SLOTS, item); cpu.half(SLOTS + 2, 10 ^ (KEY & 0xFFFF))
         cpu.half(descriptor + 4, 1)
         for enabled in [False, True]:

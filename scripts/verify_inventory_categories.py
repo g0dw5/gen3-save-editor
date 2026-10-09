@@ -16,13 +16,13 @@ from verify_save_roundtrip import Frames, digest, POCKET_ORDER, NATIVE, PRODUCTI
 from verify_breeding_production import KEY_OFFSET
 
 COMMANDS = dict(
-    BW=0x99A6C, DP=0x99A6C, ROCKET=0xCF95C, ULTIMATE=0x99A6C, MERCURY12=0x6A6E4
+    BW=0x99A6C, DP=0x99A6C, ROCKET=0xCF95C, ULTIMATE=0x99A6C, MERCURY133=0x6A6E4
 )
 GET_POCKET = dict(
-    BW=0xD7590, DP=0xD7590, ROCKET=0x10F958, ULTIMATE=0xD7590, MERCURY12=0x9A9D8
+    BW=0xD7590, DP=0xD7590, ROCKET=0x10F958, ULTIMATE=0xD7590, MERCURY133=0x9A9D8
 )
 GET_VARIABLE = dict(
-    BW=0x9D648, DP=0x9D648, ROCKET=0xD3930, ULTIMATE=0x9D648, MERCURY12=0x6E454
+    BW=0x9D648, DP=0x9D648, ROCKET=0xD3930, ULTIMATE=0x9D648, MERCURY133=0x6E454
 )
 CONTEXT, OPERANDS = 0x02001000, 0x02002000
 
@@ -74,7 +74,7 @@ def main():
                 "DP": 377,
                 "ROCKET": 923,
                 "ULTIMATE": 800,
-                "MERCURY12": 750,
+                "MERCURY133": 750,
             }[key]
             for item in range(1, count):
                 category = cpu.call(GET_POCKET[key], item)
@@ -98,7 +98,7 @@ def main():
                                 struct.pack(
                                     "<HH",
                                     item,
-                                    quantity ^ (security if key != "MERCURY12" else 0),
+                                    quantity ^ (security if key != "MERCURY133" else 0),
                                 ),
                             )
                         parameter_pointer = cpu.call(GET_VARIABLE[key], 0x8005)
@@ -109,10 +109,10 @@ def main():
                         # Special variables are read through the loaded native pointer table.
                         result_pointer = cpu.call(GET_VARIABLE[key], 0x800D)
                         result = int.from_bytes(cpu.read(result_pointer, 2), "little")
-                        value = requested if key == "MERCURY12" else requested & 255
+                        value = requested if key == "MERCURY133" else requested & 255
                         quantity = (
                             (quantities[0] if quantities else 0)
-                            if key == "MERCURY12"
+                            if key == "MERCURY133"
                             else sum(quantities)
                         )
                         assert result == int(bool(quantities) and quantity >= value), (

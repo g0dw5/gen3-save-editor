@@ -45,7 +45,7 @@ undetermined. An item missing from the bag never proves it was not collected.
 
 The supported Spanish Rocket ROM additionally exposes its identified main-story
 state and possible next actions. These numbers can move backward or count
-parallel objectives; they are not completion percentages. Mercury 1.2 additionally reads native quest titles, objectives and journal pages.
+parallel objectives; they are not completion percentages. Mercury 1.33 additionally reads native quest titles, objectives and journal pages.
 A save identifies accepted/completed quests and currently visible pages; later
 pages stay collapsed and map links locate identified quest scenes. Other games
 do not yet have a verified overall story-state tracker. Their identified
@@ -70,7 +70,7 @@ box fields are restricted; withdrawing restores maximum PP from moves/PP Ups.
 Cheat codes depend on the exact ROM and code format. Follow each entry’s usage
 and stop conditions; a save editor does not enable codes in the emulator for you.
 All five ROMs share ten common features; Ultimate Emerald adds two exclusive recipes. See [usage](cheats.md). Supported input fingerprints appear
-on the welcome screen; Mercury 1.1 is not supported.
+on the welcome screen; Mercury 1.1 and 1.2 ROMs are not supported.
 
 Switch the interface between English and Chinese with the language button.
 Interface language does not translate the ROM’s own Pokémon/item/move names.

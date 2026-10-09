@@ -30,6 +30,14 @@ These addresses are fingerprint-specific. Similar names, engine families or
 version labels do not establish compatibility. ROMs remain read-only; isolated
 native verification modifies disposable RAM only. There is no ROM writer/export.
 
+> Mercury version note (2026-10-09): active support is FC 1.33. The Mercury
+> addresses recorded on this page are **FC 1.2 historical research** unless
+> explicitly stated otherwise. Use [FC 1.33 addresses](mercury-fc-133.md) for
+> current code; FC 1.2 is no longer registered.
+>
+> 水银已推进到 FC 1.33；本页原水银地址保留为 **1.2 历史研究**，不能直接用于
+> 当前版本。新版本地址及验证边界见上述独立文档。
+
 ## Event clues and prerequisite writes / 事件线索与前置标记
 
 | Adapter | Script command table (ROM offset) | Trainer-battle handler (ROM offset) |

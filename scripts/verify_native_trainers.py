@@ -13,7 +13,7 @@ from verify_rocket_battle_forms import Native
 
 
 def check(rom, probes):
-    assert hashlib.md5(rom).hexdigest() == 'f323df1792ac68462a34b42fe8571533'
+    assert hashlib.md5(rom).hexdigest() == '5ffb1cbd5c28cda9b987b3b445da68e0'
     native = Native(rom)
     getters = mons = 0
     for case in probes:
@@ -25,7 +25,7 @@ def check(rom, probes):
         native.word(0x03005000, case['seed'])
         header = 0x23eac8 + case['trainer_id'] * 40
         native.word(0x02022b4c, 8 | int(rom[header+24] != 0))
-        count = native.call(0x1d0b150, 0x0202402c, case['trainer_id'], 0, 1, 0, 1)
+        count = native.call(0x1d0ba44, 0x0202402c, case['trainer_id'], 0, 1, 0, 1)
         assert count == len(case['mons']), case['trainer_id']
         for i, mon in enumerate(case['mons']):
             address = 0x0202402c + i * 100

@@ -1,6 +1,6 @@
 """Read-only native probes for query prerequisites and encounter periods.
 
-Set GEN3_ROM_BW/DP/MERCURY12 to exact private ROMs. Requires Unicorn. Synthetic
+Set GEN3_ROM_BW/DP/MERCURY133 to exact private ROMs. Requires Unicorn. Synthetic
 RAM only; the clock probes explicitly model the forced-night flag as unset.
 They do not establish the virtual clock's save location or current effective time.
 """
@@ -16,7 +16,7 @@ from verify_rocket_battle_forms import Native
 FINGERPRINTS = {
     'BW': '0d9b129f7dd76895f79bb47ad7dec2fe',
     'DP': 'cb2940215f4dafb1bef133c3af379f44',
-    'MERCURY12': 'f323df1792ac68462a34b42fe8571533',
+    'MERCURY133': '5ffb1cbd5c28cda9b987b3b445da68e0',
 }
 
 
@@ -51,9 +51,9 @@ def verify_periods(rom):
     cpu.cpu.hook_add(UC_HOOK_CODE, forced_night_unset)
     for hour in range(24):
         cpu.write(0x03005ea0, bytes([0, 0, 0, 1, 1, 0, hour, 0, 0]))
-        morning = cpu.call(0x1d20de0)
-        dusk = cpu.call(0x1d20df8)
-        night = cpu.call(0x1d20814)
+        morning = cpu.call(0x1d216d4)
+        dusk = cpu.call(0x1d216ec)
+        night = cpu.call(0x1d21108)
         assert bool(morning) == (4 <= hour <= 7), hour
         assert bool(dusk) == (17 <= hour <= 19), hour
         assert bool(night) == (hour < 4 or hour >= 20), hour
@@ -65,7 +65,7 @@ def main():
     for name, expected in FINGERPRINTS.items():
         data = Path(os.environ['GEN3_ROM_' + name]).read_bytes()
         assert hashlib.md5(data).hexdigest() == expected
-        result[name] = verify_periods(data) if name == 'MERCURY12' else verify_flags(data)
+        result[name] = verify_periods(data) if name == 'MERCURY133' else verify_flags(data)
     print(json.dumps(result, indent=2))
 
 

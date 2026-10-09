@@ -19,7 +19,7 @@ CONFIG = {
     "DP": (0x6A674, 0x70BF0, 0x70CB0),
     "ULTIMATE": (0x6A674, 0x70BF0, 0x70CB0),
     "ROCKET": (0x977D0, 0x9EBE0, 0x9ECA0),
-    "MERCURY12": (0x3FD44, 0x463FC, 0x464B4),
+    "MERCURY133": (0x3FD44, 0x463FC, 0x464B4),
 }
 
 
@@ -30,7 +30,7 @@ def verify(key):
     getter, available, state = CONFIG[key]
     _, compat, offset, sb1, sb2, rng, party, count, width = breeding.CONFIG[key]
     rows, phases = [], []
-    flag = struct.unpack_from("<I", rom, 0x1D1BBB0)[0] if key == "MERCURY12" else None
+    flag = struct.unpack_from("<I", rom, 0x1d1c4a4)[0] if key == "MERCURY133" else None
     counters = [0, 1, 253, 254, 255, 256, 0xFFFFFFFE, 0xFFFFFFFF]
     for mask in range(4):
         for pending in [0, 24, 65535]:
@@ -55,7 +55,7 @@ def verify(key):
                     if flag_set:
                         # The native setter address is read from the patched generator.
                         setter = (
-                            struct.unpack_from("<I", rom, 0x1D1BBA0)[0] & ~1
+                            struct.unpack_from("<I", rom, 0x1D1C494)[0] & ~1
                         ) - 0x08000000
                         cpu.call(setter, flag)
                     before = cpu.read(0x02030000, 0x8000)

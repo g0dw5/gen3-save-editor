@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Opt-in Mercury 1.2 common cheat tests using final codes and native mGBA calls.
+"""Opt-in Mercury 1.33 common cheat tests using final codes and native mGBA calls.
 
-Requires GEN3_BIN, GEN3_ROM_MERCURY12 and --probe compiled from the public
+Requires GEN3_BIN, GEN3_ROM_MERCURY133 and --probe compiled from the public
 native/storage_cheat_probe.c harness. Default routine tests do not load a SAV. Optional PC tests read a supplied
 battery/state fixture into memory only; exports go to a local test directory.
 Battle tests live in the shared cross-ROM runners.
@@ -28,7 +28,7 @@ class MercuryProbe(Probe):
     def __init__(self, library, path, temp):
         self.c = ctypes.CDLL(str(library.resolve()))
         self.c.readmem.restype = self.c.callfunc.restype = ctypes.c_uint
-        self.p = dict(md5='f323df1792ac68462a34b42fe8571533', party=0x2024284,
+        self.p = dict(md5='5ffb1cbd5c28cda9b987b3b445da68e0', party=0x2024284,
                       count=0x2024029, enemy=0x202402c, sb1p=0x3005008,
                       sb2p=0x300500c, rng=0x3005000, day=0x2f80,
                       hatch=0x463b8, compat=0x4654c, get=0x3fbe8, egg_width=2,
@@ -78,7 +78,7 @@ class MercuryProbe(Probe):
     def pack(self, raw, q): return raw[:32] + bytes(q) + raw[80:]
 
     def charm(self):
-        item = 0x1d6  # native helper 1D1BF08 compares this item
+        item = 0x1d6  # native helper 1D1C7FC compares this item
         pocket = self.call(0x9a9d8, item)
         self.put(0x203988c + (pocket - 1)*8, 0x2037000)
         self.put(0x203988c + (pocket - 1)*8 + 4, 1, 2)
@@ -93,10 +93,10 @@ class MercuryProbe(Probe):
         maps = [m for m in self.catalog['options']['maps'] if m['landings']]
         params = {ENCOUNTER: dict(kind='encounter',species=185,level=17),
                   TELEPORT: dict(kind='teleport', map_id=maps[0]['id'], warp_id=maps[0]['landings'][0]['id'])}
-        spans = {NO_ENCOUNTERS: [(0x1d69e72,2)], CATCH: [(0x1d0e9e6,2)],
+        spans = {NO_ENCOUNTERS: [(0x1d6cd7e,2)], CATCH: [(0x1d0f2da,2)],
                  HATCH: [(0x46346,2)], BREED: [(0x4632c,2)],
-                 PC: [(0x1d506c6,2),(0x1d507a4,4),(0x13fd200,8)],
-                 ENCOUNTER: [(0x1d68b74,8),(0x13fd280,24)],
+                 PC: [(0x1d522ce,2),(0x1d523ac,4),(0x13fd200,8)],
+                 ENCOUNTER: [(0x1d6ba80,8),(0x13fd280,24)],
                  SHINY: [(0x3ddbc,14),(0x3de44,14),(0x3deaa,14),(0x13fd000,72),(0x13fd080,72),(0x13fd100,72)],
                  TELEPORT: [(0x553b2,6)], EMERGENCY: [(0x12424,4),(0x13fd400,328)]}
         for key, allowed in spans.items():
@@ -224,7 +224,7 @@ class MercuryProbe(Probe):
                         self.put(enemy,150,2);self.put(enemy+0x28,100,2);self.put(enemy+0x2c,100,2)
                         self.put(enemy+0x2a,100,1)
                         if on:self.enable(CATCH)
-                        self.call(0x1d0e7a8)
+                        self.call(0x1d0f09c)
                         output=self.read(self.p['enemy'],100)
                         script=self.get(0x2023d74)
                         if flags==0 and on:
@@ -244,7 +244,7 @@ class MercuryProbe(Probe):
         for mode in [2, 3, 4, 5]:
             self.init()
             self.enable(NO_ENCOUNTERS)
-            assert self.call(0x1d69e42, mode, mode) == 0
+            assert self.call(0x1d6cd4e, mode, mode) == 0
         return dict(native_early_exit_movement_cases=4)
 
     def walk_in_state(self, state):
@@ -268,7 +268,7 @@ class MercuryProbe(Probe):
                     assert self.c.load_state(str(route).encode())
                     self.c.togglecode(0, enabled)
                     self.put(self.p['rng'], seed * 0x9e3779b9 & 0xffffffff)
-                    count += bool(self.call(0x1d69e42, tile, tile & 0x3ff))
+                    count += bool(self.call(0x1d6cd4e, tile, tile & 0x3ff))
                 hits.append(count)
             assert hits[0] > 0 and hits[1] == 0, (tile, hits)
             result[hex(tile)] = hits
@@ -294,10 +294,10 @@ class MercuryProbe(Probe):
                     raw[76:80] = bytes((1, 2, 3, 4))
                     self.write(0x2038000, raw)
                     self.write(0x2038100, bytes([0xa5] * 80))
-                    assert self.call(0x1d58854, 0x2038000, 0x2038100) != 0xffffffff
+                    assert self.call(0x1d5a630, 0x2038000, 0x2038100) != 0xffffffff
                     compact = self.read(0x2038100, 58)
                     assert self.read(0x203813a, 22) == bytes([0xa5] * 22)
-                    assert self.call(0x1d58628, 0x2038200, 0x2038100) != 0xffffffff
+                    assert self.call(0x1d5a404, 0x2038200, 0x2038100) != 0xffffffff
                     expanded = self.read(0x2038200, 80)
                     vectors.append(dict(raw=list(raw), compact=list(compact), expanded=list(expanded)))
         output.write_text(json.dumps(vectors))
@@ -311,7 +311,7 @@ class MercuryStorageProbe(MercuryProbe):
     def __init__(self, library, path, temp):
         from verify_storage_cheats_mgba import StorageProbe
         super().__init__(library, path, temp)
-        self.name = "MERCURY12"
+        self.name = "MERCURY133"
         self.storage_pointer = 0x3005010
         self.codes_pc = self.lines(PC)
         # Reuse the native SELECT/save/reboot/withdraw workflow, not an 80-byte
@@ -320,7 +320,7 @@ class MercuryStorageProbe(MercuryProbe):
             setattr(self, name, getattr(StorageProbe, name).__get__(self))
 
     def pointers(self):
-        return [self.get(0x09ddeB68 + i * 4) for i in range(25)]
+        return [self.get(0x9DE4A7C + i * 4) for i in range(25)]
 
     def clear_boxes(self):
         for pointer in self.pointers():
@@ -338,7 +338,7 @@ class MercuryStorageProbe(MercuryProbe):
                     if not self.get(record + 28, 2):
                         result.append(bytes(80))
                     else:
-                        assert self.call(0x1d58628, scratch, record) != 0xffffffff
+                        assert self.call(0x1d5a404, scratch, record) != 0xffffffff
                         result.append(self.read(scratch, 80))
         finally:
             self.write(scratch, old)
@@ -367,7 +367,7 @@ def main():
     parser.add_argument('--output', type=Path)
     parser.add_argument('--compact-vectors', type=Path)
     args = parser.parse_args()
-    path = Path(os.environ['GEN3_ROM_MERCURY12'])
+    path = Path(os.environ['GEN3_ROM_MERCURY133'])
     with tempfile.TemporaryDirectory(prefix='gen3-mercury-cheats-') as temp:
         native = MercuryStorageProbe(args.probe, path, Path(temp))
         report = {}

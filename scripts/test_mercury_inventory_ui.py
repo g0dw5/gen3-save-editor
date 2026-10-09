@@ -1,6 +1,6 @@
 """Read-only Mercury UI regression; no actions or save exports are sent.
 
-Requires GEN3_ROM_MERCURY12/GEN3_SAVE_MERCURY12 and Vite/dev bridge.
+Requires GEN3_ROM_MERCURY133/GEN3_SAVE_MERCURY133 and Vite/dev bridge.
 The zero-quantity case changes only a mocked HTTP response, never the SAV.
 """
 import json
@@ -15,6 +15,7 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(channel="chrome", headless=True)
         page = browser.new_page(viewport={"width": 1360, "height": 920})
+        page.set_default_navigation_timeout(120000)
         page.add_init_script("localStorage.setItem('gen3.locale','en')")
         errors, writes = [], []
         page.on("pageerror", lambda error: errors.append(str(error)))
@@ -24,7 +25,7 @@ def main():
                 if command in ['action', 'export_save', 'save_bytes']:
                     writes.append(command)
         page.on('request', track)
-        for command, key in [("open_rom", "GEN3_ROM_MERCURY12"), ("open_save", "GEN3_SAVE_MERCURY12")]:
+        for command, key in [("open_rom", "GEN3_ROM_MERCURY133"), ("open_save", "GEN3_SAVE_MERCURY133")]:
             response = page.request.post(url + '/api', data={
                 'command': command, 'payload': {'path': os.path.abspath(os.environ[key])}
             }, timeout=60000).json()

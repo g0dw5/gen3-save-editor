@@ -10,7 +10,7 @@ pub(super) const ROCKET: [RomHalfword; 7] = patches(0x1f9bd4, 0x1f9c44, 0x082e04
 // Preserve its eligibility checks and multi-registration records; route only
 // its fallback branch to the PC special actually registered in this ROM.
 pub(super) const MERCURY: [RomHalfword; 7] = {
-    let mut p = patches(0x1d506c6, 0x1d507a4, 0x081a77a0, 0x13fd200);
+    let mut p = patches(0x1d522ce, 0x1d523ac, 0x081a77a0, 0x13fd200);
     p[0].before = 0x2e00;
     p[0].after = 0x42b6;
     p[4].after = 0x003c;

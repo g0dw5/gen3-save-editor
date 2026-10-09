@@ -8,6 +8,30 @@ bilingual file.
 首次公开发布版本为 **0.1.5**，不追记此前的开发版本。0.1.6、0.1.7 按工程提交补记，
 不代表这些构建的对外发布日期。每次发布包均附带本中英文日志。
 
+## 0.3.1 — Unreleased / 未发布
+
+### 中文
+
+- 水银适配更新到 FC 1.33，按精确 MD5 核验。移除 FC 1.2 ROM 支持，避免维护两套
+  水银读取规则；漆黑 BW／DP、西班牙火箭队与究极绿宝石的支持范围保持不变。
+- 更新宝可梦资料所需的数据表、时段相遇表、见闻录任务表和训练家生成例程地址。
+  资料、名称与图片继续实时读取当前 ROM；见闻录读取新增的日志页。
+- 为 1.33 重新定位并验证水银金手指，保留十项通用功能。旧版水银的代码不通用，
+  请打开当前 ROM 重新生成。
+- 验证背包、虚拟时钟、25 盒压缩格式及存档编辑后的游戏内保存和重启回读。
+  更新五份精确 ROM 的回归入口与开发验证记录。
+
+### English
+
+- Upgrade Mercury to the exact FC 1.33 fingerprint and retire FC 1.2 ROM support.
+  Dark Phantom BW/DP, Spanish Rocket and Ultimate Emerald retain their support.
+- Relocate runtime content, timed encounters, quest-journal tables and native
+  trainer generation. Names, artwork and newly added journal pages come from ROM.
+- Relocate and revalidate Mercury's ten common cheats. Regenerate codes from the
+  loaded 1.33 ROM; codes generated for older Mercury builds are not interchangeable.
+- Verify inventory, virtual time, all 25 compact boxes and edit/save/reboot
+  round trips. Update the five-ROM regression inputs and developer evidence.
+
 ## 0.3.0 — 2026-10-07
 
 ### 中文

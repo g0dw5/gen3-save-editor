@@ -35,7 +35,7 @@ pub struct Layout {
     pub tera_type_count: usize,
 }
 
-// Native GetCompressedMonPtr 1D58604, pointer table 1DDEB68, count 25, stride 58.
+// Native GetCompressedMonPtr 1D5A3E0, pointer table 1DE4A7C, count 25, stride 58.
 // Box 20–22 are in parasite RAM; 23–24 occupy SB1, and 25 occupies SB2.
 pub const MERCURY: Layout = Layout {
     regions: &[
@@ -69,7 +69,7 @@ pub const MERCURY: Layout = Layout {
     names: 0x8344,
     wallpapers: 0x83c2,
     extra_wallpapers: 0x8128,
-    tera_types: 0x1de0a18,
+    tera_types: 0x1de6920,
     tera_type_count: 19,
 };
 

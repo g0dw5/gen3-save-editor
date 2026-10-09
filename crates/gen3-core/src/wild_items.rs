@@ -282,7 +282,7 @@ mod tests {
     #[test]
     #[ignore = "requires all five exact local ROMs"]
     fn local_native_wild_item_baseline() {
-        for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
             let r = Rom::open(
                 std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap(),
             )
@@ -317,7 +317,7 @@ mod parity {
             &std::fs::read(std::env::var("GEN3_WILD_ITEM_PROBES").unwrap()).unwrap(),
         )
         .unwrap();
-        for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY12"] {
+        for key in ["BW", "DP", "ROCKET", "ULTIMATE", "MERCURY133"] {
             let rom = Rom::open(
                 std::fs::read(std::env::var(format!("GEN3_ROM_{key}")).unwrap()).unwrap(),
             )

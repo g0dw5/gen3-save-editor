@@ -23,7 +23,7 @@ CONFIG = {
     'DP': (0x1DBA64, 0x1DD, 0x1B2360, 32, 0x1B0038),
     'ULTIMATE': (0x1DBA64, 0x1DD, 0x1B2360, 127, 0x1B0038),
     'ROCKET': (0x22B620, 0x1DD, None, 0, 0x1FC6E4),
-    'MERCURY12': (0x15FD60, 0x18D, 0x120BA8, 154, 0x11EA44),
+    'MERCURY133': (0x15FD60, 0x18D, 0x120BA8, 154, 0x11EA44),
 }
 
 
@@ -51,7 +51,7 @@ def verify(key, rom):
         assert actions, (key, parameter)
         assert actions[0][0] == 12
         # Mercury changes the party-selection callback/message, not tutor action.
-        expected_message = 127 if key == 'MERCURY12' and parameter >= count else 4
+        expected_message = 127 if key == 'MERCURY133' and parameter >= count else 4
         assert actions[0][1] == expected_message, (key, parameter, actions)
         menu_cases.append(dict(parameter=parameter, action=actions[0][0], message=actions[0][1]))
     direct = []

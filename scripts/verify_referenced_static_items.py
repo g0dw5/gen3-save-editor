@@ -71,12 +71,12 @@ def main():
                     )
                     continue
                 prefix = struct.unpack_from("<H", rom, pc + 1)[0]
-                paired = (key == "MERCURY12" and prefix == 65535) or (
+                paired = (key == "MERCURY133" and prefix == 65535) or (
                     key == "ROCKET" and struct.unpack_from("<H", rom, pc + 6)[0] != 0
                 )
                 length = (
                     18
-                    if key == "MERCURY12" and paired
+                    if key == "MERCURY133" and paired
                     else 11 if key == "ROCKET" else 6
                 )
                 members = source["battle_members"] if paired else [source]
@@ -92,7 +92,7 @@ def main():
                     cpu.word(CONFIG[key][2], 0x02028000)
                     cpu.word(b.CONFIG[key][5], seed)
                     assignments = {}
-                    if key == "MERCURY12":
+                    if key == "MERCURY133":
                         offsets = [7, 13] if paired else [1]
                         for offset, member in zip(offsets, members):
                             var = struct.unpack_from("<H", rom, pc + offset)[0]

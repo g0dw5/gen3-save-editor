@@ -22,7 +22,7 @@ CONFIG = {
     "DP": (0x6D098, 0x32531C, 40, 412, 0x31F72C, 404, 0x3203CC, 28),
     "ROCKET": (0x9A37C, 0x5F96D4, 80, 1395, 0x5B3484, 604, 0x5B4764, 36),
     "ULTIMATE": (0x6D098, 0xF387C0, 40, 1200, 0x31F72C, 404, 0xF186E0, 28),
-    "MERCURY12": (0x42EC4, 0x1788F5A, 128, 1554, 0x1E052C8, 1024, 0x176DFBC, 28),
+    "MERCURY133": (0x42EC4, 0x1788F5A, 128, 1554, 0x1e0b258, 1024, 0x176DFBC, 28),
 }
 OVERRIDES = {
     "BW": {133: (0x1196300, 7)},
@@ -152,11 +152,11 @@ def verify(key):
             else None
         )
     gender_rows = []
-    if key == "MERCURY12":
-        instruction = struct.unpack_from("<H", rom, 0x1D2870E)[0]
+    if key == "MERCURY133":
+        instruction = struct.unpack_from("<H", rom, 0x1D2A006)[0]
         assert instruction & 0xFF00 == 0x2A00
         item = instruction & 255
-        getter = (struct.unpack_from("<I", rom, 0x1D28C80)[0] & ~1) - 0x08000000
+        getter = (struct.unpack_from("<I", rom, 0x1D2A578)[0] & ~1) - 0x08000000
         for species in range(1, CONFIG[key][3]):
             rows = [
                 r

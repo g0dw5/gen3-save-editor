@@ -9,10 +9,10 @@ emulator. The editor does not enable codes or write ROM files.
 
 ## 五个 ROM 的通用功能 / Common features in all five ROMs
 
-漆黑的魅影 BW／DP、西班牙火箭队、究极绿宝石及水银 1.2 均提供以下 10 项。
+漆黑的魅影 BW／DP、西班牙火箭队、究极绿宝石及水银 1.33 均提供以下 10 项。
 相同功能的代码可能不同，必须使用当前 ROM 生成的代码。
 
-Dark Phantom BW/DP, Spanish Rocket, Ultimate Emerald and Mercury 1.2 all provide
+Dark Phantom BW/DP, Spanish Rocket, Ultimate Emerald and Mercury 1.33 all provide
 these ten features. Codes can differ between ROMs; use those generated for your
 currently opened ROM.
 
@@ -57,6 +57,6 @@ turn's input, and correct the direction of difficulty accuracy bonuses.
 - The stated scope was tested locally in mGBA. Mobile emulators, every facility
   and prolonged combinations of multiple codes were not individually tested.
 
-支持的精确 ROM 指纹见首屏及 README。水银 1.1 不支持。
+支持的精确 ROM 指纹见首屏及 README。水银 1.1／1.2 不支持。
 Supported exact ROM fingerprints appear on the welcome screen and in README.
 Mercury 1.1 is unsupported.

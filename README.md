@@ -12,7 +12,7 @@ maps and artwork come from the loaded ROM. ROM input is always read-only.
   machine/tutor sources; item acquisition; maps, NPCs, hidden items, encounters and
   trainer parties. Follow cross-links to locate targets on maps.
 - **Adventure guide:** Search parsed dialogue, rewards and prerequisite clues.
-  Mercury 1.2 reads its native quest journal with saved accepted/completed states;
+  Mercury 1.33 reads its native quest journal with saved accepted/completed states;
   Rocket provides next-action clues for identified story branches.
 - **Save editing:** Expanded party/boxes, drag/swap, batch edits, nature, abilities,
   IVs/EVs, moves/PP, bag/PC items, undo/redo, backups and checked exports.
@@ -39,12 +39,12 @@ partial; a parsed record is not proof of current obtainability.
 | Dark Phantom 5.0EX+DP | `cb2940215f4dafb1bef133c3af379f44` | 33,554,188 |
 | Team Rocket 2.1 Chinese | `59c658a1081f542086de1060bb65f0b3` | 33,554,432 |
 | Ultimate Emerald 5.5 | `17ce9785b33319b3dbda9a5d37c57ec1` | 33,554,432 |
-| Mercury FC 1.2 | `f323df1792ac68462a34b42fe8571533` | 33,554,432 |
+| Mercury FC 1.33 | `5ffb1cbd5c28cda9b987b3b445da68e0` | 33,554,432 |
 
 
 Use a 128 KiB `.sav`/`.srm` battery save (Mercury also accepts its 16-byte RTC
 trailer), not an emulator save state. Compatibility follows the fingerprint,
-not the filename. Mercury 1.1 is not supported.
+not the filename. Mercury 1.1 and 1.2 ROMs are not supported.
 
 Installers target Windows 10/11 x64 and Apple Silicon Macs. The Windows installer
 can download WebView2 if needed. Builds are unsigned/ad hoc signed and not notarized.

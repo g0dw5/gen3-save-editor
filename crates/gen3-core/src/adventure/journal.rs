@@ -10,7 +10,7 @@ pub struct Rules {
     pub count: usize,
 }
 pub const MERCURY: Rules = Rules {
-    quests: 0xe3ba28,
+    quests: 0xe3bc54,
     books: 0x8f5644,
     count: 100,
 };
@@ -56,7 +56,7 @@ fn eligible(
         Some(false)
     }
 }
-/// Mirrors DF7C40: completed pages may bypass their checks, depending on byte 15.
+/// Mirrors DF7D5C: completed pages may bypass their checks, depending on byte 15.
 fn visible(
     completed: Option<bool>,
     eligible: Option<bool>,
@@ -191,9 +191,9 @@ pub(super) fn append(rom: &Rom, state: Option<&EventSnapshot>, guide: &mut Guide
 mod tests {
     use super::*;
     #[test]
-    #[ignore = "requires private Mercury 1.2 ROM; exports native parity inputs only when requested"]
+    #[ignore = "requires private Mercury 1.33 ROM; exports native parity inputs only when requested"]
     fn exact_rom_journal_native_vectors() {
-        let data = std::fs::read(std::env::var("GEN3_ROM_MERCURY12").unwrap()).unwrap();
+        let data = std::fs::read(std::env::var("GEN3_ROM_MERCURY133").unwrap()).unwrap();
         let rom = Rom::open(data.clone()).unwrap();
         assert_eq!(rom.profile.md5, crate::mercury::PROFILE.md5);
         let mut vectors = vec![];
@@ -224,7 +224,7 @@ mod tests {
                 t.journal.as_ref().unwrap().phases.iter().enumerate().map(move |(page, p)|
                     serde_json::json!({"quest": id, "page": first + page * 16, "expected": p.visible}))
             }).collect();
-            assert_eq!(pages.len(), 306);
+            assert_eq!(pages.len(), 344);
             vectors.push(serde_json::json!({"main": main, "extensions": extra, "pages": pages}));
         }
         if let Ok(path) = std::env::var("GEN3_JOURNAL_PROBES") {

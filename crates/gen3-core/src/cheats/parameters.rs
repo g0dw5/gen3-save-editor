@@ -225,9 +225,9 @@ pub(super) fn shiny(rocket: bool) -> Vec<RomHalfword> {
 fn mercury_shiny() -> Vec<RomHalfword> {
     let mut result = Vec::new();
     for (i, (site, caller, stack, random_bl)) in [
-        (0x3ddbc, 0x1d68cdb, 96, 0xf883),
-        (0x3de44, 0x1d68c19, 52, 0xf83f),
-        (0x3deaa, 0x1d68c19, 52, 0xf80c),
+        (0x3ddbc, 0x1d6bbe7, 96, 0xf883),
+        (0x3de44, 0x1d6bb25, 52, 0xf83f),
+        (0x3deaa, 0x1d6bb25, 52, 0xf80c),
     ]
     .into_iter()
     .enumerate()
@@ -328,7 +328,7 @@ fn ultimate_hook(site: u32, before: [u16; 2], target: u32, code: &[u16]) -> Vec<
 pub(super) fn encounter_for(md5: &str, species: u16, level: u8) -> Vec<RomHalfword> {
     if md5 == crate::mercury::PROFILE.md5 {
         let target = 0x093fd281u32;
-        let return_to = 0x09d68b7du32;
+        let return_to = 0x9d6ba89u32;
         let stub = [
             0x2500 | species >> 8,
             0x022d,
@@ -358,7 +358,7 @@ pub(super) fn encounter_for(md5: &str, species: u16, level: u8) -> Vec<RomHalfwo
                 .zip([0x4800, 0x4700, target as u16, (target >> 16) as u16])
                 .enumerate()
                 .map(|(i, (before, after))| RomHalfword {
-                    offset: 0x1d68b74 + i as u32 * 2,
+                    offset: 0x1d6ba80 + i as u32 * 2,
                     before,
                     after,
                 }),

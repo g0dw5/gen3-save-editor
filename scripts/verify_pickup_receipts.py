@@ -50,7 +50,7 @@ RULES = {
     'ULTIMATE': EMERALD,
     'ROCKET': Rules(0x22B218, 0xD3930, 0xD3A6C, 0x0300524C, 0x020382D8,
                     0x02038314, 0x16A8, 0x10EBF0, 0xC392C),
-    'MERCURY12': Rules(0x15F9B4, 0x6E454, 0x6E680, 0x03005008, 0x02036DFC,
+    'MERCURY133': Rules(0x15F9B4, 0x6E454, 0x6E680, 0x03005008, 0x02036DFC,
                        0x02036E38, 0x8E0, 0x9A000, 0x5E4B4),
 }
 # These only advance the script pointer over presentation/housekeeping operands.
@@ -120,7 +120,7 @@ def verify(key, rom, world):
                     if opcode == 2:
                         break
                     cpu.word(CONTEXT + 8, pc + 1)
-                    if opcode in EXECUTE or (key == 'MERCURY12' and opcode in [0x25, 0xC7]):
+                    if opcode in EXECUTE or (key == 'MERCURY133' and opcode in [0x25, 0xC7]):
                         entry = struct.unpack_from('<I', rom, rules.commands + 4 * opcode)[0]
                         cpu.call(entry - 0x08000001, CONTEXT)
                     elif opcode in BYPASS:
