@@ -8,7 +8,7 @@ bilingual file.
 首次公开发布版本为 **0.1.5**，不追记此前的开发版本。0.1.6、0.1.7 按工程提交补记，
 不代表这些构建的对外发布日期。每次发布包均附带本中英文日志。
 
-## 0.3.1 — Unreleased / 未发布
+## 0.3.1 — 2026-10-09
 
 ### 中文
 
@@ -21,6 +21,14 @@ bilingual file.
 - 验证背包、虚拟时钟、25 盒压缩格式及存档编辑后的游戏内保存和重启回读。
   更新五份精确 ROM 的回归入口与开发验证记录。
 
+水银 FC 1.33 的支持指纹：MD5 `5ffb1cbd5c28cda9b987b3b445da68e0`。
+本轮已做原生例程对照、五 ROM 回归及模拟器保存／重启回读；动态地图、特殊设施
+与完整旧剧情迁移仍有未验证部分，不能仅凭表记录判断当前可达。
+
+下载支持 Apple Silicon macOS（DMG，临时签名、未经公证）及 Windows 10/11 64 位
+（EXE，未签名，缺少 WebView2 时联网补装）。Windows 安装与界面尚未做实机验证。
+发布包不含 ROM、SAV 或提取的游戏素材，用户自行提供对应 ROM。
+
 ### English
 
 - Upgrade Mercury to the exact FC 1.33 fingerprint and retire FC 1.2 ROM support.
@@ -31,6 +39,16 @@ bilingual file.
   loaded 1.33 ROM; codes generated for older Mercury builds are not interchangeable.
 - Verify inventory, virtual time, all 25 compact boxes and edit/save/reboot
   round trips. Update the five-ROM regression inputs and developer evidence.
+
+Supported Mercury FC 1.33 MD5: `5ffb1cbd5c28cda9b987b3b445da68e0`.
+Native-routine comparisons, five-ROM regressions and emulator save/reboot checks
+pass. Dynamic maps, special facilities and complete old-story migration still
+have unverified cases; a table entry alone does not establish current access.
+
+Downloads target Apple Silicon macOS (ad-hoc signed DMG, not notarized) and
+Windows 10/11 x64 (unsigned EXE; setup downloads WebView2 when missing).
+Windows installation and GUI have not been tested on a physical Windows system.
+No ROMs, saves or extracted game assets are included; supply the matching ROM.
 
 ## 0.3.0 — 2026-10-07
 
