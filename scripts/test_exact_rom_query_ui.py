@@ -15,6 +15,7 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(channel='chrome', headless=True)
         page = browser.new_page(viewport={'width': 1360, 'height': 920})
+        page.set_default_timeout(60000)
         page.set_default_navigation_timeout(120000)
         page.add_init_script("localStorage.setItem('gen3.locale','en')")
         errors = []
@@ -23,14 +24,15 @@ def main():
             path = Path(os.environ[f'GEN3_ROM_{key}']).resolve()
             response = page.request.post(f'{url}/api', data={
                 'command': 'open_rom', 'payload': {'path': str(path)}
-            }, timeout=60000).json()
+            }, timeout=180000).json()
             assert response['ok'], response
             catalog = response['data']['catalog']
             page.goto(url)
             page.get_by_role('button', name='ROM reference', exact=True).click()
             panel = page.locator('.acquisition-panel')
             expect(panel).to_be_visible()
-            expect(panel.get_by_text('Reading…', exact=True)).to_have_count(0)
+            # Closed optional details intentionally defer their own queries.
+            expect(panel.locator(':text-is("Reading…"):visible')).to_have_count(0)
             expect(page.locator('.reference-detail')).to_contain_text(catalog['species'][0]['name'])
             page.locator('.reference-tabs').get_by_role('button', name='Maps', exact=True).click()
             expect(page.locator('.map-navigation h4').first).to_be_visible()

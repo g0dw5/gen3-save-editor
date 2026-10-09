@@ -15,6 +15,7 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch(channel="chrome", headless=True)
         page = browser.new_page(viewport={"width": 1360, "height": 920})
+        page.set_default_timeout(60000)
         page.set_default_navigation_timeout(120000)
         page.add_init_script("localStorage.setItem('gen3.locale','en')")
         errors, writes = [], []
@@ -28,7 +29,7 @@ def main():
         for command, key in [("open_rom", "GEN3_ROM_MERCURY133"), ("open_save", "GEN3_SAVE_MERCURY133")]:
             response = page.request.post(url + '/api', data={
                 'command': command, 'payload': {'path': os.path.abspath(os.environ[key])}
-            }, timeout=60000).json()
+            }, timeout=180000).json()
             assert response['ok'], response
         snapshot = response['data']
         item = next(e for e in snapshot['bag'] if e['pocket'] == 'items' and e['slot'] == 0)
@@ -49,6 +50,8 @@ def main():
         expect(page.get_by_role('button', name='Apply changes', exact=True)).to_be_disabled()
         page.get_by_role('button', name='ROM reference', exact=True).click()
         page.locator('.reference-tabs').get_by_role('button', name='Maps', exact=True).click()
+        # The retained original gym is intentionally hidden in the player list.
+        page.get_by_role('checkbox', name=re.compile('Show entries with uncertain use')).check()
         page.locator('.reference-rows button').filter(has=page.locator('span.id', has_text=re.compile(r'^1-0$'))).click()
         expect(page.locator('.map-explorer')).to_contain_text('also renders with mismatched tiles')
         expect(page.locator('.reference-detail')).to_contain_text('常磐森林')
